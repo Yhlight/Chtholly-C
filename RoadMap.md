@@ -12,9 +12,9 @@ This document outlines the development roadmap for the Chtholly programming lang
 
 ## Phase 2: Lexer Implementation
 
-- [ ] Define tokens in `Token.h`
-- [ ] Implement the lexer in `Lexer.cpp`
-- [ ] Add tests for the lexer
+- [x] Define tokens in `Token.h`
+- [x] Implement the lexer in `Lexer.cpp`
+- [x] Add tests for the lexer
 
 ## Phase 3: Parser Implementation
 

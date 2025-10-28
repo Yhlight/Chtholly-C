@@ -187,11 +187,15 @@ Token Lexer::identifier() {
 Token Lexer::number() {
     int start = position;
     bool isDouble = false;
-    while (isdigit(currentChar()) || currentChar() == '.') {
-        if (currentChar() == '.') {
-            isDouble = true;
-        }
+    while (isdigit(currentChar())) {
         advance();
+    }
+    if (currentChar() == '.') {
+        isDouble = true;
+        advance();
+        while (isdigit(currentChar())) {
+            advance();
+        }
     }
     std::string literal = source.substr(start, position - start);
     return {isDouble ? TokenType::Double : TokenType::Integer, literal, line, column};
