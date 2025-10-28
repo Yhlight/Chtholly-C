@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 add_executable(run_tests
     LexerTest.cpp
+    ParserTest.cpp
     ../src/Lexer.cpp
+    ../src/Parser.cpp
 )
 
 target_include_directories(run_tests PRIVATE ../src)

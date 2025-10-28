@@ -39,9 +39,10 @@ def main():
 
     # Run the executable
     executable_path = os.path.join(build_dir, "chtholly")
+    test_file_path = os.path.join(repo_root, "test.cns")
     if os.path.exists(executable_path):
         print("\\n--- Running Chtholly ---")
-        run_command([executable_path], cwd=repo_root)
+        run_command([executable_path, test_file_path], cwd=repo_root)
         print("--- Chtholly finished ---\\n")
     else:
         print(f"Error: Executable not found at {executable_path}")
