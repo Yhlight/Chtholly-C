@@ -3,6 +3,9 @@
 
 #include "AST.h"
 #include <sstream>
+#include <vector>
+#include <memory>
+#include <any>
 
 namespace Chtholly
 {
@@ -15,14 +18,54 @@ public:
         std::stringstream out;
         for (const auto& stmt : statements)
         {
-            out << std::any_cast<std::string>(stmt->accept(*this));
+            if (stmt) {
+                out << std::any_cast<std::string>(stmt->accept(*this));
+            }
         }
         return out.str();
+    }
+
+private:
+    template<typename... Args>
+    std::string parenthesize(const std::string& name, Args... args)
+    {
+        std::stringstream out;
+        out << "(" << name;
+        ((out << " " << std::any_cast<std::string>(args->accept(*this))), ...);
+        out << ")";
+        return out.str();
+    }
+
+    // --- Visitor implementations ---
+
+    std::any visitAssignExpr(AssignExpr& expr) override
+    {
+        return parenthesize(expr.name.text + " =", expr.value.get());
+    }
+
+    std::any visitBinaryExpr(BinaryExpr& expr) override
+    {
+        return parenthesize(expr.op.text, expr.left.get(), expr.right.get());
+    }
+
+    std::any visitGroupingExpr(GroupingExpr& expr) override
+    {
+        return parenthesize("group", expr.expression.get());
     }
 
     std::any visitNumberLiteralExpr(NumberLiteralExpr& expr) override
     {
         return expr.number.text;
+    }
+
+    std::any visitUnaryExpr(UnaryExpr& expr) override
+    {
+        return parenthesize(expr.op.text, expr.right.get());
+    }
+
+    std::any visitVariableExpr(VariableExpr& expr) override
+    {
+        return expr.name.text;
     }
 
     std::any visitVarDeclStmt(VarDeclStmt& stmt) override
@@ -33,19 +76,25 @@ public:
         {
             out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
         }
-        out << ";)\\n";
+        out << ";)\n";
         return out.str();
     }
 
     std::any visitBlockStmt(BlockStmt& stmt) override
     {
         std::stringstream out;
-        out << "{ \\n";
+        out << "{ \n";
         for (const auto& s : stmt.statements)
         {
             out << std::any_cast<std::string>(s->accept(*this));
         }
-        out << "}\\n";
+        out << "}\n";
+        return out.str();
+    }
+
+    std::any visitExprStmt(ExprStmt& stmt) override {
+        std::stringstream out;
+        out << "(expr " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ")\n";
         return out.str();
     }
 };
