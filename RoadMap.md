@@ -18,9 +18,9 @@ This document outlines the development roadmap for the Chtholly programming lang
 
 ## Phase 3: Parser Implementation
 
-- [ ] Define the Abstract Syntax Tree (AST) in `AST.h`
-- [ ] Implement the parser in `Parser.cpp`
-- [ ] Add tests for the parser
+- [x] Define the Abstract Syntax Tree (AST) in `AST.h`
+- [x] Implement the parser in `Parser.cpp`
+- [x] Add tests for the parser
 
 ## Phase 4: Code Generation
 
