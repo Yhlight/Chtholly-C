@@ -50,3 +50,15 @@ TEST(ParserTest, ParseExpression) {
     expected = "(expr (a = (+ 1 2)))\n";
     EXPECT_EQ(getAST(source), expected);
 }
+
+TEST(ParserTest, ParseIfStatement) {
+    std::string source = "if (true) { 1; }";
+    std::string expected = "(if true { \n(expr 1)\n})\n";
+    EXPECT_EQ(getAST(source), expected);
+}
+
+TEST(ParserTest, ParseIfElseStatement) {
+    std::string source = "if (true) { 1; } else { 2; }";
+    std::string expected = "(if true { \n(expr 1)\n} else { \n(expr 2)\n})\n";
+    EXPECT_EQ(getAST(source), expected);
+}

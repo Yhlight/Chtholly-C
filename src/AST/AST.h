@@ -19,6 +19,7 @@ class VariableExpr;
 class VarDeclStmt;
 class BlockStmt;
 class ExprStmt;
+class IfStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -58,6 +59,7 @@ public:
     virtual std::any visitVarDeclStmt(VarDeclStmt& stmt) = 0;
     virtual std::any visitBlockStmt(BlockStmt& stmt) = 0;
     virtual std::any visitExprStmt(ExprStmt& stmt) = 0;
+    virtual std::any visitIfStmt(IfStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -161,6 +163,19 @@ public:
     std::unique_ptr<Expr> expression;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitExprStmt(*this); }
+};
+
+class IfStmt : public Stmt
+{
+public:
+    IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitIfStmt(*this); }
 };
 
 

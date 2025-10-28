@@ -88,13 +88,25 @@ private:
         {
             out << std::any_cast<std::string>(s->accept(*this));
         }
-        out << "}\n";
+        out << "}";
         return out.str();
     }
 
     std::any visitExprStmt(ExprStmt& stmt) override {
         std::stringstream out;
         out << "(expr " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ")\n";
+        return out.str();
+    }
+
+    std::any visitIfStmt(IfStmt& stmt) override {
+        std::stringstream out;
+        out << "(if " << std::any_cast<std::string>(stmt.condition->accept(*this)) << " ";
+        out << std::any_cast<std::string>(stmt.thenBranch->accept(*this));
+        if (stmt.elseBranch) {
+            out << " else ";
+            out << std::any_cast<std::string>(stmt.elseBranch->accept(*this));
+        }
+        out << ")\n";
         return out.str();
     }
 };

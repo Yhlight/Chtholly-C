@@ -93,9 +93,32 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
+    if (match({TokenType::If})) return ifStatement();
+    if (match({TokenType::LBrace})) return std::make_unique<BlockStmt>(block());
     auto expr = expression();
     consume(TokenType::Semicolon, "Expect ';' after expression statement.");
     return std::make_unique<ExprStmt>(std::move(expr));
+}
+
+std::unique_ptr<Stmt> Parser::ifStatement() {
+    consume(TokenType::LParen, "Expect '(' after 'if'.");
+    auto condition = expression();
+    consume(TokenType::RParen, "Expect ')' after if condition.");
+    auto thenBranch = statement();
+    std::unique_ptr<Stmt> elseBranch = nullptr;
+    if (match({TokenType::Else})) {
+        elseBranch = statement();
+    }
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::vector<std::unique_ptr<Stmt>> Parser::block() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+    while (!check(TokenType::RBrace) && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+    consume(TokenType::RBrace, "Expect '}' after block.");
+    return statements;
 }
 
 std::unique_ptr<Expr> Parser::expression() {
@@ -209,6 +232,9 @@ std::unique_ptr<Expr> number(Parser* parser) {
 }
 
 std::unique_ptr<Expr> variable(Parser* parser) {
+    if (parser->previous().text == "true") {
+        return std::make_unique<VariableExpr>(parser->previous());
+    }
     return std::make_unique<VariableExpr>(parser->previous());
 }
 
