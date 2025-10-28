@@ -5,8 +5,8 @@ This document outlines the development plan for the Chtholly programming languag
 ## Phase 1: Core Language Features
 
 - [x] Basic syntax parsing (variables, types, functions)
-- [ ] Ownership system (In Progress)
-- [ ] Type system (including generics)
+- [x] Ownership system
+- [ ] Type system (including generics) (In Progress)
 - [ ] Control flow (if/else, loops)
 - [ ] Structs
 - [ ] Operator overloading

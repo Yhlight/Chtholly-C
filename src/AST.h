@@ -3,11 +3,13 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "Type.h"
 
 // Base class for all expression nodes.
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
+    std::shared_ptr<Type> type;
 };
 
 // Expression class for numeric literals like "1.0".

@@ -10,6 +10,7 @@ void test_sema() {
         Lexer lexer(source);
         Parser parser(lexer);
         Sema sema;
+        sema.treat_int_as_move = true;
         auto ast = parser.parse_block();
         sema.visit(*ast);
         std::cerr << "Test failed: Expected an error for use of moved variable" << std::endl;
@@ -28,6 +29,7 @@ void test_sema() {
         Lexer lexer(source);
         Parser parser(lexer);
         Sema sema;
+        sema.treat_int_as_move = true;
         auto ast = parser.parse_block();
         sema.visit(*ast);
         std::cerr << "Test failed: Expected an error for assignment to moved variable" << std::endl;

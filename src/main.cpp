@@ -12,7 +12,7 @@ int main() {
     std::cout << "Hello, Chtholly!" << std::endl;
     std::cout << "Successfully initialized LLVM." << std::endl;
 
-    std::string source = "let x = 10; let y = x; let z = x;";
+    std::string source = "let x : int = 10; let y = x + 20;";
     Lexer lexer(source);
     Parser parser(lexer);
     Sema sema;

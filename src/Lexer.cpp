@@ -72,6 +72,7 @@ Token Lexer::get_token() {
         case '{': return Token::LeftBrace;
         case '}': return Token::RightBrace;
         case ',': return Token::Comma;
+        case ':': return Token::Colon;
     }
 
     return Token::Unknown;
@@ -92,6 +93,7 @@ std::string to_string(Token token) {
         case Token::LeftBrace: return "LeftBrace";
         case Token::RightBrace: return "RightBrace";
         case Token::Comma: return "Comma";
+        case Token::Colon: return "Colon";
         case Token::Unknown: return "Unknown";
         default:
             throw std::runtime_error("Unknown token");

@@ -25,6 +25,7 @@ enum class Token {
     LeftBrace,
     RightBrace,
     Comma,
+    Colon,
 
     // Unknown token
     Unknown

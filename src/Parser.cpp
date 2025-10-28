@@ -81,6 +81,25 @@ std::unique_ptr<ExprAST> Parser::parse_identifier_expression() {
     return std::make_unique<CallExprAST>(id_name, std::move(args));
 }
 
+std::shared_ptr<Type> Parser::parse_type() {
+    if (get_current_token() != Token::Identifier) {
+        throw std::runtime_error("Expected a type identifier");
+    }
+
+    std::string type_name = lexer_.get_identifier();
+    get_next_token(); // consume type identifier
+
+    if (type_name == "int") {
+        return std::make_shared<IntType>();
+    } else if (type_name == "double") {
+        return std::make_shared<DoubleType>();
+    } else if (type_name == "string") {
+        return std::make_shared<StringType>();
+    } else {
+        throw std::runtime_error("Unknown type: " + type_name);
+    }
+}
+
 std::unique_ptr<ExprAST> Parser::parse_variable_declaration() {
     bool is_mutable = get_current_token() == Token::Mut;
     get_next_token(); // consume 'let' or 'mut'
@@ -92,6 +111,12 @@ std::unique_ptr<ExprAST> Parser::parse_variable_declaration() {
     std::string name = lexer_.get_identifier();
     get_next_token(); // consume identifier
 
+    std::shared_ptr<Type> type;
+    if (get_current_token() == Token::Colon) {
+        get_next_token(); // consume ':'
+        type = parse_type();
+    }
+
     if (get_current_token() != Token::Operator || lexer_.get_operator() != '=') {
         throw std::runtime_error("expected '=' in variable declaration");
     }
@@ -102,7 +127,9 @@ std::unique_ptr<ExprAST> Parser::parse_variable_declaration() {
         return nullptr;
     }
 
-    return std::make_unique<VarDeclAST>(name, std::move(init), is_mutable);
+    auto var_decl = std::make_unique<VarDeclAST>(name, std::move(init), is_mutable);
+    var_decl->type = type;
+    return std::move(var_decl);
 }
 
 std::unique_ptr<ExprAST> Parser::parse_primary() {

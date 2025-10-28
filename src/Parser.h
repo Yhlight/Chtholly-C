@@ -17,6 +17,7 @@ public:
     std::unique_ptr<ExprAST> parse_paren_expression();
     std::unique_ptr<ExprAST> parse_identifier_expression();
     std::unique_ptr<BlockExprAST> parse_block();
+    std::shared_ptr<Type> parse_type();
 
 private:
     void get_next_token();

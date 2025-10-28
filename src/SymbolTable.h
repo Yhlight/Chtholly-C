@@ -11,10 +11,12 @@ enum class OwnershipState {
     Borrowed
 };
 
+#include "Type.h"
+
 struct Symbol {
     std::string name;
     OwnershipState state;
-    // We will add type information here later
+    std::shared_ptr<Type> type;
 };
 
 class SymbolTable {
