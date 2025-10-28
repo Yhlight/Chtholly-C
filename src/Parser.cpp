@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 std::map<char, int> Parser::bin_op_precedence_ = {
+    {'=', 2},
     {'<', 10},
     {'+', 20},
     {'-', 20},
@@ -142,8 +143,9 @@ std::unique_ptr<ExprAST> Parser::parse_bin_op_rhs(int expr_prec,
                 return nullptr;
         }
 
+        bool is_assignment = bin_op == '=';
         lhs = std::make_unique<BinaryExprAST>(bin_op, std::move(lhs),
-                                              std::move(rhs));
+                                              std::move(rhs), is_assignment);
     }
 }
 
@@ -153,6 +155,24 @@ std::unique_ptr<ExprAST> Parser::parse_expression() {
         return nullptr;
 
     return parse_bin_op_rhs(0, std::move(lhs));
+}
+
+std::unique_ptr<BlockExprAST> Parser::parse_block() {
+    std::vector<std::unique_ptr<ExprAST>> expressions;
+    while (get_current_token() != Token::Eof) {
+        auto expr = parse_expression();
+        if (!expr) {
+            return nullptr;
+        }
+        expressions.push_back(std::move(expr));
+
+        if (get_current_token() != Token::Semicolon) {
+            throw std::runtime_error("Expected ';' after expression");
+        }
+        get_next_token(); // eat ';'
+    }
+
+    return std::make_unique<BlockExprAST>(std::move(expressions));
 }
 
 std::unique_ptr<PrototypeAST> Parser::parse_prototype() {

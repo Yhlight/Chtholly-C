@@ -16,6 +16,7 @@ class NumberExprAST : public ExprAST {
 
 public:
     NumberExprAST(double val) : val_(val) {}
+    double get_val() const { return val_; }
 };
 
 // Expression class for referencing a variable, like "a".
@@ -24,17 +25,24 @@ class VariableExprAST : public ExprAST {
 
 public:
     VariableExprAST(std::string name) : name_(std::move(name)) {}
+    const std::string& get_name() const { return name_; }
 };
 
 // Expression class for a binary operator.
 class BinaryExprAST : public ExprAST {
     char op_;
     std::unique_ptr<ExprAST> lhs_, rhs_;
+    bool is_assignment_;
 
 public:
     BinaryExprAST(char op, std::unique_ptr<ExprAST> lhs,
-                  std::unique_ptr<ExprAST> rhs)
-        : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
+                  std::unique_ptr<ExprAST> rhs, bool is_assignment = false)
+        : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)), is_assignment_(is_assignment) {}
+
+    char get_op() const { return op_; }
+    ExprAST* get_lhs() const { return lhs_.get(); }
+    ExprAST* get_rhs() const { return rhs_.get(); }
+    bool is_assignment() const { return is_assignment_; }
 };
 
 // Expression class for function calls.
@@ -46,6 +54,9 @@ public:
     CallExprAST(std::string callee,
                 std::vector<std::unique_ptr<ExprAST>> args)
         : callee_(std::move(callee)), args_(std::move(args)) {}
+
+    const std::string& get_callee() const { return callee_; }
+    const std::vector<std::unique_ptr<ExprAST>>& get_args() const { return args_; }
 };
 
 // This class represents the "prototype" for a function,
@@ -58,6 +69,9 @@ class PrototypeAST {
 public:
     PrototypeAST(std::string name, std::vector<std::string> args)
         : name_(std::move(name)), args_(std::move(args)) {}
+
+    const std::string& get_name() const { return name_; }
+    const std::vector<std::string>& get_args() const { return args_; }
 };
 
 // This class represents a function definition itself.
@@ -69,6 +83,9 @@ public:
     FunctionAST(std::unique_ptr<PrototypeAST> proto,
                 std::unique_ptr<ExprAST> body)
         : proto_(std::move(proto)), body_(std::move(body)) {}
+
+    PrototypeAST* get_proto() const { return proto_.get(); }
+    ExprAST* get_body() const { return body_.get(); }
 };
 
 // Expression class for variable declarations.
@@ -80,4 +97,19 @@ class VarDeclAST : public ExprAST {
 public:
     VarDeclAST(std::string name, std::unique_ptr<ExprAST> init, bool is_mutable)
         : name_(std::move(name)), init_(std::move(init)), is_mutable_(is_mutable) {}
+
+    const std::string& get_name() const { return name_; }
+    ExprAST* get_init() const { return init_.get(); }
+    bool is_mutable() const { return is_mutable_; }
+};
+
+// A block of expressions
+class BlockExprAST : public ExprAST {
+    std::vector<std::unique_ptr<ExprAST>> expressions_;
+
+public:
+    BlockExprAST(std::vector<std::unique_ptr<ExprAST>> expressions)
+        : expressions_(std::move(expressions)) {}
+
+    const std::vector<std::unique_ptr<ExprAST>>& get_expressions() const { return expressions_; }
 };
