@@ -5,10 +5,10 @@ This document outlines the development roadmap for the Chtholly programming lang
 ## Phase 1: Project Setup
 
 - [x] Configure the development environment
-- [ ] Initialize the project structure
-- [ ] Set up the build system (CMake and Python script)
-- [ ] Create the initial `main.cpp` entry point
-- [ ] Submit the initial project structure to version control
+- [x] Initialize the project structure
+- [x] Set up the build system (CMake and Python script)
+- [x] Create the initial `main.cpp` entry point
+- [x] Submit the initial project structure to version control
 
 ## Phase 2: Lexer Implementation
 

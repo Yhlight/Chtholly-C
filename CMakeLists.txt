@@ -12,7 +12,12 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Add source files
-add_executable(chtholly src/main.cpp)
+add_executable(chtholly src/main.cpp src/Lexer.cpp)
 
 # Link against LLVM libraries
 target_link_libraries(chtholly ${LLVM_LIBRARIES})
+
+# Add tests
+enable_testing()
+add_executable(lexer_test tests/LexerTest.cpp src/Lexer.cpp)
+add_test(NAME lexer_test COMMAND lexer_test)
