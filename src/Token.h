@@ -19,6 +19,7 @@ enum class TokenType
     Double,
     String,
     Char,
+    Boolean,
 
     // Keywords
     Func, Let, Mut, Return, Struct, Public, Private,
@@ -40,7 +41,7 @@ struct Token
 {
     TokenType type;
     std::string text;
-    std::variant<std::monostate, long long, double, std::string, char> value;
+    std::variant<std::monostate, long long, double, std::string, char, bool> value;
     int line = 0;
     int column = 0;
 

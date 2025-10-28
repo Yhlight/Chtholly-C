@@ -63,6 +63,11 @@ private:
         return parenthesize(expr.op.text, expr.right.get());
     }
 
+    std::any visitBooleanLiteralExpr(BooleanLiteralExpr& expr) override
+    {
+        return expr.value.text;
+    }
+
     std::any visitVariableExpr(VariableExpr& expr) override
     {
         return expr.name.text;
@@ -107,6 +112,13 @@ private:
             out << std::any_cast<std::string>(stmt.elseBranch->accept(*this));
         }
         out << ")\n";
+        return out.str();
+    }
+
+    std::any visitWhileStmt(WhileStmt& stmt) override {
+        std::stringstream out;
+        out << "(while " << std::any_cast<std::string>(stmt.condition->accept(*this)) << " ";
+        out << std::any_cast<std::string>(stmt.body->accept(*this)) << ")\n";
         return out.str();
     }
 };

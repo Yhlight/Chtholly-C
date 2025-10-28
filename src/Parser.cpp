@@ -26,6 +26,7 @@ std::unique_ptr<Expr> grouping(Parser* parser);
 std::unique_ptr<Expr> unary(Parser* parser);
 std::unique_ptr<Expr> binary(Parser* parser, std::unique_ptr<Expr> left);
 std::unique_ptr<Expr> number(Parser* parser);
+std::unique_ptr<Expr> boolean(Parser* parser);
 std::unique_ptr<Expr> variable(Parser* parser);
 
 // --- Rules Table ---
@@ -45,6 +46,7 @@ void initializeRules() {
     rules[TokenType::Greater]       = {nullptr,  binary,     PREC_COMPARISON};
     rules[TokenType::GreaterEqual]  = {nullptr,  binary,     PREC_COMPARISON};
     rules[TokenType::Integer]       = {number,   nullptr,    PREC_NONE};
+    rules[TokenType::Boolean]       = {boolean,  nullptr,    PREC_NONE};
     rules[TokenType::Identifier]    = {variable, nullptr,    PREC_NONE};
 }
 
@@ -94,6 +96,7 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
 
 std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::If})) return ifStatement();
+    if (match({TokenType::While})) return whileStatement();
     if (match({TokenType::LBrace})) return std::make_unique<BlockStmt>(block());
     auto expr = expression();
     consume(TokenType::Semicolon, "Expect ';' after expression statement.");
@@ -110,6 +113,14 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
         elseBranch = statement();
     }
     return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<Stmt> Parser::whileStatement() {
+    consume(TokenType::LParen, "Expect '(' after 'while'.");
+    auto condition = expression();
+    consume(TokenType::RParen, "Expect ')' after while condition.");
+    auto body = statement();
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
@@ -231,10 +242,11 @@ std::unique_ptr<Expr> number(Parser* parser) {
     return std::make_unique<NumberLiteralExpr>(parser->previous());
 }
 
+std::unique_ptr<Expr> boolean(Parser* parser) {
+    return std::make_unique<BooleanLiteralExpr>(parser->previous());
+}
+
 std::unique_ptr<Expr> variable(Parser* parser) {
-    if (parser->previous().text == "true") {
-        return std::make_unique<VariableExpr>(parser->previous());
-    }
     return std::make_unique<VariableExpr>(parser->previous());
 }
 

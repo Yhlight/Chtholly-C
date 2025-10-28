@@ -14,12 +14,14 @@ class AssignExpr;
 class BinaryExpr;
 class GroupingExpr;
 class NumberLiteralExpr;
+class BooleanLiteralExpr;
 class UnaryExpr;
 class VariableExpr;
 class VarDeclStmt;
 class BlockStmt;
 class ExprStmt;
 class IfStmt;
+class WhileStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -48,6 +50,7 @@ public:
     virtual std::any visitBinaryExpr(BinaryExpr& expr) = 0;
     virtual std::any visitGroupingExpr(GroupingExpr& expr) = 0;
     virtual std::any visitNumberLiteralExpr(NumberLiteralExpr& expr) = 0;
+    virtual std::any visitBooleanLiteralExpr(BooleanLiteralExpr& expr) = 0;
     virtual std::any visitUnaryExpr(UnaryExpr& expr) = 0;
     virtual std::any visitVariableExpr(VariableExpr& expr) = 0;
 };
@@ -60,6 +63,7 @@ public:
     virtual std::any visitBlockStmt(BlockStmt& stmt) = 0;
     virtual std::any visitExprStmt(ExprStmt& stmt) = 0;
     virtual std::any visitIfStmt(IfStmt& stmt) = 0;
+    virtual std::any visitWhileStmt(WhileStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -107,6 +111,16 @@ public:
     Token number;
 
     std::any accept(ExprVisitor& visitor) override { return visitor.visitNumberLiteralExpr(*this); }
+};
+
+class BooleanLiteralExpr : public Expr
+{
+public:
+    BooleanLiteralExpr(Token value) : value(std::move(value)) {}
+
+    Token value;
+
+    std::any accept(ExprVisitor& visitor) override { return visitor.visitBooleanLiteralExpr(*this); }
 };
 
 class UnaryExpr : public Expr
@@ -176,6 +190,18 @@ public:
     std::unique_ptr<Stmt> elseBranch;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitIfStmt(*this); }
+};
+
+class WhileStmt : public Stmt
+{
+public:
+    WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body)) {}
+
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> body;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitWhileStmt(*this); }
 };
 
 

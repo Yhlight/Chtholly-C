@@ -161,6 +161,9 @@ Token Lexer::identifier()
     if (keywords.count(text))
     {
         type = keywords.at(text);
+    } else if (text == "true" || text == "false") {
+        type = TokenType::Boolean;
+        return {type, text, text == "true", line, (int)start};
     }
 
     return {type, text, text, line, (int)start};

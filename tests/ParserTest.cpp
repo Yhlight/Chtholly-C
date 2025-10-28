@@ -62,3 +62,9 @@ TEST(ParserTest, ParseIfElseStatement) {
     std::string expected = "(if true { \n(expr 1)\n} else { \n(expr 2)\n})\n";
     EXPECT_EQ(getAST(source), expected);
 }
+
+TEST(ParserTest, ParseWhileStatement) {
+    std::string source = "while (true) { 1; }";
+    std::string expected = "(while true { \n(expr 1)\n})\n";
+    EXPECT_EQ(getAST(source), expected);
+}
