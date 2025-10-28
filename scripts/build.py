@@ -31,6 +31,12 @@ def main():
     cmake_build_command = ["cmake", "--build", "."]
     run_command(cmake_build_command, cwd=build_dir)
 
+    # Run the tests
+    ctest_command = ["ctest", "--output-on-failure"]
+    print("\\n--- Running Tests ---")
+    run_command(ctest_command, cwd=build_dir)
+    print("--- Tests finished ---\\n")
+
     # Run the executable
     executable_path = os.path.join(build_dir, "chtholly")
     if os.path.exists(executable_path):

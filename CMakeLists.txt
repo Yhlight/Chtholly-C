@@ -12,3 +12,14 @@ add_definitions(${LLVM_DEFINITIONS})
 add_executable(chtholly src/main.cpp)
 
 target_link_libraries(chtholly PRIVATE ${LLVM_LIBRARIES})
+
+# Google Test
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+add_subdirectory(tests)
