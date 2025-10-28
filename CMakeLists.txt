@@ -13,7 +13,7 @@ message(STATUS "LLVM library dir: ${LLVM_LIBRARY_DIR}")
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(chthollyc src/main.cpp)
+add_executable(chthollyc src/main.cpp src/Lexer.cpp src/Parser.cpp)
 
 # Get the list of libraries for the specified components
 llvm_map_components_to_libnames(chtholly_libs core support)
