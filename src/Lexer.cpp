@@ -1,4 +1,5 @@
 #include "Lexer.h"
+#include "Token.h"
 #include <cctype>
 #include <stdexcept>
 
@@ -40,6 +41,7 @@ Token Lexer::get_token() {
         if (identifier_ == "import") return Token::Import;
         if (identifier_ == "impl") return Token::Impl;
         if (identifier_ == "for") return Token::For;
+        if (identifier_ == "trait") return Token::Trait;
         return Token::Identifier;
     }
 
@@ -89,33 +91,3 @@ Token Lexer::get_token() {
     return Token::Unknown;
 }
 
-std::string to_string(Token token) {
-    switch (token) {
-        case Token::Eof: return "Eof";
-        case Token::Func: return "Func";
-        case Token::Let: return "Let";
-        case Token::Mut: return "Mut";
-        case Token::If: return "If";
-        case Token::Else: return "Else";
-        case Token::Struct: return "Struct";
-        case Token::While: return "While";
-        case Token::Import: return "Import";
-        case Token::Impl: return "Impl";
-        case Token::For: return "For";
-        case Token::Identifier: return "Identifier";
-        case Token::Number: return "Number";
-        case Token::Operator: return "Operator";
-        case Token::Semicolon: return "Semicolon";
-        case Token::LeftParen: return "LeftParen";
-        case Token::RightParen: return "RightParen";
-        case Token::LeftBrace: return "LeftBrace";
-        case Token::RightBrace: return "RightBrace";
-        case Token::LeftBracket: return "LeftBracket";
-        case Token::RightBracket: return "RightBracket";
-        case Token::Comma: return "Comma";
-        case Token::Colon: return "Colon";
-        case Token::Unknown: return "Unknown";
-        default:
-            throw std::runtime_error("Unknown token");
-    }
-}

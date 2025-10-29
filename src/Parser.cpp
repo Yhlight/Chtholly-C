@@ -436,27 +436,39 @@ std::unique_ptr<BlockExprAST> Parser::parse_block() {
 }
 
 std::unique_ptr<PrototypeAST> Parser::parse_prototype() {
-    if (get_current_token() != Token::Identifier) {
+    if (get_current_token() != Token::Identifier)
         throw std::runtime_error("Expected function name in prototype");
-    }
 
     std::string fn_name = lexer_.get_identifier();
     get_next_token();
 
-    if (get_current_token() != Token::LeftParen) {
+    if (get_current_token() != Token::LeftParen)
         throw std::runtime_error("Expected '(' in prototype");
-    }
 
+    // Eat '('.
     get_next_token();
+
     std::vector<std::string> arg_names;
-    while (get_current_token() == Token::Identifier) {
+    // Check for arguments.
+    if (get_current_token() != Token::RightParen) {
+        if (get_current_token() != Token::Identifier)
+            throw std::runtime_error("Expected identifier in prototype");
         arg_names.push_back(lexer_.get_identifier());
         get_next_token();
+
+        while (get_current_token() == Token::Comma) {
+            get_next_token(); // Eat ','.
+
+            if (get_current_token() != Token::Identifier)
+                throw std::runtime_error("Expected identifier after comma in prototype");
+
+            arg_names.push_back(lexer_.get_identifier());
+            get_next_token(); // Eat identifier.
+        }
     }
 
-    if (get_current_token() != Token::RightParen) {
+    if (get_current_token() != Token::RightParen)
         throw std::runtime_error("Expected ')' in prototype");
-    }
 
     get_next_token(); // eat ')'.
 
@@ -469,11 +481,19 @@ std::unique_ptr<ExprAST> Parser::parse_definition() {
     if (!proto)
         return nullptr;
 
-    if (auto e = parse_expression()) {
-        return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
-    }
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after function prototype");
+    get_next_token(); // eat the '{'.
 
-    return nullptr;
+    auto body = parse_block();
+    if (!body)
+        return nullptr;
+
+    if (get_current_token() != Token::RightBrace)
+        throw std::runtime_error("expected '}' after function body");
+    get_next_token(); // eat the '}'.
+
+    return std::make_unique<FunctionAST>(std::move(proto), std::move(body));
 }
 
 std::unique_ptr<ExprAST> Parser::parse_import_statement() {
@@ -500,9 +520,39 @@ std::unique_ptr<ModuleAST> Parser::parse_module() {
             expressions.push_back(parse_definition());
         } else if (get_current_token() == Token::Struct) {
             expressions.push_back(parse_struct_declaration());
+        } else if (get_current_token() == Token::Trait) {
+            expressions.push_back(parse_trait_declaration());
         } else {
             expressions.push_back(parse_expression());
         }
     }
     return std::make_unique<ModuleAST>(std::move(expressions));
+}
+
+std::unique_ptr<ExprAST> Parser::parse_trait_declaration() {
+    get_next_token(); // eat the trait.
+
+    if (get_current_token() != Token::Identifier)
+        throw std::runtime_error("expected identifier after trait");
+    std::string name = lexer_.get_identifier();
+    get_next_token(); // eat the identifier.
+
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after trait name");
+    get_next_token(); // eat the '{'.
+
+    std::vector<std::unique_ptr<PrototypeAST>> methods;
+    while (get_current_token() != Token::RightBrace) {
+        if (get_current_token() != Token::Func)
+            throw std::runtime_error("expected 'func' in trait");
+        get_next_token(); // eat the 'func'.
+        methods.push_back(parse_prototype());
+        if (get_current_token() != Token::Semicolon)
+            throw std::runtime_error("expected ';' after trait method");
+        get_next_token(); // eat the ';'.
+    }
+
+    get_next_token(); // eat the '}'.
+
+    return std::make_unique<TraitDeclAST>(name, std::move(methods));
 }

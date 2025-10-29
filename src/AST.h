@@ -116,6 +116,19 @@ public:
     const std::vector<std::unique_ptr<ExprAST>>& get_expressions() const { return expressions_; }
 };
 
+// Expression class for trait declarations.
+class TraitDeclAST : public ExprAST {
+    std::string name_;
+    std::vector<std::unique_ptr<PrototypeAST>> methods_;
+
+public:
+    TraitDeclAST(std::string name, std::vector<std::unique_ptr<PrototypeAST>> methods)
+        : name_(std::move(name)), methods_(std::move(methods)) {}
+
+    const std::string& get_name() const { return name_; }
+    const std::vector<std::unique_ptr<PrototypeAST>>& get_methods() const { return methods_; }
+};
+
 // Expression class for for loops.
 class ForExprAST : public ExprAST {
     std::unique_ptr<ExprAST> start_;

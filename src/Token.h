@@ -17,6 +17,7 @@ enum class Token {
     Import,
     Impl,
     For,
+    Trait,
 
     // Primary
     Identifier,

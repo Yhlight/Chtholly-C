@@ -367,6 +367,96 @@ void test_for_loop_parsing() {
     std::cout << "For loop parsing test passed!" << std::endl;
 }
 
+void test_trait_parsing() {
+    std::string source = "trait MyTrait { func foo(); func bar(x); }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_module();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for trait" << std::endl;
+        exit(1);
+    }
+
+    const auto& expressions = ast->get_expressions();
+    if (expressions.size() != 1) {
+        std::cerr << "Test failed: Expected 1 expression in module for trait" << std::endl;
+        exit(1);
+    }
+
+    auto trait_decl = dynamic_cast<TraitDeclAST*>(expressions[0].get());
+    if (trait_decl == nullptr) {
+        std::cerr << "Test failed: Expected a TraitDeclAST" << std::endl;
+        exit(1);
+    }
+
+    if (trait_decl->get_name() != "MyTrait") {
+        std::cerr << "Test failed: Expected trait name 'MyTrait'" << std::endl;
+        exit(1);
+    }
+
+    const auto& methods = trait_decl->get_methods();
+    if (methods.size() != 2) {
+        std::cerr << "Test failed: Expected 2 methods in trait" << std::endl;
+        exit(1);
+    }
+
+    if (methods[0]->get_name() != "foo") {
+        std::cerr << "Test failed: Expected method 'foo' in trait" << std::endl;
+        exit(1);
+    }
+
+    if (methods[1]->get_name() != "bar") {
+        std::cerr << "Test failed: Expected method 'bar' in trait" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Trait parsing test passed!" << std::endl;
+}
+
+void test_function_parsing() {
+    std::string source = "func my_func(a, b) { let x = a + b; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_module();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for function" << std::endl;
+        exit(1);
+    }
+
+    const auto& expressions = ast->get_expressions();
+    if (expressions.size() != 1) {
+        std::cerr << "Test failed: Expected 1 expression in module for function" << std::endl;
+        exit(1);
+    }
+
+    auto func_decl = dynamic_cast<FunctionAST*>(expressions[0].get());
+    if (func_decl == nullptr) {
+        std::cerr << "Test failed: Expected a FunctionAST" << std::endl;
+        exit(1);
+    }
+
+    if (func_decl->get_proto()->get_name() != "my_func") {
+        std::cerr << "Test failed: Expected function name 'my_func'" << std::endl;
+        exit(1);
+    }
+
+    if (func_decl->get_proto()->get_args().size() != 2) {
+        std::cerr << "Test failed: Expected 2 arguments in function" << std::endl;
+        exit(1);
+    }
+
+    if (func_decl->get_body() == nullptr) {
+        std::cerr << "Test failed: Expected a body in function" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Function parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
@@ -377,5 +467,7 @@ int main() {
     test_module_parsing();
     test_impl_clause_parsing();
     test_for_loop_parsing();
+    test_trait_parsing();
+    test_function_parsing();
     return 0;
 }

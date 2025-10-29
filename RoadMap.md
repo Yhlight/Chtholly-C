@@ -17,6 +17,7 @@ This document outlines the development plan for the Chtholly programming languag
   - [x] Struct instantiation
 - [ ] Operator overloading
   - [x] `impl` clause parsing
+  - [x] `trait` declaration parsing
 - [x] Modules and imports
 
 ## Phase 2: Standard Library

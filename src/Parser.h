@@ -20,6 +20,7 @@ public:
     std::unique_ptr<ExprAST> parse_struct_declaration();
     std::unique_ptr<ExprAST> parse_while_expression();
     std::unique_ptr<ExprAST> parse_for_expression();
+    std::unique_ptr<ExprAST> parse_trait_declaration();
     std::unique_ptr<ExprAST> parse_import_statement();
     std::unique_ptr<ModuleAST> parse_module();
     std::unique_ptr<BlockExprAST> parse_block();
