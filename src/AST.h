@@ -76,6 +76,16 @@ public:
     std::vector<std::unique_ptr<Expression>> arguments;
 };
 
+class IfExpression : public Expression {
+public:
+    IfExpression(Token token, std::unique_ptr<Expression> condition, std::unique_ptr<BlockStatement> consequence, std::unique_ptr<BlockStatement> alternative)
+        : token(std::move(token)), condition(std::move(condition)), consequence(std::move(consequence)), alternative(std::move(alternative)) {}
+    Token token; // The 'if' token
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<BlockStatement> consequence;
+    std::unique_ptr<BlockStatement> alternative;
+};
+
 
 // Statements
 class ExpressionStatement : public Statement {

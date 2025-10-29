@@ -9,6 +9,7 @@ Parser::Parser(Lexer& lexer) : lexer(lexer) {
 
     registerPrefix(TokenType::Identifier, &Parser::parseIdentifier);
     registerPrefix(TokenType::Integer, &Parser::parseIntegerLiteral);
+    registerPrefix(TokenType::If, &Parser::parseIfExpression);
 
     registerInfix(TokenType::Plus, &Parser::parseInfixExpression);
     registerInfix(TokenType::Minus, &Parser::parseInfixExpression);
@@ -209,6 +210,23 @@ std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
     }
     if (!expectPeek(TokenType::RParen)) return {};
     return args;
+}
+
+std::unique_ptr<Expression> Parser::parseIfExpression() {
+    Token ifToken = currentToken;
+    if (!expectPeek(TokenType::LParen)) return nullptr;
+    nextToken();
+    auto condition = parseExpression(Precedence::LOWEST);
+    if (!expectPeek(TokenType::RParen)) return nullptr;
+    if (!expectPeek(TokenType::LBrace)) return nullptr;
+    auto consequence = parseBlockStatement();
+    std::unique_ptr<BlockStatement> alternative = nullptr;
+    if (peekToken.type == TokenType::Else) {
+        nextToken();
+        if (!expectPeek(TokenType::LBrace)) return nullptr;
+        alternative = parseBlockStatement();
+    }
+    return std::make_unique<IfExpression>(ifToken, std::move(condition), std::move(consequence), std::move(alternative));
 }
 
 } // namespace Chtholly

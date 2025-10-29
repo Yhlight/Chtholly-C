@@ -32,6 +32,7 @@ private:
     llvm::Value* generate(BlockStatement* node);
     llvm::Value* generate(FunctionDeclaration* node);
     llvm::Value* generate(FunctionCall* node);
+    llvm::Value* generate(IfExpression* node);
 };
 
 } // namespace Chtholly

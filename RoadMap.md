@@ -30,6 +30,7 @@ This document outlines the development roadmap for the Chtholly programming lang
   - [x] Binary Expressions
   - [x] Return Statements
   - [x] Functions
+  - [x] If/Else Expressions
 - [ ] Add tests for the code generator
 
 ## Phase 5: CLI

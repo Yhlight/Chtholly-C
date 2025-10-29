@@ -68,6 +68,9 @@ llvm::Value* CodeGen::generate(ASTNode* node) {
     if (auto* funcCall = dynamic_cast<FunctionCall*>(node)) {
         return generate(funcCall);
     }
+    if (auto* ifExpr = dynamic_cast<IfExpression*>(node)) {
+        return generate(ifExpr);
+    }
     // Add other node types here...
     return nullptr;
 }
@@ -191,6 +194,35 @@ llvm::Value* CodeGen::generate(FunctionCall* node) {
     }
 
     return builder->CreateCall(calleeFunc, argsV, "calltmp");
+}
+
+llvm::Value* CodeGen::generate(IfExpression* node) {
+    llvm::Value* condV = generate(node->condition.get());
+    if (!condV) return nullptr;
+
+    condV = builder->CreateICmpNE(condV, llvm::ConstantInt::get(*context, llvm::APInt(1, 0)), "ifcond");
+
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "then", function);
+    llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*context, "else", function);
+    llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "ifcont", function);
+
+    builder->CreateCondBr(condV, thenBB, elseBB);
+
+    builder->SetInsertPoint(thenBB);
+    generate(node->consequence.get());
+    builder->CreateBr(mergeBB);
+
+    builder->SetInsertPoint(elseBB);
+    if (node->alternative) {
+        generate(node->alternative.get());
+    }
+    builder->CreateBr(mergeBB);
+
+    builder->SetInsertPoint(mergeBB);
+
+    return nullptr;
 }
 
 } // namespace Chtholly
