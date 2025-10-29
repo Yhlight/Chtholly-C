@@ -5,6 +5,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include <memory>
 #include <string>
+#include <map>
 
 namespace Chtholly {
 
@@ -17,11 +18,17 @@ private:
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
+    std::map<std::string, llvm::AllocaInst*> namedValues;
 
     llvm::Value* generate(ASTNode* node);
+    llvm::Value* generate(Identifier* node);
     llvm::Value* generate(IntegerLiteral* node);
+    llvm::Value* generate(DoubleLiteral* node);
+    llvm::Value* generate(StringLiteral* node);
     llvm::Value* generate(VariableDeclaration* node);
     llvm::Value* generate(BinaryExpression* node);
+    llvm::Value* generate(ExpressionStatement* node);
+    llvm::Value* generate(ReturnStatement* node);
 };
 
 } // namespace Chtholly

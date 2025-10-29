@@ -34,8 +34,17 @@ void CodeGen::generate(Program& program, std::string& out) {
 }
 
 llvm::Value* CodeGen::generate(ASTNode* node) {
+    if (auto* ident = dynamic_cast<Identifier*>(node)) {
+        return generate(ident);
+    }
     if (auto* intLit = dynamic_cast<IntegerLiteral*>(node)) {
         return generate(intLit);
+    }
+    if (auto* doubleLit = dynamic_cast<DoubleLiteral*>(node)) {
+        return generate(doubleLit);
+    }
+    if (auto* stringLit = dynamic_cast<StringLiteral*>(node)) {
+        return generate(stringLit);
     }
     if (auto* varDecl = dynamic_cast<VariableDeclaration*>(node)) {
         return generate(varDecl);
@@ -43,12 +52,35 @@ llvm::Value* CodeGen::generate(ASTNode* node) {
     if (auto* binExpr = dynamic_cast<BinaryExpression*>(node)) {
         return generate(binExpr);
     }
+    if (auto* exprStmt = dynamic_cast<ExpressionStatement*>(node)) {
+        return generate(exprStmt);
+    }
+    if (auto* retStmt = dynamic_cast<ReturnStatement*>(node)) {
+        return generate(retStmt);
+    }
     // Add other node types here...
     return nullptr;
 }
 
 llvm::Value* CodeGen::generate(IntegerLiteral* node) {
     return llvm::ConstantInt::get(*context, llvm::APInt(64, node->value, true));
+}
+
+llvm::Value* CodeGen::generate(DoubleLiteral* node) {
+    return llvm::ConstantFP::get(*context, llvm::APFloat(node->value));
+}
+
+llvm::Value* CodeGen::generate(StringLiteral* node) {
+    return builder->CreateGlobalStringPtr(node->token.literal);
+}
+
+llvm::Value* CodeGen::generate(Identifier* node) {
+    llvm::AllocaInst* alloca = namedValues[node->token.literal];
+    if (!alloca) {
+        // Handle error: unknown variable
+        return nullptr;
+    }
+    return builder->CreateLoad(alloca->getAllocatedType(), alloca, node->token.literal);
 }
 
 llvm::Value* CodeGen::generate(VariableDeclaration* node) {
@@ -60,6 +92,9 @@ llvm::Value* CodeGen::generate(VariableDeclaration* node) {
 
     // Store the initial value
     builder->CreateStore(value, alloca);
+
+    // Add to named values map
+    namedValues[node->name->token.literal] = alloca;
 
     return alloca;
 }
@@ -81,6 +116,15 @@ llvm::Value* CodeGen::generate(BinaryExpression* node) {
         default:
             return nullptr;
     }
+}
+
+llvm::Value* CodeGen::generate(ExpressionStatement* node) {
+    return generate(node->expression.get());
+}
+
+llvm::Value* CodeGen::generate(ReturnStatement* node) {
+    llvm::Value* returnValue = generate(node->returnValue.get());
+    return builder->CreateRet(returnValue);
 }
 
 } // namespace Chtholly

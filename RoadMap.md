@@ -24,7 +24,11 @@ This document outlines the development roadmap for the Chtholly programming lang
 
 ## Phase 4: Code Generation
 
-- [ ] Implement the code generator in `CodeGen.cpp`
+- [x] Implement the code generator in `CodeGen.cpp`
+  - [x] Integer, Double, and String Literals
+  - [x] Variable Declarations and Identifiers
+  - [x] Binary Expressions
+  - [x] Return Statements
 - [ ] Add tests for the code generator
 
 ## Phase 5: CLI
