@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 add_executable(run_tests
     LexerTest.cpp
     ParserTest.cpp
+    ForLoopTest.cpp
     ../src/Lexer.cpp
     ../src/Parser.cpp
 )

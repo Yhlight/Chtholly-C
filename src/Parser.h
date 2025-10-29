@@ -45,6 +45,7 @@ private:
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
+    std::unique_ptr<Stmt> forStatement();
     std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> primary();

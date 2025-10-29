@@ -117,6 +117,10 @@ class BooleanLiteralExpr : public Expr
 {
 public:
     BooleanLiteralExpr(Token value) : value(std::move(value)) {}
+    BooleanLiteralExpr(bool val) {
+        value.type = TokenType::Boolean;
+        value.value = val;
+    }
 
     Token value;
 
