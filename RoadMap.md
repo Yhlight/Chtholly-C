@@ -32,7 +32,10 @@ This document outlines the development roadmap for the Chtholly programming lang
   - [x] Functions
   - [x] If/Else Expressions
   - [x] While Loops
-- [ ] Add tests for the code generator
+- [x] Add tests for the code generator
+  - [x] Logical Operators
+  - [x] Nested Control Flow
+  - [x] Floating-Point Numbers
 
 ## Phase 5: CLI
 

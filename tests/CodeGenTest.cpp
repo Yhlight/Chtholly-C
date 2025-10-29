@@ -87,11 +87,63 @@ void test_while_statement_code_generation() {
     assert(ir.find("br label %loopcond") != std::string::npos);
 }
 
+void test_logical_operators_code_generation() {
+    std::string source = "let a = 10; let b = 20; if (a > 5 && b > 15) { return 1; } else { return 0; }";
+    Chtholly::Lexer lexer(source);
+    Chtholly::Parser parser(lexer);
+    auto program = parser.parseProgram();
+
+    Chtholly::CodeGen codegen;
+    std::string ir;
+    codegen.generate(*program, ir);
+
+    assert(ir.find("icmp sgt i64") != std::string::npos);
+    assert(ir.find("and i1") != std::string::npos);
+}
+
+void test_nested_control_flow_code_generation() {
+    std::string source = "let a = 0; while (a < 10) { if (a == 5) { return 1; } a = a + 1; } return 0;";
+    Chtholly::Lexer lexer(source);
+    Chtholly::Parser parser(lexer);
+    auto program = parser.parseProgram();
+
+    Chtholly::CodeGen codegen;
+    std::string ir;
+    codegen.generate(*program, ir);
+
+    assert(ir.find("loopcond:") != std::string::npos);
+    assert(ir.find("loopbody:") != std::string::npos);
+    assert(ir.find("loopexit:") != std::string::npos);
+    assert(ir.find("ifcond:") != std::string::npos);
+    assert(ir.find("then:") != std::string::npos);
+    assert(ir.find("ret i64 1") != std::string::npos);
+    assert(ir.find("ifcont:") != std::string::npos);
+}
+
+void test_double_code_generation() {
+    std::string source = "let a = 10.5; let b = a + 1.0;";
+    Chtholly::Lexer lexer(source);
+    Chtholly::Parser parser(lexer);
+    auto program = parser.parseProgram();
+
+    Chtholly::CodeGen codegen;
+    std::string ir;
+    codegen.generate(*program, ir);
+
+    assert(ir.find("%a = alloca double") != std::string::npos);
+    assert(ir.find("store double 1.050000e+01, ptr %a") != std::string::npos);
+    assert(ir.find("%b = alloca double") != std::string::npos);
+    assert(ir.find("fadd double") != std::string::npos);
+}
+
 int main() {
     test_simple_code_generation();
     test_binary_expression_code_generation();
     test_function_code_generation();
     test_if_else_expression_code_generation();
     test_while_statement_code_generation();
+    test_logical_operators_code_generation();
+    test_nested_control_flow_code_generation();
+    test_double_code_generation();
     return 0;
 }
