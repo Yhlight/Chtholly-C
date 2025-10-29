@@ -77,9 +77,6 @@ private:
     {
         std::stringstream out;
         out << "(var " << stmt.name.text;
-        if (stmt.type.type != TokenType::Unknown) {
-            out << ": " << stmt.type.text;
-        }
         if (stmt.initializer)
         {
             out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
@@ -122,65 +119,6 @@ private:
         std::stringstream out;
         out << "(while " << std::any_cast<std::string>(stmt.condition->accept(*this)) << " ";
         out << std::any_cast<std::string>(stmt.body->accept(*this)) << ")\n";
-        return out.str();
-    }
-
-    std::any visitSwitchStmt(SwitchStmt& stmt) override {
-        std::stringstream out;
-        out << "(switch " << std::any_cast<std::string>(stmt.expression->accept(*this)) << " { ";
-        for (const auto& c : stmt.cases) {
-            out << std::any_cast<std::string>(c->accept(*this)) << " ";
-        }
-        out << "})";
-        return out.str();
-    }
-
-    std::any visitCaseStmt(CaseStmt& stmt) override {
-        std::stringstream out;
-        out << "(case " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ": ";
-        out << std::any_cast<std::string>(stmt.body->accept(*this)) << ")";
-        return out.str();
-    }
-
-    std::any visitBreakStmt(BreakStmt& stmt) override {
-        return std::string("(break;)\n");
-    }
-
-    std::any visitFallthroughStmt(FallthroughStmt& stmt) override {
-        return std::string("(fallthrough;)\n");
-    }
-
-    std::any visitFunctionStmt(FunctionStmt& stmt) override {
-        std::stringstream out;
-        out << "(func " << stmt.name.text << "(";
-        for (size_t i = 0; i < stmt.params.size(); ++i) {
-            out << stmt.params[i].name.text << ": " << stmt.params[i].type.text;
-            if (i < stmt.params.size() - 1) {
-                out << ", ";
-            }
-        }
-        out << ")";
-        if (stmt.returnType.type != TokenType::Unknown) {
-            out << " -> " << stmt.returnType.text;
-        }
-        out << " ";
-        if (stmt.body) {
-            out << std::any_cast<std::string>(stmt.body->accept(*this));
-        }
-        out << ")";
-        return out.str();
-    }
-
-    std::any visitStructStmt(StructStmt& stmt) override {
-        std::stringstream out;
-        out << "(struct " << stmt.name.text << " { ";
-        for (const auto& field : stmt.fields) {
-            out << std::any_cast<std::string>(field->accept(*this)) << " ";
-        }
-        for (const auto& method : stmt.methods) {
-            out << std::any_cast<std::string>(method->accept(*this)) << " ";
-        }
-        out << "})";
         return out.str();
     }
 };

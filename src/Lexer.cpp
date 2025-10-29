@@ -20,7 +20,6 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"fallthrough", TokenType::Fallthrough},
     {"for", TokenType::For},
     {"while", TokenType::While},
-    {"break", TokenType::Break},
     {"import", TokenType::Import},
 };
 
@@ -71,7 +70,6 @@ Token Lexer::nextToken()
         case '[': return makeToken(TokenType::LBracket);
         case ']': return makeToken(TokenType::RBracket);
         case ';': return makeToken(TokenType::Semicolon);
-        case ':': return makeToken(TokenType::Colon);
         case ',': return makeToken(TokenType::Comma);
         case '.': return makeToken(TokenType::Unknown); // Dot not implemented yet
         case '+': return makeToken(TokenType::Plus);

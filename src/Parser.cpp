@@ -74,9 +74,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
-        if (match({TokenType::Func})) return functionDeclaration();
-        if (match({TokenType::Let})) return varStatement();
-        if (match({TokenType::Struct})) return structDeclaration();
+        if (match({TokenType::Let})) return varDeclaration();
         return statement();
     } catch (const std::runtime_error& error) {
         synchronize();
@@ -86,33 +84,19 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::unique_ptr<Stmt> Parser::varStatement() {
-    auto var = varDeclaration();
-    consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
-    return var;
-}
-
 std::unique_ptr<Stmt> Parser::varDeclaration() {
     Token name = consume(TokenType::Identifier, "Expect variable name.");
-    Token type;
-    type.type = TokenType::Unknown;
-    if (match({TokenType::Colon})) {
-        type = consume(TokenType::Identifier, "Expect type annotation.");
-    }
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::Assign})) {
         initializer = expression();
     }
-    return std::make_unique<VarDeclStmt>(name, type, std::move(initializer));
+    consume(TokenType::Semicolon, "Expect ';' after variable declaration.");
+    return std::make_unique<VarDeclStmt>(name, std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::If})) return ifStatement();
     if (match({TokenType::While})) return whileStatement();
-    if (match({TokenType::For})) return forStatement();
-    if (match({TokenType::Switch})) return switchStatement();
-    if (match({TokenType::Break})) return breakStatement();
-    if (match({TokenType::Fallthrough})) return fallthroughStatement();
     if (match({TokenType::LBrace})) return std::make_unique<BlockStmt>(block());
     auto expr = expression();
     consume(TokenType::Semicolon, "Expect ';' after expression statement.");
@@ -138,142 +122,6 @@ std::unique_ptr<Stmt> Parser::whileStatement() {
     auto body = statement();
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 }
-
-std::unique_ptr<Stmt> Parser::forStatement() {
-    consume(TokenType::LParen, "Expect '(' after 'for'.");
-
-    std::unique_ptr<Stmt> initializer;
-    if (match({TokenType::Semicolon})) {
-        initializer = nullptr;
-    } else if (match({TokenType::Let})) {
-        initializer = varStatement();
-    } else {
-        initializer = std::make_unique<ExprStmt>(expression());
-    }
-
-    std::unique_ptr<Expr> condition = nullptr;
-    if (!check(TokenType::Semicolon)) {
-        condition = expression();
-    }
-    consume(TokenType::Semicolon, "Expect ';' after loop condition.");
-
-    std::unique_ptr<Expr> increment = nullptr;
-    if (!check(TokenType::RParen)) {
-        increment = expression();
-    }
-    consume(TokenType::RParen, "Expect ')' after for clauses.");
-
-    auto body = statement();
-
-    if (increment != nullptr) {
-        std::vector<std::unique_ptr<Stmt>> blockStmts;
-        blockStmts.push_back(std::move(body));
-        blockStmts.push_back(std::make_unique<ExprStmt>(std::move(increment)));
-        body = std::make_unique<BlockStmt>(std::move(blockStmts));
-    }
-
-    if (condition == nullptr) {
-        condition = std::make_unique<BooleanLiteralExpr>(true);
-    }
-
-    body = std::make_unique<WhileStmt>(std::move(condition), std::move(body));
-
-    if (initializer != nullptr) {
-        std::vector<std::unique_ptr<Stmt>> blockStmts;
-        blockStmts.push_back(std::move(initializer));
-        blockStmts.push_back(std::move(body));
-        body = std::make_unique<BlockStmt>(std::move(blockStmts));
-    }
-
-    return body;
-}
-
-std::unique_ptr<Stmt> Parser::switchStatement() {
-    consume(TokenType::LParen, "Expect '(' after 'switch'.");
-    auto condition = expression();
-    consume(TokenType::RParen, "Expect ')' after switch condition.");
-    consume(TokenType::LBrace, "Expect '{' before switch cases.");
-
-    std::vector<std::unique_ptr<Stmt>> cases;
-    while (!check(TokenType::RBrace) && !isAtEnd()) {
-        consume(TokenType::Case, "Expect 'case' in switch statement.");
-        auto caseExpr = expression();
-        consume(TokenType::Colon, "Expect ':' after case expression.");
-        auto body = statement();
-        cases.push_back(std::make_unique<CaseStmt>(std::move(caseExpr), std::move(body)));
-    }
-
-    consume(TokenType::RBrace, "Expect '}' after switch cases.");
-    return std::make_unique<SwitchStmt>(std::move(condition), std::move(cases));
-}
-
-std::unique_ptr<Stmt> Parser::breakStatement() {
-    consume(TokenType::Semicolon, "Expect ';' after 'break'.");
-    return std::make_unique<BreakStmt>();
-}
-
-std::unique_ptr<Stmt> Parser::fallthroughStatement() {
-    consume(TokenType::Semicolon, "Expect ';' after 'fallthrough'.");
-    return std::make_unique<FallthroughStmt>();
-}
-
-std::unique_ptr<Stmt> Parser::functionDeclaration() {
-    Token name = consume(TokenType::Identifier, "Expect function name.");
-    consume(TokenType::LParen, "Expect '(' after function name.");
-
-    std::vector<FunctionStmt::Parameter> params;
-    if (!check(TokenType::RParen)) {
-        do {
-            Token paramName = consume(TokenType::Identifier, "Expect parameter name.");
-            consume(TokenType::Colon, "Expect ':' after parameter name.");
-            Token paramType = consume(TokenType::Identifier, "Expect parameter type.");
-            params.push_back({paramName, paramType});
-        } while (match({TokenType::Comma}));
-    }
-
-    consume(TokenType::RParen, "Expect ')' after parameters.");
-
-    Token returnType;
-    returnType.type = TokenType::Unknown;
-    if (match({TokenType::Arrow})) {
-        returnType = consume(TokenType::Identifier, "Expect return type.");
-    }
-
-    consume(TokenType::LBrace, "Expect '{' before function body.");
-    auto body = std::make_unique<BlockStmt>(block());
-    return std::make_unique<FunctionStmt>(name, std::move(params), returnType, std::move(body));
-}
-
-std::unique_ptr<Stmt> Parser::structDeclaration() {
-    Token name = consume(TokenType::Identifier, "Expect struct name.");
-    consume(TokenType::LBrace, "Expect '{' before struct body.");
-
-    std::vector<std::unique_ptr<VarDeclStmt>> fields;
-    std::vector<std::unique_ptr<FunctionStmt>> methods;
-
-    while (!check(TokenType::RBrace) && !isAtEnd()) {
-        if (peekNext().type == TokenType::LParen) {
-            auto method = functionDeclaration();
-            if (auto funcStmt = dynamic_cast<FunctionStmt*>(method.get())) {
-                method.release();
-                methods.push_back(std::unique_ptr<FunctionStmt>(funcStmt));
-            }
-        } else {
-            auto field = varDeclaration();
-            if (auto varDeclStmt = dynamic_cast<VarDeclStmt*>(field.get())) {
-                field.release();
-                fields.push_back(std::unique_ptr<VarDeclStmt>(varDeclStmt));
-            }
-            if (!check(TokenType::RBrace)) {
-                consume(TokenType::Comma, "Expect ',' after field declaration.");
-            }
-        }
-    }
-
-    consume(TokenType::RBrace, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(name, std::move(fields), std::move(methods));
-}
-
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
     std::vector<std::unique_ptr<Stmt>> statements;
@@ -366,10 +214,6 @@ Token Parser::advance() {
 bool Parser::check(TokenType type) const { return !isAtEnd() && peek().type == type; }
 bool Parser::isAtEnd() const { return peek().type == TokenType::EndOfFile; }
 Token Parser::peek() const { return tokens.at(current); }
-Token Parser::peekNext() const {
-    if (isAtEnd()) return peek();
-    return tokens.at(current + 1);
-}
 Token Parser::previous() const { return tokens.at(current - 1); }
 
 

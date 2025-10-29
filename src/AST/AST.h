@@ -22,12 +22,6 @@ class BlockStmt;
 class ExprStmt;
 class IfStmt;
 class WhileStmt;
-class SwitchStmt;
-class CaseStmt;
-class BreakStmt;
-class FallthroughStmt;
-class FunctionStmt;
-class StructStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -70,12 +64,6 @@ public:
     virtual std::any visitExprStmt(ExprStmt& stmt) = 0;
     virtual std::any visitIfStmt(IfStmt& stmt) = 0;
     virtual std::any visitWhileStmt(WhileStmt& stmt) = 0;
-    virtual std::any visitSwitchStmt(SwitchStmt& stmt) = 0;
-    virtual std::any visitCaseStmt(CaseStmt& stmt) = 0;
-    virtual std::any visitBreakStmt(BreakStmt& stmt) = 0;
-    virtual std::any visitFallthroughStmt(FallthroughStmt& stmt) = 0;
-    virtual std::any visitFunctionStmt(FunctionStmt& stmt) = 0;
-    virtual std::any visitStructStmt(StructStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -129,10 +117,6 @@ class BooleanLiteralExpr : public Expr
 {
 public:
     BooleanLiteralExpr(Token value) : value(std::move(value)) {}
-    BooleanLiteralExpr(bool val) {
-        value.type = TokenType::Boolean;
-        value.value = val;
-    }
 
     Token value;
 
@@ -165,11 +149,10 @@ public:
 class VarDeclStmt : public Stmt
 {
 public:
-    VarDeclStmt(Token name, Token type, std::unique_ptr<Expr> initializer)
-        : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
+    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer)
+        : name(std::move(name)), initializer(std::move(initializer)) {}
 
     Token name;
-    Token type;
     std::unique_ptr<Expr> initializer;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitVarDeclStmt(*this); }
@@ -219,76 +202,6 @@ public:
     std::unique_ptr<Stmt> body;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitWhileStmt(*this); }
-};
-
-class SwitchStmt : public Stmt
-{
-public:
-    SwitchStmt(std::unique_ptr<Expr> expression, std::vector<std::unique_ptr<Stmt>> cases)
-        : expression(std::move(expression)), cases(std::move(cases)) {}
-
-    std::unique_ptr<Expr> expression;
-    std::vector<std::unique_ptr<Stmt>> cases;
-
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitSwitchStmt(*this); }
-};
-
-class CaseStmt : public Stmt
-{
-public:
-    CaseStmt(std::unique_ptr<Expr> expression, std::unique_ptr<Stmt> body)
-        : expression(std::move(expression)), body(std::move(body)) {}
-
-    std::unique_ptr<Expr> expression;
-    std::unique_ptr<Stmt> body;
-
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitCaseStmt(*this); }
-};
-
-class BreakStmt : public Stmt
-{
-public:
-    BreakStmt() = default;
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitBreakStmt(*this); }
-};
-
-class FallthroughStmt : public Stmt
-{
-public:
-    FallthroughStmt() = default;
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitFallthroughStmt(*this); }
-};
-
-class FunctionStmt : public Stmt
-{
-public:
-    struct Parameter {
-        Token name;
-        Token type;
-    };
-
-    FunctionStmt(Token name, std::vector<Parameter> params, Token returnType, std::unique_ptr<Stmt> body)
-        : name(std::move(name)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
-
-    Token name;
-    std::vector<Parameter> params;
-    Token returnType;
-    std::unique_ptr<Stmt> body;
-
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitFunctionStmt(*this); }
-};
-
-class StructStmt : public Stmt
-{
-public:
-    StructStmt(Token name, std::vector<std::unique_ptr<VarDeclStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
-        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
-
-    Token name;
-    std::vector<std::unique_ptr<VarDeclStmt>> fields;
-    std::vector<std::unique_ptr<FunctionStmt>> methods;
-
-    std::any accept(StmtVisitor& visitor) override { return visitor.visitStructStmt(*this); }
 };
 
 
