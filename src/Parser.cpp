@@ -205,6 +205,44 @@ std::unique_ptr<ExprAST> Parser::parse_if_expression() {
     return std::make_unique<IfExprAST>(std::move(cond), std::move(then), std::move(else_expr));
 }
 
+std::unique_ptr<ExprAST> Parser::parse_struct_declaration() {
+    get_next_token(); // eat the struct.
+
+    if (get_current_token() != Token::Identifier)
+        throw std::runtime_error("expected identifier after struct");
+    std::string name = lexer_.get_identifier();
+    get_next_token(); // eat the identifier.
+
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after struct name");
+    get_next_token(); // eat the '{'.
+
+    std::vector<StructField> fields;
+    while (get_current_token() != Token::RightBrace) {
+        if (get_current_token() != Token::Identifier)
+            throw std::runtime_error("expected identifier in struct field");
+        std::string field_name = lexer_.get_identifier();
+        get_next_token(); // eat the identifier.
+
+        if (get_current_token() != Token::Colon)
+            throw std::runtime_error("expected ':' after field name");
+        get_next_token(); // eat the ':'.
+
+        auto field_type = parse_type();
+        fields.push_back({field_name, field_type});
+
+        if (get_current_token() == Token::Comma) {
+            get_next_token(); // eat the ','.
+        } else if (get_current_token() != Token::RightBrace) {
+            throw std::runtime_error("expected ',' or '}' after field");
+        }
+    }
+
+    get_next_token(); // eat the '}'.
+
+    return std::make_unique<StructDeclAST>(name, std::move(fields));
+}
+
 std::unique_ptr<ExprAST> Parser::parse_primary() {
     switch (get_current_token()) {
     default:
@@ -217,6 +255,8 @@ std::unique_ptr<ExprAST> Parser::parse_primary() {
         return parse_paren_expression();
     case Token::If:
         return parse_if_expression();
+    case Token::Struct:
+        return parse_struct_declaration();
     case Token::Let:
     case Token::Mut:
         return parse_variable_declaration();

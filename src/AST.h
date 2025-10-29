@@ -129,3 +129,22 @@ public:
     ExprAST* get_then() const { return then_.get(); }
     ExprAST* get_else() const { return else_.get(); }
 };
+
+// Represents a field in a struct.
+struct StructField {
+    std::string name;
+    std::shared_ptr<Type> type;
+};
+
+// Expression class for struct declarations.
+class StructDeclAST : public ExprAST {
+    std::string name_;
+    std::vector<StructField> fields_;
+
+public:
+    StructDeclAST(std::string name, std::vector<StructField> fields)
+        : name_(std::move(name)), fields_(std::move(fields)) {}
+
+    const std::string& get_name() const { return name_; }
+    const std::vector<StructField>& get_fields() const { return fields_; }
+};

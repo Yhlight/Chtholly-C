@@ -12,6 +12,7 @@ enum class Token {
     Mut,
     If,
     Else,
+    Struct,
 
     // Primary
     Identifier,

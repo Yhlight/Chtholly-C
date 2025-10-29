@@ -11,6 +11,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [ ] Control flow (if/else, loops)
   - [x] if/else statements
 - [ ] Structs
+  - [x] Struct declarations
 - [ ] Operator overloading
 - [ ] Modules and imports
 

@@ -139,9 +139,52 @@ void test_if_else_parsing() {
     std::cout << "If-else parsing test passed!" << std::endl;
 }
 
+void test_struct_parsing() {
+    std::string source = "struct Point { x: int, y: int }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for struct" << std::endl;
+        exit(1);
+    }
+
+    auto struct_decl = dynamic_cast<StructDeclAST*>(ast.get());
+    if (struct_decl == nullptr) {
+        std::cerr << "Test failed: Expected a StructDeclAST" << std::endl;
+        exit(1);
+    }
+
+    if (struct_decl->get_name() != "Point") {
+        std::cerr << "Test failed: Expected struct name 'Point'" << std::endl;
+        exit(1);
+    }
+
+    const auto& fields = struct_decl->get_fields();
+    if (fields.size() != 2) {
+        std::cerr << "Test failed: Expected 2 fields in struct" << std::endl;
+        exit(1);
+    }
+
+    if (fields[0].name != "x" || std::dynamic_pointer_cast<IntType>(fields[0].type) == nullptr) {
+        std::cerr << "Test failed: Expected field 'x' of type 'int'" << std::endl;
+        exit(1);
+    }
+
+    if (fields[1].name != "y" || std::dynamic_pointer_cast<IntType>(fields[1].type) == nullptr) {
+        std::cerr << "Test failed: Expected field 'y' of type 'int'" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Struct parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
     test_if_else_parsing();
+    test_struct_parsing();
     return 0;
 }
