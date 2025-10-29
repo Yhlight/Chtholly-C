@@ -15,7 +15,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Variable Declarations
 - [ ] Operators
 - [x] Control Flow (if/else, while, for, switch)
-- [ ] Functions
+- [x] Functions
 - [ ] Structs
 - [ ] Ownership and Borrowing
 - [ ] Generics

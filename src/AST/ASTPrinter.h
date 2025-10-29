@@ -77,6 +77,9 @@ private:
     {
         std::stringstream out;
         out << "(var " << stmt.name.text;
+        if (stmt.type.type != TokenType::Unknown) {
+            out << ": " << stmt.type.text;
+        }
         if (stmt.initializer)
         {
             out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
@@ -165,6 +168,19 @@ private:
             out << std::any_cast<std::string>(stmt.body->accept(*this));
         }
         out << ")";
+        return out.str();
+    }
+
+    std::any visitStructStmt(StructStmt& stmt) override {
+        std::stringstream out;
+        out << "(struct " << stmt.name.text << " { ";
+        for (const auto& field : stmt.fields) {
+            out << std::any_cast<std::string>(field->accept(*this)) << " ";
+        }
+        for (const auto& method : stmt.methods) {
+            out << std::any_cast<std::string>(method->accept(*this)) << " ";
+        }
+        out << "})";
         return out.str();
     }
 };

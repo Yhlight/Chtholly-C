@@ -43,6 +43,7 @@ private:
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> varDeclaration();
+    std::unique_ptr<Stmt> varStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::unique_ptr<Stmt> forStatement();
@@ -50,6 +51,7 @@ private:
     std::unique_ptr<Stmt> breakStatement();
     std::unique_ptr<Stmt> fallthroughStatement();
     std::unique_ptr<Stmt> functionDeclaration();
+    std::unique_ptr<Stmt> structDeclaration();
     std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> primary();
@@ -59,6 +61,7 @@ private:
     bool check(TokenType type) const;
     bool isAtEnd() const;
     Token peek() const;
+    Token peekNext() const;
 
     std::vector<Token> tokens;
     int current = 0;

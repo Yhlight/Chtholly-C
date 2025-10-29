@@ -27,6 +27,7 @@ class CaseStmt;
 class BreakStmt;
 class FallthroughStmt;
 class FunctionStmt;
+class StructStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -74,6 +75,7 @@ public:
     virtual std::any visitBreakStmt(BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(FallthroughStmt& stmt) = 0;
     virtual std::any visitFunctionStmt(FunctionStmt& stmt) = 0;
+    virtual std::any visitStructStmt(StructStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -163,10 +165,11 @@ public:
 class VarDeclStmt : public Stmt
 {
 public:
-    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(std::move(name)), initializer(std::move(initializer)) {}
+    VarDeclStmt(Token name, Token type, std::unique_ptr<Expr> initializer)
+        : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
 
     Token name;
+    Token type;
     std::unique_ptr<Expr> initializer;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitVarDeclStmt(*this); }
@@ -273,6 +276,19 @@ public:
     std::unique_ptr<Stmt> body;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitFunctionStmt(*this); }
+};
+
+class StructStmt : public Stmt
+{
+public:
+    StructStmt(Token name, std::vector<std::unique_ptr<VarDeclStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
+
+    Token name;
+    std::vector<std::unique_ptr<VarDeclStmt>> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitStructStmt(*this); }
 };
 
 
