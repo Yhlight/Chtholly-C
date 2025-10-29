@@ -7,6 +7,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Basic syntax parsing (variables, types, functions)
 - [x] Ownership system
 - [ ] Type system (including generics) (In Progress)
+  - [x] Array types
 - [ ] Control flow (if/else, loops)
 - [ ] Structs
 - [ ] Operator overloading

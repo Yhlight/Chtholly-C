@@ -24,6 +24,8 @@ enum class Token {
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
     Comma,
     Colon,
 

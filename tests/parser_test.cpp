@@ -51,7 +51,57 @@ void test_parser() {
     std::cout << "Parser test passed!" << std::endl;
 }
 
+void test_array_type_parsing() {
+    std::string source = "let x: array[array[int; 5]; 10] = 1;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for array type" << std::endl;
+        exit(1);
+    }
+
+    auto var_decl = dynamic_cast<VarDeclAST*>(ast.get());
+    if (var_decl == nullptr) {
+        std::cerr << "Test failed: Expected a VarDeclAST for array type" << std::endl;
+        exit(1);
+    }
+
+    auto array_type = std::dynamic_pointer_cast<ArrayType>(var_decl->type);
+    if (array_type == nullptr) {
+        std::cerr << "Test failed: Expected an ArrayType" << std::endl;
+        exit(1);
+    }
+
+    if (array_type->get_size() != 10) {
+        std::cerr << "Test failed: Expected array size 10" << std::endl;
+        exit(1);
+    }
+
+    auto element_type = std::dynamic_pointer_cast<ArrayType>(array_type->get_element_type());
+    if (element_type == nullptr) {
+        std::cerr << "Test failed: Expected an ArrayType as element type" << std::endl;
+        exit(1);
+    }
+
+    if (element_type->get_size() != 5) {
+        std::cerr << "Test failed: Expected nested array size 5" << std::endl;
+        exit(1);
+    }
+
+    auto nested_element_type = std::dynamic_pointer_cast<IntType>(element_type->get_element_type());
+    if (nested_element_type == nullptr) {
+        std::cerr << "Test failed: Expected an IntType as nested element type" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Array type parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
+    test_array_type_parsing();
     return 0;
 }

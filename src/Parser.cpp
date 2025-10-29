@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "Token.h"
 #include <stdexcept>
 
 std::map<char, int> Parser::bin_op_precedence_ = {
@@ -95,6 +96,30 @@ std::shared_ptr<Type> Parser::parse_type() {
         return std::make_shared<DoubleType>();
     } else if (type_name == "string") {
         return std::make_shared<StringType>();
+    } else if (type_name == "array") {
+        if (get_current_token() != Token::LeftBracket) {
+            throw std::runtime_error("Expected '[' after 'array'");
+        }
+        get_next_token(); // consume '['
+
+        auto element_type = parse_type();
+
+        int size = -1;
+        if (get_current_token() == Token::Semicolon) {
+            get_next_token(); // consume ';'
+            if (get_current_token() != Token::Number) {
+                throw std::runtime_error("Expected a number for array size");
+            }
+            size = lexer_.get_number();
+            get_next_token(); // consume number
+        }
+
+        if (get_current_token() != Token::RightBracket) {
+            throw std::runtime_error("Expected ']' after array element type");
+        }
+        get_next_token(); // consume ']'
+
+        return std::make_shared<ArrayType>(element_type, size);
     } else {
         throw std::runtime_error("Unknown type: " + type_name);
     }
