@@ -161,3 +161,22 @@ public:
     ExprAST* get_cond() const { return cond_.get(); }
     BlockExprAST* get_body() const { return body_.get(); }
 };
+
+// Represents a field initializer in a struct instantiation.
+struct StructFieldInitializer {
+    std::string name;
+    std::unique_ptr<ExprAST> value;
+};
+
+// Expression class for struct instantiations.
+class StructInstantiationExprAST : public ExprAST {
+    std::string name_;
+    std::vector<StructFieldInitializer> fields_;
+
+public:
+    StructInstantiationExprAST(std::string name, std::vector<StructFieldInitializer> fields)
+        : name_(std::move(name)), fields_(std::move(fields)) {}
+
+    const std::string& get_name() const { return name_; }
+    const std::vector<StructFieldInitializer>& get_fields() const { return fields_; }
+};

@@ -214,11 +214,60 @@ void test_while_loop_parsing() {
     std::cout << "While loop parsing test passed!" << std::endl;
 }
 
+void test_struct_instantiation_parsing() {
+    std::string source = "let p = Point{ x: 10, y: 20 };";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for struct instantiation" << std::endl;
+        exit(1);
+    }
+
+    auto var_decl = dynamic_cast<VarDeclAST*>(ast.get());
+    if (var_decl == nullptr) {
+        std::cerr << "Test failed: Expected a VarDeclAST for struct instantiation" << std::endl;
+        exit(1);
+    }
+
+    auto struct_inst = dynamic_cast<StructInstantiationExprAST*>(var_decl->get_init());
+    if (struct_inst == nullptr) {
+        std::cerr << "Test failed: Expected a StructInstantiationExprAST" << std::endl;
+        exit(1);
+    }
+
+    if (struct_inst->get_name() != "Point") {
+        std::cerr << "Test failed: Expected struct name 'Point' in instantiation" << std::endl;
+        exit(1);
+    }
+
+    const auto& fields = struct_inst->get_fields();
+    if (fields.size() != 2) {
+        std::cerr << "Test failed: Expected 2 fields in struct instantiation" << std::endl;
+        exit(1);
+    }
+
+    if (fields[0].name != "x" || dynamic_cast<NumberExprAST*>(fields[0].value.get()) == nullptr) {
+        std::cerr << "Test failed: Expected field 'x' with a number value" << std::endl;
+        exit(1);
+    }
+
+    if (fields[1].name != "y" || dynamic_cast<NumberExprAST*>(fields[1].value.get()) == nullptr) {
+        std::cerr << "Test failed: Expected field 'y' with a number value" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Struct instantiation parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
     test_if_else_parsing();
     test_struct_parsing();
     test_while_loop_parsing();
+    test_struct_instantiation_parsing();
     return 0;
 }

@@ -52,35 +52,60 @@ std::unique_ptr<ExprAST> Parser::parse_paren_expression() {
 
 std::unique_ptr<ExprAST> Parser::parse_identifier_expression() {
     std::string id_name = lexer_.get_identifier();
-
     get_next_token(); // eat identifier.
 
-    if (get_current_token() != Token::LeftParen) // Simple variable ref.
-        return std::make_unique<VariableExprAST>(id_name);
+    if (get_current_token() == Token::LeftParen) {
+        // Function call.
+        get_next_token(); // eat '('.
+        std::vector<std::unique_ptr<ExprAST>> args;
+        if (get_current_token() != Token::RightParen) {
+            while (true) {
+                if (auto arg = parse_expression())
+                    args.push_back(std::move(arg));
+                else
+                    return nullptr;
 
-    // Call.
-    get_next_token(); // eat (
-    std::vector<std::unique_ptr<ExprAST>> args;
-    if (get_current_token() != Token::RightParen) {
-        while (true) {
-            if (auto arg = parse_expression())
-                args.push_back(std::move(arg));
-            else
-                return nullptr;
+                if (get_current_token() == Token::RightParen)
+                    break;
 
-            if (get_current_token() == Token::RightParen)
-                break;
-
-            if (get_current_token() != Token::Comma)
-                throw std::runtime_error("Expected ')' or ',' in argument list");
-            get_next_token();
+                if (get_current_token() != Token::Comma)
+                    throw std::runtime_error("Expected ')' or ',' in argument list");
+                get_next_token();
+            }
         }
+        get_next_token(); // eat the ')'.
+        return std::make_unique<CallExprAST>(id_name, std::move(args));
+    } else if (get_current_token() == Token::LeftBrace) {
+        // Struct instantiation.
+        get_next_token(); // eat '{'.
+        std::vector<StructFieldInitializer> fields;
+        while (get_current_token() != Token::RightBrace) {
+            if (get_current_token() != Token::Identifier)
+                throw std::runtime_error("expected identifier in struct field initializer");
+            std::string field_name = lexer_.get_identifier();
+            get_next_token(); // eat the identifier.
+
+            if (get_current_token() != Token::Colon)
+                throw std::runtime_error("expected ':' after field name in initializer");
+            get_next_token(); // eat the ':'.
+
+            auto value = parse_expression();
+            if (!value)
+                return nullptr;
+            fields.push_back({field_name, std::move(value)});
+
+            if (get_current_token() == Token::Comma) {
+                get_next_token(); // eat the ','.
+            } else if (get_current_token() != Token::RightBrace) {
+                throw std::runtime_error("expected ',' or '}' after field initializer");
+            }
+        }
+        get_next_token(); // eat the '}'.
+        return std::make_unique<StructInstantiationExprAST>(id_name, std::move(fields));
     }
 
-    // Eat the ')'.
-    get_next_token();
-
-    return std::make_unique<CallExprAST>(id_name, std::move(args));
+    // Simple variable ref.
+    return std::make_unique<VariableExprAST>(id_name);
 }
 
 std::shared_ptr<Type> Parser::parse_type() {

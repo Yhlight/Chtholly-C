@@ -13,6 +13,7 @@ This document outlines the development plan for the Chtholly programming languag
   - [x] while loops
 - [ ] Structs
   - [x] Struct declarations
+  - [x] Struct instantiation
 - [ ] Operator overloading
 - [ ] Modules and imports
 
