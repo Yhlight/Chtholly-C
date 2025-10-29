@@ -26,6 +26,7 @@ class SwitchStmt;
 class CaseStmt;
 class BreakStmt;
 class FallthroughStmt;
+class FunctionStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -72,6 +73,7 @@ public:
     virtual std::any visitCaseStmt(CaseStmt& stmt) = 0;
     virtual std::any visitBreakStmt(BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(FallthroughStmt& stmt) = 0;
+    virtual std::any visitFunctionStmt(FunctionStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -252,6 +254,25 @@ class FallthroughStmt : public Stmt
 public:
     FallthroughStmt() = default;
     std::any accept(StmtVisitor& visitor) override { return visitor.visitFallthroughStmt(*this); }
+};
+
+class FunctionStmt : public Stmt
+{
+public:
+    struct Parameter {
+        Token name;
+        Token type;
+    };
+
+    FunctionStmt(Token name, std::vector<Parameter> params, Token returnType, std::unique_ptr<Stmt> body)
+        : name(std::move(name)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
+
+    Token name;
+    std::vector<Parameter> params;
+    Token returnType;
+    std::unique_ptr<Stmt> body;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitFunctionStmt(*this); }
 };
 
 

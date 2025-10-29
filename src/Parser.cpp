@@ -74,6 +74,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::Func})) return functionDeclaration();
         if (match({TokenType::Let})) return varDeclaration();
         return statement();
     } catch (const std::runtime_error& error) {
@@ -203,6 +204,33 @@ std::unique_ptr<Stmt> Parser::breakStatement() {
 std::unique_ptr<Stmt> Parser::fallthroughStatement() {
     consume(TokenType::Semicolon, "Expect ';' after 'fallthrough'.");
     return std::make_unique<FallthroughStmt>();
+}
+
+std::unique_ptr<Stmt> Parser::functionDeclaration() {
+    Token name = consume(TokenType::Identifier, "Expect function name.");
+    consume(TokenType::LParen, "Expect '(' after function name.");
+
+    std::vector<FunctionStmt::Parameter> params;
+    if (!check(TokenType::RParen)) {
+        do {
+            Token paramName = consume(TokenType::Identifier, "Expect parameter name.");
+            consume(TokenType::Colon, "Expect ':' after parameter name.");
+            Token paramType = consume(TokenType::Identifier, "Expect parameter type.");
+            params.push_back({paramName, paramType});
+        } while (match({TokenType::Comma}));
+    }
+
+    consume(TokenType::RParen, "Expect ')' after parameters.");
+
+    Token returnType;
+    returnType.type = TokenType::Unknown;
+    if (match({TokenType::Arrow})) {
+        returnType = consume(TokenType::Identifier, "Expect return type.");
+    }
+
+    consume(TokenType::LBrace, "Expect '{' before function body.");
+    auto body = std::make_unique<BlockStmt>(block());
+    return std::make_unique<FunctionStmt>(name, std::move(params), returnType, std::move(body));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {

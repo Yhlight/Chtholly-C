@@ -49,6 +49,7 @@ private:
     std::unique_ptr<Stmt> switchStatement();
     std::unique_ptr<Stmt> breakStatement();
     std::unique_ptr<Stmt> fallthroughStatement();
+    std::unique_ptr<Stmt> functionDeclaration();
     std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> primary();

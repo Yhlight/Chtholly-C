@@ -146,6 +146,27 @@ private:
     std::any visitFallthroughStmt(FallthroughStmt& stmt) override {
         return std::string("(fallthrough;)\n");
     }
+
+    std::any visitFunctionStmt(FunctionStmt& stmt) override {
+        std::stringstream out;
+        out << "(func " << stmt.name.text << "(";
+        for (size_t i = 0; i < stmt.params.size(); ++i) {
+            out << stmt.params[i].name.text << ": " << stmt.params[i].type.text;
+            if (i < stmt.params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ")";
+        if (stmt.returnType.type != TokenType::Unknown) {
+            out << " -> " << stmt.returnType.text;
+        }
+        out << " ";
+        if (stmt.body) {
+            out << std::any_cast<std::string>(stmt.body->accept(*this));
+        }
+        out << ")";
+        return out.str();
+    }
 };
 
 } // namespace Chtholly
