@@ -115,3 +115,17 @@ public:
 
     const std::vector<std::unique_ptr<ExprAST>>& get_expressions() const { return expressions_; }
 };
+
+// Expression class for if/then/else.
+class IfExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> cond_, then_, else_;
+
+public:
+    IfExprAST(std::unique_ptr<ExprAST> cond, std::unique_ptr<ExprAST> then,
+              std::unique_ptr<ExprAST> else_)
+        : cond_(std::move(cond)), then_(std::move(then)), else_(std::move(else_)) {}
+
+    ExprAST* get_cond() const { return cond_.get(); }
+    ExprAST* get_then() const { return then_.get(); }
+    ExprAST* get_else() const { return else_.get(); }
+};

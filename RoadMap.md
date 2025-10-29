@@ -9,6 +9,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [ ] Type system (including generics) (In Progress)
   - [x] Array types
 - [ ] Control flow (if/else, loops)
+  - [x] if/else statements
 - [ ] Structs
 - [ ] Operator overloading
 - [ ] Modules and imports

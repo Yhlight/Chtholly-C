@@ -10,6 +10,8 @@ enum class Token {
     Func,
     Let,
     Mut,
+    If,
+    Else,
 
     // Primary
     Identifier,

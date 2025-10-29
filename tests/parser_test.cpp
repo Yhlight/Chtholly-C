@@ -100,8 +100,48 @@ void test_array_type_parsing() {
     std::cout << "Array type parsing test passed!" << std::endl;
 }
 
+void test_if_else_parsing() {
+    std::string source = "if (1 < 2) { let x = 1; } else { let y = 2; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for if-else" << std::endl;
+        exit(1);
+    }
+
+    auto if_expr = dynamic_cast<IfExprAST*>(ast.get());
+    if (if_expr == nullptr) {
+        std::cerr << "Test failed: Expected an IfExprAST" << std::endl;
+        exit(1);
+    }
+
+    auto cond = dynamic_cast<BinaryExprAST*>(if_expr->get_cond());
+    if (cond == nullptr || cond->get_op() != '<') {
+        std::cerr << "Test failed: Expected a BinaryExprAST with '<' operator for condition" << std::endl;
+        exit(1);
+    }
+
+    auto then_block = dynamic_cast<BlockExprAST*>(if_expr->get_then());
+    if (then_block == nullptr || then_block->get_expressions().size() != 1) {
+        std::cerr << "Test failed: Expected a BlockExprAST with one expression for then block" << std::endl;
+        exit(1);
+    }
+
+    auto else_block = dynamic_cast<BlockExprAST*>(if_expr->get_else());
+    if (else_block == nullptr || else_block->get_expressions().size() != 1) {
+        std::cerr << "Test failed: Expected a BlockExprAST with one expression for else block" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "If-else parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
+    test_if_else_parsing();
     return 0;
 }

@@ -5,6 +5,7 @@
 std::map<char, int> Parser::bin_op_precedence_ = {
     {'=', 2},
     {'<', 10},
+    {'>', 10},
     {'+', 20},
     {'-', 20},
     {'*', 40},
@@ -157,6 +158,53 @@ std::unique_ptr<ExprAST> Parser::parse_variable_declaration() {
     return std::move(var_decl);
 }
 
+std::unique_ptr<ExprAST> Parser::parse_if_expression() {
+    get_next_token(); // eat the if.
+
+    if (get_current_token() != Token::LeftParen)
+        throw std::runtime_error("expected '(' after if");
+    get_next_token(); // eat the '('.
+
+    // condition.
+    auto cond = parse_expression();
+    if (!cond)
+        return nullptr;
+
+    if (get_current_token() != Token::RightParen)
+        throw std::runtime_error("expected ')' after if condition");
+    get_next_token(); // eat the ')'.
+
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after if condition");
+    get_next_token(); // eat the '{'.
+
+    auto then = parse_block();
+    if (!then)
+        return nullptr;
+
+    if (get_current_token() != Token::RightBrace)
+        throw std::runtime_error("expected '}' after then block");
+    get_next_token(); // eat the '}'.
+
+    std::unique_ptr<ExprAST> else_expr;
+    if (get_current_token() == Token::Else) {
+        get_next_token(); // eat the else.
+        if (get_current_token() == Token::If) {
+            else_expr = parse_if_expression();
+        } else {
+            if (get_current_token() != Token::LeftBrace)
+                throw std::runtime_error("expected '{' after else");
+            get_next_token(); // eat the '{'.
+            else_expr = parse_block();
+            if (get_current_token() != Token::RightBrace)
+                throw std::runtime_error("expected '}' after else block");
+            get_next_token(); // eat the '}'.
+        }
+    }
+
+    return std::make_unique<IfExprAST>(std::move(cond), std::move(then), std::move(else_expr));
+}
+
 std::unique_ptr<ExprAST> Parser::parse_primary() {
     switch (get_current_token()) {
     default:
@@ -167,6 +215,8 @@ std::unique_ptr<ExprAST> Parser::parse_primary() {
         return parse_number_expression();
     case Token::LeftParen:
         return parse_paren_expression();
+    case Token::If:
+        return parse_if_expression();
     case Token::Let:
     case Token::Mut:
         return parse_variable_declaration();
@@ -211,7 +261,7 @@ std::unique_ptr<ExprAST> Parser::parse_expression() {
 
 std::unique_ptr<BlockExprAST> Parser::parse_block() {
     std::vector<std::unique_ptr<ExprAST>> expressions;
-    while (get_current_token() != Token::Eof) {
+    while (get_current_token() != Token::RightBrace && get_current_token() != Token::Eof) {
         auto expr = parse_expression();
         if (!expr) {
             return nullptr;

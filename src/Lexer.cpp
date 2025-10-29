@@ -33,6 +33,8 @@ Token Lexer::get_token() {
         if (identifier_ == "func") return Token::Func;
         if (identifier_ == "let") return Token::Let;
         if (identifier_ == "mut") return Token::Mut;
+        if (identifier_ == "if") return Token::If;
+        if (identifier_ == "else") return Token::Else;
         return Token::Identifier;
     }
 
@@ -60,6 +62,8 @@ Token Lexer::get_token() {
     position_++;
     switch (current_char) {
         case '=':
+        case '<':
+        case '>':
         case '+':
         case '-':
         case '*':
@@ -86,6 +90,8 @@ std::string to_string(Token token) {
         case Token::Func: return "Func";
         case Token::Let: return "Let";
         case Token::Mut: return "Mut";
+        case Token::If: return "If";
+        case Token::Else: return "Else";
         case Token::Identifier: return "Identifier";
         case Token::Number: return "Number";
         case Token::Operator: return "Operator";
