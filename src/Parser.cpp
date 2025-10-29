@@ -243,6 +243,36 @@ std::unique_ptr<ExprAST> Parser::parse_struct_declaration() {
     return std::make_unique<StructDeclAST>(name, std::move(fields));
 }
 
+std::unique_ptr<ExprAST> Parser::parse_while_expression() {
+    get_next_token(); // eat the while.
+
+    if (get_current_token() != Token::LeftParen)
+        throw std::runtime_error("expected '(' after while");
+    get_next_token(); // eat the '('.
+
+    auto cond = parse_expression();
+    if (!cond)
+        return nullptr;
+
+    if (get_current_token() != Token::RightParen)
+        throw std::runtime_error("expected ')' after while condition");
+    get_next_token(); // eat the ')'.
+
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after while condition");
+    get_next_token(); // eat the '{'.
+
+    auto body = parse_block();
+    if (!body)
+        return nullptr;
+
+    if (get_current_token() != Token::RightBrace)
+        throw std::runtime_error("expected '}' after while body");
+    get_next_token(); // eat the '}'.
+
+    return std::make_unique<WhileExprAST>(std::move(cond), std::move(body));
+}
+
 std::unique_ptr<ExprAST> Parser::parse_primary() {
     switch (get_current_token()) {
     default:
@@ -255,6 +285,8 @@ std::unique_ptr<ExprAST> Parser::parse_primary() {
         return parse_paren_expression();
     case Token::If:
         return parse_if_expression();
+    case Token::While:
+        return parse_while_expression();
     case Token::Struct:
         return parse_struct_declaration();
     case Token::Let:

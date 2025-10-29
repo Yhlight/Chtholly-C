@@ -148,3 +148,16 @@ public:
     const std::string& get_name() const { return name_; }
     const std::vector<StructField>& get_fields() const { return fields_; }
 };
+
+// Expression class for while loops.
+class WhileExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> cond_;
+    std::unique_ptr<BlockExprAST> body_;
+
+public:
+    WhileExprAST(std::unique_ptr<ExprAST> cond, std::unique_ptr<BlockExprAST> body)
+        : cond_(std::move(cond)), body_(std::move(body)) {}
+
+    ExprAST* get_cond() const { return cond_.get(); }
+    BlockExprAST* get_body() const { return body_.get(); }
+};

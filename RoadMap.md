@@ -10,6 +10,7 @@ This document outlines the development plan for the Chtholly programming languag
   - [x] Array types
 - [ ] Control flow (if/else, loops)
   - [x] if/else statements
+  - [x] while loops
 - [ ] Structs
   - [x] Struct declarations
 - [ ] Operator overloading

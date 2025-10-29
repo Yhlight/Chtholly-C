@@ -13,6 +13,7 @@ enum class Token {
     If,
     Else,
     Struct,
+    While,
 
     // Primary
     Identifier,

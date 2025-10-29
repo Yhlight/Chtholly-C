@@ -181,10 +181,44 @@ void test_struct_parsing() {
     std::cout << "Struct parsing test passed!" << std::endl;
 }
 
+void test_while_loop_parsing() {
+    std::string source = "while (i < 10) { i = i + 1; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for while loop" << std::endl;
+        exit(1);
+    }
+
+    auto while_expr = dynamic_cast<WhileExprAST*>(ast.get());
+    if (while_expr == nullptr) {
+        std::cerr << "Test failed: Expected a WhileExprAST" << std::endl;
+        exit(1);
+    }
+
+    auto cond = dynamic_cast<BinaryExprAST*>(while_expr->get_cond());
+    if (cond == nullptr || cond->get_op() != '<') {
+        std::cerr << "Test failed: Expected a BinaryExprAST with '<' operator for condition" << std::endl;
+        exit(1);
+    }
+
+    auto body = while_expr->get_body();
+    if (body == nullptr || body->get_expressions().size() != 1) {
+        std::cerr << "Test failed: Expected a BlockExprAST with one expression for while body" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "While loop parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
     test_if_else_parsing();
     test_struct_parsing();
+    test_while_loop_parsing();
     return 0;
 }

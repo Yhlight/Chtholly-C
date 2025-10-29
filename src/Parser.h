@@ -18,6 +18,7 @@ public:
     std::unique_ptr<ExprAST> parse_identifier_expression();
     std::unique_ptr<ExprAST> parse_if_expression();
     std::unique_ptr<ExprAST> parse_struct_declaration();
+    std::unique_ptr<ExprAST> parse_while_expression();
     std::unique_ptr<BlockExprAST> parse_block();
     std::shared_ptr<Type> parse_type();
 

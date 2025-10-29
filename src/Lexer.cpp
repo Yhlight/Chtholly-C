@@ -36,6 +36,7 @@ Token Lexer::get_token() {
         if (identifier_ == "if") return Token::If;
         if (identifier_ == "else") return Token::Else;
         if (identifier_ == "struct") return Token::Struct;
+        if (identifier_ == "while") return Token::While;
         return Token::Identifier;
     }
 
@@ -94,6 +95,7 @@ std::string to_string(Token token) {
         case Token::If: return "If";
         case Token::Else: return "Else";
         case Token::Struct: return "Struct";
+        case Token::While: return "While";
         case Token::Identifier: return "Identifier";
         case Token::Number: return "Number";
         case Token::Operator: return "Operator";
