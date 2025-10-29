@@ -38,6 +38,7 @@ Token Lexer::get_token() {
         if (identifier_ == "struct") return Token::Struct;
         if (identifier_ == "while") return Token::While;
         if (identifier_ == "import") return Token::Import;
+        if (identifier_ == "impl") return Token::Impl;
         return Token::Identifier;
     }
 
@@ -98,6 +99,7 @@ std::string to_string(Token token) {
         case Token::Struct: return "Struct";
         case Token::While: return "While";
         case Token::Import: return "Import";
+        case Token::Impl: return "Impl";
         case Token::Identifier: return "Identifier";
         case Token::Number: return "Number";
         case Token::Operator: return "Operator";

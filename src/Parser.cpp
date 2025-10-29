@@ -238,6 +238,22 @@ std::unique_ptr<ExprAST> Parser::parse_struct_declaration() {
     std::string name = lexer_.get_identifier();
     get_next_token(); // eat the identifier.
 
+    std::vector<std::string> impls;
+    if (get_current_token() == Token::Impl) {
+        get_next_token(); // eat the impl.
+        while (get_current_token() == Token::Identifier) {
+            std::string trait_name = lexer_.get_identifier();
+            get_next_token(); // eat the identifier.
+            // TODO: Handle `::` for nested traits.
+            impls.push_back(trait_name);
+            if (get_current_token() == Token::Comma) {
+                get_next_token(); // eat the ','.
+            } else {
+                break;
+            }
+        }
+    }
+
     if (get_current_token() != Token::LeftBrace)
         throw std::runtime_error("expected '{' after struct name");
     get_next_token(); // eat the '{'.
@@ -265,7 +281,7 @@ std::unique_ptr<ExprAST> Parser::parse_struct_declaration() {
 
     get_next_token(); // eat the '}'.
 
-    return std::make_unique<StructDeclAST>(name, std::move(fields));
+    return std::make_unique<StructDeclAST>(name, std::move(fields), std::move(impls));
 }
 
 std::unique_ptr<ExprAST> Parser::parse_while_expression() {

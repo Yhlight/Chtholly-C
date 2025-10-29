@@ -294,6 +294,38 @@ void test_module_parsing() {
     std::cout << "Module parsing test passed!" << std::endl;
 }
 
+void test_impl_clause_parsing() {
+    std::string source = "struct Point impl Add, Sub { x: int, y: int }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for impl clause" << std::endl;
+        exit(1);
+    }
+
+    auto struct_decl = dynamic_cast<StructDeclAST*>(ast.get());
+    if (struct_decl == nullptr) {
+        std::cerr << "Test failed: Expected a StructDeclAST for impl clause" << std::endl;
+        exit(1);
+    }
+
+    const auto& impls = struct_decl->get_impls();
+    if (impls.size() != 2) {
+        std::cerr << "Test failed: Expected 2 impls in struct" << std::endl;
+        exit(1);
+    }
+
+    if (impls[0] != "Add" || impls[1] != "Sub") {
+        std::cerr << "Test failed: Expected impls 'Add' and 'Sub'" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Impl clause parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
@@ -302,5 +334,6 @@ int main() {
     test_while_loop_parsing();
     test_struct_instantiation_parsing();
     test_module_parsing();
+    test_impl_clause_parsing();
     return 0;
 }

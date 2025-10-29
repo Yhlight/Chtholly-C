@@ -15,6 +15,7 @@ enum class Token {
     Struct,
     While,
     Import,
+    Impl,
 
     // Primary
     Identifier,

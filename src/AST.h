@@ -140,13 +140,15 @@ struct StructField {
 class StructDeclAST : public ExprAST {
     std::string name_;
     std::vector<StructField> fields_;
+    std::vector<std::string> impls_;
 
 public:
-    StructDeclAST(std::string name, std::vector<StructField> fields)
-        : name_(std::move(name)), fields_(std::move(fields)) {}
+    StructDeclAST(std::string name, std::vector<StructField> fields, std::vector<std::string> impls)
+        : name_(std::move(name)), fields_(std::move(fields)), impls_(std::move(impls)) {}
 
     const std::string& get_name() const { return name_; }
     const std::vector<StructField>& get_fields() const { return fields_; }
+    const std::vector<std::string>& get_impls() const { return impls_; }
 };
 
 // Expression class for while loops.
