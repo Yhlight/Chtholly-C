@@ -253,9 +253,17 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
 
     while (!check(TokenType::RBrace) && !isAtEnd()) {
         if (peekNext().type == TokenType::LParen) {
-            methods.push_back(std::unique_ptr<FunctionStmt>(static_cast<FunctionStmt*>(functionDeclaration().release())));
+            auto method = functionDeclaration();
+            if (auto funcStmt = dynamic_cast<FunctionStmt*>(method.get())) {
+                method.release();
+                methods.push_back(std::unique_ptr<FunctionStmt>(funcStmt));
+            }
         } else {
-            fields.push_back(std::unique_ptr<VarDeclStmt>(static_cast<VarDeclStmt*>(varDeclaration().release())));
+            auto field = varDeclaration();
+            if (auto varDeclStmt = dynamic_cast<VarDeclStmt*>(field.get())) {
+                field.release();
+                fields.push_back(std::unique_ptr<VarDeclStmt>(varDeclStmt));
+            }
             if (!check(TokenType::RBrace)) {
                 consume(TokenType::Comma, "Expect ',' after field declaration.");
             }
@@ -265,6 +273,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     consume(TokenType::RBrace, "Expect '}' after struct body.");
     return std::make_unique<StructStmt>(name, std::move(fields), std::move(methods));
 }
+
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
     std::vector<std::unique_ptr<Stmt>> statements;

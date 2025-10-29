@@ -7,6 +7,9 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] **Lexer:** Implement a lexical analyzer to tokenize the Chtholly source code.
 - [x] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST).
 - [ ] **Semantic Analysis:** Perform semantic checks on the AST to ensure correctness.
+  - [x] Symbol Table Management
+  - [x] Variable Declaration and Scope Checking
+  - [ ] Type Checking
 - [ ] **Code Generation:** Generate LLVM Intermediate Representation (IR) from the AST.
 - [ ] **Compiler Driver:** Create a command-line interface to drive the compilation process.
 
@@ -16,7 +19,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [ ] Operators
 - [x] Control Flow (if/else, while, for, switch)
 - [x] Functions
-- [ ] Structs
+- [x] Structs
 - [ ] Ownership and Borrowing
 - [ ] Generics
 - [ ] Modules

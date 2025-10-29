@@ -14,6 +14,8 @@ add_executable(chtholly
     src/main.cpp
     src/Lexer.cpp
     src/Parser.cpp
+    src/SymbolTable.cpp
+    src/SemanticAnalyzer.cpp
 )
 
 target_link_libraries(chtholly PRIVATE ${LLVM_LIBRARIES})

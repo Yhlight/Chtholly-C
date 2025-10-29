@@ -7,8 +7,11 @@ add_executable(run_tests
     SwitchStatementTest.cpp
     FunctionDeclarationTest.cpp
     StructDeclarationTest.cpp
+    SemanticAnalyzerTest.cpp
     ../src/Lexer.cpp
     ../src/Parser.cpp
+    ../src/SymbolTable.cpp
+    ../src/SemanticAnalyzer.cpp
 )
 
 target_include_directories(run_tests PRIVATE ../src)

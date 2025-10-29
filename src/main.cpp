@@ -4,12 +4,19 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "AST/ASTPrinter.h"
+#include "SemanticAnalyzer.h"
 
 void run(const std::string& source) {
     Chtholly::Lexer lexer(source);
     std::vector<Chtholly::Token> tokens = lexer.tokenize();
     Chtholly::Parser parser(tokens);
     std::vector<std::unique_ptr<Chtholly::Stmt>> statements = parser.parse();
+
+    if (parser.hadError) return;
+
+    Chtholly::SemanticAnalyzer analyzer;
+    analyzer.analyze(statements);
+    if (analyzer.hadError) return;
 
     Chtholly::ASTPrinter printer;
     std::cout << printer.print(statements);
