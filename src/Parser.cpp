@@ -98,6 +98,9 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::If})) return ifStatement();
     if (match({TokenType::While})) return whileStatement();
     if (match({TokenType::For})) return forStatement();
+    if (match({TokenType::Switch})) return switchStatement();
+    if (match({TokenType::Break})) return breakStatement();
+    if (match({TokenType::Fallthrough})) return fallthroughStatement();
     if (match({TokenType::LBrace})) return std::make_unique<BlockStmt>(block());
     auto expr = expression();
     consume(TokenType::Semicolon, "Expect ';' after expression statement.");
@@ -171,6 +174,35 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     }
 
     return body;
+}
+
+std::unique_ptr<Stmt> Parser::switchStatement() {
+    consume(TokenType::LParen, "Expect '(' after 'switch'.");
+    auto condition = expression();
+    consume(TokenType::RParen, "Expect ')' after switch condition.");
+    consume(TokenType::LBrace, "Expect '{' before switch cases.");
+
+    std::vector<std::unique_ptr<Stmt>> cases;
+    while (!check(TokenType::RBrace) && !isAtEnd()) {
+        consume(TokenType::Case, "Expect 'case' in switch statement.");
+        auto caseExpr = expression();
+        consume(TokenType::Colon, "Expect ':' after case expression.");
+        auto body = statement();
+        cases.push_back(std::make_unique<CaseStmt>(std::move(caseExpr), std::move(body)));
+    }
+
+    consume(TokenType::RBrace, "Expect '}' after switch cases.");
+    return std::make_unique<SwitchStmt>(std::move(condition), std::move(cases));
+}
+
+std::unique_ptr<Stmt> Parser::breakStatement() {
+    consume(TokenType::Semicolon, "Expect ';' after 'break'.");
+    return std::make_unique<BreakStmt>();
+}
+
+std::unique_ptr<Stmt> Parser::fallthroughStatement() {
+    consume(TokenType::Semicolon, "Expect ';' after 'fallthrough'.");
+    return std::make_unique<FallthroughStmt>();
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {

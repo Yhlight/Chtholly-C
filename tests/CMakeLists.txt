@@ -4,6 +4,7 @@ add_executable(run_tests
     LexerTest.cpp
     ParserTest.cpp
     ForLoopTest.cpp
+    SwitchStatementTest.cpp
     ../src/Lexer.cpp
     ../src/Parser.cpp
 )

@@ -46,6 +46,9 @@ private:
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::unique_ptr<Stmt> forStatement();
+    std::unique_ptr<Stmt> switchStatement();
+    std::unique_ptr<Stmt> breakStatement();
+    std::unique_ptr<Stmt> fallthroughStatement();
     std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> primary();

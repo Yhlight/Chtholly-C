@@ -121,6 +121,31 @@ private:
         out << std::any_cast<std::string>(stmt.body->accept(*this)) << ")\n";
         return out.str();
     }
+
+    std::any visitSwitchStmt(SwitchStmt& stmt) override {
+        std::stringstream out;
+        out << "(switch " << std::any_cast<std::string>(stmt.expression->accept(*this)) << " { ";
+        for (const auto& c : stmt.cases) {
+            out << std::any_cast<std::string>(c->accept(*this)) << " ";
+        }
+        out << "})";
+        return out.str();
+    }
+
+    std::any visitCaseStmt(CaseStmt& stmt) override {
+        std::stringstream out;
+        out << "(case " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ": ";
+        out << std::any_cast<std::string>(stmt.body->accept(*this)) << ")";
+        return out.str();
+    }
+
+    std::any visitBreakStmt(BreakStmt& stmt) override {
+        return std::string("(break;)\n");
+    }
+
+    std::any visitFallthroughStmt(FallthroughStmt& stmt) override {
+        return std::string("(fallthrough;)\n");
+    }
 };
 
 } // namespace Chtholly

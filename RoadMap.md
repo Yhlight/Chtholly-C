@@ -5,10 +5,11 @@ This document outlines the development plan for the Chtholly programming languag
 ## Phase 1: Core Compiler Infrastructure
 
 - [x] **Lexer:** Implement a lexical analyzer to tokenize the Chtholly source code.
-- [ ] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream.
+- [x] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream.
   - [x] Variable Declarations
   - [x] Expressions
-  - [x] Control Flow (if/else, while)
+  - [x] Control Flow (if/else, while, for)
+  - [ ] Control Flow (switch)
 - [ ] **Semantic Analysis:** Perform semantic checks on the AST to ensure correctness.
 - [ ] **Code Generation:** Generate LLVM Intermediate Representation (IR) from the AST.
 - [ ] **Compiler Driver:** Create a command-line interface to drive the compilation process.

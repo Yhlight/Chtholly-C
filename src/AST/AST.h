@@ -22,6 +22,10 @@ class BlockStmt;
 class ExprStmt;
 class IfStmt;
 class WhileStmt;
+class SwitchStmt;
+class CaseStmt;
+class BreakStmt;
+class FallthroughStmt;
 class ExprVisitor;
 class StmtVisitor;
 
@@ -64,6 +68,10 @@ public:
     virtual std::any visitExprStmt(ExprStmt& stmt) = 0;
     virtual std::any visitIfStmt(IfStmt& stmt) = 0;
     virtual std::any visitWhileStmt(WhileStmt& stmt) = 0;
+    virtual std::any visitSwitchStmt(SwitchStmt& stmt) = 0;
+    virtual std::any visitCaseStmt(CaseStmt& stmt) = 0;
+    virtual std::any visitBreakStmt(BreakStmt& stmt) = 0;
+    virtual std::any visitFallthroughStmt(FallthroughStmt& stmt) = 0;
 };
 
 // --- Expressions ---
@@ -206,6 +214,44 @@ public:
     std::unique_ptr<Stmt> body;
 
     std::any accept(StmtVisitor& visitor) override { return visitor.visitWhileStmt(*this); }
+};
+
+class SwitchStmt : public Stmt
+{
+public:
+    SwitchStmt(std::unique_ptr<Expr> expression, std::vector<std::unique_ptr<Stmt>> cases)
+        : expression(std::move(expression)), cases(std::move(cases)) {}
+
+    std::unique_ptr<Expr> expression;
+    std::vector<std::unique_ptr<Stmt>> cases;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitSwitchStmt(*this); }
+};
+
+class CaseStmt : public Stmt
+{
+public:
+    CaseStmt(std::unique_ptr<Expr> expression, std::unique_ptr<Stmt> body)
+        : expression(std::move(expression)), body(std::move(body)) {}
+
+    std::unique_ptr<Expr> expression;
+    std::unique_ptr<Stmt> body;
+
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitCaseStmt(*this); }
+};
+
+class BreakStmt : public Stmt
+{
+public:
+    BreakStmt() = default;
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitBreakStmt(*this); }
+};
+
+class FallthroughStmt : public Stmt
+{
+public:
+    FallthroughStmt() = default;
+    std::any accept(StmtVisitor& visitor) override { return visitor.visitFallthroughStmt(*this); }
 };
 
 
