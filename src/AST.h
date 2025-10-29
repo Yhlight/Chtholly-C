@@ -11,6 +11,7 @@ namespace Chtholly {
 // Forward declarations
 class Expression;
 class Statement;
+class BlockStatement;
 
 // Base class for all AST nodes
 class ASTNode {
@@ -66,6 +67,15 @@ public:
     std::unique_ptr<Expression> right;
 };
 
+class FunctionCall : public Expression {
+public:
+    FunctionCall(Token token, std::unique_ptr<Expression> callee, std::vector<std::unique_ptr<Expression>> arguments)
+        : token(std::move(token)), callee(std::move(callee)), arguments(std::move(arguments)) {}
+    Token token; // The '(' token
+    std::unique_ptr<Expression> callee;
+    std::vector<std::unique_ptr<Expression>> arguments;
+};
+
 
 // Statements
 class ExpressionStatement : public Statement {
@@ -90,6 +100,23 @@ public:
         : token(std::move(token)), returnValue(std::move(returnValue)) {}
     Token token; // The 'return' token
     std::unique_ptr<Expression> returnValue;
+};
+
+class BlockStatement : public Statement {
+public:
+    BlockStatement(Token token) : token(std::move(token)) {}
+    Token token; // The '{' token
+    std::vector<std::unique_ptr<Statement>> statements;
+};
+
+class FunctionDeclaration : public Statement {
+public:
+    FunctionDeclaration(Token token, std::unique_ptr<Identifier> name, std::vector<std::unique_ptr<Identifier>> parameters, std::unique_ptr<BlockStatement> body)
+        : token(std::move(token)), name(std::move(name)), parameters(std::move(parameters)), body(std::move(body)) {}
+    Token token; // The 'func' token
+    std::unique_ptr<Identifier> name;
+    std::vector<std::unique_ptr<Identifier>> parameters;
+    std::unique_ptr<BlockStatement> body;
 };
 
 } // namespace Chtholly

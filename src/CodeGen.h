@@ -29,6 +29,9 @@ private:
     llvm::Value* generate(BinaryExpression* node);
     llvm::Value* generate(ExpressionStatement* node);
     llvm::Value* generate(ReturnStatement* node);
+    llvm::Value* generate(BlockStatement* node);
+    llvm::Value* generate(FunctionDeclaration* node);
+    llvm::Value* generate(FunctionCall* node);
 };
 
 } // namespace Chtholly

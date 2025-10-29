@@ -18,6 +18,7 @@ Parser::Parser(Lexer& lexer) : lexer(lexer) {
     registerInfix(TokenType::NotEqual, &Parser::parseInfixExpression);
     registerInfix(TokenType::Less, &Parser::parseInfixExpression);
     registerInfix(TokenType::Greater, &Parser::parseInfixExpression);
+    registerInfix(TokenType::LParen, &Parser::parseFunctionCall);
 
     precedences = {
         {TokenType::Equal, Precedence::EQUALS},
@@ -28,6 +29,7 @@ Parser::Parser(Lexer& lexer) : lexer(lexer) {
         {TokenType::Minus, Precedence::SUM},
         {TokenType::Slash, Precedence::PRODUCT},
         {TokenType::Asterisk, Precedence::PRODUCT},
+        {TokenType::LParen, Precedence::CALL},
     };
 }
 
@@ -83,6 +85,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseVariableDeclaration();
     } else if (currentToken.type == TokenType::Return) {
         return parseReturnStatement();
+    } else if (currentToken.type == TokenType::Func) {
+        return parseFunctionDeclaration();
     }
     return parseExpressionStatement();
 }
@@ -142,6 +146,69 @@ std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Express
     nextToken();
     auto right = parseExpression(precedence);
     return std::make_unique<BinaryExpression>(std::move(left), op, std::move(right));
+}
+
+std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
+    Token funcToken = currentToken;
+    if (!expectPeek(TokenType::Identifier)) return nullptr;
+    auto name = std::make_unique<Identifier>(currentToken);
+    if (!expectPeek(TokenType::LParen)) return nullptr;
+    auto parameters = parseFunctionParameters();
+    if (!expectPeek(TokenType::LBrace)) return nullptr;
+    auto body = parseBlockStatement();
+    return std::make_unique<FunctionDeclaration>(funcToken, std::move(name), std::move(parameters), std::move(body));
+}
+
+std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
+    std::vector<std::unique_ptr<Identifier>> parameters;
+    if (peekToken.type == TokenType::RParen) {
+        nextToken();
+        return parameters;
+    }
+    nextToken();
+    parameters.push_back(std::make_unique<Identifier>(currentToken));
+    while (peekToken.type == TokenType::Comma) {
+        nextToken();
+        nextToken();
+        parameters.push_back(std::make_unique<Identifier>(currentToken));
+    }
+    if (!expectPeek(TokenType::RParen)) return {};
+    return parameters;
+}
+
+std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
+    auto block = std::make_unique<BlockStatement>(currentToken);
+    nextToken();
+    while (currentToken.type != TokenType::RBrace && currentToken.type != TokenType::Eof) {
+        auto stmt = parseStatement();
+        if (stmt) {
+            block->statements.push_back(std::move(stmt));
+        }
+        nextToken();
+    }
+    return block;
+}
+
+std::unique_ptr<Expression> Parser::parseFunctionCall(std::unique_ptr<Expression> function) {
+    auto call = std::make_unique<FunctionCall>(currentToken, std::move(function), parseCallArguments());
+    return call;
+}
+
+std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
+    std::vector<std::unique_ptr<Expression>> args;
+    if (peekToken.type == TokenType::RParen) {
+        nextToken();
+        return args;
+    }
+    nextToken();
+    args.push_back(parseExpression(Precedence::LOWEST));
+    while (peekToken.type == TokenType::Comma) {
+        nextToken();
+        nextToken();
+        args.push_back(parseExpression(Precedence::LOWEST));
+    }
+    if (!expectPeek(TokenType::RParen)) return {};
+    return args;
 }
 
 } // namespace Chtholly

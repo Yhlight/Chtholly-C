@@ -29,6 +29,7 @@ This document outlines the development roadmap for the Chtholly programming lang
   - [x] Variable Declarations and Identifiers
   - [x] Binary Expressions
   - [x] Return Statements
+  - [x] Functions
 - [ ] Add tests for the code generator
 
 ## Phase 5: CLI

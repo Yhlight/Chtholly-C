@@ -46,12 +46,17 @@ private:
     std::unique_ptr<VariableDeclaration> parseVariableDeclaration();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
+    std::unique_ptr<BlockStatement> parseBlockStatement();
+    std::unique_ptr<FunctionDeclaration> parseFunctionDeclaration();
+    std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
 
     // Expression parsing functions
     std::unique_ptr<Expression> parseIdentifier();
     std::unique_ptr<Expression> parseIntegerLiteral();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
+    std::unique_ptr<Expression> parseFunctionCall(std::unique_ptr<Expression> function);
+    std::vector<std::unique_ptr<Expression>> parseCallArguments();
 };
 
 } // namespace Chtholly

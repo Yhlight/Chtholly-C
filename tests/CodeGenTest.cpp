@@ -36,8 +36,26 @@ void test_binary_expression_code_generation() {
     assert(ir.find("store i64 15, ptr %x") != std::string::npos);
 }
 
+void test_function_code_generation() {
+    std::string source = "func add(a, b) { return a + b; } let result = add(10, 20);";
+    Chtholly::Lexer lexer(source);
+    Chtholly::Parser parser(lexer);
+    auto program = parser.parseProgram();
+
+    Chtholly::CodeGen codegen;
+    std::string ir;
+    codegen.generate(*program, ir);
+
+    assert(ir.find("define i64 @add(i64 %a, i64 %b)") != std::string::npos);
+    assert(ir.find("ret i64 %addtmp") != std::string::npos);
+    assert(ir.find("%calltmp = call i64 @add(i64 10, i64 20)") != std::string::npos);
+    assert(ir.find("%result = alloca i64") != std::string::npos);
+    assert(ir.find("store i64 %calltmp, ptr %result") != std::string::npos);
+}
+
 int main() {
     test_simple_code_generation();
     test_binary_expression_code_generation();
+    test_function_code_generation();
     return 0;
 }

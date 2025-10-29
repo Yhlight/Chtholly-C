@@ -24,8 +24,9 @@ void CodeGen::generate(Program& program, std::string& out) {
         generate(stmt.get());
     }
 
-    // Add a return statement to the main function
-    builder->CreateRet(builder->getInt32(0));
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateRet(builder->getInt32(0));
+    }
 
     llvm::verifyFunction(*mainFunc);
 
@@ -57,6 +58,15 @@ llvm::Value* CodeGen::generate(ASTNode* node) {
     }
     if (auto* retStmt = dynamic_cast<ReturnStatement*>(node)) {
         return generate(retStmt);
+    }
+    if (auto* blockStmt = dynamic_cast<BlockStatement*>(node)) {
+        return generate(blockStmt);
+    }
+    if (auto* funcDecl = dynamic_cast<FunctionDeclaration*>(node)) {
+        return generate(funcDecl);
+    }
+    if (auto* funcCall = dynamic_cast<FunctionCall*>(node)) {
+        return generate(funcCall);
     }
     // Add other node types here...
     return nullptr;
@@ -125,6 +135,62 @@ llvm::Value* CodeGen::generate(ExpressionStatement* node) {
 llvm::Value* CodeGen::generate(ReturnStatement* node) {
     llvm::Value* returnValue = generate(node->returnValue.get());
     return builder->CreateRet(returnValue);
+}
+
+llvm::Value* CodeGen::generate(BlockStatement* node) {
+    for (auto& stmt : node->statements) {
+        generate(stmt.get());
+    }
+    return nullptr;
+}
+
+llvm::Value* CodeGen::generate(FunctionDeclaration* node) {
+    std::vector<llvm::Type*> paramTypes;
+    for (auto& param : node->parameters) {
+        paramTypes.push_back(builder->getInt64Ty()); // Assuming all params are int64 for now
+    }
+    llvm::FunctionType* funcType = llvm::FunctionType::get(builder->getInt64Ty(), paramTypes, false);
+    llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, node->name->token.literal, module.get());
+
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context, "entry", function);
+    builder->SetInsertPoint(entry);
+
+    auto oldNamedValues = namedValues;
+    namedValues.clear();
+    for (auto& arg : function->args()) {
+        llvm::AllocaInst* alloca = builder->CreateAlloca(arg.getType(), nullptr, arg.getName());
+        builder->CreateStore(&arg, alloca);
+        namedValues[std::string(arg.getName())] = alloca;
+    }
+
+    generate(node->body.get());
+
+    llvm::verifyFunction(*function);
+    namedValues = oldNamedValues;
+    return function;
+}
+
+llvm::Value* CodeGen::generate(FunctionCall* node) {
+    llvm::Function* calleeFunc = module->getFunction(dynamic_cast<Identifier*>(node->callee.get())->token.literal);
+    if (!calleeFunc) {
+        // Handle error: function not found
+        return nullptr;
+    }
+
+    if (calleeFunc->arg_size() != node->arguments.size()) {
+        // Handle error: incorrect number of arguments
+        return nullptr;
+    }
+
+    std::vector<llvm::Value*> argsV;
+    for (auto& arg : node->arguments) {
+        argsV.push_back(generate(arg.get()));
+        if (!argsV.back()) {
+            return nullptr;
+        }
+    }
+
+    return builder->CreateCall(calleeFunc, argsV, "calltmp");
 }
 
 } // namespace Chtholly
