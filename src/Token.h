@@ -8,7 +8,7 @@ namespace Chtholly {
 enum class TokenType {
     // Keywords
     Func, Let, Mut, If, Else, Switch, Case, Return, Struct, Import, Public, Private,
-    Fallthrough, Trait, Impl,
+    Fallthrough, Trait, Impl, While,
 
     // Identifiers and literals
     Identifier, Integer, Double, Char, String,

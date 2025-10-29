@@ -71,10 +71,27 @@ void test_if_else_expression_code_generation() {
     assert(ir.find("ifcont:") != std::string::npos);
 }
 
+void test_while_statement_code_generation() {
+    std::string source = "let a = 0; while (a < 10) { a = a + 1; }";
+    Chtholly::Lexer lexer(source);
+    Chtholly::Parser parser(lexer);
+    auto program = parser.parseProgram();
+
+    Chtholly::CodeGen codegen;
+    std::string ir;
+    codegen.generate(*program, ir);
+
+    assert(ir.find("loopcond:") != std::string::npos);
+    assert(ir.find("loopbody:") != std::string::npos);
+    assert(ir.find("loopexit:") != std::string::npos);
+    assert(ir.find("br label %loopcond") != std::string::npos);
+}
+
 int main() {
     test_simple_code_generation();
     test_binary_expression_code_generation();
     test_function_code_generation();
     test_if_else_expression_code_generation();
+    test_while_statement_code_generation();
     return 0;
 }

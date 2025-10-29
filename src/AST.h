@@ -129,6 +129,15 @@ public:
     std::unique_ptr<BlockStatement> body;
 };
 
+class WhileStatement : public Statement {
+public:
+    WhileStatement(Token token, std::unique_ptr<Expression> condition, std::unique_ptr<BlockStatement> body)
+        : token(std::move(token)), condition(std::move(condition)), body(std::move(body)) {}
+    Token token; // The 'while' token
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<BlockStatement> body;
+};
+
 } // namespace Chtholly
 
 #endif // CHTHOLLY_AST_H

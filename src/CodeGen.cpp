@@ -71,7 +71,33 @@ llvm::Value* CodeGen::generate(ASTNode* node) {
     if (auto* ifExpr = dynamic_cast<IfExpression*>(node)) {
         return generate(ifExpr);
     }
+    if (auto* whileStmt = dynamic_cast<WhileStatement*>(node)) {
+        return generate(whileStmt);
+    }
     // Add other node types here...
+    return nullptr;
+}
+
+llvm::Value* CodeGen::generate(WhileStatement* node) {
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    llvm::BasicBlock* loopCondBB = llvm::BasicBlock::Create(*context, "loopcond", function);
+    llvm::BasicBlock* loopBodyBB = llvm::BasicBlock::Create(*context, "loopbody", function);
+    llvm::BasicBlock* loopExitBB = llvm::BasicBlock::Create(*context, "loopexit", function);
+
+    builder->CreateBr(loopCondBB);
+
+    builder->SetInsertPoint(loopCondBB);
+    llvm::Value* condV = generate(node->condition.get());
+    condV = builder->CreateICmpNE(condV, llvm::ConstantInt::get(*context, llvm::APInt(1, 0)), "loopcond");
+    builder->CreateCondBr(condV, loopBodyBB, loopExitBB);
+
+    builder->SetInsertPoint(loopBodyBB);
+    generate(node->body.get());
+    builder->CreateBr(loopCondBB);
+
+    builder->SetInsertPoint(loopExitBB);
+
     return nullptr;
 }
 

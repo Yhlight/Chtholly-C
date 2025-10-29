@@ -49,6 +49,7 @@ private:
     std::unique_ptr<BlockStatement> parseBlockStatement();
     std::unique_ptr<FunctionDeclaration> parseFunctionDeclaration();
     std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
+    std::unique_ptr<WhileStatement> parseWhileStatement();
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
 
     // Expression parsing functions

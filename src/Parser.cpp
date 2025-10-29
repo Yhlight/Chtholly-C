@@ -88,6 +88,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseReturnStatement();
     } else if (currentToken.type == TokenType::Func) {
         return parseFunctionDeclaration();
+    } else if (currentToken.type == TokenType::While) {
+        return parseWhileStatement();
     }
     return parseExpressionStatement();
 }
@@ -227,6 +229,17 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
         alternative = parseBlockStatement();
     }
     return std::make_unique<IfExpression>(ifToken, std::move(condition), std::move(consequence), std::move(alternative));
+}
+
+std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
+    Token whileToken = currentToken;
+    if (!expectPeek(TokenType::LParen)) return nullptr;
+    nextToken();
+    auto condition = parseExpression(Precedence::LOWEST);
+    if (!expectPeek(TokenType::RParen)) return nullptr;
+    if (!expectPeek(TokenType::LBrace)) return nullptr;
+    auto body = parseBlockStatement();
+    return std::make_unique<WhileStatement>(whileToken, std::move(condition), std::move(body));
 }
 
 } // namespace Chtholly

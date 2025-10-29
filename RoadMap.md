@@ -31,6 +31,7 @@ This document outlines the development roadmap for the Chtholly programming lang
   - [x] Return Statements
   - [x] Functions
   - [x] If/Else Expressions
+  - [x] While Loops
 - [ ] Add tests for the code generator
 
 ## Phase 5: CLI
