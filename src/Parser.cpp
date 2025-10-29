@@ -402,7 +402,7 @@ std::unique_ptr<PrototypeAST> Parser::parse_prototype() {
     return std::make_unique<PrototypeAST>(fn_name, std::move(arg_names));
 }
 
-std::unique_ptr<FunctionAST> Parser::parse_definition() {
+std::unique_ptr<ExprAST> Parser::parse_definition() {
     get_next_token(); // eat func.
     auto proto = parse_prototype();
     if (!proto)
@@ -413,4 +413,35 @@ std::unique_ptr<FunctionAST> Parser::parse_definition() {
     }
 
     return nullptr;
+}
+
+std::unique_ptr<ExprAST> Parser::parse_import_statement() {
+    get_next_token(); // eat the import.
+
+    if (get_current_token() != Token::Identifier)
+        throw std::runtime_error("expected identifier after import");
+    std::string module_name = lexer_.get_identifier();
+    get_next_token(); // eat the identifier.
+
+    if (get_current_token() != Token::Semicolon)
+        throw std::runtime_error("expected ';' after import statement");
+    get_next_token(); // eat the ';'.
+
+    return std::make_unique<ImportAST>(module_name);
+}
+
+std::unique_ptr<ModuleAST> Parser::parse_module() {
+    std::vector<std::unique_ptr<ExprAST>> expressions;
+    while (get_current_token() != Token::Eof) {
+        if (get_current_token() == Token::Import) {
+            expressions.push_back(parse_import_statement());
+        } else if (get_current_token() == Token::Func) {
+            expressions.push_back(parse_definition());
+        } else if (get_current_token() == Token::Struct) {
+            expressions.push_back(parse_struct_declaration());
+        } else {
+            expressions.push_back(parse_expression());
+        }
+    }
+    return std::make_unique<ModuleAST>(std::move(expressions));
 }

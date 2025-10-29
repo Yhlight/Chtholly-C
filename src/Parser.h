@@ -10,7 +10,7 @@ public:
 
     std::unique_ptr<ExprAST> parse_expression();
     std::unique_ptr<PrototypeAST> parse_prototype();
-    std::unique_ptr<FunctionAST> parse_definition();
+    std::unique_ptr<ExprAST> parse_definition();
     std::unique_ptr<ExprAST> parse_primary();
     std::unique_ptr<ExprAST> parse_variable_declaration();
     std::unique_ptr<ExprAST> parse_number_expression();
@@ -19,6 +19,8 @@ public:
     std::unique_ptr<ExprAST> parse_if_expression();
     std::unique_ptr<ExprAST> parse_struct_declaration();
     std::unique_ptr<ExprAST> parse_while_expression();
+    std::unique_ptr<ExprAST> parse_import_statement();
+    std::unique_ptr<ModuleAST> parse_module();
     std::unique_ptr<BlockExprAST> parse_block();
     std::shared_ptr<Type> parse_type();
 

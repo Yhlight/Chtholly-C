@@ -14,6 +14,7 @@ enum class Token {
     Else,
     Struct,
     While,
+    Import,
 
     // Primary
     Identifier,

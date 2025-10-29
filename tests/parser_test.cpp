@@ -262,6 +262,38 @@ void test_struct_instantiation_parsing() {
     std::cout << "Struct instantiation parsing test passed!" << std::endl;
 }
 
+void test_module_parsing() {
+    std::string source = "import iostream;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_module();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for module" << std::endl;
+        exit(1);
+    }
+
+    const auto& expressions = ast->get_expressions();
+    if (expressions.size() != 1) {
+        std::cerr << "Test failed: Expected 1 expression in module" << std::endl;
+        exit(1);
+    }
+
+    auto import_stmt = dynamic_cast<ImportAST*>(expressions[0].get());
+    if (import_stmt == nullptr) {
+        std::cerr << "Test failed: Expected an ImportAST" << std::endl;
+        exit(1);
+    }
+
+    if (import_stmt->get_module_name() != "iostream") {
+        std::cerr << "Test failed: Expected module name 'iostream'" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Module parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
@@ -269,5 +301,6 @@ int main() {
     test_struct_parsing();
     test_while_loop_parsing();
     test_struct_instantiation_parsing();
+    test_module_parsing();
     return 0;
 }

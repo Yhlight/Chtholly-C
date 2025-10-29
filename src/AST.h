@@ -77,7 +77,7 @@ public:
 };
 
 // This class represents a function definition itself.
-class FunctionAST {
+class FunctionAST : public ExprAST {
     std::unique_ptr<PrototypeAST> proto_;
     std::unique_ptr<ExprAST> body_;
 
@@ -179,4 +179,25 @@ public:
 
     const std::string& get_name() const { return name_; }
     const std::vector<StructFieldInitializer>& get_fields() const { return fields_; }
+};
+
+// Expression class for import statements.
+class ImportAST : public ExprAST {
+    std::string module_name_;
+
+public:
+    ImportAST(std::string module_name) : module_name_(std::move(module_name)) {}
+
+    const std::string& get_module_name() const { return module_name_; }
+};
+
+// Represents a module, which is the top-level AST node for a file.
+class ModuleAST {
+    std::vector<std::unique_ptr<ExprAST>> expressions_;
+
+public:
+    ModuleAST(std::vector<std::unique_ptr<ExprAST>> expressions)
+        : expressions_(std::move(expressions)) {}
+
+    const std::vector<std::unique_ptr<ExprAST>>& get_expressions() const { return expressions_; }
 };
