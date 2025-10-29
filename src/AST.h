@@ -116,6 +116,25 @@ public:
     const std::vector<std::unique_ptr<ExprAST>>& get_expressions() const { return expressions_; }
 };
 
+// Expression class for for loops.
+class ForExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> start_;
+    std::unique_ptr<ExprAST> cond_;
+    std::unique_ptr<ExprAST> step_;
+    std::unique_ptr<BlockExprAST> body_;
+
+public:
+    ForExprAST(std::unique_ptr<ExprAST> start, std::unique_ptr<ExprAST> cond,
+               std::unique_ptr<ExprAST> step, std::unique_ptr<BlockExprAST> body)
+        : start_(std::move(start)), cond_(std::move(cond)),
+          step_(std::move(step)), body_(std::move(body)) {}
+
+    ExprAST* get_start() const { return start_.get(); }
+    ExprAST* get_cond() const { return cond_.get(); }
+    ExprAST* get_step() const { return step_.get(); }
+    BlockExprAST* get_body() const { return body_.get(); }
+};
+
 // Expression class for if/then/else.
 class IfExprAST : public ExprAST {
     std::unique_ptr<ExprAST> cond_, then_, else_;

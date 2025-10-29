@@ -326,6 +326,47 @@ void test_impl_clause_parsing() {
     std::cout << "Impl clause parsing test passed!" << std::endl;
 }
 
+void test_for_loop_parsing() {
+    std::string source = "for (let i = 0; i < 10; i = i + 1) { }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+
+    auto ast = parser.parse_expression();
+
+    if (ast == nullptr) {
+        std::cerr << "Test failed: Parser returned a null AST for for loop" << std::endl;
+        exit(1);
+    }
+
+    auto for_expr = dynamic_cast<ForExprAST*>(ast.get());
+    if (for_expr == nullptr) {
+        std::cerr << "Test failed: Expected a ForExprAST" << std::endl;
+        exit(1);
+    }
+
+    if (for_expr->get_start() == nullptr) {
+        std::cerr << "Test failed: Expected a start value in for loop" << std::endl;
+        exit(1);
+    }
+
+    if (for_expr->get_cond() == nullptr) {
+        std::cerr << "Test failed: Expected a condition in for loop" << std::endl;
+        exit(1);
+    }
+
+    if (for_expr->get_step() == nullptr) {
+        std::cerr << "Test failed: Expected a step value in for loop" << std::endl;
+        exit(1);
+    }
+
+    if (for_expr->get_body() == nullptr) {
+        std::cerr << "Test failed: Expected a body in for loop" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "For loop parsing test passed!" << std::endl;
+}
+
 int main() {
     test_parser();
     test_array_type_parsing();
@@ -335,5 +376,6 @@ int main() {
     test_struct_instantiation_parsing();
     test_module_parsing();
     test_impl_clause_parsing();
+    test_for_loop_parsing();
     return 0;
 }

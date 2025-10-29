@@ -16,6 +16,7 @@ enum class Token {
     While,
     Import,
     Impl,
+    For,
 
     // Primary
     Identifier,

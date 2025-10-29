@@ -39,6 +39,7 @@ Token Lexer::get_token() {
         if (identifier_ == "while") return Token::While;
         if (identifier_ == "import") return Token::Import;
         if (identifier_ == "impl") return Token::Impl;
+        if (identifier_ == "for") return Token::For;
         return Token::Identifier;
     }
 
@@ -100,6 +101,7 @@ std::string to_string(Token token) {
         case Token::While: return "While";
         case Token::Import: return "Import";
         case Token::Impl: return "Impl";
+        case Token::For: return "For";
         case Token::Identifier: return "Identifier";
         case Token::Number: return "Number";
         case Token::Operator: return "Operator";

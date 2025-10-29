@@ -314,6 +314,49 @@ std::unique_ptr<ExprAST> Parser::parse_while_expression() {
     return std::make_unique<WhileExprAST>(std::move(cond), std::move(body));
 }
 
+std::unique_ptr<ExprAST> Parser::parse_for_expression() {
+    get_next_token(); // eat the for.
+
+    if (get_current_token() != Token::LeftParen)
+        throw std::runtime_error("expected '(' after for");
+    get_next_token(); // eat the '('.
+
+    auto start = parse_expression();
+    if (!start)
+        return nullptr;
+    if (get_current_token() != Token::Semicolon)
+        throw std::runtime_error("expected ';' after for start value");
+    get_next_token(); // eat the ';'.
+
+    auto cond = parse_expression();
+    if (!cond)
+        return nullptr;
+    if (get_current_token() != Token::Semicolon)
+        throw std::runtime_error("expected ';' after for condition");
+    get_next_token(); // eat the ';'.
+
+    auto step = parse_expression();
+    if (!step)
+        return nullptr;
+    if (get_current_token() != Token::RightParen)
+        throw std::runtime_error("expected ')' after for step value");
+    get_next_token(); // eat the ')'.
+
+    if (get_current_token() != Token::LeftBrace)
+        throw std::runtime_error("expected '{' after for");
+    get_next_token(); // eat the '{'.
+
+    auto body = parse_block();
+    if (!body)
+        return nullptr;
+
+    if (get_current_token() != Token::RightBrace)
+        throw std::runtime_error("expected '}' after for body");
+    get_next_token(); // eat the '}'.
+
+    return std::make_unique<ForExprAST>(std::move(start), std::move(cond), std::move(step), std::move(body));
+}
+
 std::unique_ptr<ExprAST> Parser::parse_primary() {
     switch (get_current_token()) {
     default:
@@ -328,6 +371,8 @@ std::unique_ptr<ExprAST> Parser::parse_primary() {
         return parse_if_expression();
     case Token::While:
         return parse_while_expression();
+    case Token::For:
+        return parse_for_expression();
     case Token::Struct:
         return parse_struct_declaration();
     case Token::Let:

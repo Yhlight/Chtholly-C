@@ -8,9 +8,10 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Ownership system
 - [ ] Type system (including generics) (In Progress)
   - [x] Array types
-- [ ] Control flow (if/else, loops)
+- [x] Control flow (if/else, loops)
   - [x] if/else statements
   - [x] while loops
+  - [x] for loops
 - [ ] Structs
   - [x] Struct declarations
   - [x] Struct instantiation
