@@ -15,11 +15,11 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Write unit tests for the Lexer.
 
 ## Phase 3: Syntactic Analysis (Parser)
-- [ ] Design and implement the Abstract Syntax Tree (AST) nodes.
-- [ ] Implement a recursive descent parser.
-- [ ] Handle basic declarations (variables, functions).
+- [x] Design and implement the Abstract Syntax Tree (AST) nodes.
+- [x] Implement a recursive descent parser.
+- [x] Handle basic declarations (variables, functions).
 - [ ] Implement expression parsing (operators, precedence).
-- [ ] Write unit tests for the Parser.
+- [x] Write unit tests for the Parser.
 
 ## Phase 4: C++ Transpiler
 - [ ] Create a C++ code generator that traverses the AST.

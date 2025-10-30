@@ -1,16 +1,17 @@
 #include <iostream>
 #include "Lexer.h"
-#include "Token.h"
+#include "Parser.h"
+#include "AST/ASTPrinter.h"
 
 int main() {
-    std::string source = "let x = 10; // This is a comment\nfunc add(a: int, b: int) -> int { return a + b; }";
+    std::string source = "let x = 10; let y = 20;";
     Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
 
-    Token token;
-    do {
-        token = lexer.nextToken();
-        std::cout << token << std::endl;
-    } while (token.type != TokenType::END_OF_FILE);
+    ASTPrinter printer;
+    std::string result = printer.print(statements);
+    std::cout << result;
 
     return 0;
 }
