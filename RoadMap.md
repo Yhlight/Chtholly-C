@@ -2,7 +2,7 @@
 
 ## Phase 1: Project Setup and Core Infrastructure
 
-- [x] Set up the basic project structure (`src`, `tests`, `build.py`, `CMakeLists.txt`).
+- [x] Set up the basic project structure.
 - [ ] Implement the command-line interface for the compiler.
 - [ ] Set up the testing framework.
 

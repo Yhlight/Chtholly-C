@@ -46,10 +46,8 @@ def main():
 
     if args.run_tests:
         print("\nRunning tests...")
-        # This will be enabled later when we have tests
-        # ctest_command = ["ctest", "--test-dir", "build"]
-        # run_command(ctest_command)
-        print("Test running functionality to be implemented.")
+        ctest_command = ["ctest", "--test-dir", "build", "--output-on-failure"]
+        run_command(ctest_command)
 
 if __name__ == "__main__":
     main()
