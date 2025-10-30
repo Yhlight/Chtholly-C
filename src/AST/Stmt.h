@@ -2,6 +2,7 @@
 #define CHTHOLLY_STMT_H
 
 #include "../Token.h"
+#include "../Type.h"
 #include "Expr.h"
 #include <any>
 #include <memory>
@@ -25,14 +26,15 @@ public:
 // Concrete statement classes
 class LetStmt : public Stmt {
 public:
-    LetStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(std::move(name)), initializer(std::move(initializer)) {}
+    LetStmt(Token name, std::unique_ptr<Type> type, std::unique_ptr<Expr> initializer)
+        : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visit(*this);
     }
 
     const Token name;
+    const std::unique_ptr<Type> type;
     const std::unique_ptr<Expr> initializer;
 };
 

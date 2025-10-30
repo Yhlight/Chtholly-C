@@ -38,3 +38,15 @@ TEST(TranspilerTest, Expression) {
 
     EXPECT_EQ(result, "auto x = ((10 + 20) * (-30));\n");
 }
+
+TEST(TranspilerTest, LetStatementWithType) {
+    std::string source = "let x: int = 10;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(statements);
+
+    EXPECT_EQ(result, "int x = 10;\n");
+}

@@ -69,3 +69,15 @@ TEST(ParserTest, InvalidStatement) {
     Parser parser(lexer);
     EXPECT_THROW(parser.parse(), std::runtime_error);
 }
+
+TEST(ParserTest, LetStatementWithType) {
+    std::string source = "let x: int = 10;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    ASTPrinter printer;
+    std::string result = printer.print(statements);
+
+    EXPECT_EQ(result, "(let x : int = 10)\n");
+}

@@ -4,6 +4,7 @@
 #include "Token.h"
 #include "Lexer.h"
 #include "AST/Stmt.h"
+#include "Type.h"
 #include <vector>
 #include <memory>
 
@@ -22,6 +23,7 @@ private:
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Expr> expression();
+    std::unique_ptr<Type> parseType();
     std::unique_ptr<Expr> parsePrecedence(int precedence);
     std::unique_ptr<Expr> prefix();
     std::unique_ptr<Expr> infix(std::unique_ptr<Expr> left);

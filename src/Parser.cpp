@@ -64,13 +64,29 @@ std::unique_ptr<Stmt> Parser::declaration() {
 std::unique_ptr<Stmt> Parser::letDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
 
+    std::unique_ptr<Type> type = nullptr;
+    if (match({TokenType::COLON})) {
+        type = parseType();
+    }
+
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<LetStmt>(name, std::move(initializer));
+    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer));
+}
+
+std::unique_ptr<Type> Parser::parseType() {
+    Token typeToken = consume(TokenType::IDENTIFIER, "Expect type name.");
+    if (typeToken.lexeme == "int") {
+        return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Int);
+    } else if (typeToken.lexeme == "string") {
+        return std::make_unique<PrimitiveType>(PrimitiveType::Kind::String);
+    }
+    // Add other types here
+    return nullptr;
 }
 
 std::unique_ptr<Expr> Parser::expression() {

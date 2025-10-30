@@ -33,7 +33,12 @@ std::any Transpiler::visit(const GroupingExpr& expr) {
 
 std::any Transpiler::visit(const LetStmt& stmt) {
     std::stringstream out;
-    out << "auto " << stmt.name.lexeme;
+    if (stmt.type) {
+        out << stmt.type->toString() << " " << stmt.name.lexeme;
+    } else {
+        out << "auto " << stmt.name.lexeme;
+    }
+
     if (stmt.initializer) {
         out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
     }

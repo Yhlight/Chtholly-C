@@ -13,6 +13,7 @@ add_library(chtholly_lib
     src/AST/ASTPrinter.h src/AST/ASTPrinter.cpp
     src/Parser.h src/Parser.cpp
     src/Transpiler.h src/Transpiler.cpp
+    src/Type.h src/Type.cpp
 )
 
 add_executable(chtholly src/main.cpp)

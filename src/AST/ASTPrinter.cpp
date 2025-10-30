@@ -32,6 +32,9 @@ std::any ASTPrinter::visit(const GroupingExpr& expr) {
 std::any ASTPrinter::visit(const LetStmt& stmt) {
     std::stringstream out;
     out << "(let " << stmt.name.lexeme;
+    if (stmt.type) {
+        out << " : " << stmt.type->toString();
+    }
     if (stmt.initializer) {
         out << " = " << print(*stmt.initializer);
     }
