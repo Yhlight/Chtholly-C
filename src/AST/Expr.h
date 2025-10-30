@@ -10,6 +10,7 @@ class Expr;
 class UnaryExpr;
 class BinaryExpr;
 class GroupingExpr;
+class VariableExpr;
 
 // Visitor interface for expressions
 class ExprVisitor {
@@ -18,6 +19,7 @@ public:
     virtual std::any visit(const UnaryExpr& expr) = 0;
     virtual std::any visit(const BinaryExpr& expr) = 0;
     virtual std::any visit(const GroupingExpr& expr) = 0;
+    virtual std::any visit(const VariableExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -77,6 +79,17 @@ public:
     }
 
     const std::unique_ptr<Expr> expression;
+};
+
+class VariableExpr : public Expr {
+public:
+    VariableExpr(Token name) : name(std::move(name)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token name;
 };
 
 

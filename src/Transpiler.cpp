@@ -31,6 +31,10 @@ std::any Transpiler::visit(const GroupingExpr& expr) {
     return std::any_cast<std::string>(expr.expression->accept(*this));
 }
 
+std::any Transpiler::visit(const VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
 std::any Transpiler::visit(const LetStmt& stmt) {
     std::stringstream out;
     if (stmt.type) {
@@ -41,6 +45,44 @@ std::any Transpiler::visit(const LetStmt& stmt) {
 
     if (stmt.initializer) {
         out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
+    }
+    out << ";\n";
+    return out.str();
+}
+
+std::any Transpiler::visit(const FuncStmt& stmt) {
+    std::stringstream out;
+    if (stmt.returnType) {
+        out << stmt.returnType->toString();
+    } else {
+        out << "void";
+    }
+    out << " " << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out << stmt.params[i].type->toString() << " " << stmt.params[i].name.lexeme;
+        if (i < stmt.params.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << ") " << std::any_cast<std::string>(stmt.body->accept(*this));
+    return out.str();
+}
+
+std::any Transpiler::visit(const BlockStmt& stmt) {
+    std::stringstream out;
+    out << "{\n";
+    for (const auto& statement : stmt.statements) {
+        out << "    " << std::any_cast<std::string>(statement->accept(*this));
+    }
+    out << "}\n";
+    return out.str();
+}
+
+std::any Transpiler::visit(const ReturnStmt& stmt) {
+    std::stringstream out;
+    out << "return";
+    if (stmt.value) {
+        out << " " << std::any_cast<std::string>(stmt.value->accept(*this));
     }
     out << ";\n";
     return out.str();

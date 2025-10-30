@@ -81,3 +81,15 @@ TEST(ParserTest, LetStatementWithType) {
 
     EXPECT_EQ(result, "(let x : int = 10)\n");
 }
+
+TEST(ParserTest, FunctionDeclaration) {
+    std::string source = "func add(a: int, b: int) -> int { return a + b; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    ASTPrinter printer;
+    std::string result = printer.print(statements);
+
+    EXPECT_EQ(result, "(func add(a : int, b : int) -> int { (return (+ a b)) })\n");
+}

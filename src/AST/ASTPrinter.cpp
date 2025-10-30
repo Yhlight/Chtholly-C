@@ -42,6 +42,47 @@ std::any ASTPrinter::visit(const LetStmt& stmt) {
     return out.str();
 }
 
+std::any ASTPrinter::visit(const VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
+std::any ASTPrinter::visit(const FuncStmt& stmt) {
+    std::stringstream out;
+    out << "(func " << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out << stmt.params[i].name.lexeme << " : " << stmt.params[i].type->toString();
+        if (i < stmt.params.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << ")";
+    if (stmt.returnType) {
+        out << " -> " << stmt.returnType->toString();
+    }
+    out << " " << std::any_cast<std::string>(stmt.body->accept(*this)) << ")";
+    return out.str();
+}
+
+std::any ASTPrinter::visit(const BlockStmt& stmt) {
+    std::stringstream out;
+    out << "{ ";
+    for (const auto& statement : stmt.statements) {
+        out << std::any_cast<std::string>(statement->accept(*this)) << " ";
+    }
+    out << "}";
+    return out.str();
+}
+
+std::any ASTPrinter::visit(const ReturnStmt& stmt) {
+    std::stringstream out;
+    out << "(return";
+    if (stmt.value) {
+        out << " " << print(*stmt.value);
+    }
+    out << ")";
+    return out.str();
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream out;
     out << "(" << name;

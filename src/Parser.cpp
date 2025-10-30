@@ -53,12 +53,23 @@ Token Parser::consume(TokenType type, const std::string& message) {
 }
 
 std::unique_ptr<Stmt> Parser::declaration() {
-    if (match({TokenType::LET})) {
+    if (match({TokenType::FUNC})) {
+        return functionDeclaration();
+    }
+     if (match({TokenType::LET})) {
         return letDeclaration();
     }
-    // Other statement types will go here
+    return statement();
+}
 
-    throw std::runtime_error("Expect a declaration.");
+std::unique_ptr<Stmt> Parser::statement() {
+    if (match({TokenType::RETURN})) {
+        return returnStatement();
+    }
+    if (match({TokenType::LEFT_BRACE})) {
+        return block();
+    }
+    throw std::runtime_error("Expect a statement.");
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
@@ -89,6 +100,47 @@ std::unique_ptr<Type> Parser::parseType() {
     return nullptr;
 }
 
+std::unique_ptr<Stmt> Parser::functionDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
+    consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
+    std::vector<FuncStmt::Parameter> params;
+    if (peek().type != TokenType::RIGHT_PAREN) {
+        do {
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            std::unique_ptr<Type> paramType = parseType();
+            params.push_back({paramName, std::move(paramType)});
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+    std::unique_ptr<Type> returnType = nullptr;
+    if (match({TokenType::ARROW})) {
+        returnType = parseType();
+    }
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
+    std::unique_ptr<BlockStmt> body = block();
+
+    return std::make_unique<FuncStmt>(name, std::move(params), std::move(returnType), std::move(body));
+}
+
+std::unique_ptr<BlockStmt> Parser::block() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+    return std::make_unique<BlockStmt>(std::move(statements));
+}
+
+std::unique_ptr<Stmt> Parser::returnStatement() {
+    Token keyword = tokens_[current_ - 1];
+    std::unique_ptr<Expr> value = expression();
+    consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+    return std::make_unique<ReturnStmt>(keyword, std::move(value));
+}
+
 std::unique_ptr<Expr> Parser::expression() {
     return parsePrecedence(0);
 }
@@ -114,6 +166,8 @@ std::unique_ptr<Expr> Parser::prefix() {
         std::unique_ptr<Expr> expr = expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_unique<GroupingExpr>(std::move(expr));
+    } else if (match({TokenType::IDENTIFIER})) {
+        return std::make_unique<VariableExpr>(tokens_[current_ - 1]);
     }
     return nullptr;
 }

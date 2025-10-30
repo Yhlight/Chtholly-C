@@ -14,6 +14,9 @@ class Stmt;
 class StmtVisitor {
 public:
     virtual std::any visit(const class LetStmt& stmt) = 0;
+    virtual std::any visit(const class FuncStmt& stmt) = 0;
+    virtual std::any visit(const class BlockStmt& stmt) = 0;
+    virtual std::any visit(const class ReturnStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -36,6 +39,51 @@ public:
     const Token name;
     const std::unique_ptr<Type> type;
     const std::unique_ptr<Expr> initializer;
+};
+
+class BlockStmt : public Stmt {
+public:
+    BlockStmt(std::vector<std::unique_ptr<Stmt>> statements)
+        : statements(std::move(statements)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::vector<std::unique_ptr<Stmt>> statements;
+};
+
+class FuncStmt : public Stmt {
+public:
+    struct Parameter {
+        Token name;
+        std::unique_ptr<Type> type;
+    };
+
+    FuncStmt(Token name, std::vector<Parameter> params, std::unique_ptr<Type> returnType, std::unique_ptr<BlockStmt> body)
+        : name(std::move(name)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token name;
+    const std::vector<Parameter> params;
+    const std::unique_ptr<Type> returnType;
+    const std::unique_ptr<BlockStmt> body;
+};
+
+class ReturnStmt : public Stmt {
+public:
+    ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
+        : keyword(std::move(keyword)), value(std::move(value)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token keyword;
+    const std::unique_ptr<Expr> value;
 };
 
 #endif // CHTHOLLY_STMT_H

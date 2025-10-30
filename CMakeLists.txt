@@ -14,6 +14,7 @@ add_library(chtholly_lib
     src/Parser.h src/Parser.cpp
     src/Transpiler.h src/Transpiler.cpp
     src/Type.h src/Type.cpp
+    src/Resolver.h src/Resolver.cpp
 )
 
 add_executable(chtholly src/main.cpp)
@@ -34,5 +35,6 @@ add_executable(chtholly_tests
     tests/test_lexer.cpp
     tests/test_parser.cpp
     tests/test_transpiler.cpp
+    tests/test_resolver.cpp
 )
 target_link_libraries(chtholly_tests PRIVATE GTest::gtest_main chtholly_lib)

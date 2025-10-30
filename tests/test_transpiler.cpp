@@ -50,3 +50,15 @@ TEST(TranspilerTest, LetStatementWithType) {
 
     EXPECT_EQ(result, "int x = 10;\n");
 }
+
+TEST(TranspilerTest, FunctionDeclaration) {
+    std::string source = "func add(a: int, b: int) -> int { return a + b; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(statements);
+
+    EXPECT_EQ(result, "int add(int a, int b) {\n    return (a + b);\n}\n");
+}

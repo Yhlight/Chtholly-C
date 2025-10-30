@@ -21,7 +21,11 @@ private:
     Token consume(TokenType type, const std::string& message);
 
     std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> letDeclaration();
+    std::unique_ptr<Stmt> functionDeclaration();
+    std::unique_ptr<BlockStmt> block();
+    std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Type> parseType();
     std::unique_ptr<Expr> parsePrecedence(int precedence);

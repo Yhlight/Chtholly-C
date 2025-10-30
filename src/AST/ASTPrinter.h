@@ -15,7 +15,11 @@ public:
     std::any visit(const UnaryExpr& expr) override;
     std::any visit(const BinaryExpr& expr) override;
     std::any visit(const GroupingExpr& expr) override;
+    std::any visit(const VariableExpr& expr) override;
     std::any visit(const LetStmt& stmt) override;
+    std::any visit(const FuncStmt& stmt) override;
+    std::any visit(const BlockStmt& stmt) override;
+    std::any visit(const ReturnStmt& stmt) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
