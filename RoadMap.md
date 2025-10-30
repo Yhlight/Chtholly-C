@@ -4,9 +4,9 @@ This document outlines the development plan for the Chtholly programming languag
 
 ## Phase 1: Project Setup and Core Infrastructure
 - [x] Set up the basic project structure (`src`, `tests`, `scripts`).
-- [ ] Implement the CMake build system.
-- [ ] Create a Python build script (`scripts/build.py`).
-- [ ] Set up Google Test for unit testing.
+- [x] Implement the CMake build system.
+- [x] Create a Python build script (`scripts/build.py`).
+- [x] Set up Google Test for unit testing.
 - [x] Create a basic "Hello, World!" entry point to verify the build.
 
 ## Phase 2: Lexical Analysis (Lexer)
@@ -22,10 +22,10 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Write unit tests for the Parser.
 
 ## Phase 4: C++ Transpiler
-- [ ] Create a C++ code generator that traverses the AST.
-- [ ] Translate Chtholly AST nodes into equivalent C++ code.
-- [ ] Handle basic code generation for variables, functions, and expressions.
-- [ ] Write unit tests for the transpiler.
+- [x] Create a C++ code generator that traverses the AST.
+- [x] Translate Chtholly AST nodes into equivalent C++ code.
+- [x] Handle basic code generation for variables, functions, and expressions.
+- [x] Write unit tests for the transpiler.
 
 ## Phase 5: Semantic Analysis
 - [ ] Implement a symbol table.

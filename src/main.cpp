@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Lexer.h"
 #include "Parser.h"
-#include "AST/ASTPrinter.h"
+#include "Transpiler.h"
 
 int main() {
     std::string source = "let x = (10 + 20) * -30;";
@@ -9,8 +9,8 @@ int main() {
     Parser parser(lexer);
     auto statements = parser.parse();
 
-    ASTPrinter printer;
-    std::string result = printer.print(statements);
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(statements);
     std::cout << result;
 
     return 0;
