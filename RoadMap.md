@@ -14,8 +14,8 @@
 
 ## Phase 3: C++ Transpiler
 
-- [ ] Implement the C++ code generator (transpiler) that traverses the AST (In Progress).
-- [ ] Translate basic Chtholly syntax (variables, functions, control flow) to C++.
+- [x] Implement the C++ code generator (transpiler) that traverses the AST.
+- [ ] Translate basic Chtholly syntax (variables, functions, control flow) to C++ (In Progress).
 - [ ] Handle Chtholly's ownership and borrowing rules in the transpiled code.
 
 ## Phase 4: Feature Implementation

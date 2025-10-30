@@ -26,12 +26,18 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<InfixExpression*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<BlockStatement*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<IfExpression*>(node)) {
+        visit(n);
     }
 }
 
 void CodeGen::visit(ExpressionStatement* node) {
     visit(node->expression.get());
-    m_out << ";\n";
+    if (!dynamic_cast<IfExpression*>(node->expression.get())) {
+        m_out << ";\n";
+    }
 }
 
 void CodeGen::visit(LetStatement* node) {
@@ -70,6 +76,25 @@ void CodeGen::visit(InfixExpression* node) {
     m_out << " " << node->op << " ";
     visit(node->right.get());
     m_out << ")";
+}
+
+void CodeGen::visit(BlockStatement* node) {
+    m_out << "{\n";
+    for (const auto& stmt : node->statements) {
+        visit(stmt.get());
+    }
+    m_out << "}\n";
+}
+
+void CodeGen::visit(IfExpression* node) {
+    m_out << "if (";
+    visit(node->condition.get());
+    m_out << ") ";
+    visit(node->consequence.get());
+    if (node->alternative) {
+        m_out << "else ";
+        visit(node->alternative.get());
+    }
 }
 
 } // namespace Chtholly

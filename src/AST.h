@@ -118,6 +118,28 @@ public:
     std::unique_ptr<Expression> right;
 };
 
+class BlockStatement : public Statement {
+public:
+    BlockStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The '{' token
+    std::vector<std::unique_ptr<Statement>> statements;
+};
+
+class IfExpression : public Expression {
+public:
+    IfExpression(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'if' token
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<BlockStatement> consequence;
+    std::unique_ptr<BlockStatement> alternative;
+};
+
 // Represents a 'return' statement (e.g., return 5;)
 class ReturnStatement : public Statement {
 public:

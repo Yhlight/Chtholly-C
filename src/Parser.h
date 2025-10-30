@@ -40,6 +40,8 @@ private:
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parsePrefixExpression();
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
+    std::unique_ptr<BlockStatement> parseBlockStatement();
+    std::unique_ptr<Expression> parseIfExpression();
 
     Precedence peekPrecedence();
     Precedence curPrecedence();

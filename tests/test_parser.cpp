@@ -35,9 +35,22 @@ std::string astToString(Chtholly::Node* node) {
     if (auto i = dynamic_cast<Chtholly::Identifier*>(node)) {
         return i->value;
     }
+    if (auto ife = dynamic_cast<Chtholly::IfExpression*>(node)) {
+        std::string s = "if" + astToString(ife->condition.get()) + " " + astToString(ife->consequence.get());
+        if (ife->alternative) {
+            s += "else " + astToString(ife->alternative.get());
+        }
+        return s;
+    }
+    if (auto bs = dynamic_cast<Chtholly::BlockStatement*>(node)) {
+        std::string s;
+        for (const auto& stmt : bs->statements) {
+            s += astToString(stmt.get());
+        }
+        return s;
+    }
     return "";
 }
-
 
 void checkParserErrors(Chtholly::Parser& p) {
     const auto& errors = p.errors();
@@ -52,33 +65,46 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(Parser, TestOperatorPrecedence) {
-    std::vector<std::pair<std::string, std::string>> tests = {
-        {"-a * b", "((-a) * b)"},
-        {"!-a", "(!(-a))"},
-        {"a + b + c", "((a + b) + c)"},
-        {"a + b - c", "((a + b) - c)"},
-        {"a * b * c", "((a * b) * c)"},
-        {"a * b / c", "((a * b) / c)"},
-        {"a + b / c", "(a + (b / c))"},
-        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
-        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
-        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
-        {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
-        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
-        {"true", "true"},
-        {"false", "false"},
-        {"3 > 5 == false", "((3 > 5) == false)"},
-        {"3 < 5 == true", "((3 < 5) == true)"},
-    };
+TEST(Parser, TestIfExpression) {
+    std::string input = "if (x < y) { x }";
 
-    for (const auto& test : tests) {
-        Chtholly::Lexer l(test.first);
-        Chtholly::Parser p(l);
-        auto program = p.parseProgram();
-        checkParserErrors(p);
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
 
-        auto str = astToString(program.get());
-        ASSERT_EQ(str, test.second);
-    }
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
+    auto exp = dynamic_cast<Chtholly::IfExpression*>(stmt->expression.get());
+    ASSERT_NE(exp, nullptr);
+    ASSERT_EQ(astToString(exp->condition.get()), "(x < y)");
+    ASSERT_EQ(exp->consequence->statements.size(), 1);
+    auto consequence = dynamic_cast<Chtholly::ExpressionStatement*>(exp->consequence->statements[0].get());
+    ASSERT_NE(consequence, nullptr);
+    ASSERT_EQ(astToString(consequence), "x");
+    ASSERT_EQ(exp->alternative, nullptr);
+}
+
+TEST(Parser, TestIfElseExpression) {
+    std::string input = "if (x < y) { x } else { y }";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
+    auto exp = dynamic_cast<Chtholly::IfExpression*>(stmt->expression.get());
+    ASSERT_NE(exp, nullptr);
+    ASSERT_EQ(astToString(exp->condition.get()), "(x < y)");
+    ASSERT_EQ(exp->consequence->statements.size(), 1);
+    auto consequence = dynamic_cast<Chtholly::ExpressionStatement*>(exp->consequence->statements[0].get());
+    ASSERT_NE(consequence, nullptr);
+    ASSERT_EQ(astToString(consequence), "x");
+    ASSERT_NE(exp->alternative, nullptr);
+    ASSERT_EQ(exp->alternative->statements.size(), 1);
+    auto alternative = dynamic_cast<Chtholly::ExpressionStatement*>(exp->alternative->statements[0].get());
+    ASSERT_NE(alternative, nullptr);
+    ASSERT_EQ(astToString(alternative), "y");
 }

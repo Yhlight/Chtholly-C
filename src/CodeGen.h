@@ -21,6 +21,8 @@ private:
     void visit(Boolean* node);
     void visit(PrefixExpression* node);
     void visit(InfixExpression* node);
+    void visit(BlockStatement* node);
+    void visit(IfExpression* node);
 
     std::stringstream m_out;
 };

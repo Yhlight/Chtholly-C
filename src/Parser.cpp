@@ -155,6 +155,9 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
             return nullptr;
         }
         break;
+    case TokenType::If:
+        leftExp = parseIfExpression();
+        break;
     default:
         return nullptr;
     }
@@ -179,6 +182,55 @@ std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Express
     auto precedence = curPrecedence();
     nextToken();
     expression->right = parseExpression(precedence);
+    return expression;
+}
+
+std::unique_ptr<BlockStatement> Parser::parseBlockStatement() {
+    auto block = std::make_unique<BlockStatement>(m_curToken);
+
+    nextToken();
+
+    while (m_curToken.type != TokenType::RBrace && m_curToken.type != TokenType::Eof) {
+        auto stmt = parseStatement();
+        if (stmt) {
+            block->statements.push_back(std::move(stmt));
+        }
+        nextToken();
+    }
+
+    return block;
+}
+
+std::unique_ptr<Expression> Parser::parseIfExpression() {
+    auto expression = std::make_unique<IfExpression>(m_curToken);
+
+    if (!expectPeek(TokenType::LParen)) {
+        return nullptr;
+    }
+
+    nextToken();
+    expression->condition = parseExpression(LOWEST);
+
+    if (!expectPeek(TokenType::RParen)) {
+        return nullptr;
+    }
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    expression->consequence = parseBlockStatement();
+
+    if (m_peekToken.type == TokenType::Else) {
+        nextToken();
+
+        if (!expectPeek(TokenType::LBrace)) {
+            return nullptr;
+        }
+
+        expression->alternative = parseBlockStatement();
+    }
+
     return expression;
 }
 
