@@ -8,23 +8,27 @@
 namespace chtholly {
 
 class Sema; // Forward declaration
+class CodeGen; // Forward declaration
 
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
     friend class Sema;
+    friend class CodeGen;
 };
 
 class NumberExprAST : public ExprAST {
     std::variant<int, double> val;
 public:
     NumberExprAST(std::variant<int, double> val) : val(val) {}
+    const std::variant<int, double>& getVal() const { return val; }
 };
 
 class StringExprAST : public ExprAST {
     std::string val;
 public:
     StringExprAST(std::string val) : val(std::move(val)) {}
+    const std::string& getVal() const { return val; }
 };
 
 class VariableExprAST : public ExprAST {
@@ -43,10 +47,12 @@ public:
 
     const ExprAST& getLHS() const { return *lhs; }
     const ExprAST& getRHS() const { return *rhs; }
+    TokenType getOp() const { return op; }
 };
 
 class StmtAST : public ExprAST {
     friend class Sema;
+    friend class CodeGen;
 };
 
 class VarDeclAST : public StmtAST {

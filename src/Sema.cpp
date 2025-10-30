@@ -44,9 +44,12 @@ std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
 }
 
 std::shared_ptr<Type> Sema::visit(const NumberExprAST& expr) {
-    // This is a simplified version.
-    // In a real compiler, you would handle different number types.
-    return std::make_shared<IntType>();
+    if (std::holds_alternative<int>(expr.getVal())) {
+        return std::make_shared<IntType>();
+    } else if (std::holds_alternative<double>(expr.getVal())) {
+        return std::make_shared<DoubleType>();
+    }
+    return nullptr;
 }
 
 std::shared_ptr<Type> Sema::visit(const StringExprAST& expr) {
