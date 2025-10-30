@@ -10,9 +10,9 @@
 
 ## Phase 2: Lexer and Tokenization
 
-- [ ] Implement the Lexer to tokenize the Chtholly source code.
-- [ ] Define all the tokens in `Token.h`.
-- [ ] Write tests for the Lexer to ensure it correctly tokenizes all language constructs.
+- [x] Implement the Lexer to tokenize the Chtholly source code.
+- [x] Define all the tokens in `Token.h`.
+- [x] Write tests for the Lexer to ensure it correctly tokenizes all language constructs.
 
 ## Phase 3: Parser and Abstract Syntax Tree (AST)
 
