@@ -15,9 +15,9 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(CodeGen, TestIfExpression) {
-    std::string input = "if (x < y) { return x; }";
-    std::string expected = "if ((x < y)) {\nreturn x;\n}\n";
+TEST(CodeGen, TestFunctionLiteral) {
+    std::string input = "func(x, y) { x + y; }";
+    std::string expected = "auto(auto x, auto y) {\n(x + y);\n}\n";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);
@@ -30,9 +30,9 @@ TEST(CodeGen, TestIfExpression) {
     ASSERT_EQ(result, expected);
 }
 
-TEST(CodeGen, TestIfElseExpression) {
-    std::string input = "if (x < y) { return x; } else { return y; }";
-    std::string expected = "if ((x < y)) {\nreturn x;\n}\nelse {\nreturn y;\n}\n";
+TEST(CodeGen, TestCallExpression) {
+    std::string input = "add(1, 2 * 3, 4 + 5);";
+    std::string expected = "add(1, (2 * 3), (4 + 5));\n";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);

@@ -140,6 +140,29 @@ public:
     std::unique_ptr<BlockStatement> alternative;
 };
 
+class FunctionLiteral : public Expression {
+public:
+    FunctionLiteral(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'func' token
+    std::vector<std::unique_ptr<Identifier>> parameters;
+    std::unique_ptr<BlockStatement> body;
+};
+
+class CallExpression : public Expression {
+public:
+    CallExpression(Token token, std::unique_ptr<Expression> function)
+        : token(std::move(token)), function(std::move(function)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The '(' token
+    std::unique_ptr<Expression> function; // Identifier or FunctionLiteral
+    std::vector<std::unique_ptr<Expression>> arguments;
+};
+
 // Represents a 'return' statement (e.g., return 5;)
 class ReturnStatement : public Statement {
 public:

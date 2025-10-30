@@ -23,6 +23,8 @@ private:
     void visit(InfixExpression* node);
     void visit(BlockStatement* node);
     void visit(IfExpression* node);
+    void visit(FunctionLiteral* node);
+    void visit(CallExpression* node);
 
     std::stringstream m_out;
 };

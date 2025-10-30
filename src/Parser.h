@@ -42,6 +42,10 @@ private:
     std::unique_ptr<Expression> parseInfixExpression(std::unique_ptr<Expression> left);
     std::unique_ptr<BlockStatement> parseBlockStatement();
     std::unique_ptr<Expression> parseIfExpression();
+    std::unique_ptr<Expression> parseFunctionLiteral();
+    std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
+    std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
+    std::vector<std::unique_ptr<Expression>> parseCallArguments();
 
     Precedence peekPrecedence();
     Precedence curPrecedence();

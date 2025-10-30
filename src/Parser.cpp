@@ -13,6 +13,7 @@ static std::map<TokenType, Precedence> precedences = {
     {TokenType::Minus, SUM},
     {TokenType::Slash, PRODUCT},
     {TokenType::Asterisk, PRODUCT},
+    {TokenType::LParen, CALL},
 };
 
 Parser::Parser(Lexer& lexer) : m_lexer(lexer) {
@@ -158,13 +159,20 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     case TokenType::If:
         leftExp = parseIfExpression();
         break;
+    case TokenType::Func:
+        leftExp = parseFunctionLiteral();
+        break;
     default:
         return nullptr;
     }
 
     while (m_peekToken.type != TokenType::Semicolon && precedence < peekPrecedence()) {
         nextToken();
-        leftExp = parseInfixExpression(std::move(leftExp));
+        if (m_curToken.type == TokenType::LParen) {
+            leftExp = parseCallExpression(std::move(leftExp));
+        } else {
+            leftExp = parseInfixExpression(std::move(leftExp));
+        }
     }
 
     return leftExp;
@@ -232,6 +240,79 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     }
 
     return expression;
+}
+
+std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
+    auto literal = std::make_unique<FunctionLiteral>(m_curToken);
+
+    if (!expectPeek(TokenType::LParen)) {
+        return nullptr;
+    }
+
+    literal->parameters = parseFunctionParameters();
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    literal->body = parseBlockStatement();
+
+    return literal;
+}
+
+std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
+    std::vector<std::unique_ptr<Identifier>> identifiers;
+
+    if (m_peekToken.type == TokenType::RParen) {
+        nextToken();
+        return identifiers;
+    }
+
+    nextToken();
+
+    identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+
+    while (m_peekToken.type == TokenType::Comma) {
+        nextToken();
+        nextToken();
+        identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+    }
+
+    if (!expectPeek(TokenType::RParen)) {
+        return {};
+    }
+
+    return identifiers;
+}
+
+std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {
+    auto exp = std::make_unique<CallExpression>(m_curToken, std::move(function));
+    exp->arguments = parseCallArguments();
+    return exp;
+}
+
+std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
+    std::vector<std::unique_ptr<Expression>> args;
+
+    if (m_peekToken.type == TokenType::RParen) {
+        nextToken();
+        return args;
+    }
+
+    nextToken();
+    args.push_back(parseExpression(LOWEST));
+
+    while (m_peekToken.type == TokenType::Comma) {
+        nextToken();
+        nextToken();
+        args.push_back(parseExpression(LOWEST));
+    }
+
+    if (!expectPeek(TokenType::RParen)) {
+        return {};
+    }
+
+    return args;
 }
 
 } // namespace Chtholly
