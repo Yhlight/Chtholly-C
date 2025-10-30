@@ -16,9 +16,9 @@
 
 ## Phase 3: Parser and Abstract Syntax Tree (AST)
 
-- [ ] Implement the Parser to build an AST from the token stream.
-- [ ] Define the AST node structures in `AST.h`.
-- [ ] Write tests for the Parser to ensure it correctly parses all language constructs.
+- [x] Implement the Parser to build an AST from the token stream.
+- [x] Define the AST node structures in `AST.h`.
+- [x] Write tests for the Parser to ensure it correctly parses all language constructs.
 
 ## Phase 4: Semantic Analysis
 
