@@ -2,87 +2,83 @@
 #include "Parser.h"
 #include "AST.h"
 #include <vector>
+#include <variant>
+#include <string>
 
-TEST(Parser, TestIdentifierExpression) {
-    std::string input = "foobar;";
-
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
-
-    ASSERT_NE(program, nullptr);
-    ASSERT_EQ(program->statements.size(), 1);
-
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-
-    auto ident = dynamic_cast<Chtholly::Identifier*>(stmt->expression.get());
-    ASSERT_NE(ident, nullptr);
-    ASSERT_EQ(ident->value, "foobar");
-    ASSERT_EQ(ident->tokenLiteral(), "foobar");
+// Helper function to stringify the AST for easy comparison
+std::string astToString(Chtholly::Node* node) {
+    if (!node) {
+        return "";
+    }
+    if (auto p = dynamic_cast<Chtholly::Program*>(node)) {
+        std::string s;
+        for (const auto& stmt : p->statements) {
+            s += astToString(stmt.get());
+        }
+        return s;
+    }
+    if (auto es = dynamic_cast<Chtholly::ExpressionStatement*>(node)) {
+        return astToString(es->expression.get());
+    }
+    if (auto il = dynamic_cast<Chtholly::IntegerLiteral*>(node)) {
+        return std::to_string(il->value);
+    }
+    if (auto pe = dynamic_cast<Chtholly::PrefixExpression*>(node)) {
+        return "(" + pe->op + astToString(pe->right.get()) + ")";
+    }
+    if (auto ie = dynamic_cast<Chtholly::InfixExpression*>(node)) {
+        return "(" + astToString(ie->left.get()) + " " + ie->op + " " + astToString(ie->right.get()) + ")";
+    }
+    if (auto b = dynamic_cast<Chtholly::Boolean*>(node)) {
+        return b->value ? "true" : "false";
+    }
+    if (auto i = dynamic_cast<Chtholly::Identifier*>(node)) {
+        return i->value;
+    }
+    return "";
 }
 
-TEST(Parser, TestIntegerLiteralExpression) {
-    std::string input = "5;";
 
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
+void checkParserErrors(Chtholly::Parser& p) {
+    const auto& errors = p.errors();
+    if (errors.empty()) {
+        return;
+    }
 
-    ASSERT_NE(program, nullptr);
-    ASSERT_EQ(program->statements.size(), 1);
-
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-
-    auto literal = dynamic_cast<Chtholly::IntegerLiteral*>(stmt->expression.get());
-    ASSERT_NE(literal, nullptr);
-    ASSERT_EQ(literal->value, 5);
-    ASSERT_EQ(literal->tokenLiteral(), "5");
+    std::cerr << "Parser has " << errors.size() << " errors" << std::endl;
+    for (const auto& msg : errors) {
+        std::cerr << "parser error: " << msg << std::endl;
+    }
+    FAIL();
 }
 
-TEST(Parser, TestParsingPrefixExpressions) {
-    std::string input = "!5;";
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
+TEST(Parser, TestOperatorPrecedence) {
+    std::vector<std::pair<std::string, std::string>> tests = {
+        {"-a * b", "((-a) * b)"},
+        {"!-a", "(!(-a))"},
+        {"a + b + c", "((a + b) + c)"},
+        {"a + b - c", "((a + b) - c)"},
+        {"a * b * c", "((a * b) * c)"},
+        {"a * b / c", "((a * b) / c)"},
+        {"a + b / c", "(a + (b / c))"},
+        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+        {"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+        {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+        {"true", "true"},
+        {"false", "false"},
+        {"3 > 5 == false", "((3 > 5) == false)"},
+        {"3 < 5 == true", "((3 < 5) == true)"},
+    };
 
-    ASSERT_NE(program, nullptr);
-    ASSERT_EQ(program->statements.size(), 1);
+    for (const auto& test : tests) {
+        Chtholly::Lexer l(test.first);
+        Chtholly::Parser p(l);
+        auto program = p.parseProgram();
+        checkParserErrors(p);
 
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-
-    auto exp = dynamic_cast<Chtholly::PrefixExpression*>(stmt->expression.get());
-    ASSERT_NE(exp, nullptr);
-    ASSERT_EQ(exp->op, "!");
-
-    auto literal = dynamic_cast<Chtholly::IntegerLiteral*>(exp->right.get());
-    ASSERT_NE(literal, nullptr);
-    ASSERT_EQ(literal->value, 5);
-}
-
-TEST(Parser, TestParsingInfixExpressions) {
-    std::string input = "5 + 5;";
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
-
-    ASSERT_NE(program, nullptr);
-    ASSERT_EQ(program->statements.size(), 1);
-
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-
-    auto exp = dynamic_cast<Chtholly::InfixExpression*>(stmt->expression.get());
-    ASSERT_NE(exp, nullptr);
-    ASSERT_EQ(exp->op, "+");
-
-    auto left = dynamic_cast<Chtholly::IntegerLiteral*>(exp->left.get());
-    ASSERT_NE(left, nullptr);
-    ASSERT_EQ(left->value, 5);
-
-    auto right = dynamic_cast<Chtholly::IntegerLiteral*>(exp->right.get());
-    ASSERT_NE(right, nullptr);
-    ASSERT_EQ(right->value, 5);
+        auto str = astToString(program.get());
+        ASSERT_EQ(str, test.second);
+    }
 }

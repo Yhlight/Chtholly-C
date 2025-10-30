@@ -1,7 +1,19 @@
 #include "Parser.h"
 #include <stdexcept>
+#include <sstream>
 
 namespace Chtholly {
+
+static std::map<TokenType, Precedence> precedences = {
+    {TokenType::Equal, EQUALS},
+    {TokenType::NotEqual, EQUALS},
+    {TokenType::LessThan, LESSGREATER},
+    {TokenType::GreaterThan, LESSGREATER},
+    {TokenType::Plus, SUM},
+    {TokenType::Minus, SUM},
+    {TokenType::Slash, PRODUCT},
+    {TokenType::Asterisk, PRODUCT},
+};
 
 Parser::Parser(Lexer& lexer) : m_lexer(lexer) {
     // Read two tokens, so m_curToken and m_peekToken are both set
@@ -19,8 +31,29 @@ bool Parser::expectPeek(TokenType t) {
         nextToken();
         return true;
     } else {
+        peekError(t);
         return false;
     }
+}
+
+void Parser::peekError(TokenType t) {
+    std::stringstream ss;
+    ss << "expected next token to be " << static_cast<int>(t) << ", got " << static_cast<int>(m_peekToken.type) << " instead";
+    m_errors.push_back(ss.str());
+}
+
+Precedence Parser::peekPrecedence() {
+    if (precedences.find(m_peekToken.type) != precedences.end()) {
+        return precedences[m_peekToken.type];
+    }
+    return LOWEST;
+}
+
+Precedence Parser::curPrecedence() {
+    if (precedences.find(m_curToken.type) != precedences.end()) {
+        return precedences[m_curToken.type];
+    }
+    return LOWEST;
 }
 
 std::unique_ptr<Program> Parser::parseProgram() {
@@ -63,7 +96,7 @@ std::unique_ptr<LetStatement> Parser::parseLetStatement() {
 
     nextToken();
 
-    stmt->value = parseExpression();
+    stmt->value = parseExpression(LOWEST);
 
     if (m_peekToken.type == TokenType::Semicolon) {
         nextToken();
@@ -77,7 +110,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 
     nextToken();
 
-    stmt->returnValue = parseExpression();
+    stmt->returnValue = parseExpression(LOWEST);
 
     if (m_peekToken.type == TokenType::Semicolon) {
         nextToken();
@@ -89,7 +122,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturnStatement() {
 std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
     auto stmt = std::make_unique<ExpressionStatement>(m_curToken);
 
-    stmt->expression = parseExpression();
+    stmt->expression = parseExpression(LOWEST);
 
     if (m_peekToken.type == TokenType::Semicolon) {
         nextToken();
@@ -98,61 +131,55 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
     return stmt;
 }
 
-std::unique_ptr<Expression> Parser::parseExpression() {
-    auto left = parseTerm();
-
-    while (m_peekToken.type == TokenType::Plus || m_peekToken.type == TokenType::Minus) {
+std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
+    std::unique_ptr<Expression> leftExp;
+    switch (m_curToken.type) {
+    case TokenType::Identifier:
+        leftExp = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        break;
+    case TokenType::Int:
+        leftExp = std::make_unique<IntegerLiteral>(m_curToken, std::stoll(m_curToken.literal));
+        break;
+    case TokenType::True:
+    case TokenType::False:
+        leftExp = std::make_unique<Boolean>(m_curToken, m_curToken.type == TokenType::True);
+        break;
+    case TokenType::Bang:
+    case TokenType::Minus:
+        leftExp = parsePrefixExpression();
+        break;
+    case TokenType::LParen:
         nextToken();
-        auto op = m_curToken.literal;
-        nextToken();
-        auto right = parseTerm();
-        auto infix = std::make_unique<InfixExpression>(m_curToken, op, std::move(left));
-        infix->right = std::move(right);
-        left = std::move(infix);
-    }
-
-    return left;
-}
-
-std::unique_ptr<Expression> Parser::parseTerm() {
-    auto left = parseFactor();
-
-    while (m_peekToken.type == TokenType::Asterisk || m_peekToken.type == TokenType::Slash) {
-        nextToken();
-        auto op = m_curToken.literal;
-        nextToken();
-        auto right = parseFactor();
-        auto infix = std::make_unique<InfixExpression>(m_curToken, op, std::move(left));
-        infix->right = std::move(right);
-        left = std::move(infix);
-    }
-
-    return left;
-}
-
-std::unique_ptr<Expression> Parser::parseFactor() {
-    if (m_curToken.type == TokenType::Int) {
-        return std::make_unique<IntegerLiteral>(m_curToken, std::stoll(m_curToken.literal));
-    }
-    if (m_curToken.type == TokenType::Identifier) {
-        return std::make_unique<Identifier>(m_curToken, m_curToken.literal);
-    }
-    if (m_curToken.type == TokenType::Bang || m_curToken.type == TokenType::Minus) {
-        auto op = m_curToken.literal;
-        nextToken();
-        auto prefix = std::make_unique<PrefixExpression>(m_curToken, op);
-        prefix->right = parseFactor();
-        return prefix;
-    }
-    if (m_curToken.type == TokenType::LParen) {
-        nextToken();
-        auto exp = parseExpression();
+        leftExp = parseExpression(LOWEST);
         if (!expectPeek(TokenType::RParen)) {
             return nullptr;
         }
-        return exp;
+        break;
+    default:
+        return nullptr;
     }
-    return nullptr;
+
+    while (m_peekToken.type != TokenType::Semicolon && precedence < peekPrecedence()) {
+        nextToken();
+        leftExp = parseInfixExpression(std::move(leftExp));
+    }
+
+    return leftExp;
+}
+
+std::unique_ptr<Expression> Parser::parsePrefixExpression() {
+    auto expression = std::make_unique<PrefixExpression>(m_curToken, m_curToken.literal);
+    nextToken();
+    expression->right = parseExpression(PREFIX);
+    return expression;
+}
+
+std::unique_ptr<Expression> Parser::parseInfixExpression(std::unique_ptr<Expression> left) {
+    auto expression = std::make_unique<InfixExpression>(m_curToken, m_curToken.literal, std::move(left));
+    auto precedence = curPrecedence();
+    nextToken();
+    expression->right = parseExpression(precedence);
+    return expression;
 }
 
 } // namespace Chtholly

@@ -9,8 +9,8 @@
 ## Phase 2: Lexer and Parser
 
 - [x] Implement the lexer to tokenize the Chtholly source code.
-- [ ] Implement the LL(k) parser to build an Abstract Syntax Tree (AST) from the tokens (In Progress).
-- [ ] Add basic error handling for syntax errors.
+- [x] Implement the LL(k) parser to build an Abstract Syntax Tree (AST) from the tokens.
+- [ ] Add basic error handling for syntax errors (In Progress).
 
 ## Phase 3: C++ Transpiler
 

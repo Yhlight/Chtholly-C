@@ -82,6 +82,17 @@ public:
     int64_t value;
 };
 
+class Boolean : public Expression {
+public:
+    Boolean(Token token, bool value)
+        : token(std::move(token)), value(value) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    bool value;
+};
+
 class PrefixExpression : public Expression {
 public:
     PrefixExpression(Token token, std::string op)
