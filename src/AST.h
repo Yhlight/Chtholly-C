@@ -1,0 +1,123 @@
+#ifndef CHTHOLLY_AST_H
+#define CHTHOLLY_AST_H
+
+#include "Token.h"
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace Chtholly {
+
+// Base class for all nodes in the AST
+struct Node {
+    virtual ~Node() = default;
+    virtual std::string tokenLiteral() const = 0;
+};
+
+// Base class for all expression nodes
+struct Expression : public Node {
+    //
+};
+
+// Base class for all statement nodes
+struct Statement : public Node {
+    //
+};
+
+// The root node of the AST
+class Program : public Node {
+public:
+    std::string tokenLiteral() const override {
+        if (!statements.empty()) {
+            return statements[0]->tokenLiteral();
+        }
+        return "";
+    }
+
+    std::vector<std::unique_ptr<Statement>> statements;
+};
+
+// Represents an identifier
+class Identifier : public Expression {
+public:
+    Identifier(Token token, std::string value)
+        : token(std::move(token)), value(std::move(value)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::string value;
+};
+
+// Represents a 'let' statement (e.g., let x = 5;)
+class LetStatement : public Statement {
+public:
+    LetStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'let' token
+    std::unique_ptr<Identifier> name;
+    std::unique_ptr<Expression> value;
+};
+
+class ExpressionStatement : public Statement {
+public:
+    ExpressionStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::unique_ptr<Expression> expression;
+};
+
+class IntegerLiteral : public Expression {
+public:
+    IntegerLiteral(Token token, int64_t value)
+        : token(std::move(token)), value(value) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    int64_t value;
+};
+
+class PrefixExpression : public Expression {
+public:
+    PrefixExpression(Token token, std::string op)
+        : token(std::move(token)), op(std::move(op)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::string op;
+    std::unique_ptr<Expression> right;
+};
+
+class InfixExpression : public Expression {
+public:
+    InfixExpression(Token token, std::string op, std::unique_ptr<Expression> left)
+        : token(std::move(token)), op(std::move(op)), left(std::move(left)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::string op;
+    std::unique_ptr<Expression> left;
+    std::unique_ptr<Expression> right;
+};
+
+// Represents a 'return' statement (e.g., return 5;)
+class ReturnStatement : public Statement {
+public:
+    ReturnStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'return' token
+    std::unique_ptr<Expression> returnValue;
+};
+
+} // namespace Chtholly
+
+#endif // CHTHOLLY_AST_H
