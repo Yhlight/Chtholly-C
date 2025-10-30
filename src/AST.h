@@ -3,12 +3,16 @@
 #include "Token.h"
 #include <memory>
 #include <vector>
+#include <variant>
 
 namespace chtholly {
+
+class Sema; // Forward declaration
 
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
+    friend class Sema;
 };
 
 class NumberExprAST : public ExprAST {
@@ -17,10 +21,17 @@ public:
     NumberExprAST(std::variant<int, double> val) : val(val) {}
 };
 
+class StringExprAST : public ExprAST {
+    std::string val;
+public:
+    StringExprAST(std::string val) : val(std::move(val)) {}
+};
+
 class VariableExprAST : public ExprAST {
     std::string name;
 public:
     VariableExprAST(std::string name) : name(std::move(name)) {}
+    const std::string& getName() const { return name; }
 };
 
 class BinaryExprAST : public ExprAST {
@@ -29,9 +40,14 @@ class BinaryExprAST : public ExprAST {
 public:
     BinaryExprAST(TokenType op, std::unique_ptr<ExprAST> lhs, std::unique_ptr<ExprAST> rhs)
         : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+
+    const ExprAST& getLHS() const { return *lhs; }
+    const ExprAST& getRHS() const { return *rhs; }
 };
 
-class StmtAST : public ExprAST {};
+class StmtAST : public ExprAST {
+    friend class Sema;
+};
 
 class VarDeclAST : public StmtAST {
     std::string name;

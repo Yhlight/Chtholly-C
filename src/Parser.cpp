@@ -69,12 +69,16 @@ std::unique_ptr<ExprAST> Parser::parseUnary() {
     return parsePrimary();
 }
 
+
 std::unique_ptr<ExprAST> Parser::parsePrimary() {
     if (match({TokenType::Integer})) {
         return std::make_unique<NumberExprAST>(std::get<int>(tokens[current - 1].literal));
     }
     if (match({TokenType::Double})) {
         return std::make_unique<NumberExprAST>(std::get<double>(tokens[current - 1].literal));
+    }
+    if (match({TokenType::String})) {
+        return std::make_unique<StringExprAST>(std::get<std::string>(tokens[current - 1].literal));
     }
     if (match({TokenType::Identifier})) {
         return std::make_unique<VariableExprAST>(tokens[current - 1].lexeme);

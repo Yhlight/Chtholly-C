@@ -22,9 +22,9 @@
 
 ## Phase 4: Semantic Analysis
 
-- [ ] Implement the Semantic Analyzer to perform type checking and ownership analysis.
-- [ ] Implement the Symbol Table to keep track of variables and their types.
-- [ ] Write tests for the Semantic Analyzer to ensure it correctly identifies semantic errors.
+- [x] Implement the Semantic Analyzer to perform type checking and ownership analysis.
+- [x] Implement the Symbol Table to keep track of variables and their types.
+- [x] Write tests for the Semantic Analyzer to ensure it correctly identifies semantic errors.
 
 ## Phase 5: C++ Transpilation
 
