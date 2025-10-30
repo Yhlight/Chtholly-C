@@ -1,5 +1,5 @@
 # Create a library with the core logic
-add_library(chtholly_lib cli.cpp)
+add_library(chtholly_lib cli.cpp Lexer.cpp)
 
 # Publicly expose the include directory for the library
 target_include_directories(chtholly_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

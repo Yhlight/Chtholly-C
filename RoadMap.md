@@ -3,12 +3,12 @@
 ## Phase 1: Project Setup and Core Infrastructure
 
 - [x] Set up the basic project structure.
-- [ ] Implement the command-line interface for the compiler.
-- [ ] Set up the testing framework.
+- [x] Implement the command-line interface for the compiler.
+- [x] Set up the testing framework.
 
 ## Phase 2: Lexer and Parser
 
-- [ ] Implement the lexer to tokenize the Chtholly source code.
+- [ ] Implement the lexer to tokenize the Chtholly source code (In Progress).
 - [ ] Implement the parser to build an Abstract Syntax Tree (AST) from the tokens.
 - [ ] Add basic error handling for syntax errors.
 

@@ -5,8 +5,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_executable(chtholly_tests test_cli.cpp)
-target_link_libraries(chtholly_tests GTest::gtest_main chtholly_lib)
+add_executable(chtholly_tests test_lexer.cpp ../src/cli.cpp ../src/Lexer.cpp)
+target_link_libraries(chtholly_tests GTest::gtest_main)
 
 target_include_directories(chtholly_tests PUBLIC ../src)
 
