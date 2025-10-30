@@ -4,6 +4,7 @@
 #include "cli.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "CodeGen.h"
 
 int main(int argc, char* argv[]) {
     try {
@@ -31,8 +32,10 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        // For now, we'll just print a success message if parsing succeeds
-        std::cout << "Parsing successful!" << std::endl;
+        Chtholly::CodeGen c;
+        std::string generated_code = c.generate(program.get());
+
+        std::cout << generated_code << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

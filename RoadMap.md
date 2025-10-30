@@ -10,11 +10,11 @@
 
 - [x] Implement the lexer to tokenize the Chtholly source code.
 - [x] Implement the LL(k) parser to build an Abstract Syntax Tree (AST) from the tokens.
-- [ ] Add basic error handling for syntax errors (In Progress).
+- [x] Add basic error handling for syntax errors.
 
 ## Phase 3: C++ Transpiler
 
-- [ ] Implement the C++ code generator (transpiler) that traverses the AST.
+- [ ] Implement the C++ code generator (transpiler) that traverses the AST (In Progress).
 - [ ] Translate basic Chtholly syntax (variables, functions, control flow) to C++.
 - [ ] Handle Chtholly's ownership and borrowing rules in the transpiled code.
 
