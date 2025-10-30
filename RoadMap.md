@@ -7,12 +7,12 @@ This document outlines the development plan for the Chtholly programming languag
 - [ ] Implement the CMake build system.
 - [ ] Create a Python build script (`scripts/build.py`).
 - [ ] Set up Google Test for unit testing.
-- [ ] Create a basic "Hello, World!" entry point to verify the build.
+- [x] Create a basic "Hello, World!" entry point to verify the build.
 
 ## Phase 2: Lexical Analysis (Lexer)
-- [ ] Implement the Lexer to tokenize Chtholly source code.
-- [ ] Define all necessary tokens (keywords, operators, literals, etc.).
-- [ ] Write unit tests for the Lexer.
+- [x] Implement the Lexer to tokenize Chtholly source code.
+- [x] Define all necessary tokens (keywords, operators, literals, etc.).
+- [x] Write unit tests for the Lexer.
 
 ## Phase 3: Syntactic Analysis (Parser)
 - [ ] Design and implement the Abstract Syntax Tree (AST) nodes.

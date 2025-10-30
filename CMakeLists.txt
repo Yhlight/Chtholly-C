@@ -4,7 +4,11 @@ project(Chtholly)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Chtholly library
+add_library(chtholly_lib src/Token.h src/Lexer.h src/Lexer.cpp)
+
 add_executable(chtholly src/main.cpp)
+target_link_libraries(chtholly PRIVATE chtholly_lib)
 
 # Google Test
 include(FetchContent)
@@ -16,5 +20,5 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # Test executable
-add_executable(chtholly_tests tests/test_main.cpp)
-target_link_libraries(chtholly_tests PRIVATE GTest::gtest_main)
+add_executable(chtholly_tests tests/test_main.cpp tests/test_lexer.cpp)
+target_link_libraries(chtholly_tests PRIVATE GTest::gtest_main chtholly_lib)
