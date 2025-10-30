@@ -18,7 +18,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Design and implement the Abstract Syntax Tree (AST) nodes.
 - [x] Implement a recursive descent parser.
 - [x] Handle basic declarations (variables, functions).
-- [ ] Implement expression parsing (operators, precedence).
+- [x] Implement expression parsing (operators, precedence).
 - [x] Write unit tests for the Parser.
 
 ## Phase 4: C++ Transpiler

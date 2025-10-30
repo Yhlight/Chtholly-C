@@ -4,7 +4,7 @@
 #include "AST/ASTPrinter.h"
 
 int main() {
-    std::string source = "let x = 10; let y = 20;";
+    std::string source = "let x = (10 + 20) * -30;";
     Lexer lexer(source);
     Parser parser(lexer);
     auto statements = parser.parse();

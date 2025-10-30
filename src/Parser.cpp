@@ -57,7 +57,8 @@ std::unique_ptr<Stmt> Parser::declaration() {
         return letDeclaration();
     }
     // Other statement types will go here
-    return nullptr;
+
+    throw std::runtime_error("Expect a declaration.");
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
@@ -73,13 +74,62 @@ std::unique_ptr<Stmt> Parser::letDeclaration() {
 }
 
 std::unique_ptr<Expr> Parser::expression() {
-    return primary();
+    return parsePrecedence(0);
 }
 
-std::unique_ptr<Expr> Parser::primary() {
+std::unique_ptr<Expr> Parser::parsePrecedence(int precedence) {
+    std::unique_ptr<Expr> left = prefix();
+
+    while (precedence < getPrecedence(peek().type)) {
+        left = infix(std::move(left));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::prefix() {
     if (match({TokenType::NUMBER_INT, TokenType::NUMBER_FLOAT})) {
         return std::make_unique<NumericLiteral>(tokens_[current_ - 1]);
+    } else if (match({TokenType::MINUS, TokenType::BANG})) {
+        Token op = tokens_[current_ - 1];
+        std::unique_ptr<Expr> right = parsePrecedence(6); // Unary precedence
+        return std::make_unique<UnaryExpr>(op, std::move(right));
+    } else if (match({TokenType::LEFT_PAREN})) {
+        std::unique_ptr<Expr> expr = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
+        return std::make_unique<GroupingExpr>(std::move(expr));
     }
-    // Other primary expressions will go here
     return nullptr;
+}
+
+std::unique_ptr<Expr> Parser::infix(std::unique_ptr<Expr> left) {
+    Token op = advance();
+    int precedence = getPrecedence(op.type);
+    std::unique_ptr<Expr> right = parsePrecedence(precedence);
+    return std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+}
+
+int Parser::getPrecedence(TokenType type) {
+    switch (type) {
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+            return 1;
+        case TokenType::STAR:
+        case TokenType::SLASH:
+        case TokenType::MODULO:
+            return 2;
+        case TokenType::EQUAL_EQUAL:
+        case TokenType::BANG_EQUAL:
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
+            return 3;
+        case TokenType::LOGICAL_AND:
+            return 4;
+        case TokenType::LOGICAL_OR:
+            return 5;
+        default:
+            return 0;
+    }
 }

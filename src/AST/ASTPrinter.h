@@ -9,13 +9,16 @@
 class ASTPrinter : public ExprVisitor, public StmtVisitor {
 public:
     std::string print(const std::vector<std::unique_ptr<Stmt>>& statements);
+    std::string print(const Expr& expr);
 
     std::any visit(const NumericLiteral& expr) override;
+    std::any visit(const UnaryExpr& expr) override;
+    std::any visit(const BinaryExpr& expr) override;
+    std::any visit(const GroupingExpr& expr) override;
     std::any visit(const LetStmt& stmt) override;
 
 private:
-    std::string parenthesize(const std::string& name, const Expr& expr);
-    std::string parenthesize(const std::string& name, const Stmt& stmt);
+    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
 
     std::string result_;
 };
