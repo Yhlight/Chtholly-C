@@ -205,6 +205,48 @@ public:
     std::unique_ptr<Expression> returnValue;
 };
 
+class Member : public Node {
+public:
+    Member(Token token, bool isPublic)
+        : token(std::move(token)), isPublic(isPublic) {}
+
+    Token token;
+    bool isPublic;
+};
+
+class Field : public Member {
+public:
+    Field(Token token, bool isPublic, std::unique_ptr<Identifier> name, std::unique_ptr<Type> type)
+        : Member(std::move(token), isPublic), name(std::move(name)), type(std::move(type)) {}
+
+    std::string tokenLiteral() const override { return name->tokenLiteral(); }
+
+    std::unique_ptr<Identifier> name;
+    std::unique_ptr<Type> type;
+};
+
+class Method : public Member {
+public:
+    Method(Token token, bool isPublic, std::unique_ptr<Identifier> name, std::unique_ptr<FunctionLiteral> function)
+        : Member(std::move(token), isPublic), name(std::move(name)), function(std::move(function)) {}
+
+    std::string tokenLiteral() const override { return name->tokenLiteral(); }
+
+    std::unique_ptr<Identifier> name;
+    std::unique_ptr<FunctionLiteral> function;
+};
+
+class StructStatement : public Statement {
+public:
+    StructStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'struct' token
+    std::unique_ptr<Identifier> name;
+    std::vector<std::unique_ptr<Member>> members;
+};
+
 } // namespace Chtholly
 
 #endif // CHTHOLLY_AST_H

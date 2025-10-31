@@ -16,11 +16,11 @@
 
 - [x] Implement the C++ code generator (transpiler) that traverses the AST.
 - [x] Translate basic Chtholly syntax (variables, functions, control flow) to C++.
-- [ ] Handle Chtholly's ownership and borrowing rules in the transpiled code (Mutable Variables (`mut`) In Progress).
+- [x] Handle Chtholly's ownership and borrowing rules in the transpiled code (Mutable Variables (`mut`)).
 
 ## Phase 4: Feature Implementation
 
-- [ ] Implement support for structs and methods.
+- [ ] Implement support for structs and methods (In Progress).
 - [ ] Implement generics.
 - [ ] Implement traits and constraints.
 - [ ] Implement the standard library modules (`iostream`, `filesystem`, etc.).

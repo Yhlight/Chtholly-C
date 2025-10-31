@@ -21,10 +21,16 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(Parser, TestLetStatements) {
+TEST(Parser, TestStructStatement) {
     std::string input = R"(
-        let x = 5;
-        mut y = 10;
+        struct MyStruct {
+            public name: string,
+            private id: int,
+
+            public add(x: int, y: int) -> int {
+                return x + y;
+            }
+        }
     )";
 
     Chtholly::Lexer l(input);
@@ -32,18 +38,38 @@ TEST(Parser, TestLetStatements) {
     auto program = p.parseProgram();
     checkParserErrors(p);
 
-    ASSERT_NE(program, nullptr);
-    ASSERT_EQ(program->statements.size(), 2);
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::StructStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->name->value, "MyStruct");
+    ASSERT_EQ(stmt->members.size(), 3);
 
-    std::vector<std::string> expected_identifiers = {"x", "y"};
-    std::vector<bool> expected_mutability = {false, true};
+    auto field1 = dynamic_cast<Chtholly::Field*>(stmt->members[0].get());
+    ASSERT_NE(field1, nullptr);
+    ASSERT_EQ(field1->isPublic, true);
+    ASSERT_EQ(field1->name->value, "name");
+    auto type1 = dynamic_cast<Chtholly::TypeName*>(field1->type.get());
+    ASSERT_NE(type1, nullptr);
+    ASSERT_EQ(type1->name, "string");
 
-    for (size_t i = 0; i < program->statements.size(); ++i) {
-        auto stmt = program->statements[i].get();
-        auto letStmt = static_cast<Chtholly::LetStatement*>(stmt);
-        ASSERT_EQ(letStmt->name->value, expected_identifiers[i]);
-        ASSERT_EQ(letStmt->isMutable, expected_mutability[i]);
-    }
+    auto field2 = dynamic_cast<Chtholly::Field*>(stmt->members[1].get());
+    ASSERT_NE(field2, nullptr);
+    ASSERT_EQ(field2->isPublic, false);
+    ASSERT_EQ(field2->name->value, "id");
+    auto type2 = dynamic_cast<Chtholly::TypeName*>(field2->type.get());
+    ASSERT_NE(type2, nullptr);
+    ASSERT_EQ(type2->name, "int");
+
+    auto method = dynamic_cast<Chtholly::Method*>(stmt->members[2].get());
+    ASSERT_NE(method, nullptr);
+    ASSERT_EQ(method->isPublic, true);
+    ASSERT_EQ(method->name->value, "add");
+    ASSERT_EQ(method->function->parameters.size(), 2);
+    ASSERT_EQ(method->function->parameters[0]->value, "x");
+    ASSERT_EQ(method->function->parameters[1]->value, "y");
+    auto return_type = dynamic_cast<Chtholly::TypeName*>(method->function->returnType.get());
+    ASSERT_NE(return_type, nullptr);
+    ASSERT_EQ(return_type->name, "int");
 }
 
 // Helper function to stringify the AST for easy comparison

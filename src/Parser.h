@@ -36,6 +36,7 @@ private:
     std::unique_ptr<LetStatement> parseDeclarationStatement();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
+    std::unique_ptr<StructStatement> parseStructStatement();
 
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parsePrefixExpression();

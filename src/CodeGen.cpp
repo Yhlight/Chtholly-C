@@ -38,6 +38,8 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<TypeName*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<StructStatement*>(node)) {
+        visit(n);
     }
 }
 
@@ -159,6 +161,39 @@ void CodeGen::visit(CallExpression* node) {
 
 void CodeGen::visit(TypeName* node) {
     m_out << node->name;
+}
+
+void CodeGen::visit(StructStatement* node) {
+    m_out << "struct " << node->name->value << " {\n";
+    for (const auto& member : node->members) {
+        if (auto field = dynamic_cast<Field*>(member.get())) {
+            visit(field);
+        } else if (auto method = dynamic_cast<Method*>(member.get())) {
+            visit(method);
+        }
+    }
+    m_out << "};\n";
+}
+
+void CodeGen::visit(Field* node) {
+    if (node->isPublic) {
+        m_out << "public: ";
+    } else {
+        m_out << "private: ";
+    }
+    visit(node->type.get());
+    m_out << " " << node->name->value << ";\n";
+}
+
+void CodeGen::visit(Method* node) {
+    if (node->isPublic) {
+        m_out << "public: ";
+    } else {
+        m_out << "private: ";
+    }
+    m_out << "auto " << node->name->value << " = ";
+    visit(node->function.get());
+    m_out << ";\n";
 }
 
 } // namespace Chtholly

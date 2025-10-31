@@ -27,6 +27,9 @@ private:
     void visit(CallExpression* node);
     void visit(TypeName* node);
     void visit(StringLiteral* node);
+    void visit(StructStatement* node);
+    void visit(Field* node);
+    void visit(Method* node);
 
     std::stringstream m_out;
 };

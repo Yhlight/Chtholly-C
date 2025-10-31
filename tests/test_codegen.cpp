@@ -15,17 +15,25 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(CodeGen, TestLetStatements) {
+TEST(CodeGen, TestStructStatement) {
     std::string input = R"(
-        let x = 5;
-        mut y = 10;
-        let z: int = 15;
-        mut w: string = "hello";
+        struct MyStruct {
+            public name: string,
+            private id: int,
+
+            public add(x: int, y: int) -> int {
+                return x + y;
+            }
+        }
     )";
-    std::string expected = R"(const auto x = 5;
-auto y = 10;
-const int z = 15;
-string w = "hello";
+    std::string expected = R"(struct MyStruct {
+public: string name;
+private: int id;
+public: auto add = [&](int x, int y) -> int {
+return (x + y);
+}
+;
+};
 )";
 
     Chtholly::Lexer l(input);

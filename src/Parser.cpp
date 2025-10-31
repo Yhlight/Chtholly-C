@@ -78,6 +78,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseDeclarationStatement();
     case TokenType::Return:
         return parseReturnStatement();
+    case TokenType::Struct:
+        return parseStructStatement();
     default:
         return parseExpressionStatement();
     }
@@ -134,6 +136,57 @@ std::unique_ptr<ExpressionStatement> Parser::parseExpressionStatement() {
     stmt->expression = parseExpression(LOWEST);
 
     if (m_peekToken.type == TokenType::Semicolon) {
+        nextToken();
+    }
+
+    return stmt;
+}
+
+std::unique_ptr<StructStatement> Parser::parseStructStatement() {
+    auto stmt = std::make_unique<StructStatement>(m_curToken);
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return nullptr;
+    }
+
+    stmt->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    nextToken();
+
+    while (m_curToken.type != TokenType::RBrace && m_curToken.type != TokenType::Eof) {
+        bool isPublic = true;
+        if (m_curToken.type == TokenType::Private) {
+            isPublic = false;
+            nextToken();
+        } else if (m_curToken.type == TokenType::Public) {
+            nextToken();
+        }
+
+        auto name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        nextToken();
+
+        if (m_curToken.type == TokenType::Colon) { // Field
+            nextToken();
+            auto type = parseType();
+            if (type) {
+                auto field = std::make_unique<Field>(m_curToken, isPublic, std::move(name), std::move(type));
+                stmt->members.push_back(std::move(field));
+            }
+        } else { // Method
+            auto func = parseFunctionLiteral();
+            if (func) {
+                auto method = std::make_unique<Method>(m_curToken, isPublic, std::move(name), std::unique_ptr<FunctionLiteral>(static_cast<FunctionLiteral*>(func.release())));
+                stmt->members.push_back(std::move(method));
+            }
+        }
+
+        if (m_peekToken.type == TokenType::Comma) {
+            nextToken();
+        }
         nextToken();
     }
 
@@ -256,8 +309,10 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
 std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     auto literal = std::make_unique<FunctionLiteral>(m_curToken);
 
-    if (!expectPeek(TokenType::LParen)) {
-        return nullptr;
+    if (m_curToken.type != TokenType::LParen) {
+        if (!expectPeek(TokenType::LParen)) {
+            return nullptr;
+        }
     }
 
     literal->parameters = parseFunctionParameters();
