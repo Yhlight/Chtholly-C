@@ -59,7 +59,7 @@
 - [x] Implement traits.
   - [x] Implement trait declarations.
   - [x] Implement trait implementations for structs.
-- [ ] Implement the `filesystem` module.
+- [ ] Implement the `filesystem` module. (in progress)
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.
 - [ ] Implement the `meta` module.

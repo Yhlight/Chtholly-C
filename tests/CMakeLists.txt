@@ -10,6 +10,7 @@ add_executable(chtholly_tests
     ParserTests.cpp
     SemaTests.cpp
     CodeGenTests.cpp
+    TestFilesystem.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib gtest_main)

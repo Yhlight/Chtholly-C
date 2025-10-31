@@ -299,6 +299,7 @@ void Sema::visit(const ExprStmtAST& stmt) {
     visit(stmt.getExpr());
 }
 
+#include "Filesystem.h"
 void Sema::visit(const ImportStmtAST& stmt) {
     if (stmt.getModuleName() == "iostream") {
         // Manually add the 'print' function symbol to the symbol table.
@@ -309,6 +310,16 @@ void Sema::visit(const ImportStmtAST& stmt) {
         if (!symbolTable.insert("print", printFuncType, false)) {
             // This could happen if iostream is imported multiple times.
             // For now, we'll just ignore it.
+        }
+    } else if (stmt.getModuleName() == "filesystem") {
+        auto stringType = std::make_shared<StringType>();
+        auto boolType = std::make_shared<BoolType>();
+        std::vector<std::shared_ptr<Type>> paramTypes = {stringType};
+        auto existsFuncType = std::make_shared<FunctionType>(boolType, paramTypes);
+        if (!symbolTable.insert("exists", existsFuncType, false)) {
+        }
+        auto isDirectoryFuncType = std::make_shared<FunctionType>(boolType, paramTypes);
+        if (!symbolTable.insert("is_directory", isDirectoryFuncType, false)) {
         }
     }
 }
