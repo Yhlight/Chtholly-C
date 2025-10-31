@@ -126,6 +126,16 @@ void CodeGen::visit(IfExpression* node) {
 }
 
 void CodeGen::visit(FunctionLiteral* node) {
+    if (!node->templateParams.empty()) {
+        m_out << "template<";
+        for (size_t i = 0; i < node->templateParams.size(); ++i) {
+            m_out << "typename " << node->templateParams[i]->value;
+            if (i < node->templateParams.size() - 1) {
+                m_out << ", ";
+            }
+        }
+        m_out << ">\n";
+    }
     m_out << "[&](";
     for (size_t i = 0; i < node->parameters.size(); ++i) {
         if (node->parameters[i]->type) {
@@ -149,6 +159,16 @@ void CodeGen::visit(FunctionLiteral* node) {
 
 void CodeGen::visit(CallExpression* node) {
     visit(node->function.get());
+    if (!node->templateArgs.empty()) {
+        m_out << "<";
+        for (size_t i = 0; i < node->templateArgs.size(); ++i) {
+            visit(node->templateArgs[i].get());
+            if (i < node->templateArgs.size() - 1) {
+                m_out << ", ";
+            }
+        }
+        m_out << ">";
+    }
     m_out << "(";
     for (size_t i = 0; i < node->arguments.size(); ++i) {
         visit(node->arguments[i].get());

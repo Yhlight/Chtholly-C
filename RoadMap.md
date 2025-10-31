@@ -20,8 +20,8 @@
 
 ## Phase 4: Feature Implementation
 
-- [ ] Implement support for structs and methods (In Progress).
-- [ ] Implement generics.
+- [x] Implement support for structs and methods.
+- [ ] Implement generics (Generic Functions In Progress).
 - [ ] Implement traits and constraints.
 - [ ] Implement the standard library modules (`iostream`, `filesystem`, etc.).
 

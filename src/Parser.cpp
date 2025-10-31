@@ -231,10 +231,18 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
     }
 
     while (m_peekToken.type != TokenType::Semicolon && precedence < peekPrecedence()) {
-        nextToken();
-        if (m_curToken.type == TokenType::LParen) {
+        if (m_peekToken.type == TokenType::LParen) {
+            nextToken();
             leftExp = parseCallExpression(std::move(leftExp));
+        } else if (m_peekToken.type == TokenType::LessThan) {
+            nextToken();
+            if (m_peekToken.type == TokenType::Identifier) {
+                leftExp = parseCallExpression(std::move(leftExp));
+            } else {
+                leftExp = parseInfixExpression(std::move(leftExp));
+            }
         } else {
+            nextToken();
             leftExp = parseInfixExpression(std::move(leftExp));
         }
     }
@@ -309,6 +317,11 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
 std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     auto literal = std::make_unique<FunctionLiteral>(m_curToken);
 
+    if (m_peekToken.type == TokenType::LessThan) {
+        nextToken();
+        literal->templateParams = parseTemplateParams();
+    }
+
     if (m_curToken.type != TokenType::LParen) {
         if (!expectPeek(TokenType::LParen)) {
             return nullptr;
@@ -330,6 +343,30 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     literal->body = parseBlockStatement();
 
     return literal;
+}
+
+std::vector<std::unique_ptr<Identifier>> Parser::parseTemplateParams() {
+    std::vector<std::unique_ptr<Identifier>> identifiers;
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return {};
+    }
+
+    identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+
+    while (m_peekToken.type == TokenType::Comma) {
+        nextToken();
+        if (!expectPeek(TokenType::Identifier)) {
+            return {};
+        }
+        identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+    }
+
+    if (!expectPeek(TokenType::GreaterThan)) {
+        return {};
+    }
+
+    return identifiers;
 }
 
 std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
@@ -375,8 +412,39 @@ std::unique_ptr<Type> Parser::parseType() {
 
 std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {
     auto exp = std::make_unique<CallExpression>(m_curToken, std::move(function));
+    if (m_curToken.type == TokenType::LessThan) {
+        exp->templateArgs = parseTemplateArgs();
+    }
     exp->arguments = parseCallArguments();
     return exp;
+}
+
+std::vector<std::unique_ptr<Type>> Parser::parseTemplateArgs() {
+    std::vector<std::unique_ptr<Type>> types;
+
+    if (m_curToken.type != TokenType::LessThan) {
+        return types;
+    }
+
+    nextToken();
+
+    types.push_back(parseType());
+
+    while (m_peekToken.type == TokenType::Comma) {
+        nextToken();
+        nextToken();
+        types.push_back(parseType());
+    }
+
+    if (!expectPeek(TokenType::GreaterThan)) {
+        return {};
+    }
+
+    if (!expectPeek(TokenType::LParen)) {
+        return {};
+    }
+
+    return types;
 }
 
 std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {

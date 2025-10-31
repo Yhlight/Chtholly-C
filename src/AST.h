@@ -177,6 +177,7 @@ public:
     std::string tokenLiteral() const override { return token.literal; }
 
     Token token; // The 'func' token
+    std::vector<std::unique_ptr<Identifier>> templateParams;
     std::vector<std::unique_ptr<Identifier>> parameters;
     std::unique_ptr<BlockStatement> body;
     std::unique_ptr<Type> returnType;
@@ -191,6 +192,7 @@ public:
 
     Token token; // The '(' token
     std::unique_ptr<Expression> function; // Identifier or FunctionLiteral
+    std::vector<std::unique_ptr<Type>> templateArgs;
     std::vector<std::unique_ptr<Expression>> arguments;
 };
 

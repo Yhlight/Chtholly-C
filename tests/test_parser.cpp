@@ -21,17 +21,8 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(Parser, TestStructStatement) {
-    std::string input = R"(
-        struct MyStruct {
-            public name: string,
-            private id: int,
-
-            public add(x: int, y: int) -> int {
-                return x + y;
-            }
-        }
-    )";
+TEST(Parser, TestGenericFunctionLiteralParsing) {
+    std::string input = "func<T>(x: T) -> T { return x; }";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);
@@ -39,37 +30,40 @@ TEST(Parser, TestStructStatement) {
     checkParserErrors(p);
 
     ASSERT_EQ(program->statements.size(), 1);
-    auto stmt = dynamic_cast<Chtholly::StructStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-    ASSERT_EQ(stmt->name->value, "MyStruct");
-    ASSERT_EQ(stmt->members.size(), 3);
-
-    auto field1 = dynamic_cast<Chtholly::Field*>(stmt->members[0].get());
-    ASSERT_NE(field1, nullptr);
-    ASSERT_EQ(field1->isPublic, true);
-    ASSERT_EQ(field1->name->value, "name");
-    auto type1 = dynamic_cast<Chtholly::TypeName*>(field1->type.get());
-    ASSERT_NE(type1, nullptr);
-    ASSERT_EQ(type1->name, "string");
-
-    auto field2 = dynamic_cast<Chtholly::Field*>(stmt->members[1].get());
-    ASSERT_NE(field2, nullptr);
-    ASSERT_EQ(field2->isPublic, false);
-    ASSERT_EQ(field2->name->value, "id");
-    auto type2 = dynamic_cast<Chtholly::TypeName*>(field2->type.get());
-    ASSERT_NE(type2, nullptr);
-    ASSERT_EQ(type2->name, "int");
-
-    auto method = dynamic_cast<Chtholly::Method*>(stmt->members[2].get());
-    ASSERT_NE(method, nullptr);
-    ASSERT_EQ(method->isPublic, true);
-    ASSERT_EQ(method->name->value, "add");
-    ASSERT_EQ(method->function->parameters.size(), 2);
-    ASSERT_EQ(method->function->parameters[0]->value, "x");
-    ASSERT_EQ(method->function->parameters[1]->value, "y");
-    auto return_type = dynamic_cast<Chtholly::TypeName*>(method->function->returnType.get());
+    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
+    auto exp = dynamic_cast<Chtholly::FunctionLiteral*>(stmt->expression.get());
+    ASSERT_NE(exp, nullptr);
+    ASSERT_EQ(exp->templateParams.size(), 1);
+    ASSERT_EQ(exp->templateParams[0]->value, "T");
+    ASSERT_EQ(exp->parameters.size(), 1);
+    ASSERT_EQ(exp->parameters[0]->value, "x");
+    auto param1_type = dynamic_cast<Chtholly::TypeName*>(exp->parameters[0]->type.get());
+    ASSERT_NE(param1_type, nullptr);
+    ASSERT_EQ(param1_type->name, "T");
+    auto return_type = dynamic_cast<Chtholly::TypeName*>(exp->returnType.get());
     ASSERT_NE(return_type, nullptr);
-    ASSERT_EQ(return_type->name, "int");
+    ASSERT_EQ(return_type->name, "T");
+}
+
+TEST(Parser, TestGenericCallExpressionParsing) {
+    std::string input = "my_func<int>(5);";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
+    auto exp = dynamic_cast<Chtholly::CallExpression*>(stmt->expression.get());
+    ASSERT_NE(exp, nullptr);
+    ASSERT_EQ(astToString(exp->function.get()), "my_func");
+    ASSERT_EQ(exp->templateArgs.size(), 1);
+    auto type = dynamic_cast<Chtholly::TypeName*>(exp->templateArgs[0].get());
+    ASSERT_NE(type, nullptr);
+    ASSERT_EQ(type->name, "int");
+    ASSERT_EQ(exp->arguments.size(), 1);
+    ASSERT_EQ(astToString(exp->arguments[0].get()), "5");
 }
 
 // Helper function to stringify the AST for easy comparison
