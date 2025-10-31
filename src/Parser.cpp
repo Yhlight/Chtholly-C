@@ -91,6 +91,12 @@ std::unique_ptr<LetStatement> Parser::parseLetStatement() {
 
     stmt->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
 
+    if (m_peekToken.type == TokenType::Colon) {
+        nextToken();
+        nextToken();
+        stmt->type = parseType();
+    }
+
     if (!expectPeek(TokenType::Assign)) {
         return nullptr;
     }
@@ -251,6 +257,12 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
 
     literal->parameters = parseFunctionParameters();
 
+    if (m_peekToken.type == TokenType::Arrow) {
+        nextToken();
+        nextToken();
+        literal->returnType = parseType();
+    }
+
     if (!expectPeek(TokenType::LBrace)) {
         return nullptr;
     }
@@ -270,12 +282,24 @@ std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
 
     nextToken();
 
-    identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+    auto ident = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+    if (m_peekToken.type == TokenType::Colon) {
+        nextToken();
+        nextToken();
+        ident->type = parseType();
+    }
+    identifiers.push_back(std::move(ident));
 
     while (m_peekToken.type == TokenType::Comma) {
         nextToken();
         nextToken();
-        identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+        auto ident = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        if (m_peekToken.type == TokenType::Colon) {
+            nextToken();
+            nextToken();
+            ident->type = parseType();
+        }
+        identifiers.push_back(std::move(ident));
     }
 
     if (!expectPeek(TokenType::RParen)) {
@@ -283,6 +307,10 @@ std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
     }
 
     return identifiers;
+}
+
+std::unique_ptr<Type> Parser::parseType() {
+    return std::make_unique<TypeName>(m_curToken, m_curToken.literal);
 }
 
 std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {

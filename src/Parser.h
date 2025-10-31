@@ -44,6 +44,7 @@ private:
     std::unique_ptr<Expression> parseIfExpression();
     std::unique_ptr<Expression> parseFunctionLiteral();
     std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
+    std::unique_ptr<Type> parseType();
     std::unique_ptr<Expression> parseCallExpression(std::unique_ptr<Expression> function);
     std::vector<std::unique_ptr<Expression>> parseCallArguments();
 

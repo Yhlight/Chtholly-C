@@ -19,6 +19,22 @@ struct Expression : public Node {
     //
 };
 
+// Base class for all type nodes
+struct Type : public Node {
+    //
+};
+
+class TypeName : public Type {
+public:
+    TypeName(Token token, std::string name)
+        : token(std::move(token)), name(std::move(name)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::string name;
+};
+
 // Base class for all statement nodes
 struct Statement : public Node {
     //
@@ -47,6 +63,7 @@ public:
 
     Token token;
     std::string value;
+    std::unique_ptr<Type> type;
 };
 
 // Represents a 'let' statement (e.g., let x = 5;)
@@ -59,6 +76,7 @@ public:
     Token token; // The 'let' token
     std::unique_ptr<Identifier> name;
     std::unique_ptr<Expression> value;
+    std::unique_ptr<Type> type;
 };
 
 class ExpressionStatement : public Statement {
@@ -149,6 +167,7 @@ public:
     Token token; // The 'func' token
     std::vector<std::unique_ptr<Identifier>> parameters;
     std::unique_ptr<BlockStatement> body;
+    std::unique_ptr<Type> returnType;
 };
 
 class CallExpression : public Expression {

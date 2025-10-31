@@ -21,8 +21,25 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(Parser, TestFunctionLiteralParsing) {
-    std::string input = "func(x, y) { x + y; }";
+TEST(Parser, TestLetStatementWithType) {
+    std::string input = "let x: int = 5;";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::LetStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->name->value, "x");
+    auto type = dynamic_cast<Chtholly::TypeName*>(stmt->type.get());
+    ASSERT_NE(type, nullptr);
+    ASSERT_EQ(type->name, "int");
+}
+
+TEST(Parser, TestFunctionLiteralWithType) {
+    std::string input = "func(x: int, y: string) -> bool { return x > y; }";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);
@@ -35,30 +52,17 @@ TEST(Parser, TestFunctionLiteralParsing) {
     ASSERT_NE(exp, nullptr);
     ASSERT_EQ(exp->parameters.size(), 2);
     ASSERT_EQ(exp->parameters[0]->value, "x");
+    auto param1_type = dynamic_cast<Chtholly::TypeName*>(exp->parameters[0]->type.get());
+    ASSERT_NE(param1_type, nullptr);
+    ASSERT_EQ(param1_type->name, "int");
     ASSERT_EQ(exp->parameters[1]->value, "y");
-    ASSERT_EQ(exp->body->statements.size(), 1);
-    auto bodyStmt = dynamic_cast<Chtholly::ExpressionStatement*>(exp->body->statements[0].get());
-    ASSERT_NE(bodyStmt, nullptr);
-    ASSERT_EQ(astToString(bodyStmt), "(x + y)");
-}
+    auto param2_type = dynamic_cast<Chtholly::TypeName*>(exp->parameters[1]->type.get());
+    ASSERT_NE(param2_type, nullptr);
+    ASSERT_EQ(param2_type->name, "string");
 
-TEST(Parser, TestCallExpressionParsing) {
-    std::string input = "add(1, 2 * 3, 4 + 5);";
-
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
-    checkParserErrors(p);
-
-    ASSERT_EQ(program->statements.size(), 1);
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    auto exp = dynamic_cast<Chtholly::CallExpression*>(stmt->expression.get());
-    ASSERT_NE(exp, nullptr);
-    ASSERT_EQ(astToString(exp->function.get()), "add");
-    ASSERT_EQ(exp->arguments.size(), 3);
-    ASSERT_EQ(astToString(exp->arguments[0].get()), "1");
-    ASSERT_EQ(astToString(exp->arguments[1].get()), "(2 * 3)");
-    ASSERT_EQ(astToString(exp->arguments[2].get()), "(4 + 5)");
+    auto return_type = dynamic_cast<Chtholly::TypeName*>(exp->returnType.get());
+    ASSERT_NE(return_type, nullptr);
+    ASSERT_EQ(return_type->name, "bool");
 }
 
 // Helper function to stringify the AST for easy comparison

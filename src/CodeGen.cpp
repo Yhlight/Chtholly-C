@@ -34,6 +34,8 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<CallExpression*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<TypeName*>(node)) {
+        visit(n);
     }
 }
 
@@ -45,7 +47,12 @@ void CodeGen::visit(ExpressionStatement* node) {
 }
 
 void CodeGen::visit(LetStatement* node) {
-    m_out << "auto " << node->name->value << " = ";
+    if (node->type) {
+        visit(node->type.get());
+    } else {
+        m_out << "auto";
+    }
+    m_out << " " << node->name->value << " = ";
     visit(node->value.get());
     m_out << ";\n";
 }
@@ -102,14 +109,24 @@ void CodeGen::visit(IfExpression* node) {
 }
 
 void CodeGen::visit(FunctionLiteral* node) {
-    m_out << "auto(";
+    m_out << "[&](";
     for (size_t i = 0; i < node->parameters.size(); ++i) {
-        m_out << "auto " << node->parameters[i]->value;
+        if (node->parameters[i]->type) {
+            visit(node->parameters[i]->type.get());
+        } else {
+            m_out << "auto";
+        }
+        m_out << " " << node->parameters[i]->value;
         if (i < node->parameters.size() - 1) {
             m_out << ", ";
         }
     }
     m_out << ") ";
+    if (node->returnType) {
+        m_out << "-> ";
+        visit(node->returnType.get());
+        m_out << " ";
+    }
     visit(node->body.get());
 }
 
@@ -123,6 +140,10 @@ void CodeGen::visit(CallExpression* node) {
         }
     }
     m_out << ")";
+}
+
+void CodeGen::visit(TypeName* node) {
+    m_out << node->name;
 }
 
 } // namespace Chtholly
