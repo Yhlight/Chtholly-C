@@ -8,10 +8,12 @@
 
 int main() {
     std::string source = R"(
-        let name = "Chtholly";
         let x = 10;
-        mut y = 20;
-        let z = x + y;
+        if (x > 5) {
+            let y = 20;
+        } else {
+            let y = 30;
+        }
     )";
 
     try {

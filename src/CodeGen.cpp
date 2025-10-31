@@ -62,3 +62,11 @@ std::string CodeGen::visitBlockStmt(const std::shared_ptr<Block>& stmt) {
     code += "}\n";
     return code;
 }
+
+std::string CodeGen::visitIfStmt(const std::shared_ptr<If>& stmt) {
+    std::string code = "if (" + stmt->condition->accept(*this) + ") " + stmt->thenBranch->accept(*this);
+    if (stmt->elseBranch) {
+        code += " else " + stmt->elseBranch->accept(*this);
+    }
+    return code;
+}

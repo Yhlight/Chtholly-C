@@ -102,6 +102,7 @@ struct Expression;
 struct Print;
 struct Var;
 struct Block;
+struct If;
 
 // Visitor for statements
 template<typename R>
@@ -110,6 +111,7 @@ struct StmtVisitor {
     virtual R visitPrintStmt(const std::shared_ptr<Print>& stmt) = 0;
     virtual R visitVarStmt(const std::shared_ptr<Var>& stmt) = 0;
     virtual R visitBlockStmt(const std::shared_ptr<Block>& stmt) = 0;
+    virtual R visitIfStmt(const std::shared_ptr<If>& stmt) = 0;
 };
 
 // Base class for all statements
@@ -160,6 +162,19 @@ struct Block : Stmt, public std::enable_shared_from_this<Block> {
     }
 
     std::vector<std::shared_ptr<Stmt>> statements;
+};
+
+struct If : Stmt, public std::enable_shared_from_this<If> {
+    If(std::shared_ptr<Expr> condition, std::shared_ptr<Stmt> thenBranch, std::shared_ptr<Stmt> elseBranch)
+        : condition(condition), thenBranch(thenBranch), elseBranch(elseBranch) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitIfStmt(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> condition;
+    std::shared_ptr<Stmt> thenBranch;
+    std::shared_ptr<Stmt> elseBranch;
 };
 
 #endif //CHTHOLLY_AST_H
