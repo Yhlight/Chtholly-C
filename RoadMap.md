@@ -3,9 +3,9 @@
 ## Phase 1: Core Language Features
 
 - [X] Initial project setup
-- [ ] Basic lexer and parser
-- [ ] Variable declarations (let, mut)
-- [ ] Basic types (int, double, char, bool, string)
+- [X] Basic lexer and parser
+- [X] Variable declarations (let, mut)
+- [X] Basic types (int, double, char, bool, string)
 - [ ] Function declarations
 - [ ] Basic operators
 - [ ] Control flow (if, switch, for, while)

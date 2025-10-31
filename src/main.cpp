@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    std::string source = "let x = 5;";
+    std::string source = "let x : int = 5; mut y = 10;";
     Lexer lexer(source);
     Parser parser(lexer);
 

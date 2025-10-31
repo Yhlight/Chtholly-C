@@ -40,12 +40,54 @@ struct Identifier : public Expression {
     }
 };
 
+// Represents a type annotation
+struct Type : public Node {
+    std::string name;
+
+    explicit Type(std::string name) : name(std::move(name)) {}
+
+    std::string to_string() const override {
+        return name;
+    }
+};
+
+// Represents an integer literal
+struct IntegerLiteral : public Expression {
+    int64_t value;
+
+    std::string to_string() const override {
+        return std::to_string(value);
+    }
+};
+
 // Represents a let statement
 struct LetStatement : public Statement {
     std::unique_ptr<Identifier> name;
+    std::unique_ptr<Type> type;
     std::unique_ptr<Expression> value;
 
     std::string to_string() const override {
-        return "let " + name->to_string() + " = " + value->to_string() + ";";
+        std::string result = "let " + name->to_string();
+        if (type) {
+            result += " : " + type->to_string();
+        }
+        result += " = " + value->to_string() + ";";
+        return result;
+    }
+};
+
+// Represents a mut statement
+struct MutStatement : public Statement {
+    std::unique_ptr<Identifier> name;
+    std::unique_ptr<Type> type;
+    std::unique_ptr<Expression> value;
+
+    std::string to_string() const override {
+        std::string result = "mut " + name->to_string();
+        if (type) {
+            result += " : " + type->to_string();
+        }
+        result += " = " + value->to_string() + ";";
+        return result;
     }
 };

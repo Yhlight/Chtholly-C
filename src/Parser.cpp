@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <stdexcept>
 
 Parser::Parser(Lexer& lexer) : lexer(lexer) {
     next_token();
@@ -32,12 +33,28 @@ std::unique_ptr<Statement> Parser::parse_statement() {
     if (current_token.type == TokenType::Let) {
         return parse_let_statement();
     }
+    if (current_token.type == TokenType::Mut) {
+        return parse_mut_statement();
+    }
     return nullptr;
 }
 
-std::unique_ptr<Expression> parse_expression() {
-    // For now, we'll just return a placeholder.
-    return std::make_unique<Identifier>("EXPRESSION");
+std::unique_ptr<Expression> Parser::parse_expression() {
+    if (current_token.type == TokenType::Integer) {
+        return parse_integer_literal();
+    }
+    return nullptr;
+}
+
+std::unique_ptr<Expression> Parser::parse_integer_literal() {
+    auto literal = std::make_unique<IntegerLiteral>();
+    try {
+        literal->value = std::stoll(current_token.literal);
+    } catch (const std::invalid_argument& e) {
+        error_messages.push_back("Could not parse integer literal: " + current_token.literal);
+        return nullptr;
+    }
+    return literal;
 }
 
 std::unique_ptr<LetStatement> Parser::parse_let_statement() {
@@ -53,6 +70,48 @@ std::unique_ptr<LetStatement> Parser::parse_let_statement() {
     stmt->name = std::make_unique<Identifier>(current_token.literal);
 
     next_token(); // consume identifier
+
+    if (current_token.type == TokenType::Colon) {
+        next_token(); // consume ':'
+        stmt->type = std::make_unique<Type>(current_token.literal);
+        next_token(); // consume type
+    }
+
+    if (current_token.type != TokenType::Equal) {
+        error_messages.push_back("Expected '=' after identifier");
+        return nullptr;
+    }
+
+    next_token(); // consume '='
+
+    stmt->value = parse_expression();
+
+    while (current_token.type != TokenType::Semicolon && current_token.type != TokenType::Eof) {
+        next_token();
+    }
+
+    return stmt;
+}
+
+std::unique_ptr<MutStatement> Parser::parse_mut_statement() {
+    auto stmt = std::make_unique<MutStatement>();
+
+    next_token(); // consume 'mut'
+
+    if (current_token.type != TokenType::Identifier) {
+        error_messages.push_back("Expected identifier after 'mut'");
+        return nullptr;
+    }
+
+    stmt->name = std::make_unique<Identifier>(current_token.literal);
+
+    next_token(); // consume identifier
+
+    if (current_token.type == TokenType::Colon) {
+        next_token(); // consume ':'
+        stmt->type = std::make_unique<Type>(current_token.literal);
+        next_token(); // consume type
+    }
 
     if (current_token.type != TokenType::Equal) {
         error_messages.push_back("Expected '=' after identifier");

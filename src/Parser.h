@@ -15,6 +15,9 @@ private:
     void next_token();
     std::unique_ptr<Statement> parse_statement();
     std::unique_ptr<LetStatement> parse_let_statement();
+    std::unique_ptr<MutStatement> parse_mut_statement();
+    std::unique_ptr<Expression> parse_expression();
+    std::unique_ptr<Expression> parse_integer_literal();
 
     Lexer& lexer;
     Token current_token;
