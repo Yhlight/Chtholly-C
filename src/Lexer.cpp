@@ -26,6 +26,7 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"default", TokenType::Default},
     {"fallthrough", TokenType::Fallthrough},
     {"break", TokenType::Break},
+    {"while", TokenType::While},
 };
 
 Lexer::Lexer(std::string source) : source(std::move(source)) {}

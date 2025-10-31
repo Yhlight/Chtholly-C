@@ -103,3 +103,14 @@ TEST(CodeGenTest, EnumDeclaration) {
     std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, WhileStatement) {
+    std::string source = "while (true) { let a = 1; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "while (true) {\nconst auto a = 1;\n}\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

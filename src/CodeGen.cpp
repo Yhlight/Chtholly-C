@@ -25,6 +25,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*caseBlock);
     } else if (auto* enumDecl = dynamic_cast<const EnumDeclAST*>(&stmt)) {
         visit(*enumDecl);
+    } else if (auto* whileStmt = dynamic_cast<const WhileStmtAST*>(&stmt)) {
+        visit(*whileStmt);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -96,6 +98,13 @@ void CodeGen::visit(const EnumDeclAST& stmt) {
         ss << "\n";
     }
     ss << "};\n";
+}
+
+void CodeGen::visit(const WhileStmtAST& stmt) {
+    ss << "while (";
+    visit(stmt.getCond());
+    ss << ") ";
+    visit(stmt.getBody());
 }
 
 void CodeGen::visit(const BlockStmtAST& stmt) {

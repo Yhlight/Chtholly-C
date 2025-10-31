@@ -23,6 +23,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::Enum})) {
         return parseEnumDecl();
     }
+    if (match({TokenType::While})) {
+        return parseWhileStmt();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -116,6 +119,17 @@ std::unique_ptr<StmtAST> Parser::parseEnumDecl() {
     consume(TokenType::RightBrace, "Expect '}' after enum body.");
     consume(TokenType::Semicolon, "Expect ';' after enum declaration.");
     return std::make_unique<EnumDeclAST>(name.lexeme, std::move(members));
+}
+
+std::unique_ptr<StmtAST> Parser::parseWhileStmt() {
+    consume(TokenType::LeftParen, "Expect '(' after 'while'.");
+    auto condition = parseExpression();
+    consume(TokenType::RightParen, "Expect ')' after while condition.");
+
+    consume(TokenType::LeftBrace, "Expect '{' before while body.");
+    auto body = parseBlock();
+
+    return std::make_unique<WhileStmtAST>(std::move(condition), std::move(body));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {

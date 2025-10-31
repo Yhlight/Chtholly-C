@@ -26,6 +26,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*caseBlock);
     } else if (auto* enumDecl = dynamic_cast<const EnumDeclAST*>(&stmt)) {
         visit(*enumDecl);
+    } else if (auto* whileStmt = dynamic_cast<const WhileStmtAST*>(&stmt)) {
+        visit(*whileStmt);
     }
 }
 
@@ -127,6 +129,17 @@ void Sema::visit(const EnumDeclAST& stmt) {
             throw std::runtime_error("Enum member already declared.");
         }
     }
+}
+
+void Sema::visit(const WhileStmtAST& stmt) {
+    auto condType = visit(stmt.getCond());
+    if (condType->getKind() != TypeKind::Bool) {
+        throw std::runtime_error("While condition must be a boolean expression.");
+    }
+
+    symbolTable.enterScope();
+    analyze(stmt.getBody());
+    symbolTable.exitScope();
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

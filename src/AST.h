@@ -166,4 +166,15 @@ public:
     const std::vector<std::string>& getMembers() const { return members; }
 };
 
+class WhileStmtAST : public StmtAST {
+    std::unique_ptr<ExprAST> cond;
+    std::unique_ptr<BlockStmtAST> body;
+public:
+    WhileStmtAST(std::unique_ptr<ExprAST> cond, std::unique_ptr<BlockStmtAST> body)
+        : cond(std::move(cond)), body(std::move(body)) {}
+
+    const ExprAST& getCond() const { return *cond; }
+    const BlockStmtAST& getBody() const { return *body; }
+};
+
 } // namespace chtholly
