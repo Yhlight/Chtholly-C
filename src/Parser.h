@@ -10,9 +10,13 @@ namespace chtholly {
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
-    std::unique_ptr<Expr> parse();
+    std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
+    std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> varDeclaration();
+    std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> term();
     std::unique_ptr<Expr> factor();
@@ -25,6 +29,7 @@ private:
     bool isAtEnd() const;
     const Token& advance();
     const Token& previous() const;
+    const Token& consume(TokenType type, const std::string& message);
 
     const std::vector<Token>& tokens;
     size_t current = 0;

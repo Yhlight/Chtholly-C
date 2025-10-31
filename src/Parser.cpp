@@ -4,9 +4,39 @@ namespace chtholly {
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
-std::unique_ptr<Expr> Parser::parse() {
-    return expression();
+std::vector<std::unique_ptr<Stmt>> Parser::parse() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+    while (!isAtEnd()) {
+        statements.push_back(declaration());
+    }
+    return statements;
 }
+
+std::unique_ptr<Stmt> Parser::declaration() {
+    if (match({TokenType::LET, TokenType::MUT})) {
+        return varDeclaration();
+    }
+    return statement();
+}
+
+std::unique_ptr<Stmt> Parser::statement() {
+    return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::varDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+    consume(TokenType::EQUAL, "Expect '=' after variable name.");
+    std::unique_ptr<Expr> initializer = expression();
+    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+    return std::make_unique<VarDeclStmt>(std::move(name), std::move(initializer));
+}
+
+std::unique_ptr<Stmt> Parser::expressionStatement() {
+    std::unique_ptr<Expr> expr = expression();
+    consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+    return std::make_unique<ExprStmt>(std::move(expr));
+}
+
 
 std::unique_ptr<Expr> Parser::expression() {
     return term();
@@ -75,7 +105,8 @@ const Token& Parser::peek() const {
 }
 
 bool Parser::isAtEnd() const {
-    return peek().type == TokenType::END_OF_FILE;
+    // We check against the token before the last one, because the last one is always EOF.
+    return current >= tokens.size() - 1;
 }
 
 const Token& Parser::advance() {
@@ -85,6 +116,11 @@ const Token& Parser::advance() {
 
 const Token& Parser::previous() const {
     return tokens[current - 1];
+}
+
+const Token& Parser::consume(TokenType type, const std::string& message) {
+    if (check(type)) return advance();
+    throw std::runtime_error(message);
 }
 
 } // namespace chtholly

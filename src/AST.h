@@ -104,4 +104,56 @@ private:
 };
 
 
+// Forward declarations for Stmt
+struct VarDeclStmt;
+struct ExprStmt;
+
+// Stmt Visitor interface
+template <typename R>
+class StmtVisitor {
+public:
+    virtual ~StmtVisitor() = default;
+    virtual R visit(const VarDeclStmt& stmt) = 0;
+    virtual R visit(const ExprStmt& stmt) = 0;
+};
+
+// Base class for all statement nodes
+class Stmt {
+public:
+    virtual ~Stmt() = default;
+    template <typename R>
+    R accept(StmtVisitor<R>& visitor) const;
+};
+
+// Variable declaration statement node
+struct VarDeclStmt : Stmt {
+    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer)
+        : name(std::move(name)), initializer(std::move(initializer)) {}
+
+    const Token name;
+    const std::unique_ptr<Expr> initializer;
+};
+
+// Expression statement node
+struct ExprStmt : Stmt {
+    ExprStmt(std::unique_ptr<Expr> expression)
+        : expression(std::move(expression)) {}
+
+    const std::unique_ptr<Expr> expression;
+};
+
+
+// Implementation of the generic accept method for Stmt
+template <typename R>
+R Stmt::accept(StmtVisitor<R>& visitor) const {
+    if (auto p = dynamic_cast<const VarDeclStmt*>(this)) {
+        return visitor.visit(*p);
+    }
+    if (auto p = dynamic_cast<const ExprStmt*>(this)) {
+        return visitor.visit(*p);
+    }
+    throw std::runtime_error("Unknown statement type in accept.");
+}
+
+
 } // namespace chtholly
