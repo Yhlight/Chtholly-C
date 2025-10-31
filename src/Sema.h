@@ -32,6 +32,7 @@ private:
     void error(const Token& token, const std::string& message);
 
     SymbolTable symbolTable;
+    Type* currentFunctionType = nullptr;
     bool errorOccurred = false;
 };
 

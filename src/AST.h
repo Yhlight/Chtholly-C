@@ -35,12 +35,14 @@ public:
     virtual ~Expr() = default;
     template <typename R>
     R accept(ExprVisitor<R>& visitor) const;
+    virtual const Token& getToken() const = 0;
 };
 
 // Expression nodes
 struct LiteralExpr : Expr {
     LiteralExpr(Token token) : token(std::move(token)) {}
     const Token token;
+    const Token& getToken() const override { return token; }
 };
 
 struct UnaryExpr : Expr {
@@ -48,6 +50,7 @@ struct UnaryExpr : Expr {
         : op(std::move(op)), right(std::move(right)) {}
     const Token op;
     const std::unique_ptr<Expr> right;
+    const Token& getToken() const override { return op; }
 };
 
 struct BinaryExpr : Expr {
@@ -56,17 +59,20 @@ struct BinaryExpr : Expr {
     const std::unique_ptr<Expr> left;
     const Token op;
     const std::unique_ptr<Expr> right;
+    const Token& getToken() const override { return op; }
 };
 
 struct VariableExpr : Expr {
     VariableExpr(Token name) : name(std::move(name)) {}
     const Token name;
+    const Token& getToken() const override { return name; }
 };
 
 struct GroupingExpr : Expr {
     GroupingExpr(std::unique_ptr<Expr> expression)
         : expression(std::move(expression)) {}
     const std::unique_ptr<Expr> expression;
+    const Token& getToken() const override { return expression->getToken(); }
 };
 
 // Implementation of the generic accept method for Expr
@@ -239,7 +245,13 @@ public:
     }
 
     std::string visit(const ForStmt& stmt) override {
-        std::string result = "(for " + print(*stmt.initializer) + " " + print(*stmt.condition) + " " + print(*stmt.increment) + " " + print(*stmt.body) + ")";
+        std::string result = "(for ";
+        if(stmt.initializer) result += print(*stmt.initializer);
+        result += " ";
+        if(stmt.condition) result += print(*stmt.condition);
+        result += " ";
+        if(stmt.increment) result += print(*stmt.increment);
+        result += " " + print(*stmt.body) + ")";
         return result;
     }
 
