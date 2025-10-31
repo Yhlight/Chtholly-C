@@ -18,6 +18,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*varDecl);
     } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
         visit(*funcDecl);
+    } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
+        visit(*ifStmt);
     }
 }
 
@@ -72,6 +74,23 @@ void Sema::visit(const FuncDeclAST& stmt) {
     symbolTable.exitScope();
 }
 
+void Sema::visit(const IfStmtAST& stmt) {
+    auto condType = visit(stmt.getCond());
+    if (condType->getKind() != TypeKind::Bool) {
+        throw std::runtime_error("If condition must be a boolean expression.");
+    }
+
+    symbolTable.enterScope();
+    analyze(stmt.getThen());
+    symbolTable.exitScope();
+
+    if (stmt.getElse()) {
+        symbolTable.enterScope();
+        analyze(*stmt.getElse());
+        symbolTable.exitScope();
+    }
+}
+
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     // This is a simple dispatcher.
     if (auto* numExpr = dynamic_cast<const NumberExprAST*>(&expr)) {
@@ -88,6 +107,9 @@ std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     }
     if (auto* callExpr = dynamic_cast<const CallExprAST*>(&expr)) {
         return visit(*callExpr);
+    }
+    if (auto* boolExpr = dynamic_cast<const BoolExprAST*>(&expr)) {
+        return visit(*boolExpr);
     }
     return nullptr;
 }
@@ -146,6 +168,10 @@ std::shared_ptr<Type> Sema::visit(const CallExprAST& expr) {
     }
 
     return funcType->getReturnType();
+}
+
+std::shared_ptr<Type> Sema::visit(const BoolExprAST& expr) {
+    return std::make_shared<BoolType>();
 }
 
 } // namespace chtholly

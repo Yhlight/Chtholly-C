@@ -61,6 +61,13 @@ public:
     const std::vector<std::unique_ptr<ExprAST>>& getArgs() const { return args; }
 };
 
+class BoolExprAST : public ExprAST {
+    bool val;
+public:
+    BoolExprAST(bool val) : val(val) {}
+    bool getVal() const { return val; }
+};
+
 class StmtAST : public ExprAST {
     friend class Sema;
     friend class CodeGen;
@@ -111,6 +118,19 @@ public:
     const std::vector<Param>& getParams() const { return params; }
     const std::string& getReturnTypeName() const { return returnTypeName; }
     const BlockStmtAST& getBody() const { return *body; }
+};
+
+class IfStmtAST : public StmtAST {
+    std::unique_ptr<ExprAST> cond;
+    std::unique_ptr<BlockStmtAST> thenBranch;
+    std::unique_ptr<BlockStmtAST> elseBranch; // Can be nullptr
+public:
+    IfStmtAST(std::unique_ptr<ExprAST> cond, std::unique_ptr<BlockStmtAST> thenBranch, std::unique_ptr<BlockStmtAST> elseBranch)
+        : cond(std::move(cond)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    const ExprAST& getCond() const { return *cond; }
+    const BlockStmtAST& getThen() const { return *thenBranch; }
+    const BlockStmtAST* getElse() const { return elseBranch.get(); }
 };
 
 } // namespace chtholly

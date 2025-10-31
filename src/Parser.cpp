@@ -14,6 +14,9 @@ std::unique_ptr<BlockStmtAST> Parser::parse() {
 }
 
 std::unique_ptr<StmtAST> Parser::parseStatement() {
+    if (match({TokenType::If})) {
+        return parseIfStmt();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -48,6 +51,23 @@ std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl() {
     auto body = parseBlock();
 
     return std::make_unique<FuncDeclAST>(name.lexeme, std::move(params), returnTypeName, std::move(body));
+}
+
+std::unique_ptr<StmtAST> Parser::parseIfStmt() {
+    consume(TokenType::LeftParen, "Expect '(' after 'if'.");
+    auto condition = parseExpression();
+    consume(TokenType::RightParen, "Expect ')' after if condition.");
+
+    consume(TokenType::LeftBrace, "Expect '{' before then branch.");
+    auto thenBranch = parseBlock();
+
+    std::unique_ptr<BlockStmtAST> elseBranch = nullptr;
+    if (match({TokenType::Else})) {
+        consume(TokenType::LeftBrace, "Expect '{' before else branch.");
+        elseBranch = parseBlock();
+    }
+
+    return std::make_unique<IfStmtAST>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {
@@ -137,6 +157,12 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
     }
     if (match({TokenType::Identifier})) {
         return std::make_unique<VariableExprAST>(tokens[current - 1].lexeme);
+    }
+    if (match({TokenType::True})) {
+        return std::make_unique<BoolExprAST>(true);
+    }
+    if (match({TokenType::False})) {
+        return std::make_unique<BoolExprAST>(false);
     }
     // Other primary expressions will be here
     return nullptr;

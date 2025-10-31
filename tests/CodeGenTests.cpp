@@ -59,3 +59,14 @@ TEST(CodeGenTest, FunctionCall) {
     std::string expected = "int add(int x, int y) {\nconst auto z = (x + y);\n}\nconst auto a = add(1, 2);\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, IfStatement) {
+    std::string source = "if (true) { let a = 1; } else { let b = 2; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "if (true) {\nconst auto a = 1;\n}\nelse {\nconst auto b = 2;\n}\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

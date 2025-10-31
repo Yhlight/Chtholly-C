@@ -21,7 +21,8 @@
 - [x] Write tests for the Parser to ensure it correctly parses variable declarations and simple expressions.
 - [x] Extend the parser to support function declarations.
 - [x] Extend the parser to support function calls.
-- [ ] Extend the parser to support control flow.
+- [x] Extend the parser to support if-else statements.
+- [ ] Extend the parser to support other control flow.
 
 ## Phase 4: Semantic Analysis
 
@@ -30,7 +31,8 @@
 - [x] Write tests for the Semantic Analyzer to ensure it correctly identifies semantic errors for variable declarations.
 - [x] Extend the semantic analyzer to support function declarations.
 - [x] Extend the semantic analyzer to support function calls.
-- [ ] Extend the semantic analyzer to support control flow.
+- [x] Extend the semantic analyzer to support if-else statements.
+- [ ] Extend the semantic analyzer to support other control flow.
 
 ## Phase 5: C++ Transpilation
 
@@ -38,7 +40,8 @@
 - [x] Write tests for the transpiler to ensure it correctly generates C++ code for variable declarations and simple expressions.
 - [x] Extend the code generator to support function declarations.
 - [x] Extend the code generator to support function calls.
-- [ ] Extend the code generator to support control flow.
+- [x] Extend the code generator to support if-else statements.
+- [ ] Extend the code generator to support other control flow.
 
 ## Phase 6: Standard Library
 

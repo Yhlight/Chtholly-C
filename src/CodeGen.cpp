@@ -17,6 +17,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*varDecl);
     } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
         visit(*funcDecl);
+    } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
+        visit(*ifStmt);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -46,6 +48,17 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
     visit(stmt.getBody());
 }
 
+void CodeGen::visit(const IfStmtAST& stmt) {
+    ss << "if (";
+    visit(stmt.getCond());
+    ss << ") ";
+    visit(stmt.getThen());
+    if (stmt.getElse()) {
+        ss << "else ";
+        visit(*stmt.getElse());
+    }
+}
+
 void CodeGen::visit(const BlockStmtAST& stmt) {
     ss << "{\n";
     for (const auto& s : stmt.getStatements()) {
@@ -65,6 +78,8 @@ void CodeGen::visit(const ExprAST& expr) {
         visit(*binExpr);
     } else if (auto* callExpr = dynamic_cast<const CallExprAST*>(&expr)) {
         visit(*callExpr);
+    } else if (auto* boolExpr = dynamic_cast<const BoolExprAST*>(&expr)) {
+        visit(*boolExpr);
     }
 }
 
@@ -113,6 +128,10 @@ void CodeGen::visit(const CallExprAST& expr) {
         }
     }
     ss << ")";
+}
+
+void CodeGen::visit(const BoolExprAST& expr) {
+    ss << (expr.getVal() ? "true" : "false");
 }
 
 } // namespace chtholly

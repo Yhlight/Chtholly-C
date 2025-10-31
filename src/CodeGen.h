@@ -15,6 +15,7 @@ private:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
     void visit(const FuncDeclAST& stmt);
+    void visit(const IfStmtAST& stmt);
     void visit(const BlockStmtAST& stmt);
     void visit(const ExprAST& expr);
     void visit(const NumberExprAST& expr);
@@ -22,6 +23,7 @@ private:
     void visit(const VariableExprAST& expr);
     void visit(const BinaryExprAST& expr);
     void visit(const CallExprAST& expr);
+    void visit(const BoolExprAST& expr);
 
     std::stringstream ss;
 };

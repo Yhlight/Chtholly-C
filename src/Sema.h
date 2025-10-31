@@ -15,12 +15,14 @@ private:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
     void visit(const FuncDeclAST& stmt);
+    void visit(const IfStmtAST& stmt);
     std::shared_ptr<Type> visit(const ExprAST& expr);
     std::shared_ptr<Type> visit(const NumberExprAST& expr);
     std::shared_ptr<Type> visit(const StringExprAST& expr);
     std::shared_ptr<Type> visit(const VariableExprAST& expr);
     std::shared_ptr<Type> visit(const BinaryExprAST& expr);
     std::shared_ptr<Type> visit(const CallExprAST& expr);
+    std::shared_ptr<Type> visit(const BoolExprAST& expr);
 
     SymbolTable symbolTable;
 };
