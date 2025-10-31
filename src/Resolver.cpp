@@ -83,10 +83,44 @@ std::shared_ptr<Type> Resolver::visit(const GroupingExpr& expr) {
     return resolve(*expr.expression);
 }
 
+std::shared_ptr<Type> Resolver::visit(const BorrowExpr& expr) {
+    auto referencedType = resolve(*expr.expression);
+    if (auto varExpr = dynamic_cast<const VariableExpr*>(expr.expression.get())) {
+        for (int i = scopes_.size() - 1; i >= 0; i--) {
+            if (scopes_[i].count(varExpr->name.lexeme)) {
+                Symbol& symbol = scopes_[i][varExpr->name.lexeme];
+                if (expr.isMutable) {
+                    if (!symbol.isMutable) {
+                        throw std::runtime_error("Cannot mutably borrow immutable variable '" + varExpr->name.lexeme + "'.");
+                    }
+                    if (symbol.state == OwnershipState::BorrowedImmutable || symbol.state == OwnershipState::BorrowedMutable) {
+                        throw std::runtime_error("Cannot mutably borrow '" + varExpr->name.lexeme + "' as it is already borrowed.");
+                    }
+                    symbol.state = OwnershipState::BorrowedMutable;
+                } else {
+                    if (symbol.state == OwnershipState::BorrowedMutable) {
+                        throw std::runtime_error("Cannot immutably borrow '" + varExpr->name.lexeme + "' as it is already borrowed as mutable.");
+                    }
+                    symbol.state = OwnershipState::BorrowedImmutable;
+                }
+                break;
+            }
+        }
+    }
+    return std::make_shared<ReferenceType>(referencedType, expr.isMutable);
+}
+
 std::shared_ptr<Type> Resolver::visit(const VariableExpr& expr) {
     for (int i = scopes_.size() - 1; i >= 0; i--) {
         if (scopes_[i].count(expr.name.lexeme)) {
-            return scopes_[i][expr.name.lexeme];
+            Symbol& symbol = scopes_[i][expr.name.lexeme];
+            if (symbol.state == OwnershipState::Moved) {
+                throw std::runtime_error("Use of moved value '" + expr.name.lexeme + "'.");
+            }
+            if (symbol.type->getKind() != TypeKind::Reference) {
+                symbol.state = OwnershipState::Moved;
+            }
+            return symbol.type;
         }
     }
     throw std::runtime_error("Undefined variable '" + expr.name.lexeme + "'.");
@@ -110,7 +144,7 @@ void Resolver::visit(const LetStmt& stmt) {
         throw std::runtime_error("Variables must be initialized or have a type annotation.");
     }
 
-    declare(stmt.name, valueType);
+    declare(stmt.name, {valueType, OwnershipState::Owned, stmt.isMutable});
     define(stmt.name);
 }
 
@@ -124,7 +158,7 @@ void Resolver::visit(const FuncStmt& stmt) {
 
     auto funcType = std::make_shared<FunctionType>(returnType, paramTypes);
 
-    declare(stmt.name, funcType);
+    declare(stmt.name, {funcType, OwnershipState::Owned});
     define(stmt.name);
 
     auto oldFunction = currentFunction_;
@@ -132,7 +166,7 @@ void Resolver::visit(const FuncStmt& stmt) {
 
     beginScope();
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        declare(stmt.params[i].name, paramTypes[i]);
+        declare(stmt.params[i].name, {paramTypes[i], OwnershipState::Owned});
         define(stmt.params[i].name);
     }
     resolve(*stmt.body);
@@ -176,7 +210,7 @@ void Resolver::endScope() {
     scopes_.pop_back();
 }
 
-void Resolver::declare(const Token& name, std::shared_ptr<Type> type) {
+void Resolver::declare(const Token& name, Symbol symbol) {
     if (scopes_.empty()) {
         return;
     }
@@ -185,7 +219,7 @@ void Resolver::declare(const Token& name, std::shared_ptr<Type> type) {
         throw std::runtime_error("Variable with this name already declared in this scope.");
     }
 
-    scopes_.back()[name.lexeme] = type;
+    scopes_.back()[name.lexeme] = symbol;
 }
 
 void Resolver::define(const Token& name) {

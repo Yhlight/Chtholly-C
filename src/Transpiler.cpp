@@ -53,6 +53,12 @@ std::shared_ptr<Type> Transpiler::visit(const VariableExpr& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> Transpiler::visit(const BorrowExpr& expr) {
+    result_ += "&";
+    expr.expression->accept(*this);
+    return nullptr;
+}
+
 void Transpiler::visit(const LetStmt& stmt) {
     if (stmt.type) {
         result_ += stmt.type->toString() + " " + stmt.name.lexeme;

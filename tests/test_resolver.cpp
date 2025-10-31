@@ -13,6 +13,36 @@ TEST(ResolverTest, Redeclaration) {
     EXPECT_THROW(resolver.resolve(statements), std::runtime_error);
 }
 
+TEST(ResolverTest, ValidMutableBorrow) {
+    std::string source = "func main() { mut x = 10; let y = &mut x; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Resolver resolver;
+    EXPECT_NO_THROW(resolver.resolve(statements));
+}
+
+TEST(ResolverTest, InvalidMutableBorrow) {
+    std::string source = "func main() { let x = 10; let y = &mut x; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Resolver resolver;
+    EXPECT_THROW(resolver.resolve(statements), std::runtime_error);
+}
+
+TEST(ResolverTest, UseAfterMove) {
+    std::string source = "func main() { let x = 10; let y = x; let z = x; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Resolver resolver;
+    EXPECT_THROW(resolver.resolve(statements), std::runtime_error);
+}
+
 TEST(ResolverTest, BooleanExpressions) {
     std::string source = "func main() { let x = true; let y = false; let z = x == y; }";
     Lexer lexer(source);

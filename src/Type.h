@@ -9,7 +9,8 @@ enum class TypeKind {
     Primitive,
     Array,
     Struct,
-    Function
+    Function,
+    Reference
 };
 
 class Type {
@@ -53,6 +54,21 @@ public:
 
     std::shared_ptr<Type> returnType;
     std::vector<std::shared_ptr<Type>> parameterTypes;
+};
+
+class ReferenceType : public Type {
+public:
+    ReferenceType(std::shared_ptr<Type> referencedType, bool isMutable)
+        : Type(referencedType->name + (isMutable ? "& mut" : "&")),
+          referencedType_(std::move(referencedType)), isMutable_(isMutable) {}
+
+    TypeKind getKind() const override { return TypeKind::Reference; }
+    std::shared_ptr<Type> getReferencedType() const { return referencedType_; }
+    bool isMutable() const { return isMutable_; }
+
+private:
+    std::shared_ptr<Type> referencedType_;
+    bool isMutable_;
 };
 
 #endif // CHTHOLLY_TYPE_H

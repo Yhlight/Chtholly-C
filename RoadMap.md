@@ -31,7 +31,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Implement initial Type System for Semantic Analysis
 - [x] Implement a symbol table.
 - [x] Perform type checking.
-- [ ] Enforce ownership and borrowing rules.
+- [x] Enforce ownership and borrowing rules.
 - [x] Write unit tests for the semantic analyzer.
 
 ## Phase 6: Advanced Features

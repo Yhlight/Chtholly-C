@@ -9,6 +9,19 @@
 #include <string>
 #include <memory>
 
+enum class OwnershipState {
+    Owned,
+    Moved,
+    BorrowedImmutable,
+    BorrowedMutable
+};
+
+struct Symbol {
+    std::shared_ptr<Type> type;
+    OwnershipState state;
+    bool isMutable;
+};
+
 class Resolver : public ExprVisitor, public StmtVisitor {
 public:
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
@@ -20,6 +33,7 @@ public:
     std::shared_ptr<Type> visit(const BinaryExpr& expr) override;
     std::shared_ptr<Type> visit(const GroupingExpr& expr) override;
     std::shared_ptr<Type> visit(const VariableExpr& expr) override;
+    std::shared_ptr<Type> visit(const BorrowExpr& expr) override;
 
     void visit(const LetStmt& stmt) override;
     void visit(const FuncStmt& stmt) override;
@@ -29,12 +43,12 @@ public:
 private:
     void beginScope();
     void endScope();
-    void declare(const Token& name, std::shared_ptr<Type> type);
+    void declare(const Token& name, Symbol symbol);
     void define(const Token& name);
     void resolve(const Stmt& stmt);
     std::shared_ptr<Type> resolve(const Expr& expr);
 
-    std::vector<std::unordered_map<std::string, std::shared_ptr<Type>>> scopes_;
+    std::vector<std::unordered_map<std::string, Symbol>> scopes_;
     std::shared_ptr<Type> currentFunction_ = nullptr;
 };
 

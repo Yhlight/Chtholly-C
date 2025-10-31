@@ -59,6 +59,13 @@ std::shared_ptr<Type> ASTPrinter::visit(const VariableExpr& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> ASTPrinter::visit(const BorrowExpr& expr) {
+    result_ += "(borrow" + std::string(expr.isMutable ? "_mut " : " ");
+    expr.expression->accept(*this);
+    result_ += ")";
+    return nullptr;
+}
+
 void ASTPrinter::visit(const LetStmt& stmt) {
     if (stmt.isMutable) {
         result_ += "(mut " + stmt.name.lexeme;

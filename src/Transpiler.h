@@ -17,6 +17,7 @@ public:
     std::shared_ptr<Type> visit(const BinaryExpr& expr) override;
     std::shared_ptr<Type> visit(const GroupingExpr& expr) override;
     std::shared_ptr<Type> visit(const VariableExpr& expr) override;
+    std::shared_ptr<Type> visit(const BorrowExpr& expr) override;
 
     void visit(const LetStmt& stmt) override;
     void visit(const FuncStmt& stmt) override;

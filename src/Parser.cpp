@@ -94,6 +94,12 @@ std::unique_ptr<Stmt> Parser::letDeclaration(bool isMutable) {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
+    if (match({TokenType::AMPERSAND})) {
+        bool isMutable = match({TokenType::MUT});
+        std::unique_ptr<Type> referencedType = parseType();
+        return std::make_unique<ReferenceType>(std::move(referencedType), isMutable);
+    }
+
     Token typeToken = consume(TokenType::IDENTIFIER, "Expect type name.");
     if (typeToken.lexeme == "int") {
         return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Int);
@@ -170,6 +176,10 @@ std::unique_ptr<Expr> Parser::prefix() {
         Token op = tokens_[current_ - 1];
         std::unique_ptr<Expr> right = parsePrecedence(6); // Unary precedence
         return std::make_unique<UnaryExpr>(op, std::move(right));
+    } else if (match({TokenType::AMPERSAND})) {
+        bool isMutable = match({TokenType::MUT});
+        std::unique_ptr<Expr> expr = parsePrecedence(6); // Borrow has high precedence
+        return std::make_unique<BorrowExpr>(std::move(expr), isMutable);
     } else if (match({TokenType::LEFT_PAREN})) {
         std::unique_ptr<Expr> expr = expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");

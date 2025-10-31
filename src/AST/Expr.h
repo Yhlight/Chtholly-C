@@ -12,6 +12,7 @@ class BinaryExpr;
 class GroupingExpr;
 class VariableExpr;
 class BooleanLiteral;
+class BorrowExpr;
 
 #include "../Type.h"
 
@@ -25,6 +26,7 @@ public:
     virtual std::shared_ptr<Type> visit(const BinaryExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const GroupingExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const VariableExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const BorrowExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -117,6 +119,19 @@ public:
     }
 
     const bool value;
+};
+
+class BorrowExpr : public Expr {
+public:
+    BorrowExpr(std::unique_ptr<Expr> expression, bool isMutable)
+        : expression(std::move(expression)), isMutable(isMutable) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> expression;
+    const bool isMutable;
 };
 
 

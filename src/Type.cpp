@@ -1,7 +1,17 @@
 #include "Type.h"
 
 bool Type::isEqual(const Type& other) const {
-    return this->getKind() == other.getKind() && this->name == other.name;
+    if (this->getKind() != other.getKind()) {
+        return false;
+    }
+
+    if (this->getKind() == TypeKind::Reference) {
+        auto thisRef = static_cast<const ReferenceType*>(this);
+        auto otherRef = static_cast<const ReferenceType*>(&other);
+        return thisRef->isMutable() == otherRef->isMutable() && thisRef->getReferencedType()->isEqual(*otherRef->getReferencedType());
+    }
+
+    return this->name == other.name;
 }
 
 PrimitiveType::PrimitiveType(Kind kind) : Type(""), kind_(kind) {
