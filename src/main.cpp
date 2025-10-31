@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    std::string source = "func add(x : int, y : int) -> int { let z = x + y; }";
+    std::string source = "func add(x : int, y : int) -> int { x + y; }";
     Lexer lexer(source);
     Parser parser(lexer);
 

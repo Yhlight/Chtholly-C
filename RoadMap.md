@@ -6,8 +6,8 @@
 - [X] Basic lexer and parser
 - [X] Variable declarations (let, mut)
 - [X] Basic types (int, double, char, bool, string)
-- [ ] Function declarations
-- [ ] Basic operators
+- [X] Function declarations
+- [X] Basic operators
 - [ ] Control flow (if, switch, for, while)
 - [ ] Structs
 - [ ] Enums

@@ -61,6 +61,39 @@ struct IntegerLiteral : public Expression {
     }
 };
 
+// Represents a prefix expression
+struct PrefixExpression : public Expression {
+    std::string op;
+    std::unique_ptr<Expression> right;
+
+    std::string to_string() const override {
+        return "(" + op + right->to_string() + ")";
+    }
+};
+
+// Represents an infix expression
+struct InfixExpression : public Expression {
+    std::unique_ptr<Expression> left;
+    std::string op;
+    std::unique_ptr<Expression> right;
+
+    std::string to_string() const override {
+        return "(" + left->to_string() + " " + op + " " + right->to_string() + ")";
+    }
+};
+
+// Represents an expression statement
+struct ExpressionStatement : public Statement {
+    std::unique_ptr<Expression> expression;
+
+    std::string to_string() const override {
+        if (expression) {
+            return expression->to_string();
+        }
+        return "";
+    }
+};
+
 // Represents a let statement
 struct LetStatement : public Statement {
     std::unique_ptr<Identifier> name;

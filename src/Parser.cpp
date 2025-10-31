@@ -4,6 +4,32 @@
 Parser::Parser(Lexer& lexer) : lexer(lexer) {
     next_token();
     next_token();
+
+    // Register prefix parsing functions
+    prefix_parse_fns[TokenType::Identifier] = [this] { return std::make_unique<Identifier>(current_token.literal); };
+    prefix_parse_fns[TokenType::Integer] = [this] { return parse_integer_literal(); };
+    prefix_parse_fns[TokenType::LogicalNot] = [this] { return parse_prefix_expression(); };
+    prefix_parse_fns[TokenType::Minus] = [this] { return parse_prefix_expression(); };
+
+    // Register infix parsing functions
+    infix_parse_fns[TokenType::Plus] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::Minus] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::Slash] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::Asterisk] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::DoubleEqual] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::NotEqual] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::LessThan] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+    infix_parse_fns[TokenType::GreaterThan] = [this](auto left) { return parse_infix_expression(std::move(left)); };
+
+    // Define operator precedences
+    precedences[TokenType::DoubleEqual] = Precedence::EQUALS;
+    precedences[TokenType::NotEqual] = Precedence::EQUALS;
+    precedences[TokenType::LessThan] = Precedence::LESSGREATER;
+    precedences[TokenType::GreaterThan] = Precedence::LESSGREATER;
+    precedences[TokenType::Plus] = Precedence::SUM;
+    precedences[TokenType::Minus] = Precedence::SUM;
+    precedences[TokenType::Slash] = Precedence::PRODUCT;
+    precedences[TokenType::Asterisk] = Precedence::PRODUCT;
 }
 
 std::unique_ptr<Program> Parser::parse_program() {
@@ -39,16 +65,27 @@ std::unique_ptr<Statement> Parser::parse_statement() {
     if (current_token.type == TokenType::Func) {
         return parse_function_statement();
     }
-    return nullptr;
+    return parse_expression_statement();
 }
 
-std::unique_ptr<Expression> Parser::parse_expression() {
-    if (current_token.type == TokenType::Integer) {
-        return parse_integer_literal();
+std::unique_ptr<Expression> Parser::parse_expression(Precedence precedence) {
+    auto prefix = prefix_parse_fns[current_token.type];
+    if (prefix == nullptr) {
+        error_messages.push_back("No prefix parse function for " + current_token.literal);
+        return nullptr;
+    }
+    auto left_exp = prefix();
+
+    while (peek_token.type != TokenType::Semicolon && precedence < precedences[peek_token.type]) {
+        auto infix = infix_parse_fns[peek_token.type];
+        if (infix == nullptr) {
+            return left_exp;
+        }
+        next_token();
+        left_exp = infix(std::move(left_exp));
     }
 
-    error_messages.push_back("Unexpected token when parsing expression: " + current_token.literal);
-    return nullptr;
+    return left_exp;
 }
 
 std::unique_ptr<Expression> Parser::parse_integer_literal() {
@@ -60,6 +97,35 @@ std::unique_ptr<Expression> Parser::parse_integer_literal() {
         return nullptr;
     }
     return literal;
+}
+
+std::unique_ptr<Expression> Parser::parse_prefix_expression() {
+    auto expression = std::make_unique<PrefixExpression>();
+    expression->op = current_token.literal;
+    next_token();
+    expression->right = parse_expression(Precedence::PREFIX);
+    return expression;
+}
+
+std::unique_ptr<Expression> Parser::parse_infix_expression(std::unique_ptr<Expression> left) {
+    auto expression = std::make_unique<InfixExpression>();
+    expression->left = std::move(left);
+    expression->op = current_token.literal;
+    auto precedence = precedences[current_token.type];
+    next_token();
+    expression->right = parse_expression(precedence);
+    return expression;
+}
+
+std::unique_ptr<Statement> Parser::parse_expression_statement() {
+    auto stmt = std::make_unique<ExpressionStatement>();
+    stmt->expression = parse_expression(Precedence::LOWEST);
+
+    if (peek_token.type == TokenType::Semicolon) {
+        next_token();
+    }
+
+    return stmt;
 }
 
 std::unique_ptr<LetStatement> Parser::parse_let_statement() {
@@ -89,9 +155,9 @@ std::unique_ptr<LetStatement> Parser::parse_let_statement() {
 
     next_token(); // consume '='
 
-    stmt->value = parse_expression();
+    stmt->value = parse_expression(Precedence::LOWEST);
 
-    while (current_token.type != TokenType::Semicolon && current_token.type != TokenType::Eof) {
+    if (peek_token.type == TokenType::Semicolon) {
         next_token();
     }
 
@@ -125,9 +191,9 @@ std::unique_ptr<MutStatement> Parser::parse_mut_statement() {
 
     next_token(); // consume '='
 
-    stmt->value = parse_expression();
+    stmt->value = parse_expression(Precedence::LOWEST);
 
-    while (current_token.type != TokenType::Semicolon && current_token.type != TokenType::Eof) {
+    if (peek_token.type == TokenType::Semicolon) {
         next_token();
     }
 
