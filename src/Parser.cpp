@@ -38,8 +38,10 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::Let, TokenType::Mut})) {
         return parseVarDecl();
     }
-    // Other statements will be handled here
-    return nullptr;
+
+    auto expr = parseExpression();
+    consume(TokenType::Semicolon, "Expect ';' after expression.");
+    return std::make_unique<ExprStmtAST>(std::move(expr));
 }
 
 std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl() {

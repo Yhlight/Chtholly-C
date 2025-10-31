@@ -133,6 +133,17 @@ TEST(CodeGenTest, ImportStatement) {
     Parser parser(tokens);
     auto ast = parser.parse();
     CodeGen codeGen;
-    std::string expected = "#include <iostream>\n";
+    std::string expected = "#include <iostream>\n#include <string>\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}
+
+TEST(CodeGenTest, PrintStatement) {
+    std::string source = "import iostream; print(\"Hello, World!\");";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "#include <iostream>\n#include <string>\nstd::cout << \"Hello, World!\" << std::endl;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }

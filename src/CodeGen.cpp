@@ -33,6 +33,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*importStmt);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
+    } else if (auto* exprStmt = dynamic_cast<const ExprStmtAST*>(&stmt)) {
+        visit(*exprStmt);
     }
 }
 
@@ -64,9 +66,15 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
     visit(stmt.getBody());
 }
 
+void CodeGen::visit(const ExprStmtAST& stmt) {
+    visit(stmt.getExpr());
+    ss << ";\n";
+}
+
 void CodeGen::visit(const ImportStmtAST& stmt) {
     if (stmt.getModuleName() == "iostream") {
         ss << "#include <iostream>\n";
+        ss << "#include <string>\n";
     } else {
         ss << "#include \"" << stmt.getModuleName() << ".h\"\n";
     }
@@ -208,6 +216,15 @@ void CodeGen::visit(const BinaryExprAST& expr) {
 }
 
 void CodeGen::visit(const CallExprAST& expr) {
+    if (auto* varExpr = dynamic_cast<const VariableExprAST*>(&expr.getCallee())) {
+        if (varExpr->getName() == "print") {
+            ss << "std::cout << ";
+            visit(*expr.getArgs()[0]);
+            ss << " << std::endl";
+            return;
+        }
+    }
+
     visit(expr.getCallee());
     ss << "(";
     const auto& args = expr.getArgs();

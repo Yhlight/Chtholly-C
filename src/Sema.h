@@ -22,6 +22,7 @@ private:
     void visit(const WhileStmtAST& stmt);
     void visit(const ForStmtAST& stmt);
     void visit(const ImportStmtAST& stmt);
+    void visit(const ExprStmtAST& stmt);
     std::shared_ptr<Type> visit(const ExprAST& expr);
     std::shared_ptr<Type> visit(const NumberExprAST& expr);
     std::shared_ptr<Type> visit(const StringExprAST& expr);

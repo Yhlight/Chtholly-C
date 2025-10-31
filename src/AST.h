@@ -210,4 +210,11 @@ public:
     const std::string& getModuleName() const { return moduleName; }
 };
 
+class ExprStmtAST : public StmtAST {
+    std::unique_ptr<ExprAST> expr;
+public:
+    ExprStmtAST(std::unique_ptr<ExprAST> expr) : expr(std::move(expr)) {}
+    const ExprAST& getExpr() const { return *expr; }
+};
+
 } // namespace chtholly

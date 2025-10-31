@@ -32,6 +32,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*forStmt);
     } else if (auto* importStmt = dynamic_cast<const ImportStmtAST*>(&stmt)) {
         visit(*importStmt);
+    } else if (auto* exprStmt = dynamic_cast<const ExprStmtAST*>(&stmt)) {
+        visit(*exprStmt);
     }
 }
 
@@ -169,9 +171,22 @@ void Sema::visit(const ForStmtAST& stmt) {
     symbolTable.exitScope();
 }
 
+void Sema::visit(const ExprStmtAST& stmt) {
+    visit(stmt.getExpr());
+}
+
 void Sema::visit(const ImportStmtAST& stmt) {
-    // TODO: Implement module loading and symbol importing logic.
-    // For now, this is a placeholder.
+    if (stmt.getModuleName() == "iostream") {
+        // Manually add the 'print' function symbol to the symbol table.
+        auto stringType = std::make_shared<StringType>();
+        auto voidType = std::make_shared<VoidType>();
+        std::vector<std::shared_ptr<Type>> paramTypes = {stringType};
+        auto printFuncType = std::make_shared<FunctionType>(voidType, paramTypes);
+        if (!symbolTable.insert("print", printFuncType, false)) {
+            // This could happen if iostream is imported multiple times.
+            // For now, we'll just ignore it.
+        }
+    }
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

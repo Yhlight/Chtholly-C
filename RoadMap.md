@@ -53,7 +53,7 @@
 
 - [ ] Implement the `iostream` module.
   - [x] Implement `import` statement parsing.
-  - [ ] Implement `print` function.
+  - [x] Implement `print` function.
 - [ ] Implement the `filesystem` module.
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.

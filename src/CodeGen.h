@@ -22,6 +22,7 @@ private:
     void visit(const WhileStmtAST& stmt);
     void visit(const ForStmtAST& stmt);
     void visit(const ImportStmtAST& stmt);
+    void visit(const ExprStmtAST& stmt);
     void visit(const BlockStmtAST& stmt);
     void visit(const ExprAST& expr);
     void visit(const NumberExprAST& expr);
