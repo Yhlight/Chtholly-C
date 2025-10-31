@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <vector>
 
 namespace chtholly {
 
@@ -17,6 +18,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::FUNC})) return function();
         if (match({TokenType::LET, TokenType::MUT})) {
             std::unique_ptr<Stmt> stmt = varDeclaration();
             consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
@@ -32,6 +34,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
 std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::FOR})) return forStatement();
     if (match({TokenType::IF})) return ifStatement();
+    if (match({TokenType::RETURN})) return returnStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
 
     std::unique_ptr<Stmt> stmt = expressionStatement();
@@ -74,7 +77,6 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     if (match({TokenType::SEMICOLON})) {
         initializer = nullptr;
     } else if (match({TokenType::LET, TokenType::MUT})) {
-        // This is a simplified version of varDeclaration just for the for-loop initializer
         Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
         std::unique_ptr<Expr> initExpr = nullptr;
         if (match({TokenType::EQUAL})) {
@@ -83,7 +85,7 @@ std::unique_ptr<Stmt> Parser::forStatement() {
         initializer = std::make_unique<VarDeclStmt>(std::move(name), std::move(initExpr));
         consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
     } else {
-        initializer = expressionStatement();
+        initializer = std::make_unique<ExprStmt>(expression());
         consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
     }
 
@@ -104,6 +106,41 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     return std::make_unique<ForStmt>(std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
+std::unique_ptr<Stmt> Parser::function() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
+    consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
+
+    std::vector<FuncDeclStmt::Param> params;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            Token paramType = consume(TokenType::IDENTIFIER, "Expect parameter type.");
+            params.push_back({std::move(paramName), std::move(paramType)});
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+    std::optional<Token> returnType;
+    if (match({TokenType::ARROW})) {
+        returnType = consume(TokenType::IDENTIFIER, "Expect return type.");
+    }
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
+    auto body = std::make_unique<BlockStmt>(block());
+
+    return std::make_unique<FuncDeclStmt>(std::move(name), std::move(params), std::move(returnType), std::move(body));
+}
+
+std::unique_ptr<Stmt> Parser::returnStatement() {
+    Token keyword = previous();
+    std::unique_ptr<Expr> value = nullptr;
+    if (!check(TokenType::SEMICOLON)) {
+        value = expression();
+    }
+    consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+    return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
     std::vector<std::unique_ptr<Stmt>> statements;
@@ -128,8 +165,6 @@ std::unique_ptr<Expr> Parser::assignment() {
         std::unique_ptr<Expr> value = assignment();
 
         if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
-            // This is not quite right, assignment should be its own AST node.
-            // But for now, we'll represent it as a binary expression.
             return std::make_unique<BinaryExpr>(std::move(expr), std::move(equals), std::move(value));
         }
 

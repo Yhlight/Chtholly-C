@@ -4,6 +4,7 @@
 #include <memory>
 #include <any>
 #include <vector>
+#include <optional>
 #include <string>
 #include <stdexcept>
 
@@ -86,6 +87,8 @@ struct ExprStmt;
 struct BlockStmt;
 struct IfStmt;
 struct ForStmt;
+struct FuncDeclStmt;
+struct ReturnStmt;
 
 // Stmt Visitor interface
 template <typename R>
@@ -97,6 +100,8 @@ public:
     virtual R visit(const BlockStmt& stmt) = 0;
     virtual R visit(const IfStmt& stmt) = 0;
     virtual R visit(const ForStmt& stmt) = 0;
+    virtual R visit(const FuncDeclStmt& stmt) = 0;
+    virtual R visit(const ReturnStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -146,6 +151,30 @@ struct ForStmt : Stmt {
     const std::unique_ptr<Stmt> body;
 };
 
+struct FuncDeclStmt : Stmt {
+    struct Param {
+        Token name;
+        Token type;
+    };
+
+    FuncDeclStmt(Token name, std::vector<Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
+        : name(std::move(name)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
+
+    const Token name;
+    const std::vector<Param> params;
+    const std::optional<Token> returnType;
+    const std::unique_ptr<BlockStmt> body;
+};
+
+struct ReturnStmt : Stmt {
+    ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
+        : keyword(std::move(keyword)), value(std::move(value)) {}
+
+    const Token keyword;
+    const std::unique_ptr<Expr> value;
+};
+
+
 // Implementation of the generic accept method for Stmt
 template <typename R>
 R Stmt::accept(StmtVisitor<R>& visitor) const {
@@ -154,6 +183,8 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const BlockStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const IfStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const ForStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const FuncDeclStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const ReturnStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -198,6 +229,26 @@ public:
     std::string visit(const ForStmt& stmt) override {
         std::string result = "(for " + print(*stmt.initializer) + " " + print(*stmt.condition) + " " + print(*stmt.increment) + " " + print(*stmt.body) + ")";
         return result;
+    }
+
+    std::string visit(const FuncDeclStmt& stmt) override {
+        std::string result = "(func " + stmt.name.lexeme + "(";
+        for (size_t i = 0; i < stmt.params.size(); ++i) {
+            result += stmt.params[i].name.lexeme + ": " + stmt.params[i].type.lexeme;
+            if (i < stmt.params.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += ")";
+        if (stmt.returnType) {
+            result += " -> " + stmt.returnType->lexeme;
+        }
+        result += " " + print(*stmt.body) + ")";
+        return result;
+    }
+
+    std::string visit(const ReturnStmt& stmt) override {
+        return "(return " + (stmt.value ? print(*stmt.value) : "") + ")";
     }
 
 private:

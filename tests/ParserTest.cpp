@@ -149,3 +149,37 @@ TEST(ParserTest, ParsesForStatement) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(for (var i = 0) (< i 10) (= i (+ i 1)) (block (; 1)))");
 }
+
+TEST(ParserTest, ParsesFunctionDeclaration) {
+    // func add(x: int, y: int) -> int { return x + y; }
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::FUNC, "func", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "add", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "x", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::COMMA, ",", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "y", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::ARROW, "->", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::RETURN, "return", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "x", 1),
+        chtholly::Token(chtholly::TokenType::PLUS, "+", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "y", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(func add(x: int, y: int) -> int (block (return (+ x y))))");
+}
