@@ -47,6 +47,8 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<MemberAccessExpression*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<EnumStatement*>(node)) {
+        visit(n);
     }
 }
 
@@ -307,6 +309,17 @@ void CodeGen::visit(MemberAccessExpression* node) {
     visit(node->object.get());
     m_out << ".";
     visit(node->member.get());
+}
+
+void CodeGen::visit(EnumStatement* node) {
+    m_out << "enum class " << node->name->value << " {\n";
+    for (size_t i = 0; i < node->members.size(); ++i) {
+        m_out << "    " << node->members[i]->value;
+        if (i < node->members.size() - 1) {
+            m_out << ",\n";
+        }
+    }
+    m_out << "\n};\n";
 }
 
 } // namespace Chtholly

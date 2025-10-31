@@ -4,6 +4,7 @@
 namespace Chtholly {
 
 const std::unordered_map<std::string, TokenType> Lexer::keywords = {
+    {"enum", TokenType::Enum},
     {"func", TokenType::Func},
     {"let", TokenType::Let},
     {"mut", TokenType::Mut},

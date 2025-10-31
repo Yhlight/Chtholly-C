@@ -50,6 +50,7 @@ enum class TokenType {
     RBracket,
 
     // Keywords
+    Enum,
     Func,
     Let,
     Mut,

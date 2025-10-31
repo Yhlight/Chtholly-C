@@ -81,6 +81,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseReturnStatement();
     case TokenType::Struct:
         return parseStructStatement();
+    case TokenType::Enum:
+        return parseEnumStatement();
     default:
         return parseExpressionStatement();
     }
@@ -112,6 +114,32 @@ std::unique_ptr<LetStatement> Parser::parseDeclarationStatement() {
 
     if (m_peekToken.type == TokenType::Semicolon) {
         nextToken();
+    }
+
+    return stmt;
+}
+
+std::unique_ptr<EnumStatement> Parser::parseEnumStatement() {
+    auto stmt = std::make_unique<EnumStatement>(m_curToken);
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return nullptr;
+    }
+
+    stmt->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    nextToken();
+
+    while (m_curToken.type != TokenType::RBrace && m_curToken.type != TokenType::Eof) {
+        stmt->members.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+        nextToken();
+        if (m_curToken.type == TokenType::Comma) {
+            nextToken();
+        }
     }
 
     return stmt;

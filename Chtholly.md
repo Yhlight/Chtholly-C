@@ -166,23 +166,20 @@ Chtholly的lambda函数使用与C++完全一致的语法
 默认情况下，捕获属于不可变引用  
 
 ```Chtholly
-let add = (形参列表)[捕获参数] -> <返回值类型> {函数体}  // 如果语法错误请自行修正
+let add = [](int x, int y) -> int { return x + y; };
 ```
 
-Chtholly还提供了一种lambda函数语法，这种语法不支持危险的捕获  
-这种语法更类似与JS，但是Chtholly的这一种lambda函数重点并不在于执行函数体  
-而是函数引用  
-
-注意，这一种lambda函数的结果，就是函数的返回值，这意味着你可以将函数的返回值作为下一个lambda函数的参数  
-从而实现链式调用  
-
-同时要注意，这一种lambda函数，无论引用的方法是否需要对象调用，均使用::方法这样的语法进行引用  
+#### enum
+Chtholly's `enum` is similar to C++'s `enum class`, providing a type-safe way to define a set of named constants.
 
 ```Chtholly
-let add = (形参列表) => {函数体}
-let result = (1, 2) => math::add;  // 自动填入参数
-let result2 = (2, 4) => add;  // 全局函数也无妨
-let result3 = () => print("HelloWorld") => print("HelloWorld");  // 链式调用(通常需要函数返回一个对象的引用)
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+let c: Color = Color::Red;
 ```
 
 #### 参数所有权

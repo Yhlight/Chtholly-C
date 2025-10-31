@@ -33,6 +33,7 @@ private:
     void visit(GenericInstantiation* node);
     void visit(StructLiteral* node);
     void visit(MemberAccessExpression* node);
+    void visit(EnumStatement* node);
 
     std::stringstream m_out;
     Program* m_program = nullptr;

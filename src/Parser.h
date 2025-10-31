@@ -38,6 +38,7 @@ private:
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
     std::unique_ptr<StructStatement> parseStructStatement();
+    std::unique_ptr<EnumStatement> parseEnumStatement();
 
     std::unique_ptr<Expression> parseExpression(Precedence precedence);
     std::unique_ptr<Expression> parsePrefixExpression();

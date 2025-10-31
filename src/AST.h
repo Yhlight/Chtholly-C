@@ -287,6 +287,17 @@ public:
     std::unique_ptr<Identifier> member;
 };
 
+class EnumStatement : public Statement {
+public:
+    EnumStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'enum' token
+    std::unique_ptr<Identifier> name;
+    std::vector<std::unique_ptr<Identifier>> members;
+};
+
 } // namespace Chtholly
 
 #endif // CHTHOLLY_AST_H

@@ -30,6 +30,21 @@ TEST(CodeGen, TestGenericStructStatement) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(CodeGen, TestEnumStatement) {
+    std::string input = "enum Color { Red, Green, Blue }";
+    std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
 TEST(CodeGen, TestGenericStructEndToEnd) {
     std::string input = R"(
         struct Point<T> {

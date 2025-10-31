@@ -122,6 +122,24 @@ TEST(Parser, TestMemberAccessExpression) {
     ASSERT_EQ(expr->member->value, "x");
 }
 
+TEST(Parser, TestEnumStatement) {
+    std::string input = "enum Color { Red, Green, Blue }";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::EnumStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->name->value, "Color");
+    ASSERT_EQ(stmt->members.size(), 3);
+    ASSERT_EQ(stmt->members[0]->value, "Red");
+    ASSERT_EQ(stmt->members[1]->value, "Green");
+    ASSERT_EQ(stmt->members[2]->value, "Blue");
+}
+
 // Helper function to stringify the AST for easy comparison
 std::string astToString(Chtholly::Node* node) {
     if (!node) {
