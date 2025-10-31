@@ -19,6 +19,9 @@ std::string CodeGen::visitGroupingExpr(const std::shared_ptr<Grouping>& expr) {
 }
 
 std::string CodeGen::visitLiteralExpr(const std::shared_ptr<Literal>& expr) {
+    if (expr->type == TokenType::STRING) {
+        return "\"" + expr->value + "\"";
+    }
     return expr->value;
 }
 
@@ -43,7 +46,7 @@ std::string CodeGen::visitPrintStmt(const std::shared_ptr<Print>& stmt) {
 }
 
 std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt) {
-    std::string code = "auto " + stmt->name.lexeme;
+    std::string code = (stmt->is_mutable ? "auto " : "const auto ") + stmt->name.lexeme;
     if (stmt->initializer) {
         code += " = " + stmt->initializer->accept(*this);
     }

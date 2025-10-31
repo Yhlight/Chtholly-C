@@ -8,8 +8,10 @@
 
 int main() {
     std::string source = R"(
-        let x = 10 + 5 * 2;
-        let y = (10 + 5) * 2;
+        let name = "Chtholly";
+        let x = 10;
+        mut y = 20;
+        let z = x + y;
     )";
 
     try {

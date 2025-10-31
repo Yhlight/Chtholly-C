@@ -11,7 +11,7 @@ This document outlines the development roadmap for the Chtholly compiler.
 
 ## Phase 2: Basic Language Features
 
-- [ ] **Variables:** Implement `let` and `mut` variable declarations.
+- [x] **Variables:** Implement `let` and `mut` variable declarations.
 - [ ] **Data Types:** Support for basic data types (int, double, char, bool, string).
 - [ ] **Operators:** Implement all C++ operators.
 - [ ] **Functions:** Implement function definitions and calls.

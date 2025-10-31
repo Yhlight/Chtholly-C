@@ -24,13 +24,14 @@ std::shared_ptr<Stmt> Parser::declaration() {
 }
 
 std::shared_ptr<Stmt> Parser::varDeclaration() {
+    bool is_mutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::shared_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_shared<Var>(name, initializer);
+    return std::make_shared<Var>(name, initializer, is_mutable);
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
@@ -112,7 +113,7 @@ std::shared_ptr<Expr> Parser::unary() {
 
 std::shared_ptr<Expr> Parser::primary() {
     if (match({TokenType::NUMBER, TokenType::STRING})) {
-        return std::make_shared<Literal>(previous().lexeme);
+        return std::make_shared<Literal>(previous().lexeme, previous().type);
     }
     if (match({TokenType::IDENTIFIER})) {
         return std::make_shared<Variable>(previous());

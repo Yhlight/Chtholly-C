@@ -55,13 +55,14 @@ struct Grouping : Expr, public std::enable_shared_from_this<Grouping> {
 };
 
 struct Literal : Expr, public std::enable_shared_from_this<Literal> {
-    Literal(std::string value) : value(value) {}
+    Literal(std::string value, TokenType type) : value(value), type(type) {}
 
     std::string accept(ExprVisitor<std::string>& visitor) override {
         return visitor.visitLiteralExpr(shared_from_this());
     }
 
     std::string value;
+    TokenType type;
 };
 
 struct Unary : Expr, public std::enable_shared_from_this<Unary> {
@@ -139,8 +140,8 @@ struct Print : Stmt, public std::enable_shared_from_this<Print> {
 };
 
 struct Var : Stmt, public std::enable_shared_from_this<Var> {
-    Var(Token name, std::shared_ptr<Expr> initializer)
-        : name(name), initializer(initializer) {}
+    Var(Token name, std::shared_ptr<Expr> initializer, bool is_mutable)
+        : name(name), initializer(initializer), is_mutable(is_mutable) {}
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitVarStmt(shared_from_this());
@@ -148,6 +149,7 @@ struct Var : Stmt, public std::enable_shared_from_this<Var> {
 
     Token name;
     std::shared_ptr<Expr> initializer;
+    bool is_mutable;
 };
 
 struct Block : Stmt, public std::enable_shared_from_this<Block> {
