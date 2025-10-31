@@ -1,6 +1,7 @@
 #include "Lexer.h"
 #include <unordered_map>
 #include <cctype>
+#include <vector>
 
 namespace chtholly {
 
@@ -34,12 +35,22 @@ static const std::unordered_map<std::string, TokenType> keywords = {
 
 Lexer::Lexer(const std::string& source) : source(source) {}
 
+std::vector<Token> Lexer::scanTokens() {
+    std::vector<Token> tokens;
+    while (peek() != '\0') {
+        tokens.push_back(scanToken());
+    }
+    tokens.push_back(Token(TokenType::END_OF_FILE, "", line));
+    return tokens;
+}
+
+
 Token Lexer::makeToken(TokenType type) const {
     return Token(type, source.substr(start, current - start), line);
 }
 
 Token Lexer::errorToken(const std::string& message) const {
-    return Token(TokenType::END_OF_FILE, message, line); // Using EOF as an error indicator for now
+    return Token(TokenType::ERROR, message, line);
 }
 
 bool Lexer::match(char expected) {
@@ -89,16 +100,19 @@ bool Lexer::isAlphaNumeric(char c) const {
     return isAlpha(c) || isDigit(c);
 }
 
-Token Lexer::identifier() {
-    while (isAlphaNumeric(peek())) advance();
-
+TokenType Lexer::identifierType() {
     std::string text = source.substr(start, current - start);
     auto it = keywords.find(text);
     if (it != keywords.end()) {
-        return makeToken(it->second);
+        return it->second;
     }
+    return TokenType::IDENTIFIER;
+}
 
-    return makeToken(TokenType::IDENTIFIER);
+
+Token Lexer::identifier() {
+    while (isAlphaNumeric(peek())) advance();
+    return makeToken(identifierType());
 }
 
 Token Lexer::number() {

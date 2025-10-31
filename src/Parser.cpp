@@ -43,12 +43,19 @@ std::unique_ptr<Stmt> Parser::statement() {
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
+    Token keyword = previous(); // The 'let' or 'mut' token
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+
+    std::optional<Token> type;
+    if (match({TokenType::COLON})) {
+        type = consume(TokenType::IDENTIFIER, "Expect type annotation.");
+    }
+
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
-    return std::make_unique<VarDeclStmt>(std::move(name), std::move(initializer));
+    return std::make_unique<VarDeclStmt>(std::move(keyword), std::move(name), std::move(type), std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement() {
@@ -77,15 +84,10 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     if (match({TokenType::SEMICOLON})) {
         initializer = nullptr;
     } else if (match({TokenType::LET, TokenType::MUT})) {
-        Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
-        std::unique_ptr<Expr> initExpr = nullptr;
-        if (match({TokenType::EQUAL})) {
-            initExpr = expression();
-        }
-        initializer = std::make_unique<VarDeclStmt>(std::move(name), std::move(initExpr));
+        initializer = varDeclaration();
         consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
     } else {
-        initializer = std::make_unique<ExprStmt>(expression());
+        initializer = expressionStatement();
         consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
     }
 

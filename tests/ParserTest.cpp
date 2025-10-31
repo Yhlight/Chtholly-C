@@ -183,3 +183,24 @@ TEST(ParserTest, ParsesFunctionDeclaration) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(func add(x: int, y: int) -> int (block (return (+ x y))))");
 }
+
+TEST(ParserTest, ParsesVarDeclarationWithType) {
+    // let a: int = 10;
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::LET, "let", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "a", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::EQUAL, "=", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "10", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(var a: int = 10)");
+}

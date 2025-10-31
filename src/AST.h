@@ -114,9 +114,11 @@ public:
 
 // Statement nodes
 struct VarDeclStmt : Stmt {
-    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(std::move(name)), initializer(std::move(initializer)) {}
+    VarDeclStmt(Token keyword, Token name, std::optional<Token> type, std::unique_ptr<Expr> initializer)
+        : keyword(std::move(keyword)), name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
+    const Token keyword; // let or mut
     const Token name;
+    const std::optional<Token> type;
     const std::unique_ptr<Expr> initializer;
 };
 
@@ -205,7 +207,17 @@ public:
     std::string visit(const VariableExpr& expr) override { return expr.name.lexeme; }
     std::string visit(const GroupingExpr& expr) override { return parenthesize("group", {expr.expression.get()}); }
 
-    std::string visit(const VarDeclStmt& stmt) override { return "(var " + stmt.name.lexeme + " = " + print(*stmt.initializer) + ")"; }
+    std::string visit(const VarDeclStmt& stmt) override {
+        std::string result = "(var " + stmt.name.lexeme;
+        if (stmt.type) {
+            result += ": " + stmt.type->lexeme;
+        }
+        if (stmt.initializer) {
+            result += " = " + print(*stmt.initializer);
+        }
+        result += ")";
+        return result;
+    }
     std::string visit(const ExprStmt& stmt) override { return "(; " + print(*stmt.expression) + ")"; }
 
     std::string visit(const BlockStmt& stmt) override {

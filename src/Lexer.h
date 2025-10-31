@@ -2,6 +2,7 @@
 
 #include "Token.h"
 #include <string>
+#include <vector>
 
 namespace chtholly {
 
@@ -9,6 +10,7 @@ class Lexer {
 public:
     Lexer(const std::string& source);
 
+    std::vector<Token> scanTokens();
     Token scanToken();
 
 private:
@@ -26,6 +28,7 @@ private:
     Token number();
     Token string();
     Token identifier();
+    TokenType identifierType();
 
     std::string source;
     size_t start = 0;

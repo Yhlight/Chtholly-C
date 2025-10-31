@@ -31,6 +31,7 @@ enum class TokenType {
 
     // Misc
     ARROW, // ->
+    ERROR,
 
     END_OF_FILE
 };
