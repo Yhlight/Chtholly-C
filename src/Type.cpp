@@ -15,3 +15,11 @@ PrimitiveType::PrimitiveType(Kind kind) : Type(""), kind_(kind) {
         case Kind::Void: name = "void"; break;
     }
 }
+
+bool ReferenceType::isEqual(const Type& other) const {
+    if (other.getKind() != TypeKind::Reference) {
+        return false;
+    }
+    auto& otherRef = static_cast<const ReferenceType&>(other);
+    return this->isMutable == otherRef.isMutable && this->referencedType->isEqual(*otherRef.referencedType);
+}

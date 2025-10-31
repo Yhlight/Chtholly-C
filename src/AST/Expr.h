@@ -14,6 +14,10 @@ class VariableExpr;
 
 #include "../Type.h"
 
+class BorrowExpr;
+class CallExpr;
+class AssignExpr;
+
 // Visitor interface for expressions
 class ExprVisitor {
 public:
@@ -23,6 +27,9 @@ public:
     virtual std::shared_ptr<Type> visit(const BinaryExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const GroupingExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const VariableExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const BorrowExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const CallExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const AssignExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -104,6 +111,46 @@ public:
     }
 
     const Token value;
+};
+
+class BorrowExpr : public Expr {
+public:
+    BorrowExpr(std::unique_ptr<Expr> expr, bool isMutable)
+        : expression(std::move(expr)), isMutable(isMutable) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> expression;
+    const bool isMutable;
+};
+
+class CallExpr : public Expr {
+public:
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> callee;
+    const Token paren; // For error reporting
+    const std::vector<std::unique_ptr<Expr>> arguments;
+};
+
+class AssignExpr : public Expr {
+public:
+    AssignExpr(Token name, std::unique_ptr<Expr> value)
+        : name(std::move(name)), value(std::move(value)) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token name;
+    const std::unique_ptr<Expr> value;
 };
 
 

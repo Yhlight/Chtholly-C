@@ -16,11 +16,15 @@ public:
     std::shared_ptr<Type> visit(const BinaryExpr& expr) override;
     std::shared_ptr<Type> visit(const GroupingExpr& expr) override;
     std::shared_ptr<Type> visit(const VariableExpr& expr) override;
+    std::shared_ptr<Type> visit(const BorrowExpr& expr) override;
+    std::shared_ptr<Type> visit(const CallExpr& expr) override;
+    std::shared_ptr<Type> visit(const AssignExpr& expr) override;
 
     void visit(const LetStmt& stmt) override;
     void visit(const FuncStmt& stmt) override;
     void visit(const BlockStmt& stmt) override;
     void visit(const ReturnStmt& stmt) override;
+    void visit(const ExprStmt& stmt) override;
 
 private:
     std::string result_;

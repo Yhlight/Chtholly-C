@@ -54,6 +54,38 @@ std::shared_ptr<Type> ASTPrinter::visit(const VariableExpr& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> ASTPrinter::visit(const BorrowExpr& expr) {
+    if (expr.isMutable) {
+        result_ += "(&mut ";
+    } else {
+        result_ += "(& ";
+    }
+    expr.expression->accept(*this);
+    result_ += ")";
+    return nullptr;
+}
+
+std::shared_ptr<Type> ASTPrinter::visit(const CallExpr& expr) {
+    result_ += "(call ";
+    expr.callee->accept(*this);
+    result_ += " (";
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        expr.arguments[i]->accept(*this);
+        if (i < expr.arguments.size() - 1) {
+            result_ += " ";
+        }
+    }
+    result_ += "))";
+    return nullptr;
+}
+
+std::shared_ptr<Type> ASTPrinter::visit(const AssignExpr& expr) {
+    result_ += "(= " + expr.name.lexeme + " ";
+    expr.value->accept(*this);
+    result_ += ")";
+    return nullptr;
+}
+
 void ASTPrinter::visit(const LetStmt& stmt) {
     if (stmt.isMutable) {
         result_ += "(mut " + stmt.name.lexeme;
@@ -67,6 +99,12 @@ void ASTPrinter::visit(const LetStmt& stmt) {
         result_ += " = ";
         stmt.initializer->accept(*this);
     }
+    result_ += ")";
+}
+
+void ASTPrinter::visit(const ExprStmt& stmt) {
+    result_ += "(expr ";
+    stmt.expression->accept(*this);
     result_ += ")";
 }
 

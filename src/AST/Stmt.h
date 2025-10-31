@@ -17,6 +17,7 @@ public:
     virtual void visit(const class FuncStmt& stmt) = 0;
     virtual void visit(const class BlockStmt& stmt) = 0;
     virtual void visit(const class ReturnStmt& stmt) = 0;
+    virtual void visit(const class ExprStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -59,6 +60,7 @@ public:
     struct Parameter {
         Token name;
         std::unique_ptr<Type> type;
+        bool isMutable;
     };
 
     FuncStmt(Token name, std::vector<Parameter> params, std::unique_ptr<Type> returnType, std::unique_ptr<BlockStmt> body)
@@ -85,6 +87,18 @@ public:
 
     const Token keyword;
     const std::unique_ptr<Expr> value;
+};
+
+class ExprStmt : public Stmt {
+public:
+    ExprStmt(std::unique_ptr<Expr> expression)
+        : expression(std::move(expression)) {}
+
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> expression;
 };
 
 #endif // CHTHOLLY_STMT_H

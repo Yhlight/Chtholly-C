@@ -48,6 +48,34 @@ std::shared_ptr<Type> Transpiler::visit(const VariableExpr& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> Transpiler::visit(const BorrowExpr& expr) {
+    result_ += "&";
+    if (expr.isMutable) {
+        result_ += "mut ";
+    }
+    expr.expression->accept(*this);
+    return nullptr;
+}
+
+std::shared_ptr<Type> Transpiler::visit(const CallExpr& expr) {
+    expr.callee->accept(*this);
+    result_ += "(";
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        expr.arguments[i]->accept(*this);
+        if (i < expr.arguments.size() - 1) {
+            result_ += ", ";
+        }
+    }
+    result_ += ")";
+    return nullptr;
+}
+
+std::shared_ptr<Type> Transpiler::visit(const AssignExpr& expr) {
+    result_ += expr.name.lexeme + " = ";
+    expr.value->accept(*this);
+    return nullptr;
+}
+
 void Transpiler::visit(const LetStmt& stmt) {
     if (stmt.type) {
         result_ += stmt.type->toString() + " " + stmt.name.lexeme;
@@ -59,6 +87,11 @@ void Transpiler::visit(const LetStmt& stmt) {
         result_ += " = ";
         stmt.initializer->accept(*this);
     }
+    result_ += ";\n";
+}
+
+void Transpiler::visit(const ExprStmt& stmt) {
+    stmt.expression->accept(*this);
     result_ += ";\n";
 }
 

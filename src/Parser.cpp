@@ -73,6 +73,13 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::LEFT_BRACE})) {
         return block();
     }
+
+    auto expr = expression();
+    if (dynamic_cast<CallExpr*>(expr.get()) || dynamic_cast<AssignExpr*>(expr.get())) {
+        consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+        return std::make_unique<ExprStmt>(std::move(expr));
+    }
+
     throw std::runtime_error("Expect a statement.");
 }
 
@@ -94,6 +101,12 @@ std::unique_ptr<Stmt> Parser::letDeclaration(bool isMutable) {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
+    if (match({TokenType::AMPERSAND})) {
+        bool isMutable = match({TokenType::MUT});
+        std::unique_ptr<Type> referencedType = parseType();
+        return std::make_unique<ReferenceType>(std::move(referencedType), isMutable);
+    }
+
     Token typeToken = consume(TokenType::IDENTIFIER, "Expect type name.");
     if (typeToken.lexeme == "int") {
         return std::make_unique<PrimitiveType>(PrimitiveType::Kind::Int);
@@ -110,10 +123,11 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
     std::vector<FuncStmt::Parameter> params;
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
+            bool isMutable = match({TokenType::MUT});
             Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
             consume(TokenType::COLON, "Expect ':' after parameter name.");
             std::unique_ptr<Type> paramType = parseType();
-            params.push_back({paramName, std::move(paramType)});
+            params.push_back({paramName, std::move(paramType), isMutable});
         } while (match({TokenType::COMMA}));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
@@ -168,6 +182,10 @@ std::unique_ptr<Expr> Parser::prefix() {
         Token op = tokens_[current_ - 1];
         std::unique_ptr<Expr> right = parsePrecedence(6); // Unary precedence
         return std::make_unique<UnaryExpr>(op, std::move(right));
+    } else if (match({TokenType::AMPERSAND})) {
+        bool isMutable = match({TokenType::MUT});
+        std::unique_ptr<Expr> expr = parsePrecedence(6); // Unary precedence
+        return std::make_unique<BorrowExpr>(std::move(expr), isMutable);
     } else if (match({TokenType::LEFT_PAREN})) {
         std::unique_ptr<Expr> expr = expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
@@ -179,6 +197,27 @@ std::unique_ptr<Expr> Parser::prefix() {
 }
 
 std::unique_ptr<Expr> Parser::infix(std::unique_ptr<Expr> left) {
+    if (peek().type == TokenType::EQUAL) {
+        advance();
+        if (auto varExpr = dynamic_cast<VariableExpr*>(left.get())) {
+            std::unique_ptr<Expr> value = parsePrecedence(getPrecedence(TokenType::EQUAL) - 1);
+            return std::make_unique<AssignExpr>(varExpr->name, std::move(value));
+        }
+        throw std::runtime_error("Invalid assignment target.");
+    }
+
+    if (peek().type == TokenType::LEFT_PAREN) {
+        advance();
+        std::vector<std::unique_ptr<Expr>> args;
+        if (peek().type != TokenType::RIGHT_PAREN) {
+            do {
+                args.push_back(expression());
+            } while (match({TokenType::COMMA}));
+        }
+        Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+        return std::make_unique<CallExpr>(std::move(left), paren, std::move(args));
+    }
+
     Token op = advance();
     int precedence = getPrecedence(op.type);
     std::unique_ptr<Expr> right = parsePrecedence(precedence);
@@ -187,24 +226,28 @@ std::unique_ptr<Expr> Parser::infix(std::unique_ptr<Expr> left) {
 
 int Parser::getPrecedence(TokenType type) {
     switch (type) {
-        case TokenType::PLUS:
-        case TokenType::MINUS:
+        case TokenType::EQUAL:
             return 1;
-        case TokenType::STAR:
-        case TokenType::SLASH:
-        case TokenType::MODULO:
+        case TokenType::LOGICAL_OR:
             return 2;
+        case TokenType::LOGICAL_AND:
+            return 3;
         case TokenType::EQUAL_EQUAL:
         case TokenType::BANG_EQUAL:
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
         case TokenType::GREATER:
         case TokenType::GREATER_EQUAL:
-            return 3;
-        case TokenType::LOGICAL_AND:
             return 4;
-        case TokenType::LOGICAL_OR:
+        case TokenType::PLUS:
+        case TokenType::MINUS:
             return 5;
+        case TokenType::STAR:
+        case TokenType::SLASH:
+        case TokenType::MODULO:
+            return 6;
+        case TokenType::LEFT_PAREN:
+            return 7;
         default:
             return 0;
     }
