@@ -22,7 +22,7 @@ private:
 
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> statement();
-    std::unique_ptr<Stmt> letDeclaration();
+    std::unique_ptr<Stmt> letDeclaration(bool isMutable);
     std::unique_ptr<Stmt> functionDeclaration();
     std::unique_ptr<BlockStmt> block();
     std::unique_ptr<Stmt> returnStatement();

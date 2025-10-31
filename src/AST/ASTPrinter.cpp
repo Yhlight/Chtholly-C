@@ -26,11 +26,6 @@ std::shared_ptr<Type> ASTPrinter::visit(const StringLiteral& expr) {
     return nullptr;
 }
 
-std::shared_ptr<Type> ASTPrinter::visit(const BooleanLiteral& expr) {
-    result_ += expr.value.lexeme;
-    return nullptr;
-}
-
 std::shared_ptr<Type> ASTPrinter::visit(const UnaryExpr& expr) {
     result_ += "(" + expr.op.lexeme + " ";
     expr.right->accept(*this);
@@ -60,7 +55,11 @@ std::shared_ptr<Type> ASTPrinter::visit(const VariableExpr& expr) {
 }
 
 void ASTPrinter::visit(const LetStmt& stmt) {
-    result_ += "(let " + stmt.name.lexeme;
+    if (stmt.isMutable) {
+        result_ += "(mut " + stmt.name.lexeme;
+    } else {
+        result_ += "(let " + stmt.name.lexeme;
+    }
     if (stmt.type) {
         result_ += " : " + stmt.type->toString();
     }

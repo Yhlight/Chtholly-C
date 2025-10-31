@@ -17,7 +17,6 @@ class VariableExpr;
 // Visitor interface for expressions
 class ExprVisitor {
 public:
-    virtual std::shared_ptr<Type> visit(const class BooleanLiteral& expr) = 0;
     virtual std::shared_ptr<Type> visit(const class NumericLiteral& expr) = 0;
     virtual std::shared_ptr<Type> visit(const class StringLiteral& expr) = 0;
     virtual std::shared_ptr<Type> visit(const UnaryExpr& expr) = 0;
@@ -38,17 +37,6 @@ public:
 class NumericLiteral : public Expr {
 public:
     NumericLiteral(Token value) : value(std::move(value)) {}
-
-    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
-        return visitor.visit(*this);
-    }
-
-    const Token value;
-};
-
-class BooleanLiteral : public Expr {
-public:
-    BooleanLiteral(Token value) : value(std::move(value)) {}
 
     std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
         return visitor.visit(*this);

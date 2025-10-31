@@ -93,3 +93,15 @@ TEST(ParserTest, FunctionDeclaration) {
 
     EXPECT_EQ(result, "(func add(a : int, b : int) -> int { (return (+ a b)) })\n");
 }
+
+TEST(ParserTest, MutStatement) {
+    std::string source = "mut x = 10;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    ASTPrinter printer;
+    std::string result = printer.print(statements);
+
+    EXPECT_EQ(result, "(mut x = 10)\n");
+}

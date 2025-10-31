@@ -39,7 +39,6 @@ public:
 
     TypeKind getKind() const override { return TypeKind::Primitive; }
     Kind getPrimitiveKind() const { return kind_; }
-    bool isEqual(const Type& other) const override;
 
 private:
     Kind kind_;
@@ -51,7 +50,6 @@ public:
         : Type("function"), returnType(std::move(returnType)), parameterTypes(std::move(parameterTypes)) {}
 
     TypeKind getKind() const override { return TypeKind::Function; }
-    bool isEqual(const Type& other) const override;
 
     std::shared_ptr<Type> returnType;
     std::vector<std::shared_ptr<Type>> parameterTypes;

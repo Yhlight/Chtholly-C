@@ -56,8 +56,12 @@ std::unique_ptr<Stmt> Parser::declaration() {
     if (match({TokenType::FUNC})) {
         return functionDeclaration();
     }
-     if (match({TokenType::LET})) {
-        return letDeclaration();
+    if (match({TokenType::LET, TokenType::MUT})) {
+        bool isMutable = tokens_[current_ - 1].type == TokenType::MUT;
+        if (tokens_[current_ - 1].type == TokenType::LET) {
+            return letDeclaration(false);
+        }
+        return letDeclaration(true);
     }
     return statement();
 }
@@ -72,7 +76,7 @@ std::unique_ptr<Stmt> Parser::statement() {
     throw std::runtime_error("Expect a statement.");
 }
 
-std::unique_ptr<Stmt> Parser::letDeclaration() {
+std::unique_ptr<Stmt> Parser::letDeclaration(bool isMutable) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
 
     std::unique_ptr<Type> type = nullptr;
@@ -86,7 +90,7 @@ std::unique_ptr<Stmt> Parser::letDeclaration() {
     }
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer));
+    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer), isMutable);
 }
 
 std::unique_ptr<Type> Parser::parseType() {
@@ -160,8 +164,6 @@ std::unique_ptr<Expr> Parser::prefix() {
         return std::make_unique<NumericLiteral>(tokens_[current_ - 1]);
     } else if (match({TokenType::STRING})) {
         return std::make_unique<StringLiteral>(tokens_[current_ - 1]);
-    } else if (match({TokenType::TRUE, TokenType::FALSE})) {
-        return std::make_unique<BooleanLiteral>(tokens_[current_ - 1]);
     } else if (match({TokenType::MINUS, TokenType::BANG})) {
         Token op = tokens_[current_ - 1];
         std::unique_ptr<Expr> right = parsePrecedence(6); // Unary precedence
