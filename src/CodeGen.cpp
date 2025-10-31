@@ -49,6 +49,12 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<EnumStatement*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<TraitStatement*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<ImplStatement*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<Constraint*>(node)) {
+        visit(n);
     }
 }
 
@@ -144,6 +150,11 @@ void CodeGen::visit(FunctionLiteral* node) {
             }
         }
         m_out << ">\n";
+        for (const auto& param : node->templateParams) {
+            for (const auto& constraint : param->constraints) {
+                visit(constraint.get());
+            }
+        }
     }
     m_out << "[&](";
     for (size_t i = 0; i < node->parameters.size(); ++i) {
@@ -212,6 +223,11 @@ void CodeGen::visit(StructStatement* node) {
             }
         }
         m_out << ">\n";
+        for (const auto& param : node->templateParams) {
+            for (const auto& constraint : param->constraints) {
+                visit(constraint.get());
+            }
+        }
     }
     m_out << "struct " << node->name->value << " {\n";
     for (const auto& member : node->members) {
@@ -320,6 +336,27 @@ void CodeGen::visit(EnumStatement* node) {
         }
     }
     m_out << "\n};\n";
+}
+
+void CodeGen::visit(TraitStatement* node) {
+    m_out << "template<typename T>\n";
+    m_out << "struct " << node->name->value << " { virtual ~" << node->name->value << "() = default; };\n";
+}
+
+void CodeGen::visit(ImplStatement* node) {
+    m_out << "template<> struct " << node->traitName->value << "<";
+    visit(node->structName.get());
+    m_out << "> : " << node->traitName->value << "<";
+    visit(node->structName.get());
+    m_out << "> {\n";
+    for (const auto& method : node->methods) {
+        visit(method.get());
+    }
+    m_out << "};\n";
+}
+
+void CodeGen::visit(Constraint* node) {
+    m_out << "static_assert(std::is_base_of<" << node->trait->value << ", T>::value, \"Type does not implement trait\");\n";
 }
 
 } // namespace Chtholly

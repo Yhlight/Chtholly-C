@@ -79,10 +79,19 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseDeclarationStatement();
     case TokenType::Return:
         return parseReturnStatement();
+    case TokenType::Func:
+        if (m_peekToken.type == TokenType::Identifier) {
+            return parseFunctionDeclaration();
+        }
+        return parseExpressionStatement();
     case TokenType::Struct:
         return parseStructStatement();
     case TokenType::Enum:
         return parseEnumStatement();
+    case TokenType::Trait:
+        return parseTraitStatement();
+    case TokenType::Impl:
+        return parseImplStatement();
     default:
         return parseExpressionStatement();
     }
@@ -428,12 +437,20 @@ std::vector<std::unique_ptr<Identifier>> Parser::parseTemplateParams() {
 
     nextToken();
 
-    identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+    auto ident = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+    if (m_peekToken.type == TokenType::Question) {
+        ident->constraints = parseConstraints();
+    }
+    identifiers.push_back(std::move(ident));
 
     while (m_peekToken.type == TokenType::Comma) {
         nextToken();
         nextToken();
-        identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+        auto ident = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        if (m_peekToken.type == TokenType::Question) {
+            ident->constraints = parseConstraints();
+        }
+        identifiers.push_back(std::move(ident));
     }
 
     if (!expectPeek(TokenType::GreaterThan)) {
@@ -441,6 +458,113 @@ std::vector<std::unique_ptr<Identifier>> Parser::parseTemplateParams() {
     }
 
     return identifiers;
+}
+
+std::unique_ptr<Statement> Parser::parseFunctionDeclaration() {
+    auto let = std::make_unique<LetStatement>(m_curToken);
+    let->isMutable = false;
+
+    nextToken(); // Consume 'func'
+
+    let->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+    let->value = parseFunctionLiteral();
+
+    return let;
+}
+
+std::unique_ptr<TraitStatement> Parser::parseTraitStatement() {
+    auto stmt = std::make_unique<TraitStatement>(m_curToken);
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return nullptr;
+    }
+
+    stmt->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    nextToken();
+
+    while (m_curToken.type != TokenType::RBrace && m_curToken.type != TokenType::Eof) {
+        bool isPublic = true;
+        if (m_curToken.type == TokenType::Private) {
+            isPublic = false;
+            nextToken();
+        } else if (m_curToken.type == TokenType::Public) {
+            nextToken();
+        }
+
+        auto name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        nextToken();
+
+        auto func = parseFunctionLiteral();
+        if (func) {
+            auto method = std::make_unique<Method>(m_curToken, isPublic, std::move(name), std::unique_ptr<FunctionLiteral>(static_cast<FunctionLiteral*>(func.release())));
+            stmt->methods.push_back(std::move(method));
+        }
+
+        if (m_peekToken.type == TokenType::Comma) {
+            nextToken();
+        }
+        nextToken();
+    }
+
+    return stmt;
+}
+
+std::unique_ptr<ImplStatement> Parser::parseImplStatement() {
+    auto stmt = std::make_unique<ImplStatement>(m_curToken);
+
+    if (m_peekToken.type == TokenType::LessThan) {
+        nextToken();
+        stmt->templateParams = parseTemplateParams();
+    }
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return nullptr;
+    }
+
+    stmt->structName = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+
+    if (!expectPeek(TokenType::Identifier)) {
+        return nullptr;
+    }
+
+    stmt->traitName = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+
+    if (!expectPeek(TokenType::LBrace)) {
+        return nullptr;
+    }
+
+    nextToken();
+
+    while (m_curToken.type != TokenType::RBrace && m_curToken.type != TokenType::Eof) {
+        bool isPublic = true;
+        if (m_curToken.type == TokenType::Private) {
+            isPublic = false;
+            nextToken();
+        } else if (m_curToken.type == TokenType::Public) {
+            nextToken();
+        }
+
+        auto name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        nextToken();
+
+        auto func = parseFunctionLiteral();
+        if (func) {
+            auto method = std::make_unique<Method>(m_curToken, isPublic, std::move(name), std::unique_ptr<FunctionLiteral>(static_cast<FunctionLiteral*>(func.release())));
+            stmt->methods.push_back(std::move(method));
+        }
+
+        if (m_peekToken.type == TokenType::Comma) {
+            nextToken();
+        }
+        nextToken();
+    }
+
+    return stmt;
 }
 
 std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
@@ -553,6 +677,19 @@ std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
     }
 
     return args;
+}
+
+std::vector<std::unique_ptr<Constraint>> Parser::parseConstraints() {
+    std::vector<std::unique_ptr<Constraint>> constraints;
+
+    while (m_peekToken.type == TokenType::Question) {
+        nextToken(); // consume '?'
+        nextToken(); // consume trait name
+        auto constraint = std::make_unique<Constraint>(m_curToken, std::make_unique<Identifier>(m_curToken, m_curToken.literal));
+        constraints.push_back(std::move(constraint));
+    }
+
+    return constraints;
 }
 
 } // namespace Chtholly

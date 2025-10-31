@@ -23,7 +23,7 @@
 - [x] Implement support for structs and methods.
 - [x] Implement generics (Generic Structs).
 - [x] Implement enums.
-- [ ] Implement traits and constraints.
+- [x] Implement traits and constraints.
 - [ ] Implement the standard library modules (`iostream`, `filesystem`, etc.).
 
 ## Phase 5: Self-Hosting

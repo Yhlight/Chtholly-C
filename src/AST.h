@@ -8,6 +8,8 @@
 
 namespace Chtholly {
 
+class Constraint;
+
 // Base class for all nodes in the AST
 struct Node {
     virtual ~Node() = default;
@@ -65,6 +67,7 @@ public:
     Token token;
     std::string value;
     std::unique_ptr<Type> type;
+    std::vector<std::unique_ptr<Constraint>> constraints;
 };
 
 // Represents a 'let' statement (e.g., let x = 5;)
@@ -296,6 +299,41 @@ public:
     Token token; // The 'enum' token
     std::unique_ptr<Identifier> name;
     std::vector<std::unique_ptr<Identifier>> members;
+};
+
+class Constraint : public Node {
+public:
+    Constraint(Token token, std::unique_ptr<Identifier> trait)
+        : token(std::move(token)), trait(std::move(trait)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The '?' token
+    std::unique_ptr<Identifier> trait;
+};
+
+class TraitStatement : public Statement {
+public:
+    TraitStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'trait' token
+    std::unique_ptr<Identifier> name;
+    std::vector<std::unique_ptr<Method>> methods;
+};
+
+class ImplStatement : public Statement {
+public:
+    ImplStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'impl' token
+    std::unique_ptr<Identifier> structName;
+    std::unique_ptr<Identifier> traitName;
+    std::vector<std::unique_ptr<Identifier>> templateParams;
+    std::vector<std::unique_ptr<Method>> methods;
 };
 
 } // namespace Chtholly

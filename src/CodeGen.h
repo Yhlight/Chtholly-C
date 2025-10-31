@@ -34,6 +34,9 @@ private:
     void visit(StructLiteral* node);
     void visit(MemberAccessExpression* node);
     void visit(EnumStatement* node);
+    void visit(TraitStatement* node);
+    void visit(ImplStatement* node);
+    void visit(Constraint* node);
 
     std::stringstream m_out;
     Program* m_program = nullptr;

@@ -140,6 +140,80 @@ TEST(Parser, TestEnumStatement) {
     ASSERT_EQ(stmt->members[2]->value, "Blue");
 }
 
+TEST(Parser, TestTraitStatement) {
+    std::string input = "trait MyTrait { my_func(self) -> int }";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::TraitStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->name->value, "MyTrait");
+    ASSERT_EQ(stmt->methods.size(), 1);
+
+    auto method = stmt->methods[0].get();
+    ASSERT_NE(method, nullptr);
+    ASSERT_EQ(method->name->value, "my_func");
+    ASSERT_EQ(method->function->parameters.size(), 1);
+    ASSERT_EQ(method->function->parameters[0]->value, "self");
+    auto returnType = dynamic_cast<Chtholly::TypeName*>(method->function->returnType.get());
+    ASSERT_NE(returnType, nullptr);
+    ASSERT_EQ(returnType->name, "int");
+}
+
+TEST(Parser, TestImplStatement) {
+    std::string input = "impl MyStruct MyTrait { my_func(self) -> int { return 0; } }";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::ImplStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->structName->value, "MyStruct");
+    ASSERT_EQ(stmt->traitName->value, "MyTrait");
+    ASSERT_EQ(stmt->methods.size(), 1);
+
+    auto method = stmt->methods[0].get();
+    ASSERT_NE(method, nullptr);
+    ASSERT_EQ(method->name->value, "my_func");
+    ASSERT_EQ(method->function->parameters.size(), 1);
+    ASSERT_EQ(method->function->parameters[0]->value, "self");
+    auto returnType = dynamic_cast<Chtholly::TypeName*>(method->function->returnType.get());
+    ASSERT_NE(returnType, nullptr);
+    ASSERT_EQ(returnType->name, "int");
+}
+
+TEST(Parser, TestGenericFunctionWithConstraints) {
+    std::string input = "func my_func<T ? MyTrait>(arg: T) {}";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::LetStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+
+    auto func = dynamic_cast<Chtholly::FunctionLiteral*>(stmt->value.get());
+    ASSERT_NE(func, nullptr);
+    ASSERT_EQ(func->templateParams.size(), 1);
+
+    auto param = func->templateParams[0].get();
+    ASSERT_EQ(param->value, "T");
+    ASSERT_EQ(param->constraints.size(), 1);
+
+    auto constraint = param->constraints[0].get();
+    ASSERT_NE(constraint, nullptr);
+    ASSERT_EQ(constraint->trait->value, "MyTrait");
+}
+
 // Helper function to stringify the AST for easy comparison
 std::string astToString(Chtholly::Node* node) {
     if (!node) {

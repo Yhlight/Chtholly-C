@@ -21,6 +21,8 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords = {
     {"switch", TokenType::Switch},
     {"case", TokenType::Case},
     {"fallthrough", TokenType::Fallthrough},
+    {"trait", TokenType::Trait},
+    {"impl", TokenType::Impl},
 };
 
 Lexer::Lexer(const std::string& input)
@@ -212,6 +214,9 @@ Token Lexer::nextToken() {
         break;
     case ']':
         tok = {TokenType::RBracket, "]", tok.line, tok.col};
+        break;
+    case '?':
+        tok = {TokenType::Question, "?", tok.line, tok.col};
         break;
     case '"':
         tok.type = TokenType::String;

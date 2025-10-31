@@ -30,6 +30,40 @@ TEST(CodeGen, TestGenericStructStatement) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(CodeGen, TestGenericFunctionWithConstraints) {
+    std::string input = "func my_func<T ? MyTrait>(arg: T) {}";
+    std::string expected = "const auto my_func = template<typename T>\nstatic_assert(std::is_base_of<MyTrait, T>::value, \"Type does not implement trait\");\n[&](T arg) {\n}\n;\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
+TEST(CodeGen, TestTraitAndImplStatement) {
+    std::string input = R"(
+        trait MyTrait {}
+        struct MyStruct {}
+        impl MyStruct MyTrait {}
+    )";
+    std::string expected = "template<typename T>\nstruct MyTrait { virtual ~MyTrait() = default; };\nstruct MyStruct {\n};\ntemplate<> struct MyTrait<MyStruct> : MyTrait<MyStruct> {\n};\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
 TEST(CodeGen, TestEnumStatement) {
     std::string input = "enum Color { Red, Green, Blue }";
     std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
