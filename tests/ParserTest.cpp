@@ -114,3 +114,38 @@ TEST(ParserTest, ParsesIfStatement) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(if true (block (; 1)) (block (; 2)))");
 }
+
+TEST(ParserTest, ParsesForStatement) {
+    // for (let i = 0; i < 10; i = i + 1) { 1; }
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::FOR, "for", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::LET, "let", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "i", 1),
+        chtholly::Token(chtholly::TokenType::EQUAL, "=", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "0", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "i", 1),
+        chtholly::Token(chtholly::TokenType::LESS, "<", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "10", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "i", 1),
+        chtholly::Token(chtholly::TokenType::EQUAL, "=", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "i", 1),
+        chtholly::Token(chtholly::TokenType::PLUS, "+", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(for (var i = 0) (< i 10) (= i (+ i 1)) (block (; 1)))");
+}

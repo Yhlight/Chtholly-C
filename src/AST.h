@@ -9,15 +9,14 @@
 
 namespace chtholly {
 
-// Forward declarations
+// Forward declarations for Expr
 struct LiteralExpr;
 struct UnaryExpr;
 struct BinaryExpr;
 struct VariableExpr;
 struct GroupingExpr;
 
-
-// Visitor interface
+// Expr Visitor interface
 template <typename R>
 class ExprVisitor {
 public:
@@ -34,14 +33,7 @@ class Expr {
 public:
     virtual ~Expr() = default;
     template <typename R>
-    R accept(ExprVisitor<R>& visitor) const {
-        if (auto p = dynamic_cast<const LiteralExpr*>(this)) return visitor.visit(*p);
-        if (auto p = dynamic_cast<const UnaryExpr*>(this)) return visitor.visit(*p);
-        if (auto p = dynamic_cast<const BinaryExpr*>(this)) return visitor.visit(*p);
-        if (auto p = dynamic_cast<const VariableExpr*>(this)) return visitor.visit(*p);
-        if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
-        throw std::runtime_error("Unknown expression type in accept.");
-    }
+    R accept(ExprVisitor<R>& visitor) const;
 };
 
 // Expression nodes
@@ -76,12 +68,24 @@ struct GroupingExpr : Expr {
     const std::unique_ptr<Expr> expression;
 };
 
+// Implementation of the generic accept method for Expr
+template <typename R>
+R Expr::accept(ExprVisitor<R>& visitor) const {
+    if (auto p = dynamic_cast<const LiteralExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const UnaryExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const BinaryExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const VariableExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
+    throw std::runtime_error("Unknown expression type in accept.");
+}
+
 
 // Forward declarations for Stmt
 struct VarDeclStmt;
 struct ExprStmt;
 struct BlockStmt;
 struct IfStmt;
+struct ForStmt;
 
 // Stmt Visitor interface
 template <typename R>
@@ -92,6 +96,7 @@ public:
     virtual R visit(const ExprStmt& stmt) = 0;
     virtual R visit(const BlockStmt& stmt) = 0;
     virtual R visit(const IfStmt& stmt) = 0;
+    virtual R visit(const ForStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -130,6 +135,17 @@ struct IfStmt : Stmt {
     const std::unique_ptr<Stmt> elseBranch;
 };
 
+struct ForStmt : Stmt {
+    ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition,
+            std::unique_ptr<Expr> increment, std::unique_ptr<Stmt> body)
+        : initializer(std::move(initializer)), condition(std::move(condition)),
+          increment(std::move(increment)), body(std::move(body)) {}
+    const std::unique_ptr<Stmt> initializer;
+    const std::unique_ptr<Expr> condition;
+    const std::unique_ptr<Expr> increment;
+    const std::unique_ptr<Stmt> body;
+};
+
 // Implementation of the generic accept method for Stmt
 template <typename R>
 R Stmt::accept(StmtVisitor<R>& visitor) const {
@@ -137,6 +153,7 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const ExprStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const BlockStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const IfStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const ForStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -175,6 +192,11 @@ public:
             result += " " + print(*stmt.elseBranch);
         }
         result += ")";
+        return result;
+    }
+
+    std::string visit(const ForStmt& stmt) override {
+        std::string result = "(for " + print(*stmt.initializer) + " " + print(*stmt.condition) + " " + print(*stmt.increment) + " " + print(*stmt.body) + ")";
         return result;
     }
 
