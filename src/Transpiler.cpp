@@ -22,6 +22,11 @@ std::shared_ptr<Type> Transpiler::visit(const StringLiteral& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> Transpiler::visit(const BooleanLiteral& expr) {
+    result_ += expr.value ? "true" : "false";
+    return nullptr;
+}
+
 std::shared_ptr<Type> Transpiler::visit(const UnaryExpr& expr) {
     result_ += "(" + expr.op.lexeme;
     expr.right->accept(*this);

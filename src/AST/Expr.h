@@ -11,6 +11,7 @@ class UnaryExpr;
 class BinaryExpr;
 class GroupingExpr;
 class VariableExpr;
+class BooleanLiteral;
 
 #include "../Type.h"
 
@@ -19,6 +20,7 @@ class ExprVisitor {
 public:
     virtual std::shared_ptr<Type> visit(const class NumericLiteral& expr) = 0;
     virtual std::shared_ptr<Type> visit(const class StringLiteral& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const BooleanLiteral& expr) = 0;
     virtual std::shared_ptr<Type> visit(const UnaryExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const BinaryExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const GroupingExpr& expr) = 0;
@@ -104,6 +106,17 @@ public:
     }
 
     const Token value;
+};
+
+class BooleanLiteral : public Expr {
+public:
+    BooleanLiteral(bool value) : value(value) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const bool value;
 };
 
 

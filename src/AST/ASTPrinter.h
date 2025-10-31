@@ -13,6 +13,7 @@ public:
 
     std::shared_ptr<Type> visit(const NumericLiteral& expr) override;
     std::shared_ptr<Type> visit(const StringLiteral& expr) override;
+    std::shared_ptr<Type> visit(const BooleanLiteral& expr) override;
     std::shared_ptr<Type> visit(const UnaryExpr& expr) override;
     std::shared_ptr<Type> visit(const BinaryExpr& expr) override;
     std::shared_ptr<Type> visit(const GroupingExpr& expr) override;

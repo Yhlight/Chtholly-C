@@ -19,6 +19,10 @@ std::shared_ptr<Type> Resolver::visit(const StringLiteral& expr) {
     return std::make_shared<PrimitiveType>(PrimitiveType::Kind::String);
 }
 
+std::shared_ptr<Type> Resolver::visit(const BooleanLiteral& expr) {
+    return std::make_shared<PrimitiveType>(PrimitiveType::Kind::Bool);
+}
+
 std::shared_ptr<Type> Resolver::visit(const UnaryExpr& expr) {
     auto rightType = resolve(*expr.right);
     if (expr.op.type == TokenType::MINUS) {
@@ -28,20 +32,51 @@ std::shared_ptr<Type> Resolver::visit(const UnaryExpr& expr) {
             throw std::runtime_error("Operand must be a number.");
         }
         return rightType;
+    } else if (expr.op.type == TokenType::BANG) {
+        if (rightType->getKind() != TypeKind::Primitive ||
+            std::static_pointer_cast<PrimitiveType>(rightType)->getPrimitiveKind() != PrimitiveType::Kind::Bool) {
+            throw std::runtime_error("Operand must be a boolean.");
+        }
+        return std::make_shared<PrimitiveType>(PrimitiveType::Kind::Bool);
     }
-    // Handle other unary operators...
-    return nullptr;
+    return nullptr; // Should not be reached
 }
 
 std::shared_ptr<Type> Resolver::visit(const BinaryExpr& expr) {
     auto leftType = resolve(*expr.left);
     auto rightType = resolve(*expr.right);
 
-    if (!leftType->isEqual(*rightType)) {
-        throw std::runtime_error("Type mismatch in binary expression.");
+    if (leftType->isEqual(*rightType)) {
+        switch (expr.op.type) {
+            case TokenType::MINUS:
+            case TokenType::STAR:
+            case TokenType::SLASH:
+            case TokenType::PLUS:
+                if (leftType->getKind() != TypeKind::Primitive ||
+                    (std::static_pointer_cast<PrimitiveType>(leftType)->getPrimitiveKind() != PrimitiveType::Kind::Int &&
+                     std::static_pointer_cast<PrimitiveType>(leftType)->getPrimitiveKind() != PrimitiveType::Kind::Double)) {
+                    throw std::runtime_error("Operands must be numbers.");
+                }
+                return leftType;
+            case TokenType::GREATER:
+            case TokenType::GREATER_EQUAL:
+            case TokenType::LESS:
+            case TokenType::LESS_EQUAL:
+                if (leftType->getKind() != TypeKind::Primitive ||
+                    (std::static_pointer_cast<PrimitiveType>(leftType)->getPrimitiveKind() != PrimitiveType::Kind::Int &&
+                     std::static_pointer_cast<PrimitiveType>(leftType)->getPrimitiveKind() != PrimitiveType::Kind::Double)) {
+                    throw std::runtime_error("Operands must be numbers.");
+                }
+                return std::make_shared<PrimitiveType>(PrimitiveType::Kind::Bool);
+            case TokenType::EQUAL_EQUAL:
+            case TokenType::BANG_EQUAL:
+                return std::make_shared<PrimitiveType>(PrimitiveType::Kind::Bool);
+            default:
+                break;
+        }
     }
-    // For now, assume the result type is the same as the operand types.
-    return leftType;
+
+    throw std::runtime_error("Invalid operands for binary expression.");
 }
 
 std::shared_ptr<Type> Resolver::visit(const GroupingExpr& expr) {
