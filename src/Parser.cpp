@@ -78,7 +78,7 @@ std::shared_ptr<Expr> Parser::expression() {
 }
 
 std::shared_ptr<Expr> Parser::assignment() {
-    std::shared_ptr<Expr> expr = equality();
+    std::shared_ptr<Expr> expr = logical_or();
     if (match({TokenType::EQUAL})) {
         Token equals = previous();
         std::shared_ptr<Expr> value = assignment();
@@ -87,6 +87,26 @@ std::shared_ptr<Expr> Parser::assignment() {
             return std::make_shared<Assign>(name, value);
         }
         throw std::runtime_error("Invalid assignment target.");
+    }
+    return expr;
+}
+
+std::shared_ptr<Expr> Parser::logical_or() {
+    std::shared_ptr<Expr> expr = logical_and();
+    while (match({TokenType::PIPE_PIPE})) {
+        Token op = previous();
+        std::shared_ptr<Expr> right = logical_and();
+        expr = std::make_shared<Binary>(expr, op, right);
+    }
+    return expr;
+}
+
+std::shared_ptr<Expr> Parser::logical_and() {
+    std::shared_ptr<Expr> expr = equality();
+    while (match({TokenType::AMPERSAND_AMPERSAND})) {
+        Token op = previous();
+        std::shared_ptr<Expr> right = equality();
+        expr = std::make_shared<Binary>(expr, op, right);
     }
     return expr;
 }

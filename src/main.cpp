@@ -9,10 +9,9 @@
 int main() {
     std::string source = R"(
         let x = 10;
-        if (x > 5) {
-            let y = 20;
-        } else {
-            let y = 30;
+        let y = 20;
+        if (x > 5 && y > 15) {
+            let z = 30;
         }
     )";
 
