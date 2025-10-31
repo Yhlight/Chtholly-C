@@ -67,12 +67,9 @@ enum class TokenType {
     Switch,
     Case,
     Fallthrough,
-    Trait,
-    Impl,
 
     // Misc
     Arrow, // ->
-    Question, // ?
     DoubleColon, // ::
 };
 

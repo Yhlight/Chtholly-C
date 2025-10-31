@@ -49,6 +49,8 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<EnumStatement*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<ImportStatement*>(node)) {
+        visit(n);
     }
 }
 
@@ -108,11 +110,17 @@ void CodeGen::visit(PrefixExpression* node) {
 }
 
 void CodeGen::visit(InfixExpression* node) {
-    m_out << "(";
-    visit(node->left.get());
-    m_out << " " << node->op << " ";
-    visit(node->right.get());
-    m_out << ")";
+    if (node->op == "::") {
+        visit(node->left.get());
+        m_out << "::";
+        visit(node->right.get());
+    } else {
+        m_out << "(";
+        visit(node->left.get());
+        m_out << " " << node->op << " ";
+        visit(node->right.get());
+        m_out << ")";
+    }
 }
 
 void CodeGen::visit(BlockStatement* node) {
@@ -320,6 +328,42 @@ void CodeGen::visit(EnumStatement* node) {
         }
     }
     m_out << "\n};\n";
+}
+
+void CodeGen::visit(ImportStatement* node) {
+    if (auto ident = dynamic_cast<Identifier*>(node->path.get())) {
+        if (ident->value == "iostream") {
+            std::string existing_code = m_out.str();
+            m_out.str("");
+            m_out << "#include <iostream>\n\n";
+            m_out << "template<typename T>\n";
+            m_out << "void print(T value) {\n";
+            m_out << "    std::cout << value << std::endl;\n";
+            m_out << "}\n\n";
+            m_out << existing_code;
+        } else if (ident->value == "filesystem") {
+            std::string existing_code = m_out.str();
+            m_out.str("");
+            m_out << "#include <filesystem>\n";
+            m_out << "#include <fstream>\n\n";
+            m_out << "namespace filesystem {\n";
+            m_out << "    bool exists(const std::string& path) { return std::filesystem::exists(path); }\n";
+            m_out << "    bool is_file(const std::string& path) { return std::filesystem::is_regular_file(path); }\n";
+            m_out << "    bool is_directory(const std::string& path) { return std::filesystem::is_directory(path); }\n";
+            m_out << "    std::string read_file(const std::string& path) {\n";
+            m_out << "        std::ifstream file(path);\n";
+            m_out << "        std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());\n";
+            m_out << "        return content;\n";
+            m_out << "    }\n";
+            m_out << "    bool write_file(const std::string& path, const std::string& content) {\n";
+            m_out << "        std::ofstream file(path);\n";
+            m_out << "        file << content;\n";
+            m_out << "        return file.good();\n";
+            m_out << "    }\n";
+            m_out << "}\n\n";
+            m_out << existing_code;
+        }
+    }
 }
 
 } // namespace Chtholly

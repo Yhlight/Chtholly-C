@@ -27,6 +27,8 @@
 - [x] Implement the standard library modules (`iostream`, `filesystem`, etc.).
   - [x] `iostream`
   - [x] `filesystem`
+- [ ] Implement operator overloading.
+- [ ] Implement static reflection.
 
 ## Phase 5: Self-Hosting
 

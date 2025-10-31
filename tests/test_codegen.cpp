@@ -30,6 +30,26 @@ TEST(CodeGen, TestGenericStructStatement) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(CodeGen, TestFilesystemModule) {
+    std::string input = R"(
+        import filesystem;
+        let content = "Hello, Filesystem!";
+        filesystem::write_file("test.txt", content);
+        let read_content = filesystem::read_file("test.txt");
+    )";
+    std::string expected = "#include <filesystem>\n#include <fstream>\n\nnamespace filesystem {\n    bool exists(const std::string& path) { return std::filesystem::exists(path); }\n    bool is_file(const std::string& path) { return std::filesystem::is_regular_file(path); }\n    bool is_directory(const std::string& path) { return std::filesystem::is_directory(path); }\n    std::string read_file(const std::string& path) {\n        std::ifstream file(path);\n        std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());\n        return content;\n    }\n    bool write_file(const std::string& path, const std::string& content) {\n        std::ofstream file(path);\n        file << content;\n        return file.good();\n    }\n}\n\nconst auto content = \"Hello, Filesystem!\";\nfilesystem::write_file(\"test.txt\", content);\nconst auto read_content = filesystem::read_file(\"test.txt\");\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
 TEST(CodeGen, TestEnumStatement) {
     std::string input = "enum Color { Red, Green, Blue }";
     std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
