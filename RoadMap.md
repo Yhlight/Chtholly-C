@@ -2,8 +2,8 @@
 
 ## Phase 1: Core Language Features
 
-- [ ] Basic project structure (CMake, Google Test)
-- [ ] Lexer
+- [x] Basic project structure (CMake, Google Test)
+- [x] Lexer
 - [ ] Parser (LL(k) recursive descent)
 - [ ] Abstract Syntax Tree (AST)
 - [ ] Semantic Analysis (Resolver)
