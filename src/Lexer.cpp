@@ -1,18 +1,52 @@
 #include "Lexer.h"
 #include <unordered_map>
+#include <cctype>
 
 namespace chtholly {
 
+// Global map for keywords
+static const std::unordered_map<std::string, TokenType> keywords = {
+    {"and",    TokenType::AND},
+    {"or",     TokenType::OR},
+    {"if",     TokenType::IF},
+    {"else",   TokenType::ELSE},
+    {"true",   TokenType::TRUE},
+    {"false",  TokenType::FALSE},
+    {"for",    TokenType::FOR},
+    {"func",   TokenType::FUNC},
+    {"let",    TokenType::LET},
+    {"mut",    TokenType::MUT},
+    {"return", TokenType::RETURN},
+    {"struct", TokenType::STRUCT},
+    {"enum",   TokenType::ENUM},
+    {"import", TokenType::IMPORT},
+    {"switch", TokenType::SWITCH},
+    {"case",   TokenType::CASE},
+    {"default",TokenType::DEFAULT},
+    {"break",  TokenType::BREAK},
+    {"fallthrough", TokenType::FALLTHROUGH},
+    {"public", TokenType::PUBLIC},
+    {"private",TokenType::PRIVATE},
+    {"trait",  TokenType::TRAIT},
+    {"impl",   TokenType::IMPL},
+};
+
+
 Lexer::Lexer(const std::string& source) : source(source) {}
 
-// Helper to create a token
 Token Lexer::makeToken(TokenType type) const {
     return Token(type, source.substr(start, current - start), line);
 }
 
-// Helper to handle error tokens
 Token Lexer::errorToken(const std::string& message) const {
     return Token(TokenType::END_OF_FILE, message, line); // Using EOF as an error indicator for now
+}
+
+bool Lexer::match(char expected) {
+    if (isAtEnd()) return false;
+    if (source[current] != expected) return false;
+    current++;
+    return true;
 }
 
 void Lexer::skipWhitespace() {
@@ -30,7 +64,6 @@ void Lexer::skipWhitespace() {
                 break;
             case '/':
                 if (peekNext() == '/') {
-                    // A comment goes until the end of the line.
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else {
                     return;
@@ -42,6 +75,54 @@ void Lexer::skipWhitespace() {
     }
 }
 
+bool Lexer::isDigit(char c) const {
+    return c >= '0' && c <= '9';
+}
+
+bool Lexer::isAlpha(char c) const {
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+            c == '_';
+}
+
+bool Lexer::isAlphaNumeric(char c) const {
+    return isAlpha(c) || isDigit(c);
+}
+
+Token Lexer::identifier() {
+    while (isAlphaNumeric(peek())) advance();
+
+    std::string text = source.substr(start, current - start);
+    auto it = keywords.find(text);
+    if (it != keywords.end()) {
+        return makeToken(it->second);
+    }
+
+    return makeToken(TokenType::IDENTIFIER);
+}
+
+Token Lexer::number() {
+    while (isDigit(peek())) advance();
+
+    if (peek() == '.' && isDigit(peekNext())) {
+        advance();
+        while (isDigit(peek())) advance();
+    }
+
+    return makeToken(TokenType::NUMBER);
+}
+
+Token Lexer::string() {
+    while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '\n') line++;
+        advance();
+    }
+
+    if (isAtEnd()) return errorToken("Unterminated string.");
+
+    advance(); // The closing ".
+    return makeToken(TokenType::STRING);
+}
 
 Token Lexer::scanToken() {
     skipWhitespace();
@@ -53,19 +134,29 @@ Token Lexer::scanToken() {
 
     char c = advance();
 
+    if (isAlpha(c)) return identifier();
+    if (isDigit(c)) return number();
+
     switch (c) {
         case '(': return makeToken(TokenType::LEFT_PAREN);
         case ')': return makeToken(TokenType::RIGHT_PAREN);
         case '{': return makeToken(TokenType::LEFT_BRACE);
         case '}': return makeToken(TokenType::RIGHT_BRACE);
+        case '[': return makeToken(TokenType::LEFT_BRACKET);
+        case ']': return makeToken(TokenType::RIGHT_BRACKET);
         case ';': return makeToken(TokenType::SEMICOLON);
         case ',': return makeToken(TokenType::COMMA);
         case '.': return makeToken(TokenType::DOT);
-        case '-': return makeToken(TokenType::MINUS);
+        case '-': return makeToken(match('>') ? TokenType::ARROW : TokenType::MINUS);
         case '+': return makeToken(TokenType::PLUS);
         case '/': return makeToken(TokenType::SLASH);
         case '*': return makeToken(TokenType::STAR);
-        // ... more cases for other tokens
+        case '!': return makeToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
+        case '=': return makeToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
+        case '<': return makeToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
+        case '>': return makeToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+        case ':': return makeToken(match(':') ? TokenType::COLON_COLON : TokenType::COLON);
+        case '"': return string();
     }
 
     return errorToken("Unexpected character.");

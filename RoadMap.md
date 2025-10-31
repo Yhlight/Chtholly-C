@@ -6,15 +6,19 @@
 
 此阶段的目标是搭建一个功能完备的编译器骨架，能够处理最简单的 Chtholly 代码，并将其转译为 C++。
 
-- [ ] **项目设置**
+- [x] **项目设置**
     - [x] 初始化 Git 仓库
-    - [ ] 创建 `src` 和 `tests` 目录结构
-    - [ ] 配置 CMake 构建系统 (`CMakeLists.txt`)
-    - [ ] 编写 Python 构建脚本 (`build.py`)
-    - [ ] 集成 GoogleTest 测试框架
-- [ ] **词法分析器 (Lexer)**
-    - [ ] 定义所有 `Token` 类型 (`Token.h`)
-    - [ ] 实现词法分析器，将源代码字符串转换为 `Token` 序列
+    - [x] 创建 `src` 和 `tests` 目录结构
+    - [x] 配置 CMake 构建系统 (`CMakeLists.txt`)
+    - [x] 编写 Python 构建脚本 (`build.py`)
+    - [x] 集成 GoogleTest 测试框架
+- [x] **词法分析器 (Lexer)**
+    - [x] 定义所有 `Token` 类型 (`Token.h`)
+    - [x] 实现词法分析器，将源代码字符串转换为 `Token` 序列
+        - [x] 单字符词法单元
+        - [x] 双字符与多字符操作符
+        - [x] 数字与字符串字面量
+        - [x] 标识符与关键字
 - [ ] **语法分析器 (Parser)**
     - [ ] 定义抽象语法树（AST）节点 (`AST.h`)
     - [ ] 实现递归下降解析器，将 `Token` 序列转换为 AST
