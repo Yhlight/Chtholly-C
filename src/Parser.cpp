@@ -17,6 +17,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::If})) {
         return parseIfStmt();
     }
+    if (match({TokenType::Switch})) {
+        return parseSwitchStmt();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -68,6 +71,32 @@ std::unique_ptr<StmtAST> Parser::parseIfStmt() {
     }
 
     return std::make_unique<IfStmtAST>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<StmtAST> Parser::parseSwitchStmt() {
+    consume(TokenType::LeftParen, "Expect '(' after 'switch'.");
+    auto expr = parseExpression();
+    consume(TokenType::RightParen, "Expect ')' after switch expression.");
+    consume(TokenType::LeftBrace, "Expect '{' before switch body.");
+
+    std::vector<std::unique_ptr<CaseBlockAST>> cases;
+    while (peek().type == TokenType::Case || peek().type == TokenType::Default) {
+        if (match({TokenType::Case})) {
+            auto caseExpr = parseExpression();
+            consume(TokenType::Colon, "Expect ':' after case expression.");
+            consume(TokenType::LeftBrace, "Expect '{' before case body.");
+            auto caseBody = parseBlock();
+            cases.push_back(std::make_unique<CaseBlockAST>(std::move(caseExpr), std::move(caseBody)));
+        } else if (match({TokenType::Default})) {
+            consume(TokenType::Colon, "Expect ':' after 'default'.");
+            consume(TokenType::LeftBrace, "Expect '{' before default body.");
+            auto caseBody = parseBlock();
+            cases.push_back(std::make_unique<CaseBlockAST>(nullptr, std::move(caseBody)));
+        }
+    }
+
+    consume(TokenType::RightBrace, "Expect '}' after switch body.");
+    return std::make_unique<SwitchStmtAST>(std::move(expr), std::move(cases));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {

@@ -19,6 +19,10 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*funcDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
+    } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
+        visit(*switchStmt);
+    } else if (auto* caseBlock = dynamic_cast<const CaseBlockAST*>(&stmt)) {
+        visit(*caseBlock);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -57,6 +61,27 @@ void CodeGen::visit(const IfStmtAST& stmt) {
         ss << "else ";
         visit(*stmt.getElse());
     }
+}
+
+void CodeGen::visit(const SwitchStmtAST& stmt) {
+    ss << "switch (";
+    visit(stmt.getExpr());
+    ss << ") {\n";
+    for (const auto& caseBlock : stmt.getCases()) {
+        visit(*caseBlock);
+    }
+    ss << "}\n";
+}
+
+void CodeGen::visit(const CaseBlockAST& stmt) {
+    if (stmt.getExpr()) {
+        ss << "case ";
+        visit(*stmt.getExpr());
+        ss << ": ";
+    } else {
+        ss << "default: ";
+    }
+    visit(stmt.getBody());
 }
 
 void CodeGen::visit(const BlockStmtAST& stmt) {

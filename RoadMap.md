@@ -22,6 +22,7 @@
 - [x] Extend the parser to support function declarations.
 - [x] Extend the parser to support function calls.
 - [x] Extend the parser to support if-else statements.
+- [x] Extend the parser to support switch statements.
 - [ ] Extend the parser to support other control flow.
 
 ## Phase 4: Semantic Analysis
@@ -32,6 +33,7 @@
 - [x] Extend the semantic analyzer to support function declarations.
 - [x] Extend the semantic analyzer to support function calls.
 - [x] Extend the semantic analyzer to support if-else statements.
+- [x] Extend the semantic analyzer to support switch statements.
 - [ ] Extend the semantic analyzer to support other control flow.
 
 ## Phase 5: C++ Transpilation
@@ -41,6 +43,7 @@
 - [x] Extend the code generator to support function declarations.
 - [x] Extend the code generator to support function calls.
 - [x] Extend the code generator to support if-else statements.
+- [x] Extend the code generator to support switch statements.
 - [ ] Extend the code generator to support other control flow.
 
 ## Phase 6: Standard Library

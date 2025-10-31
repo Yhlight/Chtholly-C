@@ -16,6 +16,8 @@ private:
     void visit(const VarDeclAST& stmt);
     void visit(const FuncDeclAST& stmt);
     void visit(const IfStmtAST& stmt);
+    void visit(const SwitchStmtAST& stmt);
+    void visit(const CaseBlockAST& stmt);
     std::shared_ptr<Type> visit(const ExprAST& expr);
     std::shared_ptr<Type> visit(const NumberExprAST& expr);
     std::shared_ptr<Type> visit(const StringExprAST& expr);

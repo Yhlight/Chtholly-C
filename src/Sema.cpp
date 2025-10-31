@@ -20,6 +20,10 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*funcDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
+    } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
+        visit(*switchStmt);
+    } else if (auto* caseBlock = dynamic_cast<const CaseBlockAST*>(&stmt)) {
+        visit(*caseBlock);
     }
 }
 
@@ -89,6 +93,25 @@ void Sema::visit(const IfStmtAST& stmt) {
         analyze(*stmt.getElse());
         symbolTable.exitScope();
     }
+}
+
+void Sema::visit(const SwitchStmtAST& stmt) {
+    auto exprType = visit(stmt.getExpr());
+    for (const auto& caseBlock : stmt.getCases()) {
+        if (caseBlock->getExpr()) {
+            auto caseType = visit(*caseBlock->getExpr());
+            if (exprType->getKind() != caseType->getKind()) {
+                throw std::runtime_error("Case expression type does not match switch expression type.");
+            }
+        }
+        visit(*caseBlock);
+    }
+}
+
+void Sema::visit(const CaseBlockAST& stmt) {
+    symbolTable.enterScope();
+    analyze(stmt.getBody());
+    symbolTable.exitScope();
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

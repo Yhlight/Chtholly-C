@@ -70,3 +70,25 @@ TEST(CodeGenTest, IfStatement) {
     std::string expected = "if (true) {\nconst auto a = 1;\n}\nelse {\nconst auto b = 2;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, SwitchStatement) {
+    std::string source = "switch (x) { case 1: { let a = 1; } case 2: { let b = 2; } }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "switch (x) {\ncase 1: {\nconst auto a = 1;\n}\ncase 2: {\nconst auto b = 2;\n}\n}\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}
+
+TEST(CodeGenTest, SwitchStatementWithDefault) {
+    std::string source = "switch (x) { case 1: { let a = 1; } default: { let b = 2; } }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "switch (x) {\ncase 1: {\nconst auto a = 1;\n}\ndefault: {\nconst auto b = 2;\n}\n}\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

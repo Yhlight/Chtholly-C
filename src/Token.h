@@ -24,7 +24,7 @@ enum class TokenType {
 
     // Keywords
     Func, Let, Mut,
-    If, Else, Switch, Case, Fallthrough, Break,
+    If, Else, Switch, Case, Default, Fallthrough, Break,
     Return,
     Struct, Public, Private, Self, Impl, Trait,
     Import,

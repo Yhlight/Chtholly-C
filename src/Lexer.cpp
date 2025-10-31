@@ -22,6 +22,7 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"none", TokenType::None},
     {"switch", TokenType::Switch},
     {"case", TokenType::Case},
+    {"default", TokenType::Default},
     {"fallthrough", TokenType::Fallthrough},
     {"break", TokenType::Break},
 };

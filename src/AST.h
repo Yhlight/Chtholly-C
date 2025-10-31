@@ -133,4 +133,26 @@ public:
     const BlockStmtAST* getElse() const { return elseBranch.get(); }
 };
 
+class CaseBlockAST : public StmtAST {
+    std::unique_ptr<ExprAST> expr; // Can be nullptr for default case
+    std::unique_ptr<BlockStmtAST> body;
+public:
+    CaseBlockAST(std::unique_ptr<ExprAST> expr, std::unique_ptr<BlockStmtAST> body)
+        : expr(std::move(expr)), body(std::move(body)) {}
+
+    const ExprAST* getExpr() const { return expr.get(); }
+    const BlockStmtAST& getBody() const { return *body; }
+};
+
+class SwitchStmtAST : public StmtAST {
+    std::unique_ptr<ExprAST> expr;
+    std::vector<std::unique_ptr<CaseBlockAST>> cases;
+public:
+    SwitchStmtAST(std::unique_ptr<ExprAST> expr, std::vector<std::unique_ptr<CaseBlockAST>> cases)
+        : expr(std::move(expr)), cases(std::move(cases)) {}
+
+    const ExprAST& getExpr() const { return *expr; }
+    const std::vector<std::unique_ptr<CaseBlockAST>>& getCases() const { return cases; }
+};
+
 } // namespace chtholly
