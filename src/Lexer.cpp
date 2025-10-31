@@ -189,7 +189,12 @@ Token Lexer::nextToken() {
         tok = {TokenType::Semicolon, ";", tok.line, tok.col};
         break;
     case ':':
-        tok = {TokenType::Colon, ":", tok.line, tok.col};
+        if (peekChar() == ':') {
+            readChar();
+            tok = {TokenType::DoubleColon, "::", tok.line, tok.col};
+        } else {
+            tok = {TokenType::Colon, ":", tok.line, tok.col};
+        }
         break;
     case '.':
         tok = {TokenType::Dot, ".", tok.line, tok.col};

@@ -15,6 +15,7 @@ static std::map<TokenType, Precedence> precedences = {
     {TokenType::Asterisk, PRODUCT},
     {TokenType::LParen, CALL},
     {TokenType::Dot, MEMBER},
+    {TokenType::DoubleColon, MEMBER},
 };
 
 Parser::Parser(Lexer& lexer) : m_lexer(lexer) {

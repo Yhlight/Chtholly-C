@@ -73,6 +73,7 @@ enum class TokenType {
     // Misc
     Arrow, // ->
     Question, // ?
+    DoubleColon, // ::
 };
 
 struct Token {

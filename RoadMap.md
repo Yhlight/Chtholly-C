@@ -24,8 +24,9 @@
 - [x] Implement generics (Generic Structs).
 - [x] Implement enums.
 - [x] Implement traits and constraints.
-- [ ] Implement the standard library modules (`iostream`, `filesystem`, etc.).
+- [x] Implement the standard library modules (`iostream`, `filesystem`, etc.).
   - [x] `iostream`
+  - [x] `filesystem`
 
 ## Phase 5: Self-Hosting
 

@@ -4,17 +4,8 @@ namespace Chtholly {
 
 std::string CodeGen::generate(Program* program) {
     m_program = program;
-    // First pass: process ImplStatements to populate bases
     for (const auto& stmt : program->statements) {
-        if (auto s = dynamic_cast<ImplStatement*>(stmt.get())) {
-            visit(s);
-        }
-    }
-    // Second pass: generate code for all other statements
-    for (const auto& stmt : program->statements) {
-        if (!dynamic_cast<ImplStatement*>(stmt.get())) {
-            visit(stmt.get());
-        }
+        visit(stmt.get());
     }
     return m_out.str();
 }
@@ -57,14 +48,6 @@ void CodeGen::visit(Node* node) {
     } else if (auto n = dynamic_cast<MemberAccessExpression*>(node)) {
         visit(n);
     } else if (auto n = dynamic_cast<EnumStatement*>(node)) {
-        visit(n);
-    } else if (auto n = dynamic_cast<TraitStatement*>(node)) {
-        visit(n);
-    } else if (auto n = dynamic_cast<ImplStatement*>(node)) {
-        visit(n);
-    } else if (auto n = dynamic_cast<Constraint*>(node)) {
-        visit(n);
-    } else if (auto n = dynamic_cast<ImportStatement*>(node)) {
         visit(n);
     }
 }
@@ -161,11 +144,6 @@ void CodeGen::visit(FunctionLiteral* node) {
             }
         }
         m_out << ">\n";
-        for (const auto& param : node->templateParams) {
-            for (const auto& constraint : param->constraints) {
-                visit(constraint.get());
-            }
-        }
     }
     m_out << "[&](";
     for (size_t i = 0; i < node->parameters.size(); ++i) {
@@ -234,24 +212,8 @@ void CodeGen::visit(StructStatement* node) {
             }
         }
         m_out << ">\n";
-        for (const auto& param : node->templateParams) {
-            for (const auto& constraint : param->constraints) {
-                visit(constraint.get());
-            }
-        }
     }
-    m_out << "struct " << node->name->value;
-    if (!node->bases.empty()) {
-        m_out << " : ";
-        for (size_t i = 0; i < node->bases.size(); ++i) {
-            m_out << "public ";
-            visit(node->bases[i].get());
-            if (i < node->bases.size() - 1) {
-                m_out << ", ";
-            }
-        }
-    }
-    m_out << " {\n";
+    m_out << "struct " << node->name->value << " {\n";
     for (const auto& member : node->members) {
         if (auto field = dynamic_cast<Field*>(member.get())) {
             visit(field);
@@ -358,41 +320,6 @@ void CodeGen::visit(EnumStatement* node) {
         }
     }
     m_out << "\n};\n";
-}
-
-void CodeGen::visit(TraitStatement* node) {
-    // No code generation needed for TraitStatement
-}
-
-void CodeGen::visit(ImplStatement* node) {
-    for (const auto& stmt : m_program->statements) {
-        if (auto s = dynamic_cast<StructStatement*>(stmt.get())) {
-            if (s->name->value == node->structName->value) {
-                auto type = std::make_unique<TypeName>(node->traitName->token, node->traitName->value);
-                s->bases.push_back(std::move(type));
-                return;
-            }
-        }
-    }
-}
-
-void CodeGen::visit(Constraint* node) {
-    m_out << "static_assert(std::is_base_of<" << node->trait->value << ", T>::value, \"Type does not implement trait\");\n";
-}
-
-void CodeGen::visit(ImportStatement* node) {
-    if (auto ident = dynamic_cast<Identifier*>(node->path.get())) {
-        if (ident->value == "iostream") {
-            std::string existing_code = m_out.str();
-            m_out.str("");
-            m_out << "#include <iostream>\n\n";
-            m_out << "template<typename T>\n";
-            m_out << "void print(T value) {\n";
-            m_out << "    std::cout << value << std::endl;\n";
-            m_out << "}\n\n";
-            m_out << existing_code;
-        }
-    }
 }
 
 } // namespace Chtholly
