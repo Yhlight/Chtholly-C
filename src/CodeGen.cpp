@@ -63,6 +63,8 @@ void CodeGen::visit(const ExprAST& expr) {
         visit(*varExpr);
     } else if (auto* binExpr = dynamic_cast<const BinaryExprAST*>(&expr)) {
         visit(*binExpr);
+    } else if (auto* callExpr = dynamic_cast<const CallExprAST*>(&expr)) {
+        visit(*callExpr);
     }
 }
 
@@ -97,6 +99,19 @@ void CodeGen::visit(const BinaryExprAST& expr) {
     visit(expr.getLHS());
     ss << " " << toCppOp(expr.getOp()) << " ";
     visit(expr.getRHS());
+    ss << ")";
+}
+
+void CodeGen::visit(const CallExprAST& expr) {
+    visit(expr.getCallee());
+    ss << "(";
+    const auto& args = expr.getArgs();
+    for (size_t i = 0; i < args.size(); ++i) {
+        visit(*args[i]);
+        if (i < args.size() - 1) {
+            ss << ", ";
+        }
+    }
     ss << ")";
 }
 

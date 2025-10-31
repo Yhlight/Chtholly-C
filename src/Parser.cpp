@@ -104,7 +104,24 @@ std::unique_ptr<ExprAST> Parser::parseFactor() {
 
 std::unique_ptr<ExprAST> Parser::parseUnary() {
     // Unary logic will be here
-    return parsePrimary();
+    return parseCall();
+}
+
+std::unique_ptr<ExprAST> Parser::parseCall() {
+    auto expr = parsePrimary();
+
+    if (match({TokenType::LeftParen})) {
+        std::vector<std::unique_ptr<ExprAST>> args;
+        if (peek().type != TokenType::RightParen) {
+            do {
+                args.push_back(parseExpression());
+            } while (match({TokenType::Comma}));
+        }
+        consume(TokenType::RightParen, "Expect ')' after arguments.");
+        return std::make_unique<CallExprAST>(std::move(expr), std::move(args));
+    }
+
+    return expr;
 }
 
 

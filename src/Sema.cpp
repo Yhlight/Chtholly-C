@@ -86,6 +86,9 @@ std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     if (auto* binExpr = dynamic_cast<const BinaryExprAST*>(&expr)) {
         return visit(*binExpr);
     }
+    if (auto* callExpr = dynamic_cast<const CallExprAST*>(&expr)) {
+        return visit(*callExpr);
+    }
     return nullptr;
 }
 
@@ -119,6 +122,30 @@ std::shared_ptr<Type> Sema::visit(const BinaryExprAST& expr) {
         throw std::runtime_error("Type mismatch in binary expression.");
     }
     return lhsType;
+}
+
+std::shared_ptr<Type> Sema::visit(const CallExprAST& expr) {
+    auto calleeType = visit(expr.getCallee());
+    if (calleeType->getKind() != TypeKind::Function) {
+        throw std::runtime_error("Cannot call a non-function.");
+    }
+
+    auto funcType = std::static_pointer_cast<FunctionType>(calleeType);
+    const auto& paramTypes = funcType->getParamTypes();
+    const auto& args = expr.getArgs();
+
+    if (paramTypes.size() != args.size()) {
+        throw std::runtime_error("Incorrect number of arguments.");
+    }
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        auto argType = visit(*args[i]);
+        if (argType->getKind() != paramTypes[i]->getKind()) {
+            throw std::runtime_error("Incorrect argument type.");
+        }
+    }
+
+    return funcType->getReturnType();
 }
 
 } // namespace chtholly

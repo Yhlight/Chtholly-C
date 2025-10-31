@@ -50,6 +50,17 @@ public:
     TokenType getOp() const { return op; }
 };
 
+class CallExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> callee;
+    std::vector<std::unique_ptr<ExprAST>> args;
+public:
+    CallExprAST(std::unique_ptr<ExprAST> callee, std::vector<std::unique_ptr<ExprAST>> args)
+        : callee(std::move(callee)), args(std::move(args)) {}
+
+    const ExprAST& getCallee() const { return *callee; }
+    const std::vector<std::unique_ptr<ExprAST>>& getArgs() const { return args; }
+};
+
 class StmtAST : public ExprAST {
     friend class Sema;
     friend class CodeGen;

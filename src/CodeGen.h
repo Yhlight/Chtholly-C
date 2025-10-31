@@ -21,6 +21,7 @@ private:
     void visit(const StringExprAST& expr);
     void visit(const VariableExprAST& expr);
     void visit(const BinaryExprAST& expr);
+    void visit(const CallExprAST& expr);
 
     std::stringstream ss;
 };

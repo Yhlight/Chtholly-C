@@ -20,6 +20,7 @@ private:
     std::shared_ptr<Type> visit(const StringExprAST& expr);
     std::shared_ptr<Type> visit(const VariableExprAST& expr);
     std::shared_ptr<Type> visit(const BinaryExprAST& expr);
+    std::shared_ptr<Type> visit(const CallExprAST& expr);
 
     SymbolTable symbolTable;
 };

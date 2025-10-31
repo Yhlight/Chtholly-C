@@ -48,3 +48,14 @@ TEST(CodeGenTest, FunctionDeclaration) {
     std::string expected = "int add(int x, int y) {\nconst auto z = (x + y);\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, FunctionCall) {
+    std::string source = "func add(x: int, y: int) -> int { let z = x + y; }\nlet a = add(1, 2);";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "int add(int x, int y) {\nconst auto z = (x + y);\n}\nconst auto a = add(1, 2);\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}
