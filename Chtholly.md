@@ -142,6 +142,19 @@ let b : array = ["1145", "2235", 24];
 let c : array[string] = ["1145", "2345"];
 ```
 
+### 枚举
+Chtholly使用enum创建枚举  
+
+```
+enum color
+{
+    red,
+    green
+}
+
+let a : color = color::red;
+```
+
 ### 函数
 Chtholly使用func作为函数关键字
 支持C++版本的lambda函数
@@ -167,22 +180,6 @@ Chtholly的lambda函数使用与C++完全一致的语法
 
 ```Chtholly
 let add = (形参列表)[捕获参数] -> <返回值类型> {函数体}  // 如果语法错误请自行修正
-```
-
-Chtholly还提供了一种lambda函数语法，这种语法不支持危险的捕获  
-这种语法更类似与JS，但是Chtholly的这一种lambda函数重点并不在于执行函数体  
-而是函数引用  
-
-注意，这一种lambda函数的结果，就是函数的返回值，这意味着你可以将函数的返回值作为下一个lambda函数的参数  
-从而实现链式调用  
-
-同时要注意，这一种lambda函数，无论引用的方法是否需要对象调用，均使用::方法这样的语法进行引用  
-
-```Chtholly
-let add = (形参列表) => {函数体}
-let result = (1, 2) => math::add;  // 自动填入参数
-let result2 = (2, 4) => add;  // 全局函数也无妨
-let result3 = () => print("HelloWorld") => print("HelloWorld");  // 链式调用(通常需要函数返回一个对象的引用)
 ```
 
 #### 参数所有权
@@ -476,12 +473,15 @@ Chtholly支持导入模块，使用import关键字导入模块
 顾名思义，语法为import 模块名; 或 import "文件路径";
 导入文件后，全局变量，函数，结构体都能够被调用
 
-你可以使用模块名称::模块内的方法限定模块
+你可以使用模块名称::模块内的方法限定模块  
+
+导入能够将模块内定义的变量，函数，结构体，trait等导入到当前作用域，你可以使用'.'进行具体的导入  
 
 ### iostream
 #### Print
 ```Chtholly
 import iostream;  // 导入iostream模块
+import filestream.dir;  // 导入filestream的dir结构体
 
 print("HelloWorld");
 
@@ -541,11 +541,11 @@ impl operator::add  // +
 ```
 
 ## 类型转换
-Chtholly支持类型转换，使用type<T>()进行转换  
+Chtholly支持类型转换，使用type_cast<T>()进行转换  
 此函数为内置函数，不需要导入  
 
 ```chtholly
-let a: int8 = type<int8>(10.5);
+let a: int8 = type_cast<int8>(10.5);
 ```
 
 ### 静态反射
@@ -618,6 +618,19 @@ Chtholly支持静态反射，由模块reflect提供静态反射
 - meta::is_move(T) 判断T是否为移动  
 
 ...元编程待补充  
+
+#### util
+util模块是工具模块，主要用于提供一些工具函数  
+将分为特征与函数  
+
+**特征**  
+- util::to_string(T) 将T转换为string    
+
+**函数**
+- util::string_cast(T) 将T转换为string，通常会调用自定义类型的to_string方法  
+- util::serialize(T) 将T序列化  
+- util::deserialize(T) 将T反序列化  
+- util::unique_id() 获取一个唯一的id  
 
 ### CLI
 使用阻塞式CLI
