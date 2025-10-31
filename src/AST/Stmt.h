@@ -17,6 +17,7 @@ public:
     virtual void visit(const class FuncStmt& stmt) = 0;
     virtual void visit(const class BlockStmt& stmt) = 0;
     virtual void visit(const class ReturnStmt& stmt) = 0;
+    virtual void visit(const class StructStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -85,6 +86,25 @@ public:
 
     const Token keyword;
     const std::unique_ptr<Expr> value;
+};
+
+class StructStmt : public Stmt {
+public:
+    struct Field {
+        Token name;
+        std::unique_ptr<Type> type;
+        bool isPublic;
+    };
+
+    StructStmt(Token name, std::vector<Field> fields)
+        : name(std::move(name)), fields(std::move(fields)) {}
+
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+
+    const Token name;
+    const std::vector<Field> fields;
 };
 
 #endif // CHTHOLLY_STMT_H

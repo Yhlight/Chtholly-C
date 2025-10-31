@@ -73,6 +73,40 @@ void Transpiler::visit(const LetStmt& stmt) {
     result_ += ";\n";
 }
 
+void Transpiler::visit(const StructStmt& stmt) {
+    result_ += "struct " + stmt.name.lexeme + " {\n";
+    for (const auto& field : stmt.fields) {
+        result_ += "    " + std::string(field.isPublic ? "public:" : "private:") + " " + field.type->toString() + " " + field.name.lexeme + ";\n";
+    }
+    result_ += "};\n";
+}
+
+std::shared_ptr<Type> Transpiler::visit(const GetExpr& expr) {
+    expr.object->accept(*this);
+    result_ += "." + expr.name.lexeme;
+    return nullptr;
+}
+
+std::shared_ptr<Type> Transpiler::visit(const SetExpr& expr) {
+    expr.object->accept(*this);
+    result_ += "." + expr.name.lexeme + " = ";
+    expr.value->accept(*this);
+    return nullptr;
+}
+
+std::shared_ptr<Type> Transpiler::visit(const StructInitializerExpr& expr) {
+    result_ += expr.name.lexeme + "{";
+    for (size_t i = 0; i < expr.fields.size(); ++i) {
+        result_ += "." + expr.fields[i].name.lexeme + " = ";
+        expr.fields[i].initializer->accept(*this);
+        if (i < expr.fields.size() - 1) {
+            result_ += ", ";
+        }
+    }
+    result_ += "}";
+    return nullptr;
+}
+
 void Transpiler::visit(const FuncStmt& stmt) {
     if (stmt.returnType) {
         result_ += stmt.returnType->toString();

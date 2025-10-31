@@ -11,6 +11,10 @@ bool Type::isEqual(const Type& other) const {
         return thisRef->isMutable() == otherRef->isMutable() && thisRef->getReferencedType()->isEqual(*otherRef->getReferencedType());
     }
 
+    if (this->getKind() == TypeKind::Struct) {
+        return this->name == other.name;
+    }
+
     return this->name == other.name;
 }
 

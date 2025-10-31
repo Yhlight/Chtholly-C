@@ -56,6 +56,9 @@ std::unique_ptr<Stmt> Parser::declaration() {
     if (match({TokenType::FUNC})) {
         return functionDeclaration();
     }
+    if (match({TokenType::STRUCT})) {
+        return structDeclaration();
+    }
     if (match({TokenType::LET, TokenType::MUT})) {
         bool isMutable = tokens_[current_ - 1].type == TokenType::MUT;
         if (tokens_[current_ - 1].type == TokenType::LET) {
@@ -110,6 +113,29 @@ std::unique_ptr<Type> Parser::parseType() {
     return nullptr;
 }
 
+std::unique_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+
+    std::vector<StructStmt::Field> fields;
+    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+        bool isPublic = match({TokenType::PUBLIC});
+        if (!isPublic) {
+            consume(TokenType::PRIVATE, "Expect 'public' or 'private' before field name.");
+        }
+
+        Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
+        consume(TokenType::COLON, "Expect ':' after field name.");
+        std::unique_ptr<Type> fieldType = parseType();
+        consume(TokenType::SEMICOLON, "Expect ';' after field declaration.");
+        fields.push_back({fieldName, std::move(fieldType), isPublic});
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    consume(TokenType::SEMICOLON, "Expect ';' after struct declaration.");
+    return std::make_unique<StructStmt>(name, std::move(fields));
+}
+
 std::unique_ptr<Stmt> Parser::functionDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
@@ -151,6 +177,22 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
     return std::make_unique<ReturnStmt>(keyword, std::move(value));
 }
 
+std::unique_ptr<Expr> Parser::structInitializer() {
+    Token name = tokens_[current_ - 2];
+    std::vector<StructInitializerExpr::Field> fields;
+    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+        Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
+        consume(TokenType::COLON, "Expect ':' after field name.");
+        std::unique_ptr<Expr> initializer = expression();
+        fields.push_back({fieldName, std::move(initializer)});
+        if (peek().type != TokenType::RIGHT_BRACE) {
+            consume(TokenType::COMMA, "Expect ',' after field initializer.");
+        }
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct initializer.");
+    return std::make_unique<StructInitializerExpr>(name, std::move(fields));
+}
+
 std::unique_ptr<Expr> Parser::expression() {
     return parsePrecedence(0);
 }
@@ -185,12 +227,24 @@ std::unique_ptr<Expr> Parser::prefix() {
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_unique<GroupingExpr>(std::move(expr));
     } else if (match({TokenType::IDENTIFIER})) {
+        if (match({TokenType::LEFT_BRACE})) {
+            return structInitializer();
+        }
         return std::make_unique<VariableExpr>(tokens_[current_ - 1]);
     }
     return nullptr;
 }
 
 std::unique_ptr<Expr> Parser::infix(std::unique_ptr<Expr> left) {
+    if (match({TokenType::DOT})) {
+        Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+        if (match({TokenType::EQUAL})) {
+            std::unique_ptr<Expr> value = expression();
+            return std::make_unique<SetExpr>(std::move(left), name, std::move(value));
+        }
+        return std::make_unique<GetExpr>(std::move(left), name);
+    }
+
     Token op = advance();
     int precedence = getPrecedence(op.type);
     std::unique_ptr<Expr> right = parsePrecedence(precedence);
@@ -199,6 +253,10 @@ std::unique_ptr<Expr> Parser::infix(std::unique_ptr<Expr> left) {
 
 int Parser::getPrecedence(TokenType type) {
     switch (type) {
+        case TokenType::DOT:
+            return 7; // Highest precedence
+        case TokenType::EQUAL:
+            return 0; // Assignment has the lowest precedence
         case TokenType::PLUS:
         case TokenType::MINUS:
             return 1;

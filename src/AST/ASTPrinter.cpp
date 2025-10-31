@@ -38,6 +38,33 @@ std::shared_ptr<Type> ASTPrinter::visit(const UnaryExpr& expr) {
     return nullptr;
 }
 
+std::shared_ptr<Type> ASTPrinter::visit(const GetExpr& expr) {
+    result_ += "(. ";
+    expr.object->accept(*this);
+    result_ += " " + expr.name.lexeme + ")";
+    return nullptr;
+}
+
+std::shared_ptr<Type> ASTPrinter::visit(const SetExpr& expr) {
+    result_ += "(= ";
+    expr.object->accept(*this);
+    result_ += " " + expr.name.lexeme + " ";
+    expr.value->accept(*this);
+    result_ += ")";
+    return nullptr;
+}
+
+std::shared_ptr<Type> ASTPrinter::visit(const StructInitializerExpr& expr) {
+    result_ += "(struct_init " + expr.name.lexeme;
+    for (const auto& field : expr.fields) {
+        result_ += " (" + field.name.lexeme + " = ";
+        field.initializer->accept(*this);
+        result_ += ")";
+    }
+    result_ += ")";
+    return nullptr;
+}
+
 std::shared_ptr<Type> ASTPrinter::visit(const BinaryExpr& expr) {
     result_ += "(" + expr.op.lexeme + " ";
     expr.left->accept(*this);
@@ -78,6 +105,14 @@ void ASTPrinter::visit(const LetStmt& stmt) {
     if (stmt.initializer) {
         result_ += " = ";
         stmt.initializer->accept(*this);
+    }
+    result_ += ")";
+}
+
+void ASTPrinter::visit(const StructStmt& stmt) {
+    result_ += "(struct " + stmt.name.lexeme;
+    for (const auto& field : stmt.fields) {
+        result_ += " (" + std::string(field.isPublic ? "public" : "private") + " " + field.name.lexeme + " : " + field.type->toString() + ")";
     }
     result_ += ")";
 }

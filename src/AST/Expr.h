@@ -13,6 +13,9 @@ class GroupingExpr;
 class VariableExpr;
 class BooleanLiteral;
 class BorrowExpr;
+class GetExpr;
+class SetExpr;
+class StructInitializerExpr;
 
 #include "../Type.h"
 
@@ -27,6 +30,9 @@ public:
     virtual std::shared_ptr<Type> visit(const GroupingExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const VariableExpr& expr) = 0;
     virtual std::shared_ptr<Type> visit(const BorrowExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const GetExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const SetExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visit(const StructInitializerExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -132,6 +138,51 @@ public:
 
     const std::unique_ptr<Expr> expression;
     const bool isMutable;
+};
+
+class GetExpr : public Expr {
+public:
+    GetExpr(std::unique_ptr<Expr> object, Token name)
+        : object(std::move(object)), name(std::move(name)) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    std::unique_ptr<Expr> object;
+    Token name;
+};
+
+class SetExpr : public Expr {
+public:
+    SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value)
+        : object(std::move(object)), name(std::move(name)), value(std::move(value)) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> object;
+    const Token name;
+    const std::unique_ptr<Expr> value;
+};
+
+class StructInitializerExpr : public Expr {
+public:
+    struct Field {
+        Token name;
+        std::unique_ptr<Expr> initializer;
+    };
+
+    StructInitializerExpr(Token name, std::vector<Field> fields)
+        : name(std::move(name)), fields(std::move(fields)) {}
+
+    std::shared_ptr<Type> accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token name;
+    const std::vector<Field> fields;
 };
 
 

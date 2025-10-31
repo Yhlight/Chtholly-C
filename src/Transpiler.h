@@ -18,11 +18,15 @@ public:
     std::shared_ptr<Type> visit(const GroupingExpr& expr) override;
     std::shared_ptr<Type> visit(const VariableExpr& expr) override;
     std::shared_ptr<Type> visit(const BorrowExpr& expr) override;
+    std::shared_ptr<Type> visit(const GetExpr& expr) override;
+    std::shared_ptr<Type> visit(const SetExpr& expr) override;
+    std::shared_ptr<Type> visit(const StructInitializerExpr& expr) override;
 
     void visit(const LetStmt& stmt) override;
     void visit(const FuncStmt& stmt) override;
     void visit(const BlockStmt& stmt) override;
     void visit(const ReturnStmt& stmt) override;
+    void visit(const StructStmt& stmt) override;
 
 private:
     std::string result_;

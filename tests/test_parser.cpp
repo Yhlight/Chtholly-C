@@ -105,3 +105,32 @@ TEST(ParserTest, MutStatement) {
 
     EXPECT_EQ(result, "(mut x = 10)\n");
 }
+
+TEST(ParserTest, StructDeclaration) {
+    std::string source = "struct MyStruct { public name: string; private id: int; };";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    auto structStmt = dynamic_cast<StructStmt*>(statements[0].get());
+    ASSERT_NE(structStmt, nullptr);
+    EXPECT_EQ(structStmt->name.lexeme, "MyStruct");
+    ASSERT_EQ(structStmt->fields.size(), 2);
+    EXPECT_EQ(structStmt->fields[0].name.lexeme, "name");
+    EXPECT_EQ(structStmt->fields[0].isPublic, true);
+    EXPECT_EQ(structStmt->fields[1].name.lexeme, "id");
+    EXPECT_EQ(structStmt->fields[1].isPublic, false);
+}
+
+TEST(ParserTest, StructInitializerAndFieldAccess) {
+    std::string source = "let myStruct = MyStruct { name: \"hello\", id: 10 }; let name = myStruct.name;";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    ASTPrinter printer;
+    std::string result = printer.print(statements);
+
+    EXPECT_EQ(result, "(let myStruct = (struct_init MyStruct (name = \"hello\") (id = 10)))\n(let name = (. myStruct name))\n");
+}

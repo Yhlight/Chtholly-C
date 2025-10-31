@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 enum class TypeKind {
     Primitive,
@@ -69,6 +70,23 @@ public:
 private:
     std::shared_ptr<Type> referencedType_;
     bool isMutable_;
+};
+
+class StructType : public Type {
+public:
+    struct Field {
+        std::shared_ptr<Type> type;
+        bool isPublic;
+    };
+
+    StructType(std::string name, std::unordered_map<std::string, Field> fields)
+        : Type(std::move(name)), fields_(std::move(fields)) {}
+
+    TypeKind getKind() const override { return TypeKind::Struct; }
+    const std::unordered_map<std::string, Field>& getFields() const { return fields_; }
+
+private:
+    std::unordered_map<std::string, Field> fields_;
 };
 
 #endif // CHTHOLLY_TYPE_H

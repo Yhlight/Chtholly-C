@@ -35,7 +35,7 @@ This document outlines the development plan for the Chtholly programming languag
 - [x] Write unit tests for the semantic analyzer.
 
 ## Phase 6: Advanced Features
-- [ ] Implement structs and methods.
+- [ ] Implement structs and methods. (Structs and fields implemented)
 - [ ] Implement generics.
 - [ ] Implement traits and constraints.
 - [ ] Implement modules and the import system.

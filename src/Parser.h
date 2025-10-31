@@ -28,6 +28,8 @@ private:
     std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Type> parseType();
+    std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Expr> structInitializer();
     std::unique_ptr<Expr> parsePrecedence(int precedence);
     std::unique_ptr<Expr> prefix();
     std::unique_ptr<Expr> infix(std::unique_ptr<Expr> left);
