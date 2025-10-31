@@ -54,7 +54,8 @@
 - [x] Implement the `iostream` module.
   - [x] Implement `import` statement parsing.
   - [x] Implement `print` function.
-- [ ] Implement struct declarations.
+- [x] Implement struct declarations.
+  - [ ] Implement struct instantiation and member access.
 - [ ] Implement the `filesystem` module.
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.

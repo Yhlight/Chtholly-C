@@ -11,7 +11,7 @@ public:
     Sema();
     void analyze(const BlockStmtAST& ast);
 
-private:
+public:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
     void visit(const FuncDeclAST& stmt);
@@ -32,6 +32,8 @@ private:
     std::shared_ptr<Type> visit(const CallExprAST& expr);
     std::shared_ptr<Type> visit(const BoolExprAST& expr);
     std::shared_ptr<Type> visit(const AssignExprAST& expr);
+    std::shared_ptr<Type> visit(const StructInitExprAST& expr);
+    std::shared_ptr<Type> visit(const MemberAccessExprAST& expr);
 
     SymbolTable symbolTable;
 };

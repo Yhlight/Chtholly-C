@@ -234,4 +234,31 @@ public:
     const std::vector<MemberVar>& getMembers() const { return members; }
 };
 
+struct MemberInit {
+    std::string name;
+    std::unique_ptr<ExprAST> value;
+};
+
+class StructInitExprAST : public ExprAST {
+    std::string structName;
+    std::vector<MemberInit> members;
+public:
+    StructInitExprAST(std::string structName, std::vector<MemberInit> members)
+        : structName(std::move(structName)), members(std::move(members)) {}
+
+    const std::string& getStructName() const { return structName; }
+    const std::vector<MemberInit>& getMembers() const { return members; }
+};
+
+class MemberAccessExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> object;
+    std::string memberName;
+public:
+    MemberAccessExprAST(std::unique_ptr<ExprAST> object, std::string memberName)
+        : object(std::move(object)), memberName(std::move(memberName)) {}
+
+    const ExprAST& getObject() const { return *object; }
+    const std::string& getMemberName() const { return memberName; }
+};
+
 } // namespace chtholly

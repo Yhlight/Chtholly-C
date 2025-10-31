@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AST.h"
+#include "Sema.h"
 #include <string>
 #include <sstream>
 
@@ -8,7 +9,7 @@ namespace chtholly {
 
 class CodeGen {
 public:
-    CodeGen();
+    CodeGen(Sema& sema);
     std::string generate(const BlockStmtAST& ast);
 
 private:
@@ -33,9 +34,12 @@ private:
     void visit(const CallExprAST& expr);
     void visit(const BoolExprAST& expr);
     void visit(const AssignExprAST& expr);
+    void visit(const StructInitExprAST& expr);
+    void visit(const MemberAccessExprAST& expr);
 
     std::stringstream ss;
     bool inForInit = false;
+    Sema& sema;
 };
 
 } // namespace chtholly

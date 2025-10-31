@@ -276,15 +276,22 @@ std::unique_ptr<ExprAST> Parser::parseUnary() {
 std::unique_ptr<ExprAST> Parser::parseCall() {
     auto expr = parsePrimary();
 
-    if (match({TokenType::LeftParen})) {
-        std::vector<std::unique_ptr<ExprAST>> args;
-        if (peek().type != TokenType::RightParen) {
-            do {
-                args.push_back(parseExpression());
-            } while (match({TokenType::Comma}));
+    while (true) {
+        if (match({TokenType::LeftParen})) {
+            std::vector<std::unique_ptr<ExprAST>> args;
+            if (peek().type != TokenType::RightParen) {
+                do {
+                    args.push_back(parseExpression());
+                } while (match({TokenType::Comma}));
+            }
+            consume(TokenType::RightParen, "Expect ')' after arguments.");
+            expr = std::make_unique<CallExprAST>(std::move(expr), std::move(args));
+        } else if (match({TokenType::Dot})) {
+            Token name = consume(TokenType::Identifier, "Expect property name after '.'.");
+            expr = std::make_unique<MemberAccessExprAST>(std::move(expr), name.lexeme);
+        } else {
+            break;
         }
-        consume(TokenType::RightParen, "Expect ')' after arguments.");
-        return std::make_unique<CallExprAST>(std::move(expr), std::move(args));
     }
 
     return expr;
@@ -302,6 +309,22 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
         return std::make_unique<StringExprAST>(std::get<std::string>(tokens[current - 1].literal));
     }
     if (match({TokenType::Identifier})) {
+        if (peek().type == TokenType::LeftBrace) {
+            std::string structName = tokens[current - 1].lexeme;
+            consume(TokenType::LeftBrace, "Expect '{' after struct name.");
+            std::vector<MemberInit> members;
+            while (peek().type != TokenType::RightBrace) {
+                Token memberName = consume(TokenType::Identifier, "Expect member name.");
+                consume(TokenType::Colon, "Expect ':' after member name.");
+                auto value = parseExpression();
+                members.push_back({memberName.lexeme, std::move(value)});
+                if (!match({TokenType::Comma})) {
+                    break;
+                }
+            }
+            consume(TokenType::RightBrace, "Expect '}' after struct members.");
+            return std::make_unique<StructInitExprAST>(structName, std::move(members));
+        }
         return std::make_unique<VariableExprAST>(tokens[current - 1].lexeme);
     }
     if (match({TokenType::True})) {

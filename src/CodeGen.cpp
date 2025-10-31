@@ -3,7 +3,7 @@
 
 namespace chtholly {
 
-CodeGen::CodeGen() {}
+CodeGen::CodeGen(Sema& sema) : sema(sema) {}
 
 std::string CodeGen::generate(const BlockStmtAST& ast) {
     for (const auto& stmt : ast.getStatements()) {
@@ -189,6 +189,10 @@ void CodeGen::visit(const ExprAST& expr) {
         visit(*boolExpr);
     } else if (auto* assignExpr = dynamic_cast<const AssignExprAST*>(&expr)) {
         visit(*assignExpr);
+    } else if (auto* structInitExpr = dynamic_cast<const StructInitExprAST*>(&expr)) {
+        visit(*structInitExpr);
+    } else if (auto* memberAccessExpr = dynamic_cast<const MemberAccessExprAST*>(&expr)) {
+        visit(*memberAccessExpr);
     }
 }
 
@@ -240,6 +244,14 @@ void CodeGen::visit(const CallExprAST& expr) {
         }
     }
 
+    if (auto* varExpr = dynamic_cast<const VariableExprAST*>(&expr.getCallee())) {
+        auto type = sema.visit(*varExpr);
+        if (type->getKind() == TypeKind::Struct) {
+            ss << varExpr->getName() << "{}";
+            return;
+        }
+    }
+
     visit(expr.getCallee());
     ss << "(";
     const auto& args = expr.getArgs();
@@ -260,6 +272,24 @@ void CodeGen::visit(const AssignExprAST& expr) {
     visit(expr.getTarget());
     ss << " = ";
     visit(expr.getValue());
+}
+
+void CodeGen::visit(const StructInitExprAST& expr) {
+    ss << expr.getStructName() << "{";
+    const auto& members = expr.getMembers();
+    for (size_t i = 0; i < members.size(); ++i) {
+        ss << "." << members[i].name << " = ";
+        visit(*members[i].value);
+        if (i < members.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "}";
+}
+
+void CodeGen::visit(const MemberAccessExprAST& expr) {
+    visit(expr.getObject());
+    ss << "." << expr.getMemberName();
 }
 
 } // namespace chtholly

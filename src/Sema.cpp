@@ -240,6 +240,12 @@ std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     if (auto* assignExpr = dynamic_cast<const AssignExprAST*>(&expr)) {
         return visit(*assignExpr);
     }
+    if (auto* structInitExpr = dynamic_cast<const StructInitExprAST*>(&expr)) {
+        return visit(*structInitExpr);
+    }
+    if (auto* memberAccessExpr = dynamic_cast<const MemberAccessExprAST*>(&expr)) {
+        return visit(*memberAccessExpr);
+    }
     return nullptr;
 }
 
@@ -298,6 +304,16 @@ std::shared_ptr<Type> Sema::visit(const BinaryExprAST& expr) {
 }
 
 std::shared_ptr<Type> Sema::visit(const CallExprAST& expr) {
+    if (auto* varExpr = dynamic_cast<const VariableExprAST*>(&expr.getCallee())) {
+        auto symbol = symbolTable.lookup(varExpr->getName());
+        if (symbol && symbol->type->getKind() == TypeKind::Struct) {
+            if (!expr.getArgs().empty()) {
+                throw std::runtime_error("Struct default instantiation does not take arguments.");
+            }
+            return symbol->type;
+        }
+    }
+
     auto calleeType = visit(expr.getCallee());
     if (calleeType->getKind() != TypeKind::Function) {
         throw std::runtime_error("Cannot call a non-function.");
@@ -323,6 +339,56 @@ std::shared_ptr<Type> Sema::visit(const CallExprAST& expr) {
 
 std::shared_ptr<Type> Sema::visit(const BoolExprAST& expr) {
     return std::make_shared<BoolType>();
+}
+
+std::shared_ptr<Type> Sema::visit(const StructInitExprAST& expr) {
+    auto symbol = symbolTable.lookup(expr.getStructName());
+    if (!symbol || symbol->type->getKind() != TypeKind::Struct) {
+        throw std::runtime_error("Unknown struct type: " + expr.getStructName());
+    }
+
+    auto structType = std::static_pointer_cast<StructType>(symbol->type);
+    const auto& structMembers = structType->getMembers();
+    const auto& initMembers = expr.getMembers();
+
+    if (structMembers.size() != initMembers.size()) {
+        throw std::runtime_error("Incorrect number of members in struct initializer.");
+    }
+
+    for (size_t i = 0; i < initMembers.size(); ++i) {
+        const auto& initMember = initMembers[i];
+        const auto& structMember = structMembers[i];
+
+        if (initMember.name != structMember.name) {
+            throw std::runtime_error("Member name mismatch in struct initializer.");
+        }
+
+        auto initType = visit(*initMember.value);
+        if (initType->getKind() != structMember.type->getKind()) {
+            throw std::runtime_error("Type mismatch for member '" + initMember.name + "'.");
+        }
+    }
+
+    return structType;
+}
+
+std::shared_ptr<Type> Sema::visit(const MemberAccessExprAST& expr) {
+    auto objectType = visit(expr.getObject());
+    if (objectType->getKind() != TypeKind::Struct) {
+        throw std::runtime_error("Member access on non-struct type.");
+    }
+
+    auto structType = std::static_pointer_cast<StructType>(objectType);
+    for (const auto& member : structType->getMembers()) {
+        if (member.name == expr.getMemberName()) {
+            if (!member.isPublic) {
+                throw std::runtime_error("Cannot access private member '" + expr.getMemberName() + "'.");
+            }
+            return member.type;
+        }
+    }
+
+    throw std::runtime_error("Struct '" + structType->getName() + "' has no member '" + expr.getMemberName() + "'.");
 }
 
 } // namespace chtholly

@@ -10,8 +10,10 @@ TEST(CodeGenTest, SimpleVariableDeclaration) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "const auto a = 10;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -21,8 +23,10 @@ TEST(CodeGenTest, MutableVariableDeclaration) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "auto b = 20;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -32,8 +36,10 @@ TEST(CodeGenTest, SimpleBinaryExpression) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "const auto c = (10 + 20);\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -43,8 +49,10 @@ TEST(CodeGenTest, FunctionDeclaration) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "int add(int x, int y) {\nconst auto z = (x + y);\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -54,8 +62,10 @@ TEST(CodeGenTest, FunctionCall) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "int add(int x, int y) {\nconst auto z = (x + y);\n}\nconst auto a = add(1, 2);\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -65,31 +75,37 @@ TEST(CodeGenTest, IfStatement) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "if (true) {\nconst auto a = 1;\n}\nelse {\nconst auto b = 2;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
 
 TEST(CodeGenTest, SwitchStatement) {
-    std::string source = "switch (x) { case 1: { let a = 1; } case 2: { let b = 2; } }";
+    std::string source = "let x = 1; switch (x) { case 1: { let a = 1; } case 2: { let b = 2; } }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
-    std::string expected = "switch (x) {\ncase 1: {\nconst auto a = 1;\n}\ncase 2: {\nconst auto b = 2;\n}\n}\n";
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
+    std::string expected = "const auto x = 1;\nswitch (x) {\ncase 1: {\nconst auto a = 1;\n}\ncase 2: {\nconst auto b = 2;\n}\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
 
 TEST(CodeGenTest, SwitchStatementWithDefault) {
-    std::string source = "switch (x) { case 1: { let a = 1; } default: { let b = 2; } }";
+    std::string source = "let x = 1; switch (x) { case 1: { let a = 1; } default: { let b = 2; } }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
-    std::string expected = "switch (x) {\ncase 1: {\nconst auto a = 1;\n}\ndefault: {\nconst auto b = 2;\n}\n}\n";
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
+    std::string expected = "const auto x = 1;\nswitch (x) {\ncase 1: {\nconst auto a = 1;\n}\ndefault: {\nconst auto b = 2;\n}\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
 
@@ -98,8 +114,10 @@ TEST(CodeGenTest, EnumDeclaration) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -109,20 +127,24 @@ TEST(CodeGenTest, WhileStatement) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "while (true) {\nconst auto a = 1;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
 
 TEST(CodeGenTest, ForStatement) {
-    std::string source = "for (let i = 0; i < 10; i = i + 1) { let a = 1; }";
+    std::string source = "for (mut i = 0; true; i = i + 1) { let a = 1; }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
-    std::string expected = "for (const auto i = 0;(i < 10);i = (i + 1)) {\nconst auto a = 1;\n}\n";
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
+    std::string expected = "for (auto i = 0;true;i = (i + 1)) {\nconst auto a = 1;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
 
@@ -131,8 +153,10 @@ TEST(CodeGenTest, ImportStatement) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "#include <iostream>\n#include <string>\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -142,8 +166,10 @@ TEST(CodeGenTest, PrintStatement) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "#include <iostream>\n#include <string>\nstd::cout << \"Hello, World!\" << std::endl;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
@@ -153,8 +179,27 @@ TEST(CodeGenTest, StructDeclaration) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
+    Sema sema;
     auto ast = parser.parse();
-    CodeGen codeGen;
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
     std::string expected = "struct Point {\npublic: int x;\nprivate: int y;\n};\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}
+
+TEST(CodeGenTest, StructInstantiationAndMemberAccess) {
+    std::string source = "struct Point { public x: int, public y: int }\n"
+                         "let p = Point{x: 10, y: 20};\n"
+                         "let x = p.x;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    Sema sema;
+    auto ast = parser.parse();
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
+    std::string expected = "struct Point {\npublic: int x;\npublic: int y;\n};\n"
+                         "const auto p = Point{.x = 10, .y = 20};\n"
+                         "const auto x = p.x;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
