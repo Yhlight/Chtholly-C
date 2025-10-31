@@ -33,6 +33,7 @@ public:
 
     Token token;
     std::string name;
+    std::vector<std::unique_ptr<Type>> templateArgs;
 };
 
 // Base class for all statement nodes
@@ -246,7 +247,44 @@ public:
 
     Token token; // The 'struct' token
     std::unique_ptr<Identifier> name;
+    std::vector<std::unique_ptr<Identifier>> templateParams;
     std::vector<std::unique_ptr<Member>> members;
+};
+
+class GenericInstantiation : public Expression {
+public:
+    GenericInstantiation(Token token, std::unique_ptr<Expression> base, std::vector<std::unique_ptr<Type>> args)
+        : token(std::move(token)), base(std::move(base)), arguments(std::move(args)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::unique_ptr<Expression> base;
+    std::vector<std::unique_ptr<Type>> arguments;
+};
+
+class StructLiteral : public Expression {
+public:
+    StructLiteral(Token token, std::unique_ptr<Expression> name)
+        : token(std::move(token)), structName(std::move(name)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::unique_ptr<Expression> structName;
+    std::vector<std::pair<std::unique_ptr<Identifier>, std::unique_ptr<Expression>>> fields;
+};
+
+class MemberAccessExpression : public Expression {
+public:
+    MemberAccessExpression(Token token, std::unique_ptr<Expression> object, std::unique_ptr<Identifier> member)
+        : token(std::move(token)), object(std::move(object)), member(std::move(member)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::unique_ptr<Expression> object;
+    std::unique_ptr<Identifier> member;
 };
 
 } // namespace Chtholly

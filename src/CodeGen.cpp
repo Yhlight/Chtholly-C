@@ -3,6 +3,7 @@
 namespace Chtholly {
 
 std::string CodeGen::generate(Program* program) {
+    m_program = program;
     for (const auto& stmt : program->statements) {
         visit(stmt.get());
     }
@@ -39,6 +40,12 @@ void CodeGen::visit(Node* node) {
     } else if (auto n = dynamic_cast<TypeName*>(node)) {
         visit(n);
     } else if (auto n = dynamic_cast<StructStatement*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<GenericInstantiation*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<StructLiteral*>(node)) {
+        visit(n);
+    } else if (auto n = dynamic_cast<MemberAccessExpression*>(node)) {
         visit(n);
     }
 }
@@ -181,9 +188,29 @@ void CodeGen::visit(CallExpression* node) {
 
 void CodeGen::visit(TypeName* node) {
     m_out << node->name;
+    if (!node->templateArgs.empty()) {
+        m_out << "<";
+        for (size_t i = 0; i < node->templateArgs.size(); ++i) {
+            visit(node->templateArgs[i].get());
+            if (i < node->templateArgs.size() - 1) {
+                m_out << ", ";
+            }
+        }
+        m_out << ">";
+    }
 }
 
 void CodeGen::visit(StructStatement* node) {
+    if (!node->templateParams.empty()) {
+        m_out << "template<";
+        for (size_t i = 0; i < node->templateParams.size(); ++i) {
+            m_out << "typename " << node->templateParams[i]->value;
+            if (i < node->templateParams.size() - 1) {
+                m_out << ", ";
+            }
+        }
+        m_out << ">\n";
+    }
     m_out << "struct " << node->name->value << " {\n";
     for (const auto& member : node->members) {
         if (auto field = dynamic_cast<Field*>(member.get())) {
@@ -214,6 +241,72 @@ void CodeGen::visit(Method* node) {
     m_out << "auto " << node->name->value << " = ";
     visit(node->function.get());
     m_out << ";\n";
+}
+
+void CodeGen::visit(GenericInstantiation* node) {
+    visit(node->base.get());
+    m_out << "<";
+    for (size_t i = 0; i < node->arguments.size(); ++i) {
+        visit(node->arguments[i].get());
+        if (i < node->arguments.size() - 1) {
+            m_out << ", ";
+        }
+    }
+    m_out << ">";
+}
+
+void CodeGen::visit(StructLiteral* node) {
+    visit(node->structName.get());
+    m_out << "{";
+
+    StructStatement* structDef = nullptr;
+    std::string structName;
+
+    if (auto genInst = dynamic_cast<GenericInstantiation*>(node->structName.get())) {
+        if (auto ident = dynamic_cast<Identifier*>(genInst->base.get())) {
+            structName = ident->value;
+        }
+    } else if (auto ident = dynamic_cast<Identifier*>(node->structName.get())) {
+        structName = ident->value;
+    }
+
+    for (const auto& stmt : m_program->statements) {
+        if (auto s = dynamic_cast<StructStatement*>(stmt.get())) {
+            if (s->name->value == structName) {
+                structDef = s;
+                break;
+            }
+        }
+    }
+
+    if (structDef) {
+        std::vector<std::string> fieldOrder;
+        for (const auto& member : structDef->members) {
+            if (auto field = dynamic_cast<Field*>(member.get())) {
+                fieldOrder.push_back(field->name->value);
+            }
+        }
+
+        for (size_t i = 0; i < fieldOrder.size(); ++i) {
+            for (const auto& fieldInit : node->fields) {
+                if (fieldInit.first->value == fieldOrder[i]) {
+                    visit(fieldInit.second.get());
+                    if (i < fieldOrder.size() - 1) {
+                        m_out << ", ";
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    m_out << "}";
+}
+
+void CodeGen::visit(MemberAccessExpression* node) {
+    visit(node->object.get());
+    m_out << ".";
+    visit(node->member.get());
 }
 
 } // namespace Chtholly

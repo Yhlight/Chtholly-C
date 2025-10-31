@@ -41,6 +41,7 @@ enum class TokenType {
     Comma,
     Semicolon,
     Colon,
+    Dot,
     LParen,
     RParen,
     LBrace,

@@ -15,9 +15,9 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(CodeGen, TestGenericFunctionLiteral) {
-    std::string input = "func<T>(x: T) -> T { return x; }";
-    std::string expected = "template<typename T>\n[&](T x) -> T {\nreturn x;\n}\n";
+TEST(CodeGen, TestGenericStructStatement) {
+    std::string input = "struct Point<T> { x: T, y: T }";
+    std::string expected = "template<typename T>\nstruct Point {\npublic: T x;\npublic: T y;\n};\n";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);
@@ -30,9 +30,47 @@ TEST(CodeGen, TestGenericFunctionLiteral) {
     ASSERT_EQ(result, expected);
 }
 
-TEST(CodeGen, TestGenericCallExpression) {
-    std::string input = "my_func<int>(5);";
-    std::string expected = "my_func<int>(5);\n";
+TEST(CodeGen, TestGenericStructEndToEnd) {
+    std::string input = R"(
+        struct Point<T> {
+            x: T,
+            y: T
+        }
+
+        let p: Point<int> = Point<int>{x: 0, y: 0};
+        p.x;
+    )";
+    std::string expected = "template<typename T>\nstruct Point {\npublic: T x;\npublic: T y;\n};\nconst Point<int> p = Point<int>{0, 0};\np.x;\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
+TEST(CodeGen, TestMemberAccessExpression) {
+    std::string input = "p.x;";
+    std::string expected = "p.x;\n";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    Chtholly::CodeGen c;
+    std::string result = c.generate(program.get());
+
+    ASSERT_EQ(result, expected);
+}
+
+TEST(CodeGen, TestGenericStructInstantiation) {
+    std::string input = "struct Point<T> { x: T, y: T }\nlet p: Point<int> = Point<int>{x: 0, y: 0};";
+    std::string expected = "template<typename T>\nstruct Point {\npublic: T x;\npublic: T y;\n};\nconst Point<int> p = Point<int>{0, 0};\n";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);

@@ -188,6 +188,9 @@ Token Lexer::nextToken() {
     case ':':
         tok = {TokenType::Colon, ":", tok.line, tok.col};
         break;
+    case '.':
+        tok = {TokenType::Dot, ".", tok.line, tok.col};
+        break;
     case '(':
         tok = {TokenType::LParen, "(", tok.line, tok.col};
         break;

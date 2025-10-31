@@ -30,8 +30,12 @@ private:
     void visit(StructStatement* node);
     void visit(Field* node);
     void visit(Method* node);
+    void visit(GenericInstantiation* node);
+    void visit(StructLiteral* node);
+    void visit(MemberAccessExpression* node);
 
     std::stringstream m_out;
+    Program* m_program = nullptr;
 };
 
 } // namespace Chtholly

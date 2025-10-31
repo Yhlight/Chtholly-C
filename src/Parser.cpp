@@ -14,10 +14,11 @@ static std::map<TokenType, Precedence> precedences = {
     {TokenType::Slash, PRODUCT},
     {TokenType::Asterisk, PRODUCT},
     {TokenType::LParen, CALL},
+    {TokenType::Dot, MEMBER},
 };
 
 Parser::Parser(Lexer& lexer) : m_lexer(lexer) {
-    // Read two tokens, so m_curToken and m_peekToken are both set
+    // Read two tokens, so m_curToken and m-peekToken are both set
     nextToken();
     nextToken();
 }
@@ -151,6 +152,11 @@ std::unique_ptr<StructStatement> Parser::parseStructStatement() {
 
     stmt->name = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
 
+    if (m_peekToken.type == TokenType::LessThan) {
+        nextToken();
+        stmt->templateParams = parseTemplateParams();
+    }
+
     if (!expectPeek(TokenType::LBrace)) {
         return nullptr;
     }
@@ -235,12 +241,23 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
             nextToken();
             leftExp = parseCallExpression(std::move(leftExp));
         } else if (m_peekToken.type == TokenType::LessThan) {
+            auto token = m_peekToken;
             nextToken();
-            if (m_peekToken.type == TokenType::Identifier) {
-                leftExp = parseCallExpression(std::move(leftExp));
-            } else {
-                leftExp = parseInfixExpression(std::move(leftExp));
+            auto args = parseTemplateArgs();
+            leftExp = std::make_unique<GenericInstantiation>(token, std::move(leftExp), std::move(args));
+
+            if (m_peekToken.type == TokenType::LBrace) {
+                nextToken();
+                leftExp = parseStructLiteral(std::move(leftExp));
             }
+        } else if (m_peekToken.type == TokenType::LBrace) {
+            nextToken();
+            leftExp = parseStructLiteral(std::move(leftExp));
+        } else if (m_peekToken.type == TokenType::Dot) {
+            nextToken();
+            nextToken();
+            auto member = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+            leftExp = std::make_unique<MemberAccessExpression>(m_curToken, std::move(leftExp), std::move(member));
         } else {
             nextToken();
             leftExp = parseInfixExpression(std::move(leftExp));
@@ -314,6 +331,35 @@ std::unique_ptr<Expression> Parser::parseIfExpression() {
     return expression;
 }
 
+std::unique_ptr<Expression> Parser::parseStructLiteral(std::unique_ptr<Expression> name) {
+    auto literal = std::make_unique<StructLiteral>(m_curToken, std::move(name));
+
+    if (m_peekToken.type != TokenType::RBrace) {
+        nextToken();
+
+        auto key = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+        if (!expectPeek(TokenType::Colon)) return nullptr;
+        nextToken();
+        auto value = parseExpression(LOWEST);
+        literal->fields.emplace_back(std::move(key), std::move(value));
+
+        while (m_peekToken.type == TokenType::Comma) {
+            nextToken();
+            nextToken();
+
+            key = std::make_unique<Identifier>(m_curToken, m_curToken.literal);
+            if (!expectPeek(TokenType::Colon)) return nullptr;
+            nextToken();
+            value = parseExpression(LOWEST);
+            literal->fields.emplace_back(std::move(key), std::move(value));
+        }
+    }
+
+    if (!expectPeek(TokenType::RBrace)) return nullptr;
+
+    return literal;
+}
+
 std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
     auto literal = std::make_unique<FunctionLiteral>(m_curToken);
 
@@ -348,17 +394,17 @@ std::unique_ptr<Expression> Parser::parseFunctionLiteral() {
 std::vector<std::unique_ptr<Identifier>> Parser::parseTemplateParams() {
     std::vector<std::unique_ptr<Identifier>> identifiers;
 
-    if (!expectPeek(TokenType::Identifier)) {
-        return {};
+    if (m_curToken.type != TokenType::LessThan) {
+        return identifiers;
     }
+
+    nextToken();
 
     identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
 
     while (m_peekToken.type == TokenType::Comma) {
         nextToken();
-        if (!expectPeek(TokenType::Identifier)) {
-            return {};
-        }
+        nextToken();
         identifiers.push_back(std::make_unique<Identifier>(m_curToken, m_curToken.literal));
     }
 
@@ -407,13 +453,23 @@ std::vector<std::unique_ptr<Identifier>> Parser::parseFunctionParameters() {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
-    return std::make_unique<TypeName>(m_curToken, m_curToken.literal);
+    auto typeName = std::make_unique<TypeName>(m_curToken, m_curToken.literal);
+    if (m_peekToken.type == TokenType::LessThan) {
+        nextToken();
+        typeName->templateArgs = parseTemplateArgs();
+    }
+    return typeName;
 }
 
 std::unique_ptr<Expression> Parser::parseCallExpression(std::unique_ptr<Expression> function) {
     auto exp = std::make_unique<CallExpression>(m_curToken, std::move(function));
     if (m_curToken.type == TokenType::LessThan) {
         exp->templateArgs = parseTemplateArgs();
+    }
+    if (m_curToken.type != TokenType::LParen) {
+        if (!expectPeek(TokenType::LParen)) {
+            return nullptr;
+        }
     }
     exp->arguments = parseCallArguments();
     return exp;
@@ -440,15 +496,15 @@ std::vector<std::unique_ptr<Type>> Parser::parseTemplateArgs() {
         return {};
     }
 
-    if (!expectPeek(TokenType::LParen)) {
-        return {};
-    }
-
     return types;
 }
 
 std::vector<std::unique_ptr<Expression>> Parser::parseCallArguments() {
     std::vector<std::unique_ptr<Expression>> args;
+
+    if (m_curToken.type != TokenType::LParen) {
+        return args;
+    }
 
     if (m_peekToken.type == TokenType::RParen) {
         nextToken();

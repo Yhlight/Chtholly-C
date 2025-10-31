@@ -19,6 +19,7 @@ enum Precedence {
     PRODUCT,     // *
     PREFIX,      // -X or !X
     CALL,        // myFunction(X)
+    MEMBER,      // object.member
 };
 
 class Parser {
@@ -44,6 +45,7 @@ private:
     std::unique_ptr<BlockStatement> parseBlockStatement();
     std::unique_ptr<Expression> parseIfExpression();
     std::unique_ptr<Expression> parseFunctionLiteral();
+    std::unique_ptr<Expression> parseStructLiteral(std::unique_ptr<Expression> name);
     std::vector<std::unique_ptr<Identifier>> parseTemplateParams();
     std::vector<std::unique_ptr<Identifier>> parseFunctionParameters();
     std::unique_ptr<Type> parseType();
