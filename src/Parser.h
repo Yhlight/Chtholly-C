@@ -21,6 +21,7 @@ private:
     std::unique_ptr<StmtAST> parseEnumDecl();
     std::unique_ptr<StmtAST> parseWhileStmt();
     std::unique_ptr<StmtAST> parseForStmt();
+    std::unique_ptr<StmtAST> parseImportStmt();
     std::unique_ptr<BlockStmtAST> parseBlock();
     std::unique_ptr<ExprAST> parseExpression();
     std::unique_ptr<ExprAST> parseAssignment();

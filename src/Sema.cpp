@@ -30,6 +30,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*whileStmt);
     } else if (auto* forStmt = dynamic_cast<const ForStmtAST*>(&stmt)) {
         visit(*forStmt);
+    } else if (auto* importStmt = dynamic_cast<const ImportStmtAST*>(&stmt)) {
+        visit(*importStmt);
     }
 }
 
@@ -165,6 +167,11 @@ void Sema::visit(const ForStmtAST& stmt) {
     analyze(stmt.getBody());
 
     symbolTable.exitScope();
+}
+
+void Sema::visit(const ImportStmtAST& stmt) {
+    // TODO: Implement module loading and symbol importing logic.
+    // For now, this is a placeholder.
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

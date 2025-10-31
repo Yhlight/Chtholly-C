@@ -203,4 +203,11 @@ public:
     const BlockStmtAST& getBody() const { return *body; }
 };
 
+class ImportStmtAST : public StmtAST {
+    std::string moduleName;
+public:
+    ImportStmtAST(std::string moduleName) : moduleName(std::move(moduleName)) {}
+    const std::string& getModuleName() const { return moduleName; }
+};
+
 } // namespace chtholly

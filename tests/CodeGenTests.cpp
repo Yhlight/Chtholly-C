@@ -125,3 +125,14 @@ TEST(CodeGenTest, ForStatement) {
     std::string expected = "for (const auto i = 0;(i < 10);i = (i + 1)) {\nconst auto a = 1;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, ImportStatement) {
+    std::string source = "import iostream;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "#include <iostream>\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

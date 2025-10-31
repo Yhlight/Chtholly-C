@@ -29,6 +29,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*whileStmt);
     } else if (auto* forStmt = dynamic_cast<const ForStmtAST*>(&stmt)) {
         visit(*forStmt);
+    } else if (auto* importStmt = dynamic_cast<const ImportStmtAST*>(&stmt)) {
+        visit(*importStmt);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -60,6 +62,14 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
     }
     ss << ") ";
     visit(stmt.getBody());
+}
+
+void CodeGen::visit(const ImportStmtAST& stmt) {
+    if (stmt.getModuleName() == "iostream") {
+        ss << "#include <iostream>\n";
+    } else {
+        ss << "#include \"" << stmt.getModuleName() << ".h\"\n";
+    }
 }
 
 void CodeGen::visit(const ForStmtAST& stmt) {

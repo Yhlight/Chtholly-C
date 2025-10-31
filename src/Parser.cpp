@@ -29,6 +29,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::For})) {
         return parseForStmt();
     }
+    if (match({TokenType::Import})) {
+        return parseImportStmt();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -159,6 +162,12 @@ std::unique_ptr<StmtAST> Parser::parseForStmt() {
     auto body = parseBlock();
 
     return std::make_unique<ForStmtAST>(std::move(init), std::move(cond), std::move(inc), std::move(body));
+}
+
+std::unique_ptr<StmtAST> Parser::parseImportStmt() {
+    Token moduleName = consume(TokenType::Identifier, "Expect module name.");
+    consume(TokenType::Semicolon, "Expect ';' after module name.");
+    return std::make_unique<ImportStmtAST>(moduleName.lexeme);
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {
