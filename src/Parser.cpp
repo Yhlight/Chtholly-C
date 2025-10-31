@@ -5,6 +5,44 @@ namespace chtholly {
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
 std::unique_ptr<Expr> Parser::parse() {
+    return expression();
+}
+
+std::unique_ptr<Expr> Parser::expression() {
+    return term();
+}
+
+std::unique_ptr<Expr> Parser::term() {
+    std::unique_ptr<Expr> expr = factor();
+
+    while (match({TokenType::MINUS, TokenType::PLUS})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = factor();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::factor() {
+    std::unique_ptr<Expr> expr = unary();
+
+    while (match({TokenType::SLASH, TokenType::STAR})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = unary();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::unary() {
+    if (match({TokenType::BANG, TokenType::MINUS})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = unary();
+        return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
+    }
+
     return primary();
 }
 
@@ -13,9 +51,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous());
     }
 
-    // If no primary expression is found, it's an error.
-    // For now, we'll return nullptr which will cause the test to fail.
-    // We will add proper error handling later.
+    // Proper error handling will be added later.
     return nullptr;
 }
 

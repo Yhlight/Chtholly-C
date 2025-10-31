@@ -13,7 +13,12 @@ public:
     std::unique_ptr<Expr> parse();
 
 private:
+    std::unique_ptr<Expr> expression();
+    std::unique_ptr<Expr> term();
+    std::unique_ptr<Expr> factor();
+    std::unique_ptr<Expr> unary();
     std::unique_ptr<Expr> primary();
+
     bool match(const std::vector<TokenType>& types);
     bool check(TokenType type) const;
     const Token& peek() const;
