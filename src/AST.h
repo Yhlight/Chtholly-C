@@ -155,4 +155,15 @@ public:
     const std::vector<std::unique_ptr<CaseBlockAST>>& getCases() const { return cases; }
 };
 
+class EnumDeclAST : public StmtAST {
+    std::string name;
+    std::vector<std::string> members;
+public:
+    EnumDeclAST(std::string name, std::vector<std::string> members)
+        : name(std::move(name)), members(std::move(members)) {}
+
+    const std::string& getName() const { return name; }
+    const std::vector<std::string>& getMembers() const { return members; }
+};
+
 } // namespace chtholly

@@ -92,3 +92,14 @@ TEST(CodeGenTest, SwitchStatementWithDefault) {
     std::string expected = "switch (x) {\ncase 1: {\nconst auto a = 1;\n}\ndefault: {\nconst auto b = 2;\n}\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, EnumDeclaration) {
+    std::string source = "enum Color { Red, Green, Blue };";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "enum class Color {\n    Red,\n    Green,\n    Blue\n};\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

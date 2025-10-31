@@ -11,6 +11,7 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"else", TokenType::Else},
     {"return", TokenType::Return},
     {"struct", TokenType::Struct},
+    {"enum", TokenType::Enum},
     {"import", TokenType::Import},
     {"public", TokenType::Public},
     {"private", TokenType::Private},

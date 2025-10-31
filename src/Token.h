@@ -26,7 +26,7 @@ enum class TokenType {
     Func, Let, Mut,
     If, Else, Switch, Case, Default, Fallthrough, Break,
     Return,
-    Struct, Public, Private, Self, Impl, Trait,
+    Struct, Enum, Public, Private, Self, Impl, Trait,
     Import,
 
     // Literals

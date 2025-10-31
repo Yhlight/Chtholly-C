@@ -18,6 +18,7 @@ private:
     std::unique_ptr<FuncDeclAST> parseFuncDecl();
     std::unique_ptr<StmtAST> parseIfStmt();
     std::unique_ptr<StmtAST> parseSwitchStmt();
+    std::unique_ptr<StmtAST> parseEnumDecl();
     std::unique_ptr<BlockStmtAST> parseBlock();
     std::unique_ptr<ExprAST> parseExpression();
     std::unique_ptr<ExprAST> parseAssignment();

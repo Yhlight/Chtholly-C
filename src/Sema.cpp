@@ -24,6 +24,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*switchStmt);
     } else if (auto* caseBlock = dynamic_cast<const CaseBlockAST*>(&stmt)) {
         visit(*caseBlock);
+    } else if (auto* enumDecl = dynamic_cast<const EnumDeclAST*>(&stmt)) {
+        visit(*enumDecl);
     }
 }
 
@@ -112,6 +114,19 @@ void Sema::visit(const CaseBlockAST& stmt) {
     symbolTable.enterScope();
     analyze(stmt.getBody());
     symbolTable.exitScope();
+}
+
+void Sema::visit(const EnumDeclAST& stmt) {
+    auto enumType = std::make_shared<EnumType>(stmt.getName(), stmt.getMembers());
+    if (!symbolTable.insert(stmt.getName(), enumType, false)) {
+        throw std::runtime_error("Enum already declared.");
+    }
+
+    for (const auto& member : stmt.getMembers()) {
+        if (!symbolTable.insert(stmt.getName() + "::" + member, enumType, false)) {
+            throw std::runtime_error("Enum member already declared.");
+        }
+    }
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

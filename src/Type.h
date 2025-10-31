@@ -15,7 +15,8 @@ enum class TypeKind {
     Void,
     Array,
     Struct,
-    Function
+    Function,
+    Enum
 };
 
 class Type {
@@ -89,6 +90,18 @@ public:
     }
     const std::shared_ptr<Type>& getReturnType() const { return returnType; }
     const std::vector<std::shared_ptr<Type>>& getParamTypes() const { return paramTypes; }
+};
+
+class EnumType : public Type {
+    std::string name;
+    std::vector<std::string> members;
+public:
+    EnumType(std::string name, std::vector<std::string> members)
+        : name(std::move(name)), members(std::move(members)) {}
+    TypeKind getKind() const override { return TypeKind::Enum; }
+    std::string toString() const override { return name; }
+    const std::string& getName() const { return name; }
+    const std::vector<std::string>& getMembers() const { return members; }
 };
 
 } // namespace chtholly

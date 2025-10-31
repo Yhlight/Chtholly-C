@@ -23,6 +23,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*switchStmt);
     } else if (auto* caseBlock = dynamic_cast<const CaseBlockAST*>(&stmt)) {
         visit(*caseBlock);
+    } else if (auto* enumDecl = dynamic_cast<const EnumDeclAST*>(&stmt)) {
+        visit(*enumDecl);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -82,6 +84,18 @@ void CodeGen::visit(const CaseBlockAST& stmt) {
         ss << "default: ";
     }
     visit(stmt.getBody());
+}
+
+void CodeGen::visit(const EnumDeclAST& stmt) {
+    ss << "enum class " << stmt.getName() << " {\n";
+    for (size_t i = 0; i < stmt.getMembers().size(); ++i) {
+        ss << "    " << stmt.getMembers()[i];
+        if (i < stmt.getMembers().size() - 1) {
+            ss << ",";
+        }
+        ss << "\n";
+    }
+    ss << "};\n";
 }
 
 void CodeGen::visit(const BlockStmtAST& stmt) {

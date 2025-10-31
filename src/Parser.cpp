@@ -20,6 +20,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::Switch})) {
         return parseSwitchStmt();
     }
+    if (match({TokenType::Enum})) {
+        return parseEnumDecl();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -97,6 +100,22 @@ std::unique_ptr<StmtAST> Parser::parseSwitchStmt() {
 
     consume(TokenType::RightBrace, "Expect '}' after switch body.");
     return std::make_unique<SwitchStmtAST>(std::move(expr), std::move(cases));
+}
+
+std::unique_ptr<StmtAST> Parser::parseEnumDecl() {
+    Token name = consume(TokenType::Identifier, "Expect enum name.");
+    consume(TokenType::LeftBrace, "Expect '{' before enum body.");
+
+    std::vector<std::string> members;
+    if (peek().type != TokenType::RightBrace) {
+        do {
+            members.push_back(consume(TokenType::Identifier, "Expect enum member name.").lexeme);
+        } while (match({TokenType::Comma}));
+    }
+
+    consume(TokenType::RightBrace, "Expect '}' after enum body.");
+    consume(TokenType::Semicolon, "Expect ';' after enum declaration.");
+    return std::make_unique<EnumDeclAST>(name.lexeme, std::move(members));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {
