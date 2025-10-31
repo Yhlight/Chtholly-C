@@ -4,8 +4,8 @@
 
 - [x] Basic project structure (CMake, Google Test)
 - [x] Lexer
-- [ ] Parser (LL(k) recursive descent)
-- [ ] Abstract Syntax Tree (AST)
+- [x] Parser (LL(k) recursive descent)
+- [x] Abstract Syntax Tree (AST)
 - [ ] Semantic Analysis (Resolver)
 - [ ] C++ Transpiler
 - [ ] Basic type system (int, double, bool, string)
