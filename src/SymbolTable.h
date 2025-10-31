@@ -21,7 +21,7 @@ public:
     void exitScope();
 
     bool insert(const std::string& name, std::shared_ptr<Type> type, bool isMutable);
-    std::optional<Symbol> lookup(const std::string& name);
+    const Symbol* lookup(const std::string& name) const;
 
 private:
     std::vector<std::unordered_map<std::string, Symbol>> scopes;

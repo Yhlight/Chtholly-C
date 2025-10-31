@@ -188,24 +188,51 @@ std::unique_ptr<StmtAST> Parser::parseStructDecl() {
     consume(TokenType::LeftBrace, "Expect '{' before struct body.");
 
     std::vector<MemberVar> members;
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+
     while (peek().type != TokenType::RightBrace) {
         bool isPublic = true;
         if (peek().type == TokenType::Public || peek().type == TokenType::Private) {
             isPublic = advance().type == TokenType::Public;
         }
 
-        Token memberName = consume(TokenType::Identifier, "Expect member name.");
-        consume(TokenType::Colon, "Expect ':' after member name.");
-        Token typeName = consume(TokenType::Identifier, "Expect member type.");
-        members.push_back({memberName.lexeme, typeName.lexeme, isPublic});
+        if (peek().type == TokenType::Func) {
+            advance(); // consume 'func'
+            methods.push_back(parseFuncDecl());
+        } else {
+            Token memberName = consume(TokenType::Identifier, "Expect member name.");
+            consume(TokenType::Colon, "Expect ':' after member name.");
+            Token typeName = consume(TokenType::Identifier, "Expect member type.");
+            members.push_back({memberName.lexeme, typeName.lexeme, isPublic});
 
-        if (!match({TokenType::Comma})) {
-            break;
+            if (!match({TokenType::Comma})) {
+                // break;
+            }
         }
     }
 
     consume(TokenType::RightBrace, "Expect '}' after struct body.");
-    return std::make_unique<StructDeclAST>(name.lexeme, std::move(members));
+
+    std::vector<std::unique_ptr<ImplBlockAST>> impl_blocks;
+    while (match({TokenType::Impl})) {
+        impl_blocks.push_back(parseImplBlock());
+    }
+
+    return std::make_unique<StructDeclAST>(name.lexeme, std::move(members), std::move(methods), std::move(impl_blocks));
+}
+
+std::unique_ptr<ImplBlockAST> Parser::parseImplBlock() {
+    Token traitName = consume(TokenType::Identifier, "Expect trait name after 'impl'.");
+    consume(TokenType::LeftBrace, "Expect '{' before impl body.");
+
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+    while (peek().type != TokenType::RightBrace) {
+        consume(TokenType::Func, "Expect 'func' before method declaration.");
+        methods.push_back(parseFuncDecl());
+    }
+
+    consume(TokenType::RightBrace, "Expect '}' after impl body.");
+    return std::make_unique<ImplBlockAST>(traitName.lexeme, std::move(methods));
 }
 
 std::unique_ptr<StmtAST> Parser::parseTraitDecl() {

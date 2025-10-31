@@ -15,7 +15,7 @@ public:
 private:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
-    void visit(const FuncDeclAST& stmt);
+    void visit(const FuncDeclAST& stmt, bool isOverride = false);
     void visit(const StructDeclAST& stmt);
     void visit(const TraitDeclAST& stmt);
     void visit(const IfStmtAST& stmt);

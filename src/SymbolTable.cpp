@@ -26,14 +26,15 @@ bool SymbolTable::insert(const std::string& name, std::shared_ptr<Type> type, bo
     return true;
 }
 
-std::optional<Symbol> SymbolTable::lookup(const std::string& name) {
+const Symbol* SymbolTable::lookup(const std::string& name) const {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-        auto& scope = *it;
-        if (scope.count(name)) {
-            return scope[name];
+        const auto& scope = *it;
+        auto symbolIt = scope.find(name);
+        if (symbolIt != scope.end()) {
+            return &symbolIt->second;
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
 } // namespace chtholly

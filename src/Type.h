@@ -111,9 +111,12 @@ struct MemberVarType {
     bool isPublic;
 };
 
+class TraitType;
+
 class StructType : public Type {
     std::string name;
     std::vector<MemberVarType> members;
+    std::vector<std::shared_ptr<TraitType>> implementedTraits;
 public:
     StructType(std::string name, std::vector<MemberVarType> members)
         : name(std::move(name)), members(std::move(members)) {}
@@ -121,6 +124,12 @@ public:
     std::string toString() const override { return name; }
     const std::string& getName() const { return name; }
     const std::vector<MemberVarType>& getMembers() const { return members; }
+    void addImplementedTrait(std::shared_ptr<TraitType> trait) {
+        implementedTraits.push_back(trait);
+    }
+    const std::vector<std::shared_ptr<TraitType>>& getImplementedTraits() const {
+        return implementedTraits;
+    }
 };
 
 class TraitType : public Type {

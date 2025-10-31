@@ -56,7 +56,9 @@
   - [x] Implement `print` function.
 - [x] Implement struct declarations.
   - [x] Implement struct instantiation and member access.
-- [ ] Implement traits.
+- [x] Implement traits.
+  - [x] Implement trait declarations.
+  - [x] Implement trait implementations for structs.
 - [ ] Implement the `filesystem` module.
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.

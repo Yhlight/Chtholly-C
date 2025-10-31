@@ -223,15 +223,21 @@ struct MemberVar {
     bool isPublic;
 };
 
+class ImplBlockAST;
+
 class StructDeclAST : public StmtAST {
     std::string name;
     std::vector<MemberVar> members;
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+    std::vector<std::unique_ptr<ImplBlockAST>> impl_blocks;
 public:
-    StructDeclAST(std::string name, std::vector<MemberVar> members)
-        : name(std::move(name)), members(std::move(members)) {}
+    StructDeclAST(std::string name, std::vector<MemberVar> members, std::vector<std::unique_ptr<FuncDeclAST>> methods, std::vector<std::unique_ptr<ImplBlockAST>> impl_blocks)
+        : name(std::move(name)), members(std::move(members)), methods(std::move(methods)), impl_blocks(std::move(impl_blocks)) {}
 
     const std::string& getName() const { return name; }
     const std::vector<MemberVar>& getMembers() const { return members; }
+    const std::vector<std::unique_ptr<FuncDeclAST>>& getMethods() const { return methods; }
+    const std::vector<std::unique_ptr<ImplBlockAST>>& getImplBlocks() const { return impl_blocks; }
 };
 
 struct MemberInit {
@@ -269,6 +275,17 @@ public:
         : name(std::move(name)), methods(std::move(methods)) {}
 
     const std::string& getName() const { return name; }
+    const std::vector<std::unique_ptr<FuncDeclAST>>& getMethods() const { return methods; }
+};
+
+class ImplBlockAST : public StmtAST {
+    std::string traitName;
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+public:
+    ImplBlockAST(std::string traitName, std::vector<std::unique_ptr<FuncDeclAST>> methods)
+        : traitName(std::move(traitName)), methods(std::move(methods)) {}
+
+    const std::string& getTraitName() const { return traitName; }
     const std::vector<std::unique_ptr<FuncDeclAST>>& getMethods() const { return methods; }
 };
 

@@ -16,7 +16,7 @@ void CodeGen::visit(const StmtAST& stmt) {
     if (auto* varDecl = dynamic_cast<const VarDeclAST*>(&stmt)) {
         visit(*varDecl);
     } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
-        visit(*funcDecl);
+        visit(*funcDecl, false);
     } else if (auto* structDecl = dynamic_cast<const StructDeclAST*>(&stmt)) {
         visit(*structDecl);
     } else if (auto* traitDecl = dynamic_cast<const TraitDeclAST*>(&stmt)) {
@@ -57,7 +57,7 @@ void CodeGen::visit(const VarDeclAST& stmt) {
     }
 }
 
-void CodeGen::visit(const FuncDeclAST& stmt) {
+void CodeGen::visit(const FuncDeclAST& stmt, bool isOverride) {
     ss << stmt.getReturnTypeName() << " " << stmt.getName() << "(";
     const auto& params = stmt.getParams();
     for (size_t i = 0; i < params.size(); ++i) {
@@ -67,11 +67,31 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
         }
     }
     ss << ") ";
+    if (isOverride) {
+        ss << "override ";
+    }
     visit(stmt.getBody());
 }
 
 void CodeGen::visit(const StructDeclAST& stmt) {
-    ss << "struct " << stmt.getName() << " {\n";
+    ss << "struct " << stmt.getName();
+
+    auto symbol = sema.lookup(stmt.getName());
+    auto structType = std::static_pointer_cast<StructType>(symbol->type);
+    const auto& implementedTraits = structType->getImplementedTraits();
+
+    if (!implementedTraits.empty()) {
+        ss << " : ";
+        for (size_t i = 0; i < implementedTraits.size(); ++i) {
+            ss << "public " << implementedTraits[i]->getName();
+            if (i < implementedTraits.size() - 1) {
+                ss << ", ";
+            }
+        }
+    }
+
+    ss << " {\n";
+
     for (const auto& member : stmt.getMembers()) {
         if (member.isPublic) {
             ss << "public: ";
@@ -80,6 +100,20 @@ void CodeGen::visit(const StructDeclAST& stmt) {
         }
         ss << member.typeName << " " << member.name << ";\n";
     }
+
+    if (!stmt.getMethods().empty() || !stmt.getImplBlocks().empty()) {
+        ss << "public:\n";
+        for (const auto& method : stmt.getMethods()) {
+            visit(*method, false);
+        }
+
+        for (const auto& implBlock : stmt.getImplBlocks()) {
+            for (const auto& method : implBlock->getMethods()) {
+                visit(*method, true);
+            }
+        }
+    }
+
     ss << "};\n";
 }
 

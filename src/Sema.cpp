@@ -48,11 +48,9 @@ void Sema::visit(const VarDeclAST& stmt) {
     }
 }
 
-void Sema::visit(const FuncDeclAST& stmt) {
+std::shared_ptr<FunctionType> Sema::visit(const FuncDeclAST& stmt) {
     std::vector<std::shared_ptr<Type>> paramTypes;
     for (const auto& param : stmt.getParams()) {
-        // For now, we will just create a placeholder type.
-        // In a real compiler, you would resolve the type name to a Type object.
         if (param.typeName == "int") {
             paramTypes.push_back(std::make_shared<IntType>());
         } else if (param.typeName == "double") {
@@ -60,7 +58,11 @@ void Sema::visit(const FuncDeclAST& stmt) {
         } else if (param.typeName == "string") {
             paramTypes.push_back(std::make_shared<StringType>());
         } else {
-            throw std::runtime_error("Unknown type: " + param.typeName);
+            auto symbol = symbolTable.lookup(param.typeName);
+            if (!symbol) {
+                throw std::runtime_error("Unknown type: " + param.typeName);
+            }
+            paramTypes.push_back(symbol->type);
         }
     }
 
@@ -74,11 +76,15 @@ void Sema::visit(const FuncDeclAST& stmt) {
     } else if (stmt.getReturnTypeName() == "void") {
         returnType = std::make_shared<VoidType>();
     } else {
-        throw std::runtime_error("Unknown type: " + stmt.getReturnTypeName());
+        auto symbol = symbolTable.lookup(stmt.getReturnTypeName());
+        if (!symbol) {
+            throw std::runtime_error("Unknown type: " + stmt.getReturnTypeName());
+        }
+        returnType = symbol->type;
     }
 
     auto funcType = std::make_shared<FunctionType>(returnType, paramTypes);
-    if (!symbolTable.insert(stmt.getName(), funcType, false)) {
+    if (!stmt.getName().empty() && !symbolTable.insert(stmt.getName(), funcType, false)) {
         throw std::runtime_error("Function already declared.");
     }
 
@@ -90,6 +96,7 @@ void Sema::visit(const FuncDeclAST& stmt) {
     }
     analyze(stmt.getBody());
     symbolTable.exitScope();
+    return funcType;
 }
 
 void Sema::visit(const StructDeclAST& stmt) {
@@ -115,6 +122,47 @@ void Sema::visit(const StructDeclAST& stmt) {
     auto structType = std::make_shared<StructType>(stmt.getName(), memberTypes);
     if (!symbolTable.insert(stmt.getName(), structType, false)) {
         throw std::runtime_error("Struct already declared.");
+    }
+
+    for (const auto& implBlock : stmt.getImplBlocks()) {
+        auto symbol = symbolTable.lookup(implBlock->getTraitName());
+        if (!symbol) {
+            throw std::runtime_error("Unknown trait: " + implBlock->getTraitName());
+        }
+        if (symbol->type->getKind() != TypeKind::Trait) {
+            throw std::runtime_error(implBlock->getTraitName() + " is not a trait.");
+        }
+
+        auto traitType = std::static_pointer_cast<TraitType>(symbol->type);
+        structType->addImplementedTrait(traitType);
+
+        const auto& traitMethods = traitType->getMethods();
+        const auto& implMethods = implBlock->getMethods();
+
+        if (traitMethods.size() != implMethods.size()) {
+            throw std::runtime_error("Incorrect number of methods in trait implementation.");
+        }
+
+        for (size_t i = 0; i < traitMethods.size(); ++i) {
+            const auto& traitMethod = traitMethods[i];
+            const auto& implMethod = implMethods[i];
+
+            auto implMethodType = visit(*implMethod);
+
+            if (traitMethod->getReturnType()->getKind() != implMethodType->getReturnType()->getKind()) {
+                throw std::runtime_error("Return type mismatch for method.");
+            }
+
+            if (traitMethod->getParamTypes().size() != implMethodType->getParamTypes().size()) {
+                throw std::runtime_error("Parameter count mismatch for method.");
+            }
+
+            for (size_t j = 0; j < traitMethod->getParamTypes().size(); ++j) {
+                if (traitMethod->getParamTypes()[j]->getKind() != implMethodType->getParamTypes()[j]->getKind()) {
+                    throw std::runtime_error("Parameter type mismatch for method.");
+                }
+            }
+        }
     }
 }
 

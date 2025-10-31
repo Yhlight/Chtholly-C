@@ -23,6 +23,7 @@ private:
     std::unique_ptr<StmtAST> parseForStmt();
     std::unique_ptr<StmtAST> parseImportStmt();
     std::unique_ptr<StmtAST> parseStructDecl();
+    std::unique_ptr<ImplBlockAST> parseImplBlock();
     std::unique_ptr<StmtAST> parseTraitDecl();
     std::unique_ptr<BlockStmtAST> parseBlock();
     std::unique_ptr<ExprAST> parseExpression();

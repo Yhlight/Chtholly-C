@@ -14,7 +14,7 @@ public:
 public:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
-    void visit(const FuncDeclAST& stmt);
+    std::shared_ptr<FunctionType> visit(const FuncDeclAST& stmt);
     void visit(const StructDeclAST& stmt);
     void visit(const TraitDeclAST& stmt);
     void visit(const IfStmtAST& stmt);
@@ -36,6 +36,11 @@ public:
     std::shared_ptr<Type> visit(const StructInitExprAST& expr);
     std::shared_ptr<Type> visit(const MemberAccessExprAST& expr);
 
+    const Symbol* lookup(const std::string& name) const {
+        return symbolTable.lookup(name);
+    }
+
+private:
     SymbolTable symbolTable;
 };
 
