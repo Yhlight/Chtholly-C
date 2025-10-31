@@ -358,8 +358,12 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
         return std::make_unique<StringExprAST>(std::get<std::string>(tokens[current - 1].literal));
     }
     if (match({TokenType::Identifier})) {
+        std::string name = tokens[current - 1].lexeme;
+        while (match({TokenType::ColonColon})) {
+            name += "::" + consume(TokenType::Identifier, "Expect identifier after '::'.").lexeme;
+        }
+
         if (peek().type == TokenType::LeftBrace) {
-            std::string structName = tokens[current - 1].lexeme;
             consume(TokenType::LeftBrace, "Expect '{' after struct name.");
             std::vector<MemberInit> members;
             while (peek().type != TokenType::RightBrace) {
@@ -372,9 +376,9 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
                 }
             }
             consume(TokenType::RightBrace, "Expect '}' after struct members.");
-            return std::make_unique<StructInitExprAST>(structName, std::move(members));
+            return std::make_unique<StructInitExprAST>(name, std::move(members));
         }
-        return std::make_unique<VariableExprAST>(tokens[current - 1].lexeme);
+        return std::make_unique<VariableExprAST>(name);
     }
     if (match({TokenType::True})) {
         return std::make_unique<BoolExprAST>(true);

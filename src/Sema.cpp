@@ -310,6 +310,13 @@ void Sema::visit(const ImportStmtAST& stmt) {
             // This could happen if iostream is imported multiple times.
             // For now, we'll just ignore it.
         }
+    } else if (stmt.getModuleName() == "filesystem") {
+        auto stringType = std::make_shared<StringType>();
+        std::vector<std::shared_ptr<Type>> paramTypes = {stringType, stringType};
+        auto joinFuncType = std::make_shared<FunctionType>(stringType, paramTypes);
+        if (!symbolTable.insert("path::join", joinFuncType, false)) {
+            // Ignore if already imported.
+        }
     }
 }
 

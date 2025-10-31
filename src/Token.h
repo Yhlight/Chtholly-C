@@ -10,7 +10,7 @@ enum class TokenType {
     LeftParen, RightParen,   // ( )
     LeftBrace, RightBrace,   // { }
     LeftBracket, RightBracket, // [ ]
-    Comma, Dot, Semicolon, Colon, // , . ; :
+    Comma, Dot, Semicolon, Colon, ColonColon, // , . ; : ::
     Arrow, FatArrow,      // -> =>
 
     // Operators

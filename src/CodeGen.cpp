@@ -144,6 +144,9 @@ void CodeGen::visit(const ImportStmtAST& stmt) {
     if (stmt.getModuleName() == "iostream") {
         ss << "#include <iostream>\n";
         ss << "#include <string>\n";
+    } else if (stmt.getModuleName() == "filesystem") {
+        ss << "#include <string>\n";
+        ss << "#include <vector>\n";
     } else {
         ss << "#include \"" << stmt.getModuleName() << ".h\"\n";
     }
@@ -294,6 +297,13 @@ void CodeGen::visit(const CallExprAST& expr) {
             ss << "std::cout << ";
             visit(*expr.getArgs()[0]);
             ss << " << std::endl";
+            return;
+        } else if (varExpr->getName() == "path::join") {
+            ss << "(";
+            visit(*expr.getArgs()[0]);
+            ss << " + \"/\" + ";
+            visit(*expr.getArgs()[1]);
+            ss << ")";
             return;
         }
     }
