@@ -3,6 +3,7 @@ enable_testing()
 add_executable(chtholly_tests
     LexerTest.cpp
     ParserTest.cpp
+    SymbolTableTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)
