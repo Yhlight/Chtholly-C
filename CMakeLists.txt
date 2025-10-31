@@ -13,3 +13,6 @@ FetchContent_MakeAvailable(googletest)
 
 add_subdirectory(src)
 add_subdirectory(tests)
+
+add_executable(chtholly src/main.cpp)
+target_link_libraries(chtholly PRIVATE chtholly_lib)

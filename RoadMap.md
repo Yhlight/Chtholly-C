@@ -7,7 +7,7 @@
 - [x] Parser (LL(k) recursive descent)
 - [x] Abstract Syntax Tree (AST)
 - [x] Semantic Analysis (Resolver)
-- [ ] C++ Transpiler
+- [x] C++ Transpiler
 - [ ] Basic type system (int, double, bool, string)
 - [ ] Variables (let, mut)
 - [ ] Comments (single-line, multi-line)
