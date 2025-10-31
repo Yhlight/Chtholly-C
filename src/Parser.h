@@ -33,7 +33,7 @@ private:
     bool expectPeek(TokenType t);
     void peekError(TokenType t);
     std::unique_ptr<Statement> parseStatement();
-    std::unique_ptr<LetStatement> parseLetStatement();
+    std::unique_ptr<LetStatement> parseDeclarationStatement();
     std::unique_ptr<ReturnStatement> parseReturnStatement();
     std::unique_ptr<ExpressionStatement> parseExpressionStatement();
 

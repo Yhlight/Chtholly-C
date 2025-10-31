@@ -74,7 +74,8 @@ std::unique_ptr<Program> Parser::parseProgram() {
 std::unique_ptr<Statement> Parser::parseStatement() {
     switch (m_curToken.type) {
     case TokenType::Let:
-        return parseLetStatement();
+    case TokenType::Mut:
+        return parseDeclarationStatement();
     case TokenType::Return:
         return parseReturnStatement();
     default:
@@ -82,8 +83,9 @@ std::unique_ptr<Statement> Parser::parseStatement() {
     }
 }
 
-std::unique_ptr<LetStatement> Parser::parseLetStatement() {
+std::unique_ptr<LetStatement> Parser::parseDeclarationStatement() {
     auto stmt = std::make_unique<LetStatement>(m_curToken);
+    stmt->isMutable = m_curToken.type == TokenType::Mut;
 
     if (!expectPeek(TokenType::Identifier)) {
         return nullptr;
@@ -146,6 +148,9 @@ std::unique_ptr<Expression> Parser::parseExpression(Precedence precedence) {
         break;
     case TokenType::Int:
         leftExp = std::make_unique<IntegerLiteral>(m_curToken, std::stoll(m_curToken.literal));
+        break;
+    case TokenType::String:
+        leftExp = std::make_unique<StringLiteral>(m_curToken, m_curToken.literal);
         break;
     case TokenType::True:
     case TokenType::False:

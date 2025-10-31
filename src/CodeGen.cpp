@@ -20,6 +20,8 @@ void CodeGen::visit(Node* node) {
         visit(n);
     } else if (auto n = dynamic_cast<IntegerLiteral*>(node)) {
         visit(n);
+    } else if (auto n = dynamic_cast<StringLiteral*>(node)) {
+        visit(n);
     } else if (auto n = dynamic_cast<Boolean*>(node)) {
         visit(n);
     } else if (auto n = dynamic_cast<PrefixExpression*>(node)) {
@@ -47,10 +49,19 @@ void CodeGen::visit(ExpressionStatement* node) {
 }
 
 void CodeGen::visit(LetStatement* node) {
-    if (node->type) {
-        visit(node->type.get());
+    if (node->isMutable) {
+        if (node->type) {
+            visit(node->type.get());
+        } else {
+            m_out << "auto";
+        }
     } else {
-        m_out << "auto";
+        if (node->type) {
+            m_out << "const ";
+            visit(node->type.get());
+        } else {
+            m_out << "const auto";
+        }
     }
     m_out << " " << node->name->value << " = ";
     visit(node->value.get());
@@ -69,6 +80,10 @@ void CodeGen::visit(Identifier* node) {
 
 void CodeGen::visit(IntegerLiteral* node) {
     m_out << node->value;
+}
+
+void CodeGen::visit(StringLiteral* node) {
+    m_out << "\"" << node->value << "\"";
 }
 
 void CodeGen::visit(Boolean* node) {

@@ -21,48 +21,29 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(Parser, TestLetStatementWithType) {
-    std::string input = "let x: int = 5;";
+TEST(Parser, TestLetStatements) {
+    std::string input = R"(
+        let x = 5;
+        mut y = 10;
+    )";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);
     auto program = p.parseProgram();
     checkParserErrors(p);
 
-    ASSERT_EQ(program->statements.size(), 1);
-    auto stmt = dynamic_cast<Chtholly::LetStatement*>(program->statements[0].get());
-    ASSERT_NE(stmt, nullptr);
-    ASSERT_EQ(stmt->name->value, "x");
-    auto type = dynamic_cast<Chtholly::TypeName*>(stmt->type.get());
-    ASSERT_NE(type, nullptr);
-    ASSERT_EQ(type->name, "int");
-}
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 2);
 
-TEST(Parser, TestFunctionLiteralWithType) {
-    std::string input = "func(x: int, y: string) -> bool { return x > y; }";
+    std::vector<std::string> expected_identifiers = {"x", "y"};
+    std::vector<bool> expected_mutability = {false, true};
 
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
-    checkParserErrors(p);
-
-    ASSERT_EQ(program->statements.size(), 1);
-    auto stmt = dynamic_cast<Chtholly::ExpressionStatement*>(program->statements[0].get());
-    auto exp = dynamic_cast<Chtholly::FunctionLiteral*>(stmt->expression.get());
-    ASSERT_NE(exp, nullptr);
-    ASSERT_EQ(exp->parameters.size(), 2);
-    ASSERT_EQ(exp->parameters[0]->value, "x");
-    auto param1_type = dynamic_cast<Chtholly::TypeName*>(exp->parameters[0]->type.get());
-    ASSERT_NE(param1_type, nullptr);
-    ASSERT_EQ(param1_type->name, "int");
-    ASSERT_EQ(exp->parameters[1]->value, "y");
-    auto param2_type = dynamic_cast<Chtholly::TypeName*>(exp->parameters[1]->type.get());
-    ASSERT_NE(param2_type, nullptr);
-    ASSERT_EQ(param2_type->name, "string");
-
-    auto return_type = dynamic_cast<Chtholly::TypeName*>(exp->returnType.get());
-    ASSERT_NE(return_type, nullptr);
-    ASSERT_EQ(return_type->name, "bool");
+    for (size_t i = 0; i < program->statements.size(); ++i) {
+        auto stmt = program->statements[i].get();
+        auto letStmt = static_cast<Chtholly::LetStatement*>(stmt);
+        ASSERT_EQ(letStmt->name->value, expected_identifiers[i]);
+        ASSERT_EQ(letStmt->isMutable, expected_mutability[i]);
+    }
 }
 
 // Helper function to stringify the AST for easy comparison

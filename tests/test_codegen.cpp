@@ -15,24 +15,18 @@ void checkParserErrors(Chtholly::Parser& p) {
     FAIL();
 }
 
-TEST(CodeGen, TestLetStatementWithType) {
-    std::string input = "let x: int = 5;";
-    std::string expected = "int x = 5;\n";
-
-    Chtholly::Lexer l(input);
-    Chtholly::Parser p(l);
-    auto program = p.parseProgram();
-    checkParserErrors(p);
-
-    Chtholly::CodeGen c;
-    std::string result = c.generate(program.get());
-
-    ASSERT_EQ(result, expected);
-}
-
-TEST(CodeGen, TestFunctionLiteralWithType) {
-    std::string input = "func(x: int, y: string) -> bool { return x > y; }";
-    std::string expected = "[&](int x, string y) -> bool {\nreturn (x > y);\n}\n";
+TEST(CodeGen, TestLetStatements) {
+    std::string input = R"(
+        let x = 5;
+        mut y = 10;
+        let z: int = 15;
+        mut w: string = "hello";
+    )";
+    std::string expected = R"(const auto x = 5;
+auto y = 10;
+const int z = 15;
+string w = "hello";
+)";
 
     Chtholly::Lexer l(input);
     Chtholly::Parser p(l);

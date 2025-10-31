@@ -73,10 +73,11 @@ public:
 
     std::string tokenLiteral() const override { return token.literal; }
 
-    Token token; // The 'let' token
+    Token token; // The 'let' or 'mut' token
     std::unique_ptr<Identifier> name;
     std::unique_ptr<Expression> value;
     std::unique_ptr<Type> type;
+    bool isMutable;
 };
 
 class ExpressionStatement : public Statement {
@@ -98,6 +99,17 @@ public:
 
     Token token;
     int64_t value;
+};
+
+class StringLiteral : public Expression {
+public:
+    StringLiteral(Token token, std::string value)
+        : token(std::move(token)), value(std::move(value)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token;
+    std::string value;
 };
 
 class Boolean : public Expression {
