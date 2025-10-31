@@ -1,76 +1,136 @@
 #include "Resolver.h"
 #include <stdexcept>
 
+// Forward declaration
+std::shared_ptr<Type> resolveType(const std::unique_ptr<Type>& typeNode);
+
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     for (const auto& statement : statements) {
         resolve(*statement);
     }
 }
 
-std::any Resolver::visit(const NumericLiteral& expr) {
-    return nullptr;
+std::shared_ptr<Type> Resolver::visit(const NumericLiteral& expr) {
+    // For simplicity, we'll assume all numeric literals are ints for now.
+    return std::make_shared<PrimitiveType>(PrimitiveType::Kind::Int);
 }
 
-std::any Resolver::visit(const UnaryExpr& expr) {
-    resolve(*expr.right);
-    return nullptr;
+std::shared_ptr<Type> Resolver::visit(const StringLiteral& expr) {
+    return std::make_shared<PrimitiveType>(PrimitiveType::Kind::String);
 }
 
-std::any Resolver::visit(const BinaryExpr& expr) {
-    resolve(*expr.left);
-    resolve(*expr.right);
-    return nullptr;
-}
-
-std::any Resolver::visit(const GroupingExpr& expr) {
-    resolve(*expr.expression);
-    return nullptr;
-}
-
-std::any Resolver::visit(const VariableExpr& expr) {
-    if (!scopes_.empty() && scopes_.back().count(expr.name.lexeme) && !scopes_.back().at(expr.name.lexeme)) {
-        throw std::runtime_error("Can't read local variable in its own initializer.");
+std::shared_ptr<Type> Resolver::visit(const UnaryExpr& expr) {
+    auto rightType = resolve(*expr.right);
+    if (expr.op.type == TokenType::MINUS) {
+        if (rightType->getKind() != TypeKind::Primitive ||
+            (std::static_pointer_cast<PrimitiveType>(rightType)->getPrimitiveKind() != PrimitiveType::Kind::Int &&
+             std::static_pointer_cast<PrimitiveType>(rightType)->getPrimitiveKind() != PrimitiveType::Kind::Double)) {
+            throw std::runtime_error("Operand must be a number.");
+        }
+        return rightType;
     }
+    // Handle other unary operators...
     return nullptr;
 }
 
-std::any Resolver::visit(const LetStmt& stmt) {
-    declare(stmt.name);
+std::shared_ptr<Type> Resolver::visit(const BinaryExpr& expr) {
+    auto leftType = resolve(*expr.left);
+    auto rightType = resolve(*expr.right);
+
+    if (!leftType->isEqual(*rightType)) {
+        throw std::runtime_error("Type mismatch in binary expression.");
+    }
+    // For now, assume the result type is the same as the operand types.
+    return leftType;
+}
+
+std::shared_ptr<Type> Resolver::visit(const GroupingExpr& expr) {
+    return resolve(*expr.expression);
+}
+
+std::shared_ptr<Type> Resolver::visit(const VariableExpr& expr) {
+    for (int i = scopes_.size() - 1; i >= 0; i--) {
+        if (scopes_[i].count(expr.name.lexeme)) {
+            return scopes_[i][expr.name.lexeme];
+        }
+    }
+    throw std::runtime_error("Undefined variable '" + expr.name.lexeme + "'.");
+}
+
+void Resolver::visit(const LetStmt& stmt) {
+    std::shared_ptr<Type> valueType = nullptr;
     if (stmt.initializer) {
-        resolve(*stmt.initializer);
+        valueType = resolve(*stmt.initializer);
     }
+
+    if (stmt.type) {
+        auto annotatedType = resolveType(stmt.type);
+        if (valueType && !valueType->isEqual(*annotatedType)) {
+            throw std::runtime_error("Initializer type does not match annotated type.");
+        }
+        valueType = annotatedType;
+    }
+
+    if (!valueType) {
+        throw std::runtime_error("Variables must be initialized or have a type annotation.");
+    }
+
+    declare(stmt.name, valueType);
     define(stmt.name);
-    return nullptr;
 }
 
-std::any Resolver::visit(const FuncStmt& stmt) {
-    declare(stmt.name);
+void Resolver::visit(const FuncStmt& stmt) {
+    auto returnType = stmt.returnType ? resolveType(stmt.returnType) : std::make_shared<PrimitiveType>(PrimitiveType::Kind::Void);
+
+    std::vector<std::shared_ptr<Type>> paramTypes;
+    for (const auto& param : stmt.params) {
+        paramTypes.push_back(resolveType(param.type));
+    }
+
+    auto funcType = std::make_shared<FunctionType>(returnType, paramTypes);
+
+    declare(stmt.name, funcType);
     define(stmt.name);
+
+    auto oldFunction = currentFunction_;
+    currentFunction_ = funcType;
 
     beginScope();
-    for (const auto& param : stmt.params) {
-        declare(param.name);
-        define(param.name);
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        declare(stmt.params[i].name, paramTypes[i]);
+        define(stmt.params[i].name);
     }
     resolve(*stmt.body);
     endScope();
-    return nullptr;
+
+    currentFunction_ = oldFunction;
 }
 
-std::any Resolver::visit(const BlockStmt& stmt) {
+void Resolver::visit(const BlockStmt& stmt) {
     beginScope();
     for (const auto& statement : stmt.statements) {
         resolve(*statement);
     }
     endScope();
-    return nullptr;
 }
 
-std::any Resolver::visit(const ReturnStmt& stmt) {
-    if (stmt.value) {
-        resolve(*stmt.value);
+void Resolver::visit(const ReturnStmt& stmt) {
+    if (currentFunction_ == nullptr) {
+        throw std::runtime_error("Cannot return from top-level code.");
     }
-    return nullptr;
+
+    auto funcType = std::static_pointer_cast<FunctionType>(currentFunction_);
+    if (stmt.value) {
+        auto returnType = resolve(*stmt.value);
+        if (!returnType->isEqual(*funcType->returnType)) {
+            throw std::runtime_error("Return type does not match function's declared return type.");
+        }
+    } else {
+        if (funcType->returnType->getKind() != TypeKind::Primitive ||
+            std::static_pointer_cast<PrimitiveType>(funcType->returnType)->getPrimitiveKind() != PrimitiveType::Kind::Void) {
+            throw std::runtime_error("Must return a value from a non-void function.");
+        }
+    }
 }
 
 void Resolver::beginScope() {
@@ -81,7 +141,7 @@ void Resolver::endScope() {
     scopes_.pop_back();
 }
 
-void Resolver::declare(const Token& name) {
+void Resolver::declare(const Token& name, std::shared_ptr<Type> type) {
     if (scopes_.empty()) {
         return;
     }
@@ -90,20 +150,26 @@ void Resolver::declare(const Token& name) {
         throw std::runtime_error("Variable with this name already declared in this scope.");
     }
 
-    scopes_.back()[name.lexeme] = false;
+    scopes_.back()[name.lexeme] = type;
 }
 
 void Resolver::define(const Token& name) {
-    if (scopes_.empty()) {
-        return;
-    }
-    scopes_.back()[name.lexeme] = true;
+    // In our simplified model, declaration and definition are combined,
+    // so this function is less critical. We'll leave it for structure.
 }
 
 void Resolver::resolve(const Stmt& stmt) {
     stmt.accept(*this);
 }
 
-void Resolver::resolve(const Expr& expr) {
-    expr.accept(*this);
+std::shared_ptr<Type> Resolver::resolve(const Expr& expr) {
+    return expr.accept(*this);
+}
+
+std::shared_ptr<Type> resolveType(const std::unique_ptr<Type>& typeNode) {
+    if (auto primitiveType = dynamic_cast<PrimitiveType*>(typeNode.get())) {
+        return std::make_shared<PrimitiveType>(primitiveType->getPrimitiveKind());
+    }
+    // Handle other type kinds here...
+    return nullptr;
 }

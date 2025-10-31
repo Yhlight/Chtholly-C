@@ -11,19 +11,19 @@ public:
     std::string print(const std::vector<std::unique_ptr<Stmt>>& statements);
     std::string print(const Expr& expr);
 
-    std::any visit(const NumericLiteral& expr) override;
-    std::any visit(const UnaryExpr& expr) override;
-    std::any visit(const BinaryExpr& expr) override;
-    std::any visit(const GroupingExpr& expr) override;
-    std::any visit(const VariableExpr& expr) override;
-    std::any visit(const LetStmt& stmt) override;
-    std::any visit(const FuncStmt& stmt) override;
-    std::any visit(const BlockStmt& stmt) override;
-    std::any visit(const ReturnStmt& stmt) override;
+    std::shared_ptr<Type> visit(const NumericLiteral& expr) override;
+    std::shared_ptr<Type> visit(const StringLiteral& expr) override;
+    std::shared_ptr<Type> visit(const UnaryExpr& expr) override;
+    std::shared_ptr<Type> visit(const BinaryExpr& expr) override;
+    std::shared_ptr<Type> visit(const GroupingExpr& expr) override;
+    std::shared_ptr<Type> visit(const VariableExpr& expr) override;
+
+    void visit(const LetStmt& stmt) override;
+    void visit(const FuncStmt& stmt) override;
+    void visit(const BlockStmt& stmt) override;
+    void visit(const ReturnStmt& stmt) override;
 
 private:
-    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
-
     std::string result_;
 };
 

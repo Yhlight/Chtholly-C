@@ -22,3 +22,13 @@ TEST(ResolverTest, Scope) {
     Resolver resolver;
     EXPECT_NO_THROW(resolver.resolve(statements));
 }
+
+TEST(ResolverTest, TypeMismatch) {
+    std::string source = "func main() { let x = 10 + \"hello\"; }";
+    Lexer lexer(source);
+    Parser parser(lexer);
+    auto statements = parser.parse();
+
+    Resolver resolver;
+    EXPECT_THROW(resolver.resolve(statements), std::runtime_error);
+}

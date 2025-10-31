@@ -158,6 +158,8 @@ std::unique_ptr<Expr> Parser::parsePrecedence(int precedence) {
 std::unique_ptr<Expr> Parser::prefix() {
     if (match({TokenType::NUMBER_INT, TokenType::NUMBER_FLOAT})) {
         return std::make_unique<NumericLiteral>(tokens_[current_ - 1]);
+    } else if (match({TokenType::STRING})) {
+        return std::make_unique<StringLiteral>(tokens_[current_ - 1]);
     } else if (match({TokenType::MINUS, TokenType::BANG})) {
         Token op = tokens_[current_ - 1];
         std::unique_ptr<Expr> right = parsePrecedence(6); // Unary precedence

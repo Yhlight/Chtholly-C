@@ -13,16 +13,16 @@ class Stmt;
 // Visitor interface for statements
 class StmtVisitor {
 public:
-    virtual std::any visit(const class LetStmt& stmt) = 0;
-    virtual std::any visit(const class FuncStmt& stmt) = 0;
-    virtual std::any visit(const class BlockStmt& stmt) = 0;
-    virtual std::any visit(const class ReturnStmt& stmt) = 0;
+    virtual void visit(const class LetStmt& stmt) = 0;
+    virtual void visit(const class FuncStmt& stmt) = 0;
+    virtual void visit(const class BlockStmt& stmt) = 0;
+    virtual void visit(const class ReturnStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
 class Stmt {
 public:
-    virtual std::any accept(StmtVisitor& visitor) const = 0;
+    virtual void accept(StmtVisitor& visitor) const = 0;
     virtual ~Stmt() = default;
 };
 
@@ -32,8 +32,8 @@ public:
     LetStmt(Token name, std::unique_ptr<Type> type, std::unique_ptr<Expr> initializer)
         : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
 
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visit(*this);
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
     }
 
     const Token name;
@@ -46,8 +46,8 @@ public:
     BlockStmt(std::vector<std::unique_ptr<Stmt>> statements)
         : statements(std::move(statements)) {}
 
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visit(*this);
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
     }
 
     const std::vector<std::unique_ptr<Stmt>> statements;
@@ -63,8 +63,8 @@ public:
     FuncStmt(Token name, std::vector<Parameter> params, std::unique_ptr<Type> returnType, std::unique_ptr<BlockStmt> body)
         : name(std::move(name)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
 
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visit(*this);
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
     }
 
     const Token name;
@@ -78,8 +78,8 @@ public:
     ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
         : keyword(std::move(keyword)), value(std::move(value)) {}
 
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visit(*this);
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
     }
 
     const Token keyword;

@@ -1,14 +1,17 @@
 #include "Type.h"
 
-std::string PrimitiveType::toString() const {
-    switch (kind_) {
-        case Kind::Int: return "int";
-        case Kind::UInt: return "unsigned int";
-        case Kind::Char: return "char";
-        case Kind::Double: return "double";
-        case Kind::Bool: return "bool";
-        case Kind::String: return "std::string";
-        case Kind::Void: return "void";
+bool Type::isEqual(const Type& other) const {
+    return this->getKind() == other.getKind() && this->name == other.name;
+}
+
+PrimitiveType::PrimitiveType(Kind kind) : Type(""), kind_(kind) {
+    switch (kind) {
+        case Kind::Int: name = "int"; break;
+        case Kind::UInt: name = "unsigned int"; break;
+        case Kind::Char: name = "char"; break;
+        case Kind::Double: name = "double"; break;
+        case Kind::Bool: name = "bool"; break;
+        case Kind::String: name = "std::string"; break;
+        case Kind::Void: name = "void"; break;
     }
-    return "unknown";
 }

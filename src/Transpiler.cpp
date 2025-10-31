@@ -5,85 +5,94 @@
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     std::stringstream out;
     for (const auto& stmt : statements) {
-        out << std::any_cast<std::string>(stmt->accept(*this));
+        stmt->accept(*this);
+        out << result_;
+        result_.clear();
     }
     return out.str();
 }
 
-std::any Transpiler::visit(const NumericLiteral& expr) {
-    return expr.value.lexeme;
+std::shared_ptr<Type> Transpiler::visit(const NumericLiteral& expr) {
+    result_ += expr.value.lexeme;
+    return nullptr;
 }
 
-std::any Transpiler::visit(const UnaryExpr& expr) {
-    std::string op = expr.op.lexeme;
-    std::string right = std::any_cast<std::string>(expr.right->accept(*this));
-    return "(" + op + right + ")";
+std::shared_ptr<Type> Transpiler::visit(const StringLiteral& expr) {
+    result_ += expr.value.lexeme;
+    return nullptr;
 }
 
-std::any Transpiler::visit(const BinaryExpr& expr) {
-    std::string left = std::any_cast<std::string>(expr.left->accept(*this));
-    std::string op = expr.op.lexeme;
-    std::string right = std::any_cast<std::string>(expr.right->accept(*this));
-    return "(" + left + " " + op + " " + right + ")";
+std::shared_ptr<Type> Transpiler::visit(const UnaryExpr& expr) {
+    result_ += "(" + expr.op.lexeme;
+    expr.right->accept(*this);
+    result_ += ")";
+    return nullptr;
 }
 
-std::any Transpiler::visit(const GroupingExpr& expr) {
-    return std::any_cast<std::string>(expr.expression->accept(*this));
+std::shared_ptr<Type> Transpiler::visit(const BinaryExpr& expr) {
+    result_ += "(";
+    expr.left->accept(*this);
+    result_ += " " + expr.op.lexeme + " ";
+    expr.right->accept(*this);
+    result_ += ")";
+    return nullptr;
 }
 
-std::any Transpiler::visit(const VariableExpr& expr) {
-    return expr.name.lexeme;
+std::shared_ptr<Type> Transpiler::visit(const GroupingExpr& expr) {
+    expr.expression->accept(*this);
+    return nullptr;
 }
 
-std::any Transpiler::visit(const LetStmt& stmt) {
-    std::stringstream out;
+std::shared_ptr<Type> Transpiler::visit(const VariableExpr& expr) {
+    result_ += expr.name.lexeme;
+    return nullptr;
+}
+
+void Transpiler::visit(const LetStmt& stmt) {
     if (stmt.type) {
-        out << stmt.type->toString() << " " << stmt.name.lexeme;
+        result_ += stmt.type->toString() + " " + stmt.name.lexeme;
     } else {
-        out << "auto " << stmt.name.lexeme;
+        result_ += "auto " + stmt.name.lexeme;
     }
 
     if (stmt.initializer) {
-        out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
+        result_ += " = ";
+        stmt.initializer->accept(*this);
     }
-    out << ";\n";
-    return out.str();
+    result_ += ";\n";
 }
 
-std::any Transpiler::visit(const FuncStmt& stmt) {
-    std::stringstream out;
+void Transpiler::visit(const FuncStmt& stmt) {
     if (stmt.returnType) {
-        out << stmt.returnType->toString();
+        result_ += stmt.returnType->toString();
     } else {
-        out << "void";
+        result_ += "void";
     }
-    out << " " << stmt.name.lexeme << "(";
+    result_ += " " + stmt.name.lexeme + "(";
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << stmt.params[i].type->toString() << " " << stmt.params[i].name.lexeme;
+        result_ += stmt.params[i].type->toString() + " " + stmt.params[i].name.lexeme;
         if (i < stmt.params.size() - 1) {
-            out << ", ";
+            result_ += ", ";
         }
     }
-    out << ") " << std::any_cast<std::string>(stmt.body->accept(*this));
-    return out.str();
+    result_ += ") ";
+    stmt.body->accept(*this);
 }
 
-std::any Transpiler::visit(const BlockStmt& stmt) {
-    std::stringstream out;
-    out << "{\n";
+void Transpiler::visit(const BlockStmt& stmt) {
+    result_ += "{\n";
     for (const auto& statement : stmt.statements) {
-        out << "    " << std::any_cast<std::string>(statement->accept(*this));
+        result_ += "    ";
+        statement->accept(*this);
     }
-    out << "}\n";
-    return out.str();
+    result_ += "}\n";
 }
 
-std::any Transpiler::visit(const ReturnStmt& stmt) {
-    std::stringstream out;
-    out << "return";
+void Transpiler::visit(const ReturnStmt& stmt) {
+    result_ += "return";
     if (stmt.value) {
-        out << " " << std::any_cast<std::string>(stmt.value->accept(*this));
+        result_ += " ";
+        stmt.value->accept(*this);
     }
-    out << ";\n";
-    return out.str();
+    result_ += ";\n";
 }

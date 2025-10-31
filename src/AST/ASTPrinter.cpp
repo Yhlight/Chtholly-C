@@ -2,93 +2,101 @@
 #include <sstream>
 
 std::string ASTPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    std::stringstream out;
+    result_.clear();
     for (const auto& stmt : statements) {
-        out << std::any_cast<std::string>(stmt->accept(*this)) << std::endl;
+        stmt->accept(*this);
+        result_ += "\n";
     }
-    return out.str();
+    return result_;
 }
 
 std::string ASTPrinter::print(const Expr& expr) {
-    return std::any_cast<std::string>(expr.accept(*this));
+    result_.clear();
+    expr.accept(*this);
+    return result_;
 }
 
-std::any ASTPrinter::visit(const NumericLiteral& expr) {
-    return expr.value.lexeme;
+std::shared_ptr<Type> ASTPrinter::visit(const NumericLiteral& expr) {
+    result_ += expr.value.lexeme;
+    return nullptr; // ASTPrinter doesn't care about types
 }
 
-std::any ASTPrinter::visit(const UnaryExpr& expr) {
-    return parenthesize(expr.op.lexeme, {expr.right.get()});
+std::shared_ptr<Type> ASTPrinter::visit(const StringLiteral& expr) {
+    result_ += expr.value.lexeme;
+    return nullptr;
 }
 
-std::any ASTPrinter::visit(const BinaryExpr& expr) {
-    return parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
+std::shared_ptr<Type> ASTPrinter::visit(const UnaryExpr& expr) {
+    result_ += "(" + expr.op.lexeme + " ";
+    expr.right->accept(*this);
+    result_ += ")";
+    return nullptr;
 }
 
-std::any ASTPrinter::visit(const GroupingExpr& expr) {
-    return parenthesize("group", {expr.expression.get()});
+std::shared_ptr<Type> ASTPrinter::visit(const BinaryExpr& expr) {
+    result_ += "(" + expr.op.lexeme + " ";
+    expr.left->accept(*this);
+    result_ += " ";
+    expr.right->accept(*this);
+    result_ += ")";
+    return nullptr;
 }
 
-std::any ASTPrinter::visit(const LetStmt& stmt) {
-    std::stringstream out;
-    out << "(let " << stmt.name.lexeme;
+std::shared_ptr<Type> ASTPrinter::visit(const GroupingExpr& expr) {
+    result_ += "(group ";
+    expr.expression->accept(*this);
+    result_ += ")";
+    return nullptr;
+}
+
+std::shared_ptr<Type> ASTPrinter::visit(const VariableExpr& expr) {
+    result_ += expr.name.lexeme;
+    return nullptr;
+}
+
+void ASTPrinter::visit(const LetStmt& stmt) {
+    result_ += "(let " + stmt.name.lexeme;
     if (stmt.type) {
-        out << " : " << stmt.type->toString();
+        result_ += " : " + stmt.type->toString();
     }
     if (stmt.initializer) {
-        out << " = " << print(*stmt.initializer);
+        result_ += " = ";
+        stmt.initializer->accept(*this);
     }
-    out << ")";
-    return out.str();
+    result_ += ")";
 }
 
-std::any ASTPrinter::visit(const VariableExpr& expr) {
-    return expr.name.lexeme;
-}
-
-std::any ASTPrinter::visit(const FuncStmt& stmt) {
-    std::stringstream out;
-    out << "(func " << stmt.name.lexeme << "(";
+void ASTPrinter::visit(const FuncStmt& stmt) {
+    result_ += "(func " + stmt.name.lexeme + "(";
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << stmt.params[i].name.lexeme << " : " << stmt.params[i].type->toString();
+        result_ += stmt.params[i].name.lexeme + " : " + stmt.params[i].type->toString();
         if (i < stmt.params.size() - 1) {
-            out << ", ";
+            result_ += ", ";
         }
     }
-    out << ")";
+    result_ += ")";
     if (stmt.returnType) {
-        out << " -> " << stmt.returnType->toString();
+        result_ += " -> " + stmt.returnType->toString();
     }
-    out << " " << std::any_cast<std::string>(stmt.body->accept(*this)) << ")";
-    return out.str();
+    result_ += " ";
+    stmt.body->accept(*this);
+    result_ += ")";
 }
 
-std::any ASTPrinter::visit(const BlockStmt& stmt) {
-    std::stringstream out;
-    out << "{ ";
+void ASTPrinter::visit(const BlockStmt& stmt) {
+    result_ += "{ ";
     for (const auto& statement : stmt.statements) {
-        out << std::any_cast<std::string>(statement->accept(*this)) << " ";
+        statement->accept(*this);
+        result_ += " ";
     }
-    out << "}";
-    return out.str();
+    result_ += "}";
 }
 
-std::any ASTPrinter::visit(const ReturnStmt& stmt) {
-    std::stringstream out;
-    out << "(return";
+void ASTPrinter::visit(const ReturnStmt& stmt) {
+    result_ += "(return";
     if (stmt.value) {
-        out << " " << print(*stmt.value);
+        result_ += " ";
+        stmt.value->accept(*this);
     }
-    out << ")";
-    return out.str();
-}
-
-std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
-    std::stringstream out;
-    out << "(" << name;
-    for (const auto& expr : exprs) {
-        out << " " << std::any_cast<std::string>(expr->accept(*this));
-    }
-    out << ")";
-    return out.str();
+    result_ += ")";
 }
