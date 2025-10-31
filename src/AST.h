@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 
 // Base class for all nodes in the AST
 struct Node {
@@ -71,7 +72,10 @@ struct LetStatement : public Statement {
         if (type) {
             result += " : " + type->to_string();
         }
-        result += " = " + value->to_string() + ";";
+        if (value) {
+            result += " = " + value->to_string();
+        }
+        result += ";";
         return result;
     }
 };
@@ -87,7 +91,52 @@ struct MutStatement : public Statement {
         if (type) {
             result += " : " + type->to_string();
         }
-        result += " = " + value->to_string() + ";";
+        if (value) {
+            result += " = " + value->to_string();
+        }
+        result += ";";
+        return result;
+    }
+};
+
+// Represents a block of statements
+struct BlockStatement : public Statement {
+    std::vector<std::unique_ptr<Statement>> statements;
+
+    std::string to_string() const override {
+        std::string result = "{ ";
+        for (const auto& stmt : statements) {
+            if (stmt) {
+                result += stmt->to_string();
+            }
+        }
+        result += " }";
+        return result;
+    }
+};
+
+// Represents a function declaration
+struct FunctionStatement : public Statement {
+    std::unique_ptr<Identifier> name;
+    std::vector<std::pair<std::unique_ptr<Identifier>, std::unique_ptr<Type>>> parameters;
+    std::unique_ptr<Type> return_type;
+    std::unique_ptr<BlockStatement> body;
+
+    std::string to_string() const override {
+        std::string result = "func " + name->to_string() + "(";
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            result += parameters[i].first->to_string() + " : " + parameters[i].second->to_string();
+            if (i < parameters.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += ")";
+        if (return_type) {
+            result += " -> " + return_type->to_string();
+        }
+        if (body) {
+            result += " " + body->to_string();
+        }
         return result;
     }
 };

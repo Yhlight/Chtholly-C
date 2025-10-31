@@ -18,6 +18,8 @@ private:
     std::unique_ptr<MutStatement> parse_mut_statement();
     std::unique_ptr<Expression> parse_expression();
     std::unique_ptr<Expression> parse_integer_literal();
+    std::unique_ptr<FunctionStatement> parse_function_statement();
+    std::unique_ptr<BlockStatement> parse_block_statement();
 
     Lexer& lexer;
     Token current_token;

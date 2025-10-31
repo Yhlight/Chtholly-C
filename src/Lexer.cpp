@@ -55,7 +55,7 @@ Token Lexer::next_token() {
         case '*':
             return {TokenType::Asterisk, "*"};
         case '/':
-            if (peek() == '/') {
+            if (peek() == '/' || peek() == '*') {
                 skip_comment();
                 return next_token();
             }

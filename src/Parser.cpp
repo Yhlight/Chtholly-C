@@ -36,6 +36,9 @@ std::unique_ptr<Statement> Parser::parse_statement() {
     if (current_token.type == TokenType::Mut) {
         return parse_mut_statement();
     }
+    if (current_token.type == TokenType::Func) {
+        return parse_function_statement();
+    }
     return nullptr;
 }
 
@@ -43,6 +46,8 @@ std::unique_ptr<Expression> Parser::parse_expression() {
     if (current_token.type == TokenType::Integer) {
         return parse_integer_literal();
     }
+
+    error_messages.push_back("Unexpected token when parsing expression: " + current_token.literal);
     return nullptr;
 }
 
@@ -127,4 +132,85 @@ std::unique_ptr<MutStatement> Parser::parse_mut_statement() {
     }
 
     return stmt;
+}
+
+std::unique_ptr<FunctionStatement> Parser::parse_function_statement() {
+    auto stmt = std::make_unique<FunctionStatement>();
+
+    next_token(); // consume 'func'
+
+    if (current_token.type != TokenType::Identifier) {
+        error_messages.push_back("Expected function name");
+        return nullptr;
+    }
+
+    stmt->name = std::make_unique<Identifier>(current_token.literal);
+
+    next_token(); // consume function name
+
+    if (current_token.type != TokenType::LParen) {
+        error_messages.push_back("Expected '(' after function name");
+        return nullptr;
+    }
+
+    next_token(); // consume '('
+
+    // Parse parameters
+    while (current_token.type != TokenType::RParen) {
+        if (current_token.type != TokenType::Identifier) {
+            error_messages.push_back("Expected parameter name");
+            return nullptr;
+        }
+        auto param_name = std::make_unique<Identifier>(current_token.literal);
+        next_token(); // consume parameter name
+
+        if (current_token.type != TokenType::Colon) {
+            error_messages.push_back("Expected ':' after parameter name");
+            return nullptr;
+        }
+        next_token(); // consume ':'
+
+        auto param_type = std::make_unique<Type>(current_token.literal);
+        next_token(); // consume parameter type
+
+        stmt->parameters.emplace_back(std::move(param_name), std::move(param_type));
+
+        if (current_token.type == TokenType::Comma) {
+            next_token(); // consume ','
+        }
+    }
+
+    next_token(); // consume ')'
+
+    if (current_token.type == TokenType::Minus && peek_token.type == TokenType::GreaterThan) {
+        next_token(); // consume '-'
+        next_token(); // consume '>'
+        stmt->return_type = std::make_unique<Type>(current_token.literal);
+        next_token(); // consume return type
+    }
+
+    stmt->body = parse_block_statement();
+
+    return stmt;
+}
+
+std::unique_ptr<BlockStatement> Parser::parse_block_statement() {
+    auto block = std::make_unique<BlockStatement>();
+
+    if (current_token.type != TokenType::LBrace) {
+        error_messages.push_back("Expected '{' to start a block statement");
+        return nullptr;
+    }
+
+    next_token(); // consume '{'
+
+    while (current_token.type != TokenType::RBrace && current_token.type != TokenType::Eof) {
+        auto stmt = parse_statement();
+        if (stmt) {
+            block->statements.push_back(std::move(stmt));
+        }
+        next_token();
+    }
+
+    return block;
 }
