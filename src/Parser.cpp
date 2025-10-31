@@ -35,6 +35,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::Struct})) {
         return parseStructDecl();
     }
+    if (match({TokenType::Trait})) {
+        return parseTraitDecl();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -47,7 +50,7 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     return std::make_unique<ExprStmtAST>(std::move(expr));
 }
 
-std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl() {
+std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl(bool withBody) {
     Token name = consume(TokenType::Identifier, "Expect function name.");
     consume(TokenType::LeftParen, "Expect '(' after function name.");
 
@@ -67,8 +70,13 @@ std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl() {
         returnTypeName = consume(TokenType::Identifier, "Expect return type.").lexeme;
     }
 
-    consume(TokenType::LeftBrace, "Expect '{' before function body.");
-    auto body = parseBlock();
+    std::unique_ptr<BlockStmtAST> body = nullptr;
+    if (withBody) {
+        consume(TokenType::LeftBrace, "Expect '{' before function body.");
+        body = parseBlock();
+    } else {
+        consume(TokenType::Semicolon, "Expect ';' after function signature.");
+    }
 
     return std::make_unique<FuncDeclAST>(name.lexeme, std::move(params), returnTypeName, std::move(body));
 }
@@ -198,6 +206,20 @@ std::unique_ptr<StmtAST> Parser::parseStructDecl() {
 
     consume(TokenType::RightBrace, "Expect '}' after struct body.");
     return std::make_unique<StructDeclAST>(name.lexeme, std::move(members));
+}
+
+std::unique_ptr<StmtAST> Parser::parseTraitDecl() {
+    Token name = consume(TokenType::Identifier, "Expect trait name.");
+    consume(TokenType::LeftBrace, "Expect '{' before trait body.");
+
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+    while (peek().type != TokenType::RightBrace) {
+        consume(TokenType::Func, "Expect 'func' before method signature.");
+        methods.push_back(parseFuncDecl(false));
+    }
+
+    consume(TokenType::RightBrace, "Expect '}' after trait body.");
+    return std::make_unique<TraitDeclAST>(name.lexeme, std::move(methods));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {

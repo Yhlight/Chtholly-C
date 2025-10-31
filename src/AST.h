@@ -261,4 +261,15 @@ public:
     const std::string& getMemberName() const { return memberName; }
 };
 
+class TraitDeclAST : public StmtAST {
+    std::string name;
+    std::vector<std::unique_ptr<FuncDeclAST>> methods;
+public:
+    TraitDeclAST(std::string name, std::vector<std::unique_ptr<FuncDeclAST>> methods)
+        : name(std::move(name)), methods(std::move(methods)) {}
+
+    const std::string& getName() const { return name; }
+    const std::vector<std::unique_ptr<FuncDeclAST>>& getMethods() const { return methods; }
+};
+
 } // namespace chtholly

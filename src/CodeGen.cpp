@@ -19,6 +19,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*funcDecl);
     } else if (auto* structDecl = dynamic_cast<const StructDeclAST*>(&stmt)) {
         visit(*structDecl);
+    } else if (auto* traitDecl = dynamic_cast<const TraitDeclAST*>(&stmt)) {
+        visit(*traitDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
     } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
@@ -77,6 +79,24 @@ void CodeGen::visit(const StructDeclAST& stmt) {
             ss << "private: ";
         }
         ss << member.typeName << " " << member.name << ";\n";
+    }
+    ss << "};\n";
+}
+
+void CodeGen::visit(const TraitDeclAST& stmt) {
+    ss << "class " << stmt.getName() << " {\n";
+    ss << "public:\n";
+    ss << "    virtual ~" << stmt.getName() << "() = default;\n";
+    for (const auto& method : stmt.getMethods()) {
+        ss << "    virtual " << method->getReturnTypeName() << " " << method->getName() << "(";
+        const auto& params = method->getParams();
+        for (size_t i = 0; i < params.size(); ++i) {
+            ss << params[i].typeName << " " << params[i].name;
+            if (i < params.size() - 1) {
+                ss << ", ";
+            }
+        }
+        ss << ") = 0;\n";
     }
     ss << "};\n";
 }

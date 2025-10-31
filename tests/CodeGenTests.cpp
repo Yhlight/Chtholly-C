@@ -203,3 +203,16 @@ TEST(CodeGenTest, StructInstantiationAndMemberAccess) {
                          "const auto x = p.x;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, TraitDeclaration) {
+    std::string source = "trait MyTrait { func my_method(x: int) -> void; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    Sema sema;
+    auto ast = parser.parse();
+    sema.analyze(*ast);
+    CodeGen codeGen(sema);
+    std::string expected = "class MyTrait {\npublic:\n    virtual ~MyTrait() = default;\n    virtual void my_method(int x) = 0;\n};\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

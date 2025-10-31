@@ -20,6 +20,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*funcDecl);
     } else if (auto* structDecl = dynamic_cast<const StructDeclAST*>(&stmt)) {
         visit(*structDecl);
+    } else if (auto* traitDecl = dynamic_cast<const TraitDeclAST*>(&stmt)) {
+        visit(*traitDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
     } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
@@ -113,6 +115,52 @@ void Sema::visit(const StructDeclAST& stmt) {
     auto structType = std::make_shared<StructType>(stmt.getName(), memberTypes);
     if (!symbolTable.insert(stmt.getName(), structType, false)) {
         throw std::runtime_error("Struct already declared.");
+    }
+}
+
+void Sema::visit(const TraitDeclAST& stmt) {
+    std::vector<std::shared_ptr<FunctionType>> methodTypes;
+    for (const auto& method : stmt.getMethods()) {
+        std::vector<std::shared_ptr<Type>> paramTypes;
+        for (const auto& param : method->getParams()) {
+            if (param.typeName == "int") {
+                paramTypes.push_back(std::make_shared<IntType>());
+            } else if (param.typeName == "double") {
+                paramTypes.push_back(std::make_shared<DoubleType>());
+            } else if (param.typeName == "string") {
+                paramTypes.push_back(std::make_shared<StringType>());
+            } else {
+                auto symbol = symbolTable.lookup(param.typeName);
+                if (!symbol) {
+                    throw std::runtime_error("Unknown type: " + param.typeName);
+                }
+                paramTypes.push_back(symbol->type);
+            }
+        }
+
+        std::shared_ptr<Type> returnType;
+        if (method->getReturnTypeName() == "int") {
+            returnType = std::make_shared<IntType>();
+        } else if (method->getReturnTypeName() == "double") {
+            returnType = std::make_shared<DoubleType>();
+        } else if (method->getReturnTypeName() == "string") {
+            returnType = std::make_shared<StringType>();
+        } else if (method->getReturnTypeName() == "void") {
+            returnType = std::make_shared<VoidType>();
+        } else {
+            auto symbol = symbolTable.lookup(method->getReturnTypeName());
+            if (!symbol) {
+                throw std::runtime_error("Unknown type: " + method->getReturnTypeName());
+            }
+            returnType = symbol->type;
+        }
+
+        methodTypes.push_back(std::make_shared<FunctionType>(returnType, paramTypes));
+    }
+
+    auto traitType = std::make_shared<TraitType>(stmt.getName(), methodTypes);
+    if (!symbolTable.insert(stmt.getName(), traitType, false)) {
+        throw std::runtime_error("Trait already declared.");
     }
 }
 

@@ -55,7 +55,8 @@
   - [x] Implement `import` statement parsing.
   - [x] Implement `print` function.
 - [x] Implement struct declarations.
-  - [ ] Implement struct instantiation and member access.
+  - [x] Implement struct instantiation and member access.
+- [ ] Implement traits.
 - [ ] Implement the `filesystem` module.
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.

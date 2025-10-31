@@ -16,7 +16,8 @@ enum class TypeKind {
     Array,
     Struct,
     Function,
-    Enum
+    Enum,
+    Trait
 };
 
 class Type {
@@ -120,6 +121,18 @@ public:
     std::string toString() const override { return name; }
     const std::string& getName() const { return name; }
     const std::vector<MemberVarType>& getMembers() const { return members; }
+};
+
+class TraitType : public Type {
+    std::string name;
+    std::vector<std::shared_ptr<FunctionType>> methods;
+public:
+    TraitType(std::string name, std::vector<std::shared_ptr<FunctionType>> methods)
+        : name(std::move(name)), methods(std::move(methods)) {}
+    TypeKind getKind() const override { return TypeKind::Trait; }
+    std::string toString() const override { return name; }
+    const std::string& getName() const { return name; }
+    const std::vector<std::shared_ptr<FunctionType>>& getMethods() const { return methods; }
 };
 
 } // namespace chtholly

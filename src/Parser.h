@@ -15,7 +15,7 @@ public:
 private:
     std::unique_ptr<StmtAST> parseStatement();
     std::unique_ptr<StmtAST> parseVarDecl();
-    std::unique_ptr<FuncDeclAST> parseFuncDecl();
+    std::unique_ptr<FuncDeclAST> parseFuncDecl(bool withBody = true);
     std::unique_ptr<StmtAST> parseIfStmt();
     std::unique_ptr<StmtAST> parseSwitchStmt();
     std::unique_ptr<StmtAST> parseEnumDecl();
@@ -23,6 +23,7 @@ private:
     std::unique_ptr<StmtAST> parseForStmt();
     std::unique_ptr<StmtAST> parseImportStmt();
     std::unique_ptr<StmtAST> parseStructDecl();
+    std::unique_ptr<StmtAST> parseTraitDecl();
     std::unique_ptr<BlockStmtAST> parseBlock();
     std::unique_ptr<ExprAST> parseExpression();
     std::unique_ptr<ExprAST> parseAssignment();
