@@ -14,8 +14,10 @@ public:
 
 private:
     std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> functionDeclaration();
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::vector<std::unique_ptr<Stmt>> block();
 
@@ -27,6 +29,7 @@ private:
     std::unique_ptr<Expr> term();
     std::unique_ptr<Expr> factor();
     std::unique_ptr<Expr> unary();
+    std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
 
     bool match(const std::vector<TokenType>& types);

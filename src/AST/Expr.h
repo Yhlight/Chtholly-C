@@ -8,6 +8,7 @@
 // Forward declarations
 class Assign;
 class Binary;
+class Call;
 class Grouping;
 class Literal;
 class Unary;
@@ -18,6 +19,7 @@ public:
     virtual ~ExprVisitor() = default;
     virtual void visitAssignExpr(const Assign& expr) = 0;
     virtual void visitBinaryExpr(const Binary& expr) = 0;
+    virtual void visitCallExpr(const Call& expr) = 0;
     virtual void visitGroupingExpr(const Grouping& expr) = 0;
     virtual void visitLiteralExpr(const Literal& expr) = 0;
     virtual void visitUnaryExpr(const Unary& expr) = 0;
@@ -55,6 +57,20 @@ public:
     const std::unique_ptr<Expr> left;
     const Token op;
     const std::unique_ptr<Expr> right;
+};
+
+class Call : public Expr {
+public:
+    Call(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)) {}
+
+    void accept(ExprVisitor& visitor) const override {
+        visitor.visitCallExpr(*this);
+    }
+
+    const std::unique_ptr<Expr> callee;
+    const Token paren; // The closing parenthesis, for error reporting.
+    const std::vector<std::unique_ptr<Expr>> arguments;
 };
 
 class Grouping : public Expr {

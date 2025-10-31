@@ -3,6 +3,7 @@ add_executable(chtholly_tests
     ParserTests.cpp
     ResolverTests.cpp
     TranspilerTests.cpp
+    FunctionTests.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib gtest_main)

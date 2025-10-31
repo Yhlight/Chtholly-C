@@ -12,6 +12,7 @@ public:
 
     void visitAssignExpr(const Assign& expr) override;
     void visitBinaryExpr(const Binary& expr) override;
+    void visitCallExpr(const Call& expr) override;
     void visitGroupingExpr(const Grouping& expr) override;
     void visitLiteralExpr(const Literal& expr) override;
     void visitUnaryExpr(const Unary& expr) override;
@@ -19,8 +20,10 @@ public:
 
     void visitBlockStmt(const Block& stmt) override;
     void visitExpressionStmt(const ExpressionStmt& stmt) override;
+    void visitFuncStmt(const FuncStmt& stmt) override;
     void visitLetStmt(const LetStmt& stmt) override;
     void visitPrintStmt(const PrintStmt& stmt) override;
+    void visitReturnStmt(const ReturnStmt& stmt) override;
 
 private:
     void parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);

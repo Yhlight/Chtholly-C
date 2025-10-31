@@ -16,6 +16,16 @@ void ASTPrinter::visitBinaryExpr(const Binary& expr) {
     parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
 }
 
+void ASTPrinter::visitCallExpr(const Call& expr) {
+    result_ += "(call ";
+    expr.callee->accept(*this);
+    for (const auto& arg : expr.arguments) {
+        result_ += " ";
+        arg->accept(*this);
+    }
+    result_ += ")";
+}
+
 void ASTPrinter::visitGroupingExpr(const Grouping& expr) {
     parenthesize("group", {expr.expression.get()});
 }
@@ -44,6 +54,19 @@ void ASTPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
     parenthesize(";", {stmt.expression.get()});
 }
 
+void ASTPrinter::visitFuncStmt(const FuncStmt& stmt) {
+    result_ += "(func " + stmt.name.lexeme + "(";
+    for (const auto& param : stmt.params) {
+        result_ += param.second->toString() + " " + param.first.lexeme + ", ";
+    }
+    result_ += ") ";
+    if (stmt.returnType) {
+        result_ += "-> " + stmt.returnType->toString() + " ";
+    }
+    stmt.body->accept(*this);
+    result_ += ")";
+}
+
 void ASTPrinter::visitLetStmt(const LetStmt& stmt) {
     if (stmt.isMutable) {
         result_ += "(mut " + stmt.name.lexeme;
@@ -62,6 +85,14 @@ void ASTPrinter::visitLetStmt(const LetStmt& stmt) {
 
 void ASTPrinter::visitPrintStmt(const PrintStmt& stmt) {
     parenthesize("print", {stmt.expression.get()});
+}
+
+void ASTPrinter::visitReturnStmt(const ReturnStmt& stmt) {
+    if (stmt.value) {
+        parenthesize("return", {stmt.value.get()});
+    } else {
+        result_ += "(return)";
+    }
 }
 
 void ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {

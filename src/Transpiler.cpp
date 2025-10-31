@@ -4,14 +4,11 @@
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     out_ << "#include <iostream>\n";
     out_ << "#include <string>\n\n";
-    out_ << "int main() {\n";
 
     for (const auto& statement : statements) {
         statement->accept(*this);
     }
 
-    out_ << "    return 0;\n";
-    out_ << "}\n";
     return out_.str();
 }
 
@@ -25,6 +22,18 @@ void Transpiler::visitBinaryExpr(const Binary& expr) {
     expr.left->accept(*this);
     out_ << " " << expr.op.lexeme << " ";
     expr.right->accept(*this);
+    out_ << ")";
+}
+
+void Transpiler::visitCallExpr(const Call& expr) {
+    expr.callee->accept(*this);
+    out_ << "(";
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        expr.arguments[i]->accept(*this);
+        if (i < expr.arguments.size() - 1) {
+            out_ << ", ";
+        }
+    }
     out_ << ")";
 }
 
@@ -48,17 +57,34 @@ void Transpiler::visitVariableExpr(const Variable& expr) {
 }
 
 void Transpiler::visitBlockStmt(const Block& stmt) {
-    out_ << "    {\n";
+    out_ << "{\n";
     for (const auto& statement : stmt.statements) {
         statement->accept(*this);
     }
-    out_ << "    }\n";
+    out_ << "}\n";
 }
 
 void Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
     out_ << "    ";
     stmt.expression->accept(*this);
     out_ << ";\n";
+}
+
+void Transpiler::visitFuncStmt(const FuncStmt& stmt) {
+    if (stmt.returnType) {
+        out_ << stmt.returnType->toString();
+    } else {
+        out_ << "void";
+    }
+    out_ << " " << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out_ << stmt.params[i].second->toString() << " " << stmt.params[i].first.lexeme;
+        if (i < stmt.params.size() - 1) {
+            out_ << ", ";
+        }
+    }
+    out_ << ") ";
+    stmt.body->accept(*this);
 }
 
 void Transpiler::visitLetStmt(const LetStmt& stmt) {
@@ -85,4 +111,13 @@ void Transpiler::visitPrintStmt(const PrintStmt& stmt) {
     out_ << "    std::cout << ";
     stmt.expression->accept(*this);
     out_ << " << std::endl;\n";
+}
+
+void Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
+    out_ << "    return";
+    if (stmt.value) {
+        out_ << " ";
+        stmt.value->accept(*this);
+    }
+    out_ << ";\n";
 }

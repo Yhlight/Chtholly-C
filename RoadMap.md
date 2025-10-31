@@ -10,8 +10,8 @@
 - [x] C++ Transpiler
 - [x] Basic type system (int, double, bool, string)
 - [x] Variables (let, mut)
-- [ ] Comments (single-line, multi-line)
-- [ ] Functions (including main entry point)
+- [x] Comments (single-line, multi-line)
+- [x] Functions (including main entry point)
 - [ ] Basic operators (+, -, *, /)
 - [ ] Control flow (if, else)
 - [ ] Basic error handling

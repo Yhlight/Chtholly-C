@@ -28,10 +28,7 @@ TEST(TranspilerTest, SimpleLetStatement) {
 
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
-                                  "int main() {\n"
-                                  "    const auto a = 10;\n"
-                                  "    return 0;\n"
-                                  "}\n";
+                                  "    const auto a = 10;\n";
 
     std::string output = exec("./build/chtholly test.cns");
     EXPECT_EQ(output, expected_output);
@@ -45,10 +42,7 @@ TEST(TranspilerTest, SimpleLetStatementWithType) {
 
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
-                                  "int main() {\n"
-                                  "    const int a = 10;\n"
-                                  "    return 0;\n"
-                                  "}\n";
+                                  "    const int a = 10;\n";
 
     std::string output = exec("./build/chtholly test.cns");
     EXPECT_EQ(output, expected_output);
@@ -62,9 +56,22 @@ TEST(TranspilerTest, SimpleMutStatement) {
 
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
-                                  "int main() {\n"
-                                  "    auto a = 10;\n"
-                                  "    return 0;\n"
+                                  "    auto a = 10;\n";
+
+    std::string output = exec("./build/chtholly test.cns");
+    EXPECT_EQ(output, expected_output);
+}
+
+TEST(TranspilerTest, Function) {
+    std::string source = "func add(a: int, b: int) -> int { return a + b; }";
+    std::ofstream out("test.cns");
+    out << source;
+    out.close();
+
+    std::string expected_output = "#include <iostream>\n"
+                                  "#include <string>\n\n"
+                                  "int add(int a, int b) {\n"
+                                  "    return (a + b);\n"
                                   "}\n";
 
     std::string output = exec("./build/chtholly test.cns");

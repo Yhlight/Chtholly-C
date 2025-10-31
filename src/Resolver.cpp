@@ -22,12 +22,28 @@ void Resolver::resolve(Expr* expr) {
 
 void Resolver::visitBlockStmt(const Block& stmt) {
     symbolTable_.beginScope();
-    resolve(stmt.statements);
+    for (const auto& statement : stmt.statements) {
+        resolve(statement.get());
+    }
     symbolTable_.endScope();
 }
 
 void Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     resolve(stmt.expression.get());
+}
+
+void Resolver::visitFuncStmt(const FuncStmt& stmt) {
+    symbolTable_.declare(stmt.name.lexeme, false, nullptr);
+    symbolTable_.define(stmt.name.lexeme);
+
+    symbolTable_.beginScope();
+    for (const auto& param : stmt.params) {
+        symbolTable_.declare(param.first.lexeme, false,
+                              param.second ? std::make_unique<PrimitiveType>(param.second->toString()) : nullptr);
+        symbolTable_.define(param.first.lexeme);
+    }
+    resolve(stmt.body.get());
+    symbolTable_.endScope();
 }
 
 void Resolver::visitLetStmt(const LetStmt& stmt) {
@@ -45,6 +61,12 @@ void Resolver::visitPrintStmt(const PrintStmt& stmt) {
     resolve(stmt.expression.get());
 }
 
+void Resolver::visitReturnStmt(const ReturnStmt& stmt) {
+    if (stmt.value) {
+        resolve(stmt.value.get());
+    }
+}
+
 void Resolver::visitAssignExpr(const Assign& expr) {
     resolve(expr.value.get());
     if (!symbolTable_.isMutable(expr.name.lexeme)) {
@@ -55,6 +77,14 @@ void Resolver::visitAssignExpr(const Assign& expr) {
 void Resolver::visitBinaryExpr(const Binary& expr) {
     resolve(expr.left.get());
     resolve(expr.right.get());
+}
+
+void Resolver::visitCallExpr(const Call& expr) {
+    resolve(expr.callee.get());
+
+    for (const auto& argument : expr.arguments) {
+        resolve(argument.get());
+    }
 }
 
 void Resolver::visitGroupingExpr(const Grouping& expr) {
