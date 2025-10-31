@@ -20,6 +20,7 @@ private:
     void visit(const CaseBlockAST& stmt);
     void visit(const EnumDeclAST& stmt);
     void visit(const WhileStmtAST& stmt);
+    void visit(const ForStmtAST& stmt);
     std::shared_ptr<Type> visit(const ExprAST& expr);
     std::shared_ptr<Type> visit(const NumberExprAST& expr);
     std::shared_ptr<Type> visit(const StringExprAST& expr);
@@ -27,6 +28,7 @@ private:
     std::shared_ptr<Type> visit(const BinaryExprAST& expr);
     std::shared_ptr<Type> visit(const CallExprAST& expr);
     std::shared_ptr<Type> visit(const BoolExprAST& expr);
+    std::shared_ptr<Type> visit(const AssignExprAST& expr);
 
     SymbolTable symbolTable;
 };

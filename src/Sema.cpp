@@ -28,6 +28,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*enumDecl);
     } else if (auto* whileStmt = dynamic_cast<const WhileStmtAST*>(&stmt)) {
         visit(*whileStmt);
+    } else if (auto* forStmt = dynamic_cast<const ForStmtAST*>(&stmt)) {
+        visit(*forStmt);
     }
 }
 
@@ -142,6 +144,29 @@ void Sema::visit(const WhileStmtAST& stmt) {
     symbolTable.exitScope();
 }
 
+void Sema::visit(const ForStmtAST& stmt) {
+    symbolTable.enterScope();
+
+    if (stmt.getInit()) {
+        visit(*stmt.getInit());
+    }
+
+    if (stmt.getCond()) {
+        auto condType = visit(*stmt.getCond());
+        if (condType->getKind() != TypeKind::Bool) {
+            throw std::runtime_error("For loop condition must be a boolean expression.");
+        }
+    }
+
+    if (stmt.getInc()) {
+        visit(*stmt.getInc());
+    }
+
+    analyze(stmt.getBody());
+
+    symbolTable.exitScope();
+}
+
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     // This is a simple dispatcher.
     if (auto* numExpr = dynamic_cast<const NumberExprAST*>(&expr)) {
@@ -162,7 +187,32 @@ std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {
     if (auto* boolExpr = dynamic_cast<const BoolExprAST*>(&expr)) {
         return visit(*boolExpr);
     }
+    if (auto* assignExpr = dynamic_cast<const AssignExprAST*>(&expr)) {
+        return visit(*assignExpr);
+    }
     return nullptr;
+}
+
+std::shared_ptr<Type> Sema::visit(const AssignExprAST& expr) {
+    auto targetType = visit(expr.getTarget());
+    auto valueType = visit(expr.getValue());
+
+    if (auto* varExpr = dynamic_cast<const VariableExprAST*>(&expr.getTarget())) {
+        auto symbol = symbolTable.lookup(varExpr->getName());
+        if (!symbol) {
+            throw std::runtime_error("Variable not declared.");
+        }
+        if (!symbol->isMutable) {
+            throw std::runtime_error("Cannot assign to an immutable variable.");
+        }
+    } else {
+        throw std::runtime_error("Invalid assignment target.");
+    }
+
+    if (targetType->getKind() != valueType->getKind()) {
+        throw std::runtime_error("Type mismatch in assignment.");
+    }
+    return valueType;
 }
 
 std::shared_ptr<Type> Sema::visit(const NumberExprAST& expr) {

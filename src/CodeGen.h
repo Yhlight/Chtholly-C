@@ -20,6 +20,7 @@ private:
     void visit(const CaseBlockAST& stmt);
     void visit(const EnumDeclAST& stmt);
     void visit(const WhileStmtAST& stmt);
+    void visit(const ForStmtAST& stmt);
     void visit(const BlockStmtAST& stmt);
     void visit(const ExprAST& expr);
     void visit(const NumberExprAST& expr);
@@ -28,8 +29,10 @@ private:
     void visit(const BinaryExprAST& expr);
     void visit(const CallExprAST& expr);
     void visit(const BoolExprAST& expr);
+    void visit(const AssignExprAST& expr);
 
     std::stringstream ss;
+    bool inForInit = false;
 };
 
 } // namespace chtholly

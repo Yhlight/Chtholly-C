@@ -114,3 +114,14 @@ TEST(CodeGenTest, WhileStatement) {
     std::string expected = "while (true) {\nconst auto a = 1;\n}\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, ForStatement) {
+    std::string source = "for (let i = 0; i < 10; i = i + 1) { let a = 1; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "for (const auto i = 0;(i < 10);i = (i + 1)) {\nconst auto a = 1;\n}\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

@@ -68,6 +68,17 @@ public:
     bool getVal() const { return val; }
 };
 
+class AssignExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> target;
+    std::unique_ptr<ExprAST> value;
+public:
+    AssignExprAST(std::unique_ptr<ExprAST> target, std::unique_ptr<ExprAST> value)
+        : target(std::move(target)), value(std::move(value)) {}
+
+    const ExprAST& getTarget() const { return *target; }
+    const ExprAST& getValue() const { return *value; }
+};
+
 class StmtAST : public ExprAST {
     friend class Sema;
     friend class CodeGen;
@@ -174,6 +185,21 @@ public:
         : cond(std::move(cond)), body(std::move(body)) {}
 
     const ExprAST& getCond() const { return *cond; }
+    const BlockStmtAST& getBody() const { return *body; }
+};
+
+class ForStmtAST : public StmtAST {
+    std::unique_ptr<StmtAST> init; // Can be nullptr or VarDecl
+    std::unique_ptr<ExprAST> cond; // Can be nullptr
+    std::unique_ptr<ExprAST> inc;  // Can be nullptr
+    std::unique_ptr<BlockStmtAST> body;
+public:
+    ForStmtAST(std::unique_ptr<StmtAST> init, std::unique_ptr<ExprAST> cond, std::unique_ptr<ExprAST> inc, std::unique_ptr<BlockStmtAST> body)
+        : init(std::move(init)), cond(std::move(cond)), inc(std::move(inc)), body(std::move(body)) {}
+
+    const StmtAST* getInit() const { return init.get(); }
+    const ExprAST* getCond() const { return cond.get(); }
+    const ExprAST* getInc() const { return inc.get(); }
     const BlockStmtAST& getBody() const { return *body; }
 };
 

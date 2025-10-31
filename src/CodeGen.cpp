@@ -27,6 +27,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*enumDecl);
     } else if (auto* whileStmt = dynamic_cast<const WhileStmtAST*>(&stmt)) {
         visit(*whileStmt);
+    } else if (auto* forStmt = dynamic_cast<const ForStmtAST*>(&stmt)) {
+        visit(*forStmt);
     } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
         visit(*block);
     }
@@ -40,7 +42,11 @@ void CodeGen::visit(const VarDeclAST& stmt) {
     }
     ss << stmt.getName() << " = ";
     visit(*stmt.getInit());
-    ss << ";\n";
+    if (inForInit) {
+        ss << ";";
+    } else {
+        ss << ";\n";
+    }
 }
 
 void CodeGen::visit(const FuncDeclAST& stmt) {
@@ -51,6 +57,26 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
         if (i < params.size() - 1) {
             ss << ", ";
         }
+    }
+    ss << ") ";
+    visit(stmt.getBody());
+}
+
+void CodeGen::visit(const ForStmtAST& stmt) {
+    ss << "for (";
+    if (stmt.getInit()) {
+        inForInit = true;
+        visit(*stmt.getInit());
+        inForInit = false;
+    }
+
+    if (stmt.getCond()) {
+        visit(*stmt.getCond());
+    }
+    ss << ";";
+
+    if (stmt.getInc()) {
+        visit(*stmt.getInc());
     }
     ss << ") ";
     visit(stmt.getBody());
@@ -128,6 +154,8 @@ void CodeGen::visit(const ExprAST& expr) {
         visit(*callExpr);
     } else if (auto* boolExpr = dynamic_cast<const BoolExprAST*>(&expr)) {
         visit(*boolExpr);
+    } else if (auto* assignExpr = dynamic_cast<const AssignExprAST*>(&expr)) {
+        visit(*assignExpr);
     }
 }
 
@@ -153,6 +181,10 @@ static std::string toCppOp(TokenType op) {
         case TokenType::Minus: return "-";
         case TokenType::Star: return "*";
         case TokenType::Slash: return "/";
+        case TokenType::Less: return "<";
+        case TokenType::LessEqual: return "<=";
+        case TokenType::Greater: return ">";
+        case TokenType::GreaterEqual: return ">=";
         default: return "";
     }
 }
@@ -180,6 +212,12 @@ void CodeGen::visit(const CallExprAST& expr) {
 
 void CodeGen::visit(const BoolExprAST& expr) {
     ss << (expr.getVal() ? "true" : "false");
+}
+
+void CodeGen::visit(const AssignExprAST& expr) {
+    visit(expr.getTarget());
+    ss << " = ";
+    visit(expr.getValue());
 }
 
 } // namespace chtholly

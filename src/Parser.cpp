@@ -26,6 +26,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::While})) {
         return parseWhileStmt();
     }
+    if (match({TokenType::For})) {
+        return parseForStmt();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -132,6 +135,32 @@ std::unique_ptr<StmtAST> Parser::parseWhileStmt() {
     return std::make_unique<WhileStmtAST>(std::move(condition), std::move(body));
 }
 
+std::unique_ptr<StmtAST> Parser::parseForStmt() {
+    consume(TokenType::LeftParen, "Expect '(' after 'for'.");
+
+    std::unique_ptr<StmtAST> init = nullptr;
+    if (peek().type != TokenType::Semicolon) {
+        init = parseStatement();
+    }
+
+    std::unique_ptr<ExprAST> cond = nullptr;
+    if (peek().type != TokenType::Semicolon) {
+        cond = parseExpression();
+    }
+    consume(TokenType::Semicolon, "Expect ';' after loop condition.");
+
+    std::unique_ptr<ExprAST> inc = nullptr;
+    if (peek().type != TokenType::RightParen) {
+        inc = parseExpression();
+    }
+    consume(TokenType::RightParen, "Expect ')' after for clauses.");
+
+    consume(TokenType::LeftBrace, "Expect '{' before for body.");
+    auto body = parseBlock();
+
+    return std::make_unique<ForStmtAST>(std::move(init), std::move(cond), std::move(inc), std::move(body));
+}
+
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {
     std::vector<std::unique_ptr<StmtAST>> statements;
     while (peek().type != TokenType::RightBrace && !isAtEnd()) {
@@ -159,8 +188,24 @@ std::unique_ptr<ExprAST> Parser::parseExpression() {
 }
 
 std::unique_ptr<ExprAST> Parser::parseAssignment() {
+    auto expr = parseComparison();
+    if (match({TokenType::Equal})) {
+        auto value = parseAssignment();
+        if (auto* varExpr = dynamic_cast<VariableExprAST*>(expr.get())) {
+            return std::make_unique<AssignExprAST>(std::move(expr), std::move(value));
+        }
+        // Error: Invalid assignment target
+    }
+    return expr;
+}
+
+std::unique_ptr<ExprAST> Parser::parseComparison() {
     auto expr = parseTerm();
-    // Assignment logic will be here
+    while (match({TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual})) {
+        Token op = tokens[current - 1];
+        auto right = parseTerm();
+        expr = std::make_unique<BinaryExprAST>(op.type, std::move(expr), std::move(right));
+    }
     return expr;
 }
 
