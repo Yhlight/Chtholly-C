@@ -16,6 +16,8 @@ private:
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> varDeclaration();
+    std::unique_ptr<Stmt> ifStatement();
+    std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> term();
@@ -30,6 +32,8 @@ private:
     const Token& advance();
     const Token& previous() const;
     const Token& consume(TokenType type, const std::string& message);
+    ParseError error(const Token& token, const std::string& message) const;
+    void synchronize();
 
     const std::vector<Token>& tokens;
     size_t current = 0;

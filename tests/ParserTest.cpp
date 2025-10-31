@@ -65,3 +65,52 @@ TEST(ParserTest, ParsesVarDeclaration) {
     ASSERT_NE(varDeclStmt, nullptr);
     EXPECT_EQ(varDeclStmt->name.lexeme, "a");
 }
+
+TEST(ParserTest, ParsesGrouping) {
+    // (1 + 2) * 3;
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::PLUS, "+", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "2", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::STAR, "*", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "3", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(; (* (group (+ 1 2)) 3))");
+}
+
+TEST(ParserTest, ParsesIfStatement) {
+    // if (true) { 1; } else { 2; }
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::IF, "if", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::TRUE, "true", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::ELSE, "else", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "2", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(if true (block (; 1)) (block (; 2)))");
+}

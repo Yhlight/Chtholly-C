@@ -7,7 +7,11 @@ Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!isAtEnd()) {
-        statements.push_back(declaration());
+        try {
+            statements.push_back(declaration());
+        } catch (const ParseError& error) {
+            synchronize();
+        }
     }
     return statements;
 }
@@ -20,7 +24,34 @@ std::unique_ptr<Stmt> Parser::declaration() {
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
+    if (match({TokenType::IF})) return ifStatement();
+    if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
     return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::ifStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+    std::unique_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+
+    std::unique_ptr<Stmt> thenBranch = statement();
+    std::unique_ptr<Stmt> elseBranch = nullptr;
+    if (match({TokenType::ELSE})) {
+        elseBranch = statement();
+    }
+
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::vector<std::unique_ptr<Stmt>> Parser::block() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
@@ -77,12 +108,24 @@ std::unique_ptr<Expr> Parser::unary() {
 }
 
 std::unique_ptr<Expr> Parser::primary() {
+    if (match({TokenType::FALSE, TokenType::TRUE})) {
+        return std::make_unique<LiteralExpr>(previous());
+    }
     if (match({TokenType::NUMBER, TokenType::STRING})) {
         return std::make_unique<LiteralExpr>(previous());
     }
 
-    // Proper error handling will be added later.
-    return nullptr;
+    if (match({TokenType::IDENTIFIER})) {
+        return std::make_unique<VariableExpr>(previous());
+    }
+
+    if (match({TokenType::LEFT_PAREN})) {
+        std::unique_ptr<Expr> expr = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
+        return std::make_unique<GroupingExpr>(std::move(expr));
+    }
+
+    throw error(peek(), "Expect expression.");
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {
@@ -105,8 +148,7 @@ const Token& Parser::peek() const {
 }
 
 bool Parser::isAtEnd() const {
-    // We check against the token before the last one, because the last one is always EOF.
-    return current >= tokens.size() - 1;
+    return peek().type == TokenType::END_OF_FILE;
 }
 
 const Token& Parser::advance() {
@@ -120,7 +162,34 @@ const Token& Parser::previous() const {
 
 const Token& Parser::consume(TokenType type, const std::string& message) {
     if (check(type)) return advance();
-    throw std::runtime_error(message);
+    throw error(peek(), message);
+}
+
+ParseError Parser::error(const Token& token, const std::string& message) const {
+    // In a real compiler, we would report the error to the user here.
+    // For now, we'll just throw an exception.
+    return ParseError("Error at token " + token.lexeme + ": " + message);
+}
+
+void Parser::synchronize() {
+    advance();
+
+    while (!isAtEnd()) {
+        if (previous().type == TokenType::SEMICOLON) return;
+
+        switch (peek().type) {
+            case TokenType::FUNC:
+            case TokenType::LET:
+            case TokenType::MUT:
+            case TokenType::FOR:
+            case TokenType::IF:
+            case TokenType::SWITCH:
+            case TokenType::RETURN:
+                return;
+        }
+
+        advance();
+    }
 }
 
 } // namespace chtholly
