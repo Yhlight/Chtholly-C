@@ -25,6 +25,7 @@
 - [x] Implement enums.
 - [x] Implement traits and constraints.
 - [ ] Implement the standard library modules (`iostream`, `filesystem`, etc.).
+  - [x] `iostream`
 
 ## Phase 5: Self-Hosting
 

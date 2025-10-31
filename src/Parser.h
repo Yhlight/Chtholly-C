@@ -42,6 +42,7 @@ private:
     std::unique_ptr<EnumStatement> parseEnumStatement();
     std::unique_ptr<TraitStatement> parseTraitStatement();
     std::unique_ptr<ImplStatement> parseImplStatement();
+    std::unique_ptr<ImportStatement> parseImportStatement();
     std::vector<std::unique_ptr<Constraint>> parseConstraints();
 
     std::unique_ptr<Expression> parseExpression(Precedence precedence);

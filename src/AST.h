@@ -252,6 +252,7 @@ public:
     std::unique_ptr<Identifier> name;
     std::vector<std::unique_ptr<Identifier>> templateParams;
     std::vector<std::unique_ptr<Member>> members;
+    std::vector<std::unique_ptr<Type>> bases;
 };
 
 class GenericInstantiation : public Expression {
@@ -334,6 +335,16 @@ public:
     std::unique_ptr<Identifier> traitName;
     std::vector<std::unique_ptr<Identifier>> templateParams;
     std::vector<std::unique_ptr<Method>> methods;
+};
+
+class ImportStatement : public Statement {
+public:
+    ImportStatement(Token token) : token(std::move(token)) {}
+
+    std::string tokenLiteral() const override { return token.literal; }
+
+    Token token; // The 'import' token
+    std::unique_ptr<Expression> path;
 };
 
 } // namespace Chtholly

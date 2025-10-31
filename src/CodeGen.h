@@ -37,6 +37,7 @@ private:
     void visit(TraitStatement* node);
     void visit(ImplStatement* node);
     void visit(Constraint* node);
+    void visit(ImportStatement* node);
 
     std::stringstream m_out;
     Program* m_program = nullptr;

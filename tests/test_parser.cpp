@@ -214,6 +214,23 @@ TEST(Parser, TestGenericFunctionWithConstraints) {
     ASSERT_EQ(constraint->trait->value, "MyTrait");
 }
 
+TEST(Parser, TestImportStatement) {
+    std::string input = "import iostream;";
+
+    Chtholly::Lexer l(input);
+    Chtholly::Parser p(l);
+    auto program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1);
+    auto stmt = dynamic_cast<Chtholly::ImportStatement*>(program->statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+
+    auto path = dynamic_cast<Chtholly::Identifier*>(stmt->path.get());
+    ASSERT_NE(path, nullptr);
+    ASSERT_EQ(path->value, "iostream");
+}
+
 // Helper function to stringify the AST for easy comparison
 std::string astToString(Chtholly::Node* node) {
     if (!node) {

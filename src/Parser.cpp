@@ -92,6 +92,8 @@ std::unique_ptr<Statement> Parser::parseStatement() {
         return parseTraitStatement();
     case TokenType::Impl:
         return parseImplStatement();
+    case TokenType::Import:
+        return parseImportStatement();
     default:
         return parseExpressionStatement();
     }
@@ -690,6 +692,20 @@ std::vector<std::unique_ptr<Constraint>> Parser::parseConstraints() {
     }
 
     return constraints;
+}
+
+std::unique_ptr<ImportStatement> Parser::parseImportStatement() {
+    auto stmt = std::make_unique<ImportStatement>(m_curToken);
+
+    nextToken();
+
+    stmt->path = parseExpression(LOWEST);
+
+    if (m_peekToken.type == TokenType::Semicolon) {
+        nextToken();
+    }
+
+    return stmt;
 }
 
 } // namespace Chtholly
