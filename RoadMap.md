@@ -5,7 +5,7 @@ This document outlines the development roadmap for the Chtholly compiler.
 ## Phase 1: Core Compiler Infrastructure
 
 - [x] **Lexer:** Implement a lexical analyzer to convert Chtholly source code into a stream of tokens.
-- [ ] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream.
+- [ ] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream. (Currently supports basic expressions and variable declarations)
 - [ ] **Code Generator:** Implement a code generator to traverse the AST and produce C++ code.
 - [x] **Build System:** Set up a CMake build system with a Python build script.
 
