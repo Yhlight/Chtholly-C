@@ -16,6 +16,8 @@ void Sema::visit(const StmtAST& stmt) {
     // In a real compiler, you would use a more sophisticated visitor pattern.
     if (auto* varDecl = dynamic_cast<const VarDeclAST*>(&stmt)) {
         visit(*varDecl);
+    } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
+        visit(*funcDecl);
     }
 }
 
@@ -24,6 +26,50 @@ void Sema::visit(const VarDeclAST& stmt) {
     if (!symbolTable.insert(stmt.getName(), initType, stmt.getIsMutable())) {
         throw std::runtime_error("Variable already declared.");
     }
+}
+
+void Sema::visit(const FuncDeclAST& stmt) {
+    std::vector<std::shared_ptr<Type>> paramTypes;
+    for (const auto& param : stmt.getParams()) {
+        // For now, we will just create a placeholder type.
+        // In a real compiler, you would resolve the type name to a Type object.
+        if (param.typeName == "int") {
+            paramTypes.push_back(std::make_shared<IntType>());
+        } else if (param.typeName == "double") {
+            paramTypes.push_back(std::make_shared<DoubleType>());
+        } else if (param.typeName == "string") {
+            paramTypes.push_back(std::make_shared<StringType>());
+        } else {
+            throw std::runtime_error("Unknown type: " + param.typeName);
+        }
+    }
+
+    std::shared_ptr<Type> returnType;
+    if (stmt.getReturnTypeName() == "int") {
+        returnType = std::make_shared<IntType>();
+    } else if (stmt.getReturnTypeName() == "double") {
+        returnType = std::make_shared<DoubleType>();
+    } else if (stmt.getReturnTypeName() == "string") {
+        returnType = std::make_shared<StringType>();
+    } else if (stmt.getReturnTypeName() == "void") {
+        returnType = std::make_shared<VoidType>();
+    } else {
+        throw std::runtime_error("Unknown type: " + stmt.getReturnTypeName());
+    }
+
+    auto funcType = std::make_shared<FunctionType>(returnType, paramTypes);
+    if (!symbolTable.insert(stmt.getName(), funcType, false)) {
+        throw std::runtime_error("Function already declared.");
+    }
+
+    symbolTable.enterScope();
+    for (size_t i = 0; i < stmt.getParams().size(); ++i) {
+        if (!symbolTable.insert(stmt.getParams()[i].name, paramTypes[i], false)) {
+            throw std::runtime_error("Parameter already declared.");
+        }
+    }
+    analyze(stmt.getBody());
+    symbolTable.exitScope();
 }
 
 std::shared_ptr<Type> Sema::visit(const ExprAST& expr) {

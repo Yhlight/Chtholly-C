@@ -80,4 +80,26 @@ public:
     }
 };
 
+struct Param {
+    std::string name;
+    // TODO: Add full type information
+    std::string typeName; // Placeholder for now
+};
+
+class FuncDeclAST : public StmtAST {
+    std::string name;
+    std::vector<Param> params;
+    // TODO: Add return type information
+    std::string returnTypeName; // Placeholder for now
+    std::unique_ptr<BlockStmtAST> body;
+public:
+    FuncDeclAST(std::string name, std::vector<Param> params, std::string returnTypeName, std::unique_ptr<BlockStmtAST> body)
+        : name(std::move(name)), params(std::move(params)), returnTypeName(std::move(returnTypeName)), body(std::move(body)) {}
+
+    const std::string& getName() const { return name; }
+    const std::vector<Param>& getParams() const { return params; }
+    const std::string& getReturnTypeName() const { return returnTypeName; }
+    const BlockStmtAST& getBody() const { return *body; }
+};
+
 } // namespace chtholly

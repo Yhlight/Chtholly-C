@@ -14,11 +14,49 @@ std::unique_ptr<BlockStmtAST> Parser::parse() {
 }
 
 std::unique_ptr<StmtAST> Parser::parseStatement() {
+    if (match({TokenType::Func})) {
+        return parseFuncDecl();
+    }
     if (match({TokenType::Let, TokenType::Mut})) {
         return parseVarDecl();
     }
     // Other statements will be handled here
     return nullptr;
+}
+
+std::unique_ptr<FuncDeclAST> Parser::parseFuncDecl() {
+    Token name = consume(TokenType::Identifier, "Expect function name.");
+    consume(TokenType::LeftParen, "Expect '(' after function name.");
+
+    std::vector<Param> params;
+    if (peek().type != TokenType::RightParen) {
+        do {
+            Token paramName = consume(TokenType::Identifier, "Expect parameter name.");
+            consume(TokenType::Colon, "Expect ':' after parameter name.");
+            Token paramType = consume(TokenType::Identifier, "Expect parameter type.");
+            params.push_back({paramName.lexeme, paramType.lexeme});
+        } while (match({TokenType::Comma}));
+    }
+    consume(TokenType::RightParen, "Expect ')' after parameters.");
+
+    std::string returnTypeName = "void"; // Default return type
+    if (match({TokenType::Arrow})) {
+        returnTypeName = consume(TokenType::Identifier, "Expect return type.").lexeme;
+    }
+
+    consume(TokenType::LeftBrace, "Expect '{' before function body.");
+    auto body = parseBlock();
+
+    return std::make_unique<FuncDeclAST>(name.lexeme, std::move(params), returnTypeName, std::move(body));
+}
+
+std::unique_ptr<BlockStmtAST> Parser::parseBlock() {
+    std::vector<std::unique_ptr<StmtAST>> statements;
+    while (peek().type != TokenType::RightBrace && !isAtEnd()) {
+        statements.push_back(parseStatement());
+    }
+    consume(TokenType::RightBrace, "Expect '}' after block.");
+    return std::make_unique<BlockStmtAST>(std::move(statements));
 }
 
 std::unique_ptr<StmtAST> Parser::parseVarDecl() {

@@ -19,20 +19,23 @@
 - [x] Implement the Parser to build an AST from the token stream.
 - [x] Define the AST node structures in `AST.h`.
 - [x] Write tests for the Parser to ensure it correctly parses variable declarations and simple expressions.
-- [ ] Extend the parser to support function declarations, calls, and control flow.
+- [x] Extend the parser to support function declarations.
+- [ ] Extend the parser to support function calls and control flow.
 
 ## Phase 4: Semantic Analysis
 
 - [x] Implement the Semantic Analyzer to perform type checking and ownership analysis.
 - [x] Implement the Symbol Table to keep track of variables and their types.
 - [x] Write tests for the Semantic Analyzer to ensure it correctly identifies semantic errors for variable declarations.
-- [ ] Extend the semantic analyzer to support functions and control flow.
+- [x] Extend the semantic analyzer to support function declarations.
+- [ ] Extend the semantic analyzer to support function calls and control flow.
 
 ## Phase 5: C++ Transpilation
 
 - [x] Implement the C++ transpiler to convert the AST to C++ code.
 - [x] Write tests for the transpiler to ensure it correctly generates C++ code for variable declarations and simple expressions.
-- [ ] Extend the code generator to support functions and control flow.
+- [x] Extend the code generator to support function declarations.
+- [ ] Extend the code generator to support function calls and control flow.
 
 ## Phase 6: Standard Library
 

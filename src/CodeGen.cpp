@@ -15,6 +15,10 @@ std::string CodeGen::generate(const BlockStmtAST& ast) {
 void CodeGen::visit(const StmtAST& stmt) {
     if (auto* varDecl = dynamic_cast<const VarDeclAST*>(&stmt)) {
         visit(*varDecl);
+    } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
+        visit(*funcDecl);
+    } else if (auto* block = dynamic_cast<const BlockStmtAST*>(&stmt)) {
+        visit(*block);
     }
 }
 
@@ -27,6 +31,27 @@ void CodeGen::visit(const VarDeclAST& stmt) {
     ss << stmt.getName() << " = ";
     visit(*stmt.getInit());
     ss << ";\n";
+}
+
+void CodeGen::visit(const FuncDeclAST& stmt) {
+    ss << stmt.getReturnTypeName() << " " << stmt.getName() << "(";
+    const auto& params = stmt.getParams();
+    for (size_t i = 0; i < params.size(); ++i) {
+        ss << params[i].typeName << " " << params[i].name;
+        if (i < params.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << ") ";
+    visit(stmt.getBody());
+}
+
+void CodeGen::visit(const BlockStmtAST& stmt) {
+    ss << "{\n";
+    for (const auto& s : stmt.getStatements()) {
+        visit(*s);
+    }
+    ss << "}\n";
 }
 
 void CodeGen::visit(const ExprAST& expr) {

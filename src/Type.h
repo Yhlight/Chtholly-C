@@ -14,7 +14,8 @@ enum class TypeKind {
     String,
     Void,
     Array,
-    Struct
+    Struct,
+    Function
 };
 
 class Type {
@@ -66,6 +67,28 @@ public:
     ArrayType(std::shared_ptr<Type> elementType) : elementType(elementType) {}
     TypeKind getKind() const override { return TypeKind::Array; }
     std::string toString() const override { return "array[" + elementType->toString() + "]"; }
+};
+
+class FunctionType : public Type {
+    std::shared_ptr<Type> returnType;
+    std::vector<std::shared_ptr<Type>> paramTypes;
+public:
+    FunctionType(std::shared_ptr<Type> returnType, std::vector<std::shared_ptr<Type>> paramTypes)
+        : returnType(returnType), paramTypes(paramTypes) {}
+    TypeKind getKind() const override { return TypeKind::Function; }
+    std::string toString() const override {
+        std::string str = "func(";
+        for (size_t i = 0; i < paramTypes.size(); ++i) {
+            str += paramTypes[i]->toString();
+            if (i < paramTypes.size() - 1) {
+                str += ", ";
+            }
+        }
+        str += ") -> " + returnType->toString();
+        return str;
+    }
+    const std::shared_ptr<Type>& getReturnType() const { return returnType; }
+    const std::vector<std::shared_ptr<Type>>& getParamTypes() const { return paramTypes; }
 };
 
 } // namespace chtholly
