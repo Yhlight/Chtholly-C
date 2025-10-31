@@ -10,6 +10,7 @@ class ASTPrinter : public ExprVisitor, public StmtVisitor {
 public:
     std::string print(const std::vector<std::unique_ptr<Stmt>>& statements);
 
+    void visitAssignExpr(const Assign& expr) override;
     void visitBinaryExpr(const Binary& expr) override;
     void visitGroupingExpr(const Grouping& expr) override;
     void visitLiteralExpr(const Literal& expr) override;

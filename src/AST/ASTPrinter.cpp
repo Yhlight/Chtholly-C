@@ -8,6 +8,10 @@ std::string ASTPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statemen
     return result_;
 }
 
+void ASTPrinter::visitAssignExpr(const Assign& expr) {
+    parenthesize("= " + expr.name.lexeme, {expr.value.get()});
+}
+
 void ASTPrinter::visitBinaryExpr(const Binary& expr) {
     parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
 }
@@ -41,7 +45,14 @@ void ASTPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
 }
 
 void ASTPrinter::visitLetStmt(const LetStmt& stmt) {
-    result_ += "(let " + stmt.name.lexeme;
+    if (stmt.isMutable) {
+        result_ += "(mut " + stmt.name.lexeme;
+    } else {
+        result_ += "(let " + stmt.name.lexeme;
+    }
+    if (stmt.type) {
+        result_ += ": " + stmt.type->toString();
+    }
     if (stmt.initializer) {
         result_ += " = ";
         stmt.initializer->accept(*this);

@@ -6,6 +6,7 @@
 #include "../Token.h"
 
 // Forward declarations
+class Assign;
 class Binary;
 class Grouping;
 class Literal;
@@ -15,6 +16,7 @@ class Variable;
 class ExprVisitor {
 public:
     virtual ~ExprVisitor() = default;
+    virtual void visitAssignExpr(const Assign& expr) = 0;
     virtual void visitBinaryExpr(const Binary& expr) = 0;
     virtual void visitGroupingExpr(const Grouping& expr) = 0;
     virtual void visitLiteralExpr(const Literal& expr) = 0;
@@ -26,6 +28,19 @@ class Expr {
 public:
     virtual ~Expr() = default;
     virtual void accept(ExprVisitor& visitor) const = 0;
+};
+
+class Assign : public Expr {
+public:
+    Assign(Token name, std::unique_ptr<Expr> value)
+        : name(name), value(std::move(value)) {}
+
+    void accept(ExprVisitor& visitor) const override {
+        visitor.visitAssignExpr(*this);
+    }
+
+    const Token name;
+    const std::unique_ptr<Expr> value;
 };
 
 class Binary : public Expr {

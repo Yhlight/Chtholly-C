@@ -36,3 +36,37 @@ TEST(TranspilerTest, SimpleLetStatement) {
     std::string output = exec("./build/chtholly test.cns");
     EXPECT_EQ(output, expected_output);
 }
+
+TEST(TranspilerTest, SimpleLetStatementWithType) {
+    std::string source = "let a: int = 10;";
+    std::ofstream out("test.cns");
+    out << source;
+    out.close();
+
+    std::string expected_output = "#include <iostream>\n"
+                                  "#include <string>\n\n"
+                                  "int main() {\n"
+                                  "    const int a = 10;\n"
+                                  "    return 0;\n"
+                                  "}\n";
+
+    std::string output = exec("./build/chtholly test.cns");
+    EXPECT_EQ(output, expected_output);
+}
+
+TEST(TranspilerTest, SimpleMutStatement) {
+    std::string source = "mut a = 10;";
+    std::ofstream out("test.cns");
+    out << source;
+    out.close();
+
+    std::string expected_output = "#include <iostream>\n"
+                                  "#include <string>\n\n"
+                                  "int main() {\n"
+                                  "    auto a = 10;\n"
+                                  "    return 0;\n"
+                                  "}\n";
+
+    std::string output = exec("./build/chtholly test.cns");
+    EXPECT_EQ(output, expected_output);
+}

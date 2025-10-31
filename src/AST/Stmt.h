@@ -5,6 +5,7 @@
 #include <vector>
 #include "../Token.h"
 #include "Expr.h"
+#include "../Type.h"
 
 // Forward declarations
 class Block;
@@ -53,15 +54,17 @@ public:
 
 class LetStmt : public Stmt {
 public:
-    LetStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(name), initializer(std::move(initializer)) {}
+    LetStmt(Token name, std::unique_ptr<Type> type, std::unique_ptr<Expr> initializer, bool isMutable)
+        : name(name), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visitLetStmt(*this);
     }
 
     const Token name;
+    const std::unique_ptr<Type> type;
     const std::unique_ptr<Expr> initializer;
+    const bool isMutable;
 };
 
 // A temporary statement for printing expressions, for testing purposes.

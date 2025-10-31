@@ -1,4 +1,5 @@
 #include "Transpiler.h"
+#include "Type.h"
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     out_ << "#include <iostream>\n";
@@ -12,6 +13,11 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     out_ << "    return 0;\n";
     out_ << "}\n";
     return out_.str();
+}
+
+void Transpiler::visitAssignExpr(const Assign& expr) {
+    out_ << expr.name.lexeme << " = ";
+    expr.value->accept(*this);
 }
 
 void Transpiler::visitBinaryExpr(const Binary& expr) {
@@ -56,7 +62,18 @@ void Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
 }
 
 void Transpiler::visitLetStmt(const LetStmt& stmt) {
-    out_ << "    const auto " << stmt.name.lexeme;
+    if (stmt.isMutable) {
+        out_ << "    ";
+    } else {
+        out_ << "    const ";
+    }
+
+    if (stmt.type) {
+        out_ << stmt.type->toString() << " " << stmt.name.lexeme;
+    } else {
+        out_ << "auto " << stmt.name.lexeme;
+    }
+
     if (stmt.initializer) {
         out_ << " = ";
         stmt.initializer->accept(*this);

@@ -19,7 +19,9 @@ private:
     std::unique_ptr<Stmt> expressionStatement();
     std::vector<std::unique_ptr<Stmt>> block();
 
+    std::unique_ptr<class Type> type();
     std::unique_ptr<Expr> expression();
+    std::unique_ptr<Expr> assignment();
     std::unique_ptr<Expr> equality();
     std::unique_ptr<Expr> comparison();
     std::unique_ptr<Expr> term();

@@ -8,8 +8,8 @@
 - [x] Abstract Syntax Tree (AST)
 - [x] Semantic Analysis (Resolver)
 - [x] C++ Transpiler
-- [ ] Basic type system (int, double, bool, string)
-- [ ] Variables (let, mut)
+- [x] Basic type system (int, double, bool, string)
+- [x] Variables (let, mut)
 - [ ] Comments (single-line, multi-line)
 - [ ] Functions (including main entry point)
 - [ ] Basic operators (+, -, *, /)

@@ -1,5 +1,6 @@
 #include "Resolver.h"
 #include <stdexcept>
+#include "Type.h"
 
 Resolver::Resolver() = default;
 
@@ -10,7 +11,9 @@ void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
 }
 
 void Resolver::resolve(Stmt* stmt) {
-    stmt->accept(*this);
+    if (stmt) {
+        stmt->accept(*this);
+    }
 }
 
 void Resolver::resolve(Expr* expr) {
@@ -31,7 +34,7 @@ void Resolver::visitLetStmt(const LetStmt& stmt) {
     if (symbolTable_.isDeclaredInCurrentScope(stmt.name.lexeme)) {
         throw std::runtime_error("Variable with this name already declared in this scope.");
     }
-    symbolTable_.declare(stmt.name.lexeme);
+    symbolTable_.declare(stmt.name.lexeme, stmt.isMutable, stmt.type ? std::make_unique<PrimitiveType>(stmt.type->toString()) : nullptr);
     if (stmt.initializer) {
         resolve(stmt.initializer.get());
     }
@@ -40,6 +43,13 @@ void Resolver::visitLetStmt(const LetStmt& stmt) {
 
 void Resolver::visitPrintStmt(const PrintStmt& stmt) {
     resolve(stmt.expression.get());
+}
+
+void Resolver::visitAssignExpr(const Assign& expr) {
+    resolve(expr.value.get());
+    if (!symbolTable_.isMutable(expr.name.lexeme)) {
+        throw std::runtime_error("Cannot assign to immutable variable '" + expr.name.lexeme + "'.");
+    }
 }
 
 void Resolver::visitBinaryExpr(const Binary& expr) {
