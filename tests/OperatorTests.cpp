@@ -1,30 +1,16 @@
 #include <gtest/gtest.h>
-#include <string>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-#include <memory>
-#include <stdexcept>
-#include <array>
 #include "Lexer.h"
 #include "Parser.h"
+#include "AST/ASTPrinter.h"
 #include "Transpiler.h"
+#include <string>
+#include <fstream>
+#include <stdexcept>
+#include <array>
+#include <memory>
 
-static std::string exec(const char* cmd) {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
-    }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
-    return result;
-}
-
-TEST(TranspilerTest, SimpleLetStatement) {
-    std::string source = "let a = 10;";
+TEST(OperatorTest, Addition) {
+    std::string source = "1 + 2;";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -35,14 +21,14 @@ TEST(TranspilerTest, SimpleLetStatement) {
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
                                   "int main(int argc, char* argv[]) {\n"
-                                  "    const auto a = 10;\n"
+                                  "    (1 + 2);\n"
                                   "    return 0;\n"
                                   "}\n";
     EXPECT_EQ(code, expected_output);
 }
 
-TEST(TranspilerTest, SimpleLetStatementWithType) {
-    std::string source = "let a: int = 10;";
+TEST(OperatorTest, Subtraction) {
+    std::string source = "3 - 1;";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -53,14 +39,14 @@ TEST(TranspilerTest, SimpleLetStatementWithType) {
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
                                   "int main(int argc, char* argv[]) {\n"
-                                  "    const int a = 10;\n"
+                                  "    (3 - 1);\n"
                                   "    return 0;\n"
                                   "}\n";
     EXPECT_EQ(code, expected_output);
 }
 
-TEST(TranspilerTest, SimpleMutStatement) {
-    std::string source = "mut a = 10;";
+TEST(OperatorTest, Multiplication) {
+    std::string source = "2 * 3;";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -71,14 +57,14 @@ TEST(TranspilerTest, SimpleMutStatement) {
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
                                   "int main(int argc, char* argv[]) {\n"
-                                  "    auto a = 10;\n"
+                                  "    (2 * 3);\n"
                                   "    return 0;\n"
                                   "}\n";
     EXPECT_EQ(code, expected_output);
 }
 
-TEST(TranspilerTest, Function) {
-    std::string source = "func add(a: int, b: int) -> int { return a + b; }";
+TEST(OperatorTest, Division) {
+    std::string source = "4 / 2;";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -88,8 +74,22 @@ TEST(TranspilerTest, Function) {
 
     std::string expected_output = "#include <iostream>\n"
                                   "#include <string>\n\n"
-                                  "int add(int a, int b) {\n"
-                                  "    return (a + b);\n"
+                                  "int main(int argc, char* argv[]) {\n"
+                                  "    (4 / 2);\n"
+                                  "    return 0;\n"
                                   "}\n";
     EXPECT_EQ(code, expected_output);
+}
+
+TEST(OperatorTest, Precedence) {
+    std::string source = "1 + 2 * 3;";
+    Lexer lexer(source);
+    auto tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+
+    ASTPrinter printer;
+    std::string result = printer.print(stmts);
+
+    EXPECT_EQ(result, "(; (+ 1 (* 2 3)))");
 }

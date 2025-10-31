@@ -5,8 +5,25 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     out_ << "#include <iostream>\n";
     out_ << "#include <string>\n\n";
 
+    bool in_main = false;
     for (const auto& statement : statements) {
-        statement->accept(*this);
+        if (dynamic_cast<FuncStmt*>(statement.get())) {
+            if (in_main) {
+                out_ << "    return 0;\n}\n";
+                in_main = false;
+            }
+            statement->accept(*this);
+        } else {
+            if (!in_main) {
+                out_ << "int main(int argc, char* argv[]) {\n";
+                in_main = true;
+            }
+            statement->accept(*this);
+        }
+    }
+
+    if (in_main) {
+        out_ << "    return 0;\n}\n";
     }
 
     return out_.str();

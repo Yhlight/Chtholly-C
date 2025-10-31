@@ -12,7 +12,7 @@
 - [x] Variables (let, mut)
 - [x] Comments (single-line, multi-line)
 - [x] Functions (including main entry point)
-- [ ] Basic operators (+, -, *, /)
+- [x] Basic operators (+, -, *, /)
 - [ ] Control flow (if, else)
 - [ ] Basic error handling
 
