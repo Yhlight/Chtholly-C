@@ -51,9 +51,10 @@
 
 ## Phase 6: Standard Library
 
-- [ ] Implement the `iostream` module.
+- [x] Implement the `iostream` module.
   - [x] Implement `import` statement parsing.
   - [x] Implement `print` function.
+- [ ] Implement struct declarations.
 - [ ] Implement the `filesystem` module.
 - [ ] Implement the `operator` module.
 - [ ] Implement the `reflect` module.

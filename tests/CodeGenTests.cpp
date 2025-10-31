@@ -147,3 +147,14 @@ TEST(CodeGenTest, PrintStatement) {
     std::string expected = "#include <iostream>\n#include <string>\nstd::cout << \"Hello, World!\" << std::endl;\n";
     EXPECT_EQ(codeGen.generate(*ast), expected);
 }
+
+TEST(CodeGenTest, StructDeclaration) {
+    std::string source = "struct Point { public x: int, private y: int }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto ast = parser.parse();
+    CodeGen codeGen;
+    std::string expected = "struct Point {\npublic: int x;\nprivate: int y;\n};\n";
+    EXPECT_EQ(codeGen.generate(*ast), expected);
+}

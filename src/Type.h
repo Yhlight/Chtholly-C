@@ -104,4 +104,22 @@ public:
     const std::vector<std::string>& getMembers() const { return members; }
 };
 
+struct MemberVarType {
+    std::string name;
+    std::shared_ptr<Type> type;
+    bool isPublic;
+};
+
+class StructType : public Type {
+    std::string name;
+    std::vector<MemberVarType> members;
+public:
+    StructType(std::string name, std::vector<MemberVarType> members)
+        : name(std::move(name)), members(std::move(members)) {}
+    TypeKind getKind() const override { return TypeKind::Struct; }
+    std::string toString() const override { return name; }
+    const std::string& getName() const { return name; }
+    const std::vector<MemberVarType>& getMembers() const { return members; }
+};
+
 } // namespace chtholly

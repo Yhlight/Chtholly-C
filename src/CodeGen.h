@@ -15,6 +15,7 @@ private:
     void visit(const StmtAST& stmt);
     void visit(const VarDeclAST& stmt);
     void visit(const FuncDeclAST& stmt);
+    void visit(const StructDeclAST& stmt);
     void visit(const IfStmtAST& stmt);
     void visit(const SwitchStmtAST& stmt);
     void visit(const CaseBlockAST& stmt);

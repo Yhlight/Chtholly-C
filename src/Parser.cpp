@@ -32,6 +32,9 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (match({TokenType::Import})) {
         return parseImportStmt();
     }
+    if (match({TokenType::Struct})) {
+        return parseStructDecl();
+    }
     if (match({TokenType::Func})) {
         return parseFuncDecl();
     }
@@ -170,6 +173,31 @@ std::unique_ptr<StmtAST> Parser::parseImportStmt() {
     Token moduleName = consume(TokenType::Identifier, "Expect module name.");
     consume(TokenType::Semicolon, "Expect ';' after module name.");
     return std::make_unique<ImportStmtAST>(moduleName.lexeme);
+}
+
+std::unique_ptr<StmtAST> Parser::parseStructDecl() {
+    Token name = consume(TokenType::Identifier, "Expect struct name.");
+    consume(TokenType::LeftBrace, "Expect '{' before struct body.");
+
+    std::vector<MemberVar> members;
+    while (peek().type != TokenType::RightBrace) {
+        bool isPublic = true;
+        if (peek().type == TokenType::Public || peek().type == TokenType::Private) {
+            isPublic = advance().type == TokenType::Public;
+        }
+
+        Token memberName = consume(TokenType::Identifier, "Expect member name.");
+        consume(TokenType::Colon, "Expect ':' after member name.");
+        Token typeName = consume(TokenType::Identifier, "Expect member type.");
+        members.push_back({memberName.lexeme, typeName.lexeme, isPublic});
+
+        if (!match({TokenType::Comma})) {
+            break;
+        }
+    }
+
+    consume(TokenType::RightBrace, "Expect '}' after struct body.");
+    return std::make_unique<StructDeclAST>(name.lexeme, std::move(members));
 }
 
 std::unique_ptr<BlockStmtAST> Parser::parseBlock() {

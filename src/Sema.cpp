@@ -18,6 +18,8 @@ void Sema::visit(const StmtAST& stmt) {
         visit(*varDecl);
     } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
         visit(*funcDecl);
+    } else if (auto* structDecl = dynamic_cast<const StructDeclAST*>(&stmt)) {
+        visit(*structDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
     } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
@@ -86,6 +88,32 @@ void Sema::visit(const FuncDeclAST& stmt) {
     }
     analyze(stmt.getBody());
     symbolTable.exitScope();
+}
+
+void Sema::visit(const StructDeclAST& stmt) {
+    std::vector<MemberVarType> memberTypes;
+    for (const auto& member : stmt.getMembers()) {
+        std::shared_ptr<Type> memberType;
+        if (member.typeName == "int") {
+            memberType = std::make_shared<IntType>();
+        } else if (member.typeName == "double") {
+            memberType = std::make_shared<DoubleType>();
+        } else if (member.typeName == "string") {
+            memberType = std::make_shared<StringType>();
+        } else {
+            auto symbol = symbolTable.lookup(member.typeName);
+            if (!symbol) {
+                throw std::runtime_error("Unknown type: " + member.typeName);
+            }
+            memberType = symbol->type;
+        }
+        memberTypes.push_back({member.name, memberType, member.isPublic});
+    }
+
+    auto structType = std::make_shared<StructType>(stmt.getName(), memberTypes);
+    if (!symbolTable.insert(stmt.getName(), structType, false)) {
+        throw std::runtime_error("Struct already declared.");
+    }
 }
 
 void Sema::visit(const IfStmtAST& stmt) {

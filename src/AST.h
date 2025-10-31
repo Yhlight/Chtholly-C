@@ -217,4 +217,21 @@ public:
     const ExprAST& getExpr() const { return *expr; }
 };
 
+struct MemberVar {
+    std::string name;
+    std::string typeName;
+    bool isPublic;
+};
+
+class StructDeclAST : public StmtAST {
+    std::string name;
+    std::vector<MemberVar> members;
+public:
+    StructDeclAST(std::string name, std::vector<MemberVar> members)
+        : name(std::move(name)), members(std::move(members)) {}
+
+    const std::string& getName() const { return name; }
+    const std::vector<MemberVar>& getMembers() const { return members; }
+};
+
 } // namespace chtholly

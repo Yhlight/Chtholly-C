@@ -17,6 +17,8 @@ void CodeGen::visit(const StmtAST& stmt) {
         visit(*varDecl);
     } else if (auto* funcDecl = dynamic_cast<const FuncDeclAST*>(&stmt)) {
         visit(*funcDecl);
+    } else if (auto* structDecl = dynamic_cast<const StructDeclAST*>(&stmt)) {
+        visit(*structDecl);
     } else if (auto* ifStmt = dynamic_cast<const IfStmtAST*>(&stmt)) {
         visit(*ifStmt);
     } else if (auto* switchStmt = dynamic_cast<const SwitchStmtAST*>(&stmt)) {
@@ -64,6 +66,19 @@ void CodeGen::visit(const FuncDeclAST& stmt) {
     }
     ss << ") ";
     visit(stmt.getBody());
+}
+
+void CodeGen::visit(const StructDeclAST& stmt) {
+    ss << "struct " << stmt.getName() << " {\n";
+    for (const auto& member : stmt.getMembers()) {
+        if (member.isPublic) {
+            ss << "public: ";
+        } else {
+            ss << "private: ";
+        }
+        ss << member.typeName << " " << member.name << ";\n";
+    }
+    ss << "};\n";
 }
 
 void CodeGen::visit(const ExprStmtAST& stmt) {
