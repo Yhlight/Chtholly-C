@@ -13,6 +13,7 @@ class Resolver : public ExprVisitor, public StmtVisitor {
 public:
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
 
+    std::shared_ptr<Type> visit(const BooleanLiteral& expr) override;
     std::shared_ptr<Type> visit(const NumericLiteral& expr) override;
     std::shared_ptr<Type> visit(const StringLiteral& expr) override;
     std::shared_ptr<Type> visit(const UnaryExpr& expr) override;

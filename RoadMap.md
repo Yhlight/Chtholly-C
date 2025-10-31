@@ -30,7 +30,7 @@ This document outlines the development plan for the Chtholly programming languag
 ## Phase 5: Semantic Analysis
 - [x] Implement initial Type System for Semantic Analysis
 - [x] Implement a symbol table.
-- [ ] Perform type checking.
+- [x] Perform type checking.
 - [ ] Enforce ownership and borrowing rules.
 - [ ] Write unit tests for the semantic analyzer.
 

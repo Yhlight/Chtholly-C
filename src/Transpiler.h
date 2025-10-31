@@ -10,6 +10,7 @@ class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
+    std::shared_ptr<Type> visit(const BooleanLiteral& expr) override;
     std::shared_ptr<Type> visit(const NumericLiteral& expr) override;
     std::shared_ptr<Type> visit(const StringLiteral& expr) override;
     std::shared_ptr<Type> visit(const UnaryExpr& expr) override;
