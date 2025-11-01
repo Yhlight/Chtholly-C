@@ -2,15 +2,15 @@
 
 ## Phase 1: Project Setup
 - [x] Create `RoadMap.md`
-- [ ] Create `.gitignore`
-- [ ] Create `build.py` for CMake automation
-- [ ] Create `src` and `include` directories
-- [ ] Create `main.cpp`
+- [x] Create `.gitignore`
+- [x] Create `build.py` for CMake automation
+- [x] Create `src` and `include` directories
+- [x] Create `main.cpp`
 
 ## Phase 2: Lexer
-- [ ] Implement the Lexer
-- [ ] Define tokens
-- [ ] Handle identifiers, keywords, literals, and operators
+- [x] Implement the Lexer
+- [x] Define tokens
+- [x] Handle identifiers, keywords, literals, and operators
 
 ## Phase 3: Parser
 - [ ] Implement the Parser
