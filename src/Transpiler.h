@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Expr.h"
-#include "Stmt.h"
+#include "AST/Expr.h"
+#include "AST/Stmt.h"
 #include <string>
 #include <vector>
 #include <any>
 
-class ASTPrinter : public ExprVisitor, public StmtVisitor {
+class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
-    std::string print(const Expr& expr);
-    std::string print(const Stmt& stmt);
+    std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
+    // Expression visitor methods
     std::any visitAssignExpr(const AssignExpr& expr) override;
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
@@ -18,10 +18,12 @@ public:
     std::any visitUnaryExpr(const UnaryExpr& expr) override;
     std::any visitVariableExpr(const VariableExpr& expr) override;
 
+    // Statement visitor methods
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
 
 private:
-    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
+    std::string transpile(const Expr& expr);
+    std::string transpile(const Stmt& stmt);
 };

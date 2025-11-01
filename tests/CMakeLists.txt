@@ -2,6 +2,8 @@ add_executable(chtholly_tests
     ErrorReporterTests.cpp
     LexerTests.cpp
     ASTPrinterTests.cpp
+    ParserTests.cpp
+    TranspilerTests.cpp
 )
 
 target_link_libraries(chtholly_tests

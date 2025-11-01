@@ -6,17 +6,21 @@
 #include <any>
 
 // Forward declarations
+struct AssignExpr;
 struct BinaryExpr;
 struct GroupingExpr;
 struct LiteralExpr;
 struct UnaryExpr;
+struct VariableExpr;
 
 // Visitor interface
 struct ExprVisitor {
+    virtual std::any visitAssignExpr(const AssignExpr& expr) = 0;
     virtual std::any visitBinaryExpr(const BinaryExpr& expr) = 0;
     virtual std::any visitGroupingExpr(const GroupingExpr& expr) = 0;
     virtual std::any visitLiteralExpr(const LiteralExpr& expr) = 0;
     virtual std::any visitUnaryExpr(const UnaryExpr& expr) = 0;
+    virtual std::any visitVariableExpr(const VariableExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -27,6 +31,18 @@ struct Expr {
 };
 
 // Concrete expression classes
+struct AssignExpr : Expr {
+    Token name;
+    std::unique_ptr<Expr> value;
+
+    AssignExpr(Token name, std::unique_ptr<Expr> value)
+        : name(std::move(name)), value(std::move(value)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitAssignExpr(*this);
+    }
+};
+
 struct BinaryExpr : Expr {
     std::unique_ptr<Expr> left;
     Token op;
@@ -70,5 +86,15 @@ struct UnaryExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitUnaryExpr(*this);
+    }
+};
+
+struct VariableExpr : Expr {
+    Token name;
+
+    explicit VariableExpr(Token name) : name(std::move(name)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitVariableExpr(*this);
     }
 };

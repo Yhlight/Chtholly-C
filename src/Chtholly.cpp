@@ -1,7 +1,12 @@
 #include "Chtholly.h"
+#include "Lexer.h"
+#include "Parser.h"
+#include "Transpiler.h"
+#include "Error.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 void Chtholly::runFile(const std::string& path) {
     std::ifstream file(path);
@@ -12,6 +17,8 @@ void Chtholly::runFile(const std::string& path) {
     std::stringstream buffer;
     buffer << file.rdbuf();
     run(buffer.str());
+
+    if (ErrorReporter::hadError) exit(65);
 }
 
 void Chtholly::runPrompt() {
@@ -20,10 +27,23 @@ void Chtholly::runPrompt() {
         std::cout << "> ";
         if (!std::getline(std::cin, line)) break;
         run(line);
+        ErrorReporter::reset();
     }
 }
 
 void Chtholly::run(const std::string& source) {
-    // For now, just print the source
-    std::cout << "Executing: " << source << std::endl;
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+
+    if(ErrorReporter::hadError) return;
+
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    if(ErrorReporter::hadError) return;
+
+    Transpiler transpiler;
+    std::string output = transpiler.transpile(statements);
+
+    std::cout << output << std::endl;
 }

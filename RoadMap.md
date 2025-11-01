@@ -20,16 +20,16 @@ This document outlines the planned development stages for the Chtholly programmi
 
 ## Phase 2: Basic Language Features
 
-- [ ] **Expressions**
-  - [ ] Parse and transpile literal expressions (integers, doubles, strings, chars, booleans).
-  - [ ] Parse and transpile unary and binary expressions, respecting C++ precedence.
-  - [ ] Parse and transpile grouping parentheses.
+- [x] **Expressions**
+  - [x] Parse and transpile literal expressions (integers, doubles, strings, chars, booleans).
+  - [x] Parse and transpile unary and binary expressions, respecting C++ precedence.
+  - [x] Parse and transpile grouping parentheses.
 
-- [ ] **Statements**
-  - [ ] Implement `let` (immutable) and `mut` (mutable) variable declarations with type inference.
-  - [ ] Implement expression statements (e.g., `a = 10;`).
-  - [ ] Implement a `print` statement (as a language construct for now).
-  - [ ] Implement the `Transpiler` to wrap top-level statements in a C++ `main` function.
+- [x] **Statements**
+  - [x] Implement `let` (immutable) and `mut` (mutable) variable declarations with type inference.
+  - [x] Implement expression statements (e.g., `a = 10;`).
+  - [x] Implement a `print` statement (as a language construct for now).
+  - [x] Implement the `Transpiler` to wrap top-level statements in a C++ `main` function.
   - [ ] Implement the `Resolver` to handle variable declarations and scope.
 
 ## Phase 3: Control Flow

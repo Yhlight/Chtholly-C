@@ -6,6 +6,10 @@ add_library(chtholly_lib STATIC
     Token.h
     Lexer.cpp
     Lexer.h
+    Parser.cpp
+    Parser.h
+    Transpiler.cpp
+    Transpiler.h
     AST/Expr.h
     AST/Stmt.h
     AST/ASTPrinter.cpp

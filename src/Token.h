@@ -27,7 +27,7 @@ enum class TokenType {
     END_OF_FILE
 };
 
-using LiteralValue = std::variant<std::monostate, std::string, double>;
+using LiteralValue = std::variant<std::monostate, std::string, double, bool>;
 
 struct Token {
     TokenType type;

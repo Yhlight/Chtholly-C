@@ -10,6 +10,10 @@ std::string ASTPrinter::print(const Stmt& stmt) {
     return std::any_cast<std::string>(stmt.accept(*this));
 }
 
+std::any ASTPrinter::visitAssignExpr(const AssignExpr& expr) {
+    return parenthesize("= " + expr.name.lexeme, {expr.value.get()});
+}
+
 std::any ASTPrinter::visitBinaryExpr(const BinaryExpr& expr) {
     return parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
 }
@@ -30,6 +34,10 @@ std::any ASTPrinter::visitLiteralExpr(const LiteralExpr& expr) {
 
 std::any ASTPrinter::visitUnaryExpr(const UnaryExpr& expr) {
     return parenthesize(expr.op.lexeme, {expr.right.get()});
+}
+
+std::any ASTPrinter::visitVariableExpr(const VariableExpr& expr) {
+    return expr.name.lexeme;
 }
 
 std::any ASTPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
