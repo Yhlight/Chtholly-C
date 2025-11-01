@@ -27,8 +27,13 @@ private:
     void visitPrintStmt(const PrintStmt& stmt) override;
     void visitReturnStmt(const ReturnStmt& stmt) override;
     void visitIfStmt(const IfStmt& stmt) override;
+    void visitWhileStmt(const WhileStmt& stmt) override;
 
     std::stringstream out_;
+    int indent_level_ = 0;
+    void indent() { indent_level_++; }
+    void dedent() { indent_level_--; }
+    void write_indent();
 };
 
 #endif // CHTHOLLY_TRANSPILER_H

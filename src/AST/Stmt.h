@@ -15,6 +15,7 @@ class IfStmt;
 class LetStmt;
 class PrintStmt;
 class ReturnStmt;
+class WhileStmt;
 
 class StmtVisitor {
 public:
@@ -26,6 +27,7 @@ public:
     virtual void visitLetStmt(const LetStmt& stmt) = 0;
     virtual void visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual void visitReturnStmt(const ReturnStmt& stmt) = 0;
+    virtual void visitWhileStmt(const WhileStmt& stmt) = 0;
 };
 
 class Stmt {
@@ -128,6 +130,19 @@ public:
     const std::unique_ptr<Expr> condition;
     const std::unique_ptr<Stmt> thenBranch;
     const std::unique_ptr<Stmt> elseBranch;
+};
+
+class WhileStmt : public Stmt {
+public:
+    WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body)) {}
+
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visitWhileStmt(*this);
+    }
+
+    const std::unique_ptr<Expr> condition;
+    const std::unique_ptr<Stmt> body;
 };
 
 #endif // CHTHOLLY_STMT_H

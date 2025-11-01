@@ -107,6 +107,14 @@ void ASTPrinter::visitIfStmt(const IfStmt& stmt) {
     result_ += ")";
 }
 
+void ASTPrinter::visitWhileStmt(const WhileStmt& stmt) {
+    result_ += "(while ";
+    stmt.condition->accept(*this);
+    result_ += " ";
+    stmt.body->accept(*this);
+    result_ += ")";
+}
+
 void ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     result_ += "(" + name;
     for (const auto& expr : exprs) {

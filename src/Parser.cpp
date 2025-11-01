@@ -69,6 +69,7 @@ std::unique_ptr<Stmt> Parser::letDeclaration() {
 
 std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::IF})) return ifStatement();
+    if (match({TokenType::WHILE})) return whileStatement();
     if (match({TokenType::RETURN})) return returnStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<Block>(block());
     return expressionStatement();
@@ -86,6 +87,15 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
     }
 
     return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<Stmt> Parser::whileStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+    std::unique_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+    std::unique_ptr<Stmt> body = statement();
+
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 }
 
 std::unique_ptr<Stmt> Parser::returnStatement() {
@@ -284,6 +294,7 @@ void Parser::synchronize() {
             case TokenType::FUNC:
             case TokenType::LET:
             case TokenType::SWITCH:
+            case TokenType::WHILE:
             case TokenType::RETURN:
                 return;
         }

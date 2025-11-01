@@ -24,7 +24,8 @@
 - [ ] Arrays
 - [ ] Option type for null safety
 - [ ] Switch statements
-- [ ] Loops (for, while)
+- [x] Loops (while)
+- [ ] Loops (for)
 - [ ] Lambdas/closures
 
 ## Phase 3: Generics and Traits

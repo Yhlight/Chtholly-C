@@ -75,6 +75,11 @@ void Resolver::visitIfStmt(const IfStmt& stmt) {
     }
 }
 
+void Resolver::visitWhileStmt(const WhileStmt& stmt) {
+    resolve(stmt.condition.get());
+    resolve(stmt.body.get());
+}
+
 void Resolver::visitAssignExpr(const Assign& expr) {
     resolve(expr.value.get());
     if (!symbolTable_.isMutable(expr.name.lexeme)) {

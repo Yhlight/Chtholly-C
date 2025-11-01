@@ -9,21 +9,31 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     for (const auto& statement : statements) {
         if (dynamic_cast<FuncStmt*>(statement.get())) {
             if (in_main) {
-                out_ << "    return 0;\n}\n";
+                dedent();
+                write_indent();
+                out_ << "return 0;\n";
+                write_indent();
+                out_ << "}\n";
                 in_main = false;
             }
             statement->accept(*this);
         } else {
             if (!in_main) {
                 out_ << "int main(int argc, char* argv[]) {\n";
+                indent();
                 in_main = true;
             }
+            write_indent();
             statement->accept(*this);
         }
     }
 
     if (in_main) {
-        out_ << "    return 0;\n}\n";
+        write_indent();
+        out_ << "return 0;\n";
+        dedent();
+        write_indent();
+        out_ << "}\n";
     }
 
     return out_.str();
@@ -75,16 +85,25 @@ void Transpiler::visitVariableExpr(const Variable& expr) {
 
 void Transpiler::visitBlockStmt(const Block& stmt) {
     out_ << "{\n";
+    indent();
     for (const auto& statement : stmt.statements) {
+        write_indent();
         statement->accept(*this);
     }
+    dedent();
+    write_indent();
     out_ << "}\n";
 }
 
 void Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
-    out_ << "    ";
     stmt.expression->accept(*this);
     out_ << ";\n";
+}
+
+void Transpiler::write_indent() {
+    for (int i = 0; i < indent_level_; ++i) {
+        out_ << "    ";
+    }
 }
 
 void Transpiler::visitFuncStmt(const FuncStmt& stmt) {
@@ -106,9 +125,9 @@ void Transpiler::visitFuncStmt(const FuncStmt& stmt) {
 
 void Transpiler::visitLetStmt(const LetStmt& stmt) {
     if (stmt.isMutable) {
-        out_ << "    ";
+        out_ << "";
     } else {
-        out_ << "    const ";
+        out_ << "const ";
     }
 
     if (stmt.type) {
@@ -125,7 +144,7 @@ void Transpiler::visitLetStmt(const LetStmt& stmt) {
 }
 
 void Transpiler::visitIfStmt(const IfStmt& stmt) {
-    out_ << "    if (";
+    out_ << "if (";
     stmt.condition->accept(*this);
     out_ << ") ";
     stmt.thenBranch->accept(*this);
@@ -135,6 +154,13 @@ void Transpiler::visitIfStmt(const IfStmt& stmt) {
     }
 }
 
+void Transpiler::visitWhileStmt(const WhileStmt& stmt) {
+    out_ << "while (";
+    stmt.condition->accept(*this);
+    out_ << ") ";
+    stmt.body->accept(*this);
+}
+
 void Transpiler::visitPrintStmt(const PrintStmt& stmt) {
     out_ << "    std::cout << ";
     stmt.expression->accept(*this);
@@ -142,7 +168,7 @@ void Transpiler::visitPrintStmt(const PrintStmt& stmt) {
 }
 
 void Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
-    out_ << "    return";
+    out_ << "return";
     if (stmt.value) {
         out_ << " ";
         stmt.value->accept(*this);
