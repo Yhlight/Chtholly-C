@@ -69,6 +69,14 @@ void Sema::visit(const VarDeclStmt& stmt) {
     std::unique_ptr<Type> initializerType = nullptr;
     if (stmt.initializer) {
         initializerType = stmt.initializer->accept(*this);
+
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(stmt.initializer.get())) {
+            Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+            if (symbol && !symbol->type->isCopyable()) {
+                symbol->state = OwnershipState::Moved;
+                varExpr->isMove = true;
+            }
+        }
     }
 
     if (declaredType && initializerType && !areTypesEqual(declaredType.get(), initializerType.get())) {
@@ -139,6 +147,10 @@ void Sema::visit(const FuncDeclStmt& stmt) {
 
     auto funcType = std::make_unique<FunctionType>(std::move(paramTypes), std::move(returnType));
 
+    // We need to cast the result of clone() from unique_ptr<Type> to unique_ptr<FunctionType>
+    auto cloned_type = funcType->clone();
+    stmt.resolvedSignature.reset(dynamic_cast<FunctionType*>(cloned_type.release()));
+
     if (!symbolTable.define(stmt.name.lexeme, std::move(funcType), Mutability::Immutable)) {
         error(stmt.name, "Function with this name already declared.");
         return; // Don't analyze body if redefinition.
@@ -169,6 +181,15 @@ void Sema::visit(const ReturnStmt& stmt) {
 
     if (stmt.value) {
         std::unique_ptr<Type> returnValType = stmt.value->accept(*this);
+
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(stmt.value.get())) {
+            Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+            if (symbol && !symbol->type->isCopyable()) {
+                symbol->state = OwnershipState::Moved;
+                varExpr->isMove = true;
+            }
+        }
+
         if (dynamic_cast<const VoidType*>(funcType->getReturnType())) {
             error(stmt.keyword, "Cannot return a value from a void function.");
         } else if (returnValType && !areTypesEqual(funcType->getReturnType(), returnValType.get())) {
@@ -216,13 +237,19 @@ std::unique_ptr<Type> Sema::visit(const UnaryExpr& expr) {
 }
 
 std::unique_ptr<Type> Sema::visit(const BinaryExpr& expr) {
+    // Handle assignment separately to avoid incorrect "use of moved value" error.
     if (expr.op.type == TokenType::EQUAL || expr.op.type == TokenType::PLUS_EQUAL ||
         expr.op.type == TokenType::MINUS_EQUAL || expr.op.type == TokenType::STAR_EQUAL ||
         expr.op.type == TokenType::SLASH_EQUAL || expr.op.type == TokenType::PERCENT_EQUAL) {
 
-        std::unique_ptr<Type> leftType = expr.left->accept(*this);
-        if (!leftType) return nullptr;
+        // First, visit the right-hand side to check for moved values there.
+        std::unique_ptr<Type> rightType = expr.right->accept(*this);
+        if (!rightType) return nullptr;
 
+        std::unique_ptr<Type> leftType;
+
+        // Now, handle the left-hand side without visiting the VariableExpr,
+        // which would trigger the ownership check.
         if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.left.get())) {
             Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
             if (!symbol) {
@@ -232,24 +259,34 @@ std::unique_ptr<Type> Sema::visit(const BinaryExpr& expr) {
             if (symbol->mutability != Mutability::Mutable) {
                 error(varExpr->name, "Cannot assign to an immutable variable.");
             }
+            // This is the key: assignment restores ownership, so we set it to Valid.
+            symbol->state = OwnershipState::Valid;
+            leftType = symbol->type->clone();
         } else if (auto* derefExpr = dynamic_cast<DerefExpr*>(expr.left.get())) {
+            // For dereferences, we visit the inner expression which should be a reference.
             std::unique_ptr<Type> refType = derefExpr->expression->accept(*this);
             auto* referenceType = dynamic_cast<ReferenceType*>(refType.get());
             if (!referenceType || !referenceType->getIsMutable()) {
                 error(expr.op, "Cannot assign to an immutable reference.");
+            }
+            if (referenceType) {
+                leftType = referenceType->getReferencedType()->clone();
             }
         } else {
             error(expr.op, "Invalid assignment target.");
             return nullptr;
         }
 
-        std::unique_ptr<Type> rightType = expr.right->accept(*this);
-        if (rightType && !areTypesEqual(leftType.get(), rightType.get())) {
+        if (!leftType) return nullptr;
+
+        // Finally, check for type mismatch.
+        if (!areTypesEqual(leftType.get(), rightType.get())) {
             error(expr.op, "Type mismatch in assignment.");
         }
         return std::move(rightType);
     }
 
+    // Standard binary expressions
     std::unique_ptr<Type> leftType = expr.left->accept(*this);
     std::unique_ptr<Type> rightType = expr.right->accept(*this);
 
@@ -298,6 +335,12 @@ std::unique_ptr<Type> Sema::visit(const VariableExpr& expr) {
         return nullptr;
     }
 
+    if (symbol->state == OwnershipState::Moved) {
+        error(expr.name, "Use of moved value.");
+        // We still return the type to avoid cascading errors about "undefined variable".
+        return symbol->type->clone();
+    }
+
     // Don't "evaluate" a function variable to a type here. Let CallExpr handle it.
     if (dynamic_cast<FunctionType*>(symbol->type.get())) {
         return nullptr;
@@ -338,6 +381,15 @@ std::unique_ptr<Type> Sema::visit(const CallExpr& expr) {
         std::unique_ptr<Type> argType = expr.arguments[i]->accept(*this);
         if (argType && !areTypesEqual(funcType->getParamTypes()[i].get(), argType.get())) {
             error(expr.arguments[i]->getToken(), "Argument type mismatch.");
+        }
+
+        // Check for moves on non-copyable types
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.arguments[i].get())) {
+            Symbol* argSymbol = symbolTable.lookup(varExpr->name.lexeme);
+            if (argSymbol && !argSymbol->type->isCopyable()) {
+                argSymbol->state = OwnershipState::Moved;
+                varExpr->isMove = true;
+            }
         }
     }
 

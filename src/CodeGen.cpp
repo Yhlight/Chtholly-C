@@ -3,18 +3,21 @@
 #include <set>
 #include <vector>
 #include <array>
+#include <utility>
 
 namespace chtholly {
 
 std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    out << "#include <string>\n";
-    out << "#include <vector>\n";
-    out << "#include <array>\n";
-
     for (const auto& stmt : statements) {
         stmt->accept(*this);
     }
-    return out.str();
+
+    std::string preamble = "#include <string>\n#include <vector>\n#include <array>\n";
+    if (hasMoves) {
+        preamble += "#include <utility>\n";
+    }
+
+    return preamble + out.str();
 }
 
 std::string CodeGen::generateVarDecl(const VarDeclStmt& stmt) {
@@ -83,15 +86,17 @@ void CodeGen::visit(const ForStmt& stmt) {
 
 void CodeGen::visit(const FuncDeclStmt& stmt) {
     out << "auto " << stmt.name.lexeme << "(";
-    for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << stmt.params[i].type.lexeme << " " << stmt.params[i].name.lexeme;
-        if (i < stmt.params.size() - 1) {
-            out << ", ";
+    if (stmt.resolvedSignature) {
+        for (size_t i = 0; i < stmt.params.size(); ++i) {
+            out << typeToString(*stmt.resolvedSignature->getParamTypes()[i]) << " " << stmt.params[i].name.lexeme;
+            if (i < stmt.params.size() - 1) {
+                out << ", ";
+            }
         }
     }
     out << ")";
-    if (stmt.returnType) {
-        out << " -> " << stmt.returnType->lexeme;
+    if (stmt.returnType && stmt.resolvedSignature) {
+        out << " -> " << typeToString(*stmt.resolvedSignature->getReturnType());
     }
     out << " ";
     stmt.body->accept(*this);
@@ -124,6 +129,10 @@ std::string CodeGen::visit(const BinaryExpr& expr) {
 }
 
 std::string CodeGen::visit(const VariableExpr& expr) {
+    if (expr.isMove) {
+        hasMoves = true;
+        return "std::move(" + expr.name.lexeme + ")";
+    }
     return expr.name.lexeme;
 }
 

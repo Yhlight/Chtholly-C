@@ -126,6 +126,7 @@ struct BinaryExpr : Expr {
 struct VariableExpr : Expr {
     VariableExpr(Token name) : name(std::move(name)) {}
     const Token name;
+    mutable bool isMove = false;
     const Token& getToken() const override { return name; }
 };
 
@@ -299,6 +300,7 @@ struct FuncDeclStmt : Stmt {
     const std::vector<Param> params;
     const std::optional<Token> returnType;
     const std::unique_ptr<BlockStmt> body;
+    mutable std::unique_ptr<FunctionType> resolvedSignature;
 };
 
 struct ReturnStmt : Stmt {

@@ -46,6 +46,7 @@ private:
     std::string typeToString(const Type& type);
 
     std::stringstream out;
+    bool hasMoves = false;
 };
 
 } // namespace chtholly

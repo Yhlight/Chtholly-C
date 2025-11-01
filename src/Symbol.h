@@ -11,10 +11,16 @@ enum class Mutability {
     Mutable    // mut
 };
 
+enum class OwnershipState {
+    Valid,
+    Moved
+};
+
 struct Symbol {
     std::string name;
     std::unique_ptr<Type> type;
     Mutability mutability;
+    OwnershipState state = OwnershipState::Valid;
 
     Symbol(std::string name, std::unique_ptr<Type> type, Mutability mutability)
         : name(std::move(name)), type(std::move(type)), mutability(mutability) {}

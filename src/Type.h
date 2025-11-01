@@ -12,12 +12,14 @@ public:
     virtual ~Type() = default;
     virtual std::string toString() const = 0;
     virtual std::unique_ptr<Type> clone() const = 0;
+    virtual bool isCopyable() const { return false; }
 };
 
 class IntType : public Type {
 public:
     std::string toString() const override { return "int"; }
     std::unique_ptr<Type> clone() const override { return std::make_unique<IntType>(); }
+    bool isCopyable() const override { return true; }
 };
 
 class StringType : public Type {
@@ -30,12 +32,14 @@ class BoolType : public Type {
 public:
     std::string toString() const override { return "bool"; }
     std::unique_ptr<Type> clone() const override { return std::make_unique<BoolType>(); }
+    bool isCopyable() const override { return true; }
 };
 
 class VoidType : public Type {
 public:
     std::string toString() const override { return "void"; }
     std::unique_ptr<Type> clone() const override { return std::make_unique<VoidType>(); }
+    bool isCopyable() const override { return true; }
 };
 
 class FunctionType : public Type {
