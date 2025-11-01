@@ -1,5 +1,8 @@
 #include "Parser.h"
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include "Lexer.h"
 
 namespace chtholly {
 
@@ -8,28 +11,64 @@ Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!isAtEnd()) {
-        std::unique_ptr<Stmt> stmt = declaration();
-        if (stmt) {
-            statements.push_back(std::move(stmt));
+        auto decls = declaration();
+        if (!decls.empty()) {
+            statements.insert(
+                statements.end(),
+                std::make_move_iterator(decls.begin()),
+                std::make_move_iterator(decls.end())
+            );
         }
     }
     return statements;
 }
 
-std::unique_ptr<Stmt> Parser::declaration() {
+std::vector<std::unique_ptr<Stmt>> Parser::declaration() {
     try {
-        if (match({TokenType::STRUCT})) return structDeclaration();
-        if (match({TokenType::ENUM})) return enumDeclaration();
-        if (match({TokenType::FUNC})) return function();
-        if (match({TokenType::LET, TokenType::MUT})) {
-            std::unique_ptr<Stmt> stmt = varDeclaration();
-            consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-            return stmt;
+        if (match({TokenType::IMPORT})) {
+            Token path_token = consume(TokenType::STRING, "Expect file path string.");
+            consume(TokenType::SEMICOLON, "Expect ';' after import path.");
+            std::string path = path_token.lexeme.substr(1, path_token.lexeme.length() - 2);
+
+            std::ifstream file(path);
+            if (!file.is_open()) {
+                throw error(path_token, "Failed to open import file: " + path);
+            }
+
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string source = buffer.str();
+
+            Lexer import_lexer(source);
+            std::vector<Token> import_tokens = import_lexer.scanTokens();
+            Parser import_parser(import_tokens);
+            return import_parser.parse();
         }
-        return statement();
+
+        std::unique_ptr<Stmt> stmt = nullptr;
+        if (match({TokenType::STRUCT})) {
+            stmt = structDeclaration();
+        } else if (match({TokenType::ENUM})) {
+            stmt = enumDeclaration();
+        } else if (match({TokenType::FUNC})) {
+            stmt = function();
+        } else if (match({TokenType::LET, TokenType::MUT})) {
+            stmt = varDeclaration();
+            consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+        } else {
+            stmt = statement();
+        }
+
+        if (stmt) {
+            std::vector<std::unique_ptr<Stmt>> result;
+            result.push_back(std::move(stmt));
+            return result;
+        }
+        return {};
+
     } catch (ParseError& error) {
         synchronize();
-        return nullptr;
+        return {};
     }
 }
 
@@ -236,7 +275,14 @@ std::vector<std::unique_ptr<Stmt>> Parser::block() {
     std::vector<std::unique_ptr<Stmt>> statements;
 
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        statements.push_back(declaration());
+        auto decls = declaration();
+        if (!decls.empty()) {
+            statements.insert(
+                statements.end(),
+                std::make_move_iterator(decls.begin()),
+                std::make_move_iterator(decls.end())
+            );
+        }
     }
 
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");

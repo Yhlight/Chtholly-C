@@ -11,6 +11,7 @@ add_executable(chtholly_tests
     ArrayTest.cpp
     OwnershipTest.cpp
     OptionTest.cpp
+    ImportTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)

@@ -13,7 +13,7 @@ public:
     std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
-    std::unique_ptr<Stmt> declaration();
+    std::vector<std::unique_ptr<Stmt>> declaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> structDeclaration();
