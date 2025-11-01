@@ -1,6 +1,6 @@
 #include "Lexer.h"
 #include <unordered_map>
-#include <stdexcept>
+#include "Error.h"
 
 static std::unordered_map<std::string, TokenType> keywords;
 
@@ -119,7 +119,8 @@ void Lexer::scanToken() {
                     advance();
                 }
                 if (current_ >= source_.length()) {
-                    throw std::runtime_error("Unterminated block comment.");
+                    ErrorReporter::report(line_, "Unterminated block comment.");
+                    return;
                 }
                 advance(); // consume the *
                 advance(); // consume the /
@@ -145,7 +146,7 @@ void Lexer::scanToken() {
                 advance(); // consume the closing '
                 addToken(TokenType::CHAR, std::string(1, value));
             } else {
-                throw std::runtime_error("Unterminated character literal.");
+                ErrorReporter::report(line_, "Unterminated character literal.");
             }
             break;
         default:
@@ -154,7 +155,7 @@ void Lexer::scanToken() {
             } else if (isalpha(c) || c == '_') {
                 identifier();
             } else {
-                throw std::runtime_error("Unexpected character.");
+                ErrorReporter::report(line_, "Unexpected character.");
             }
             break;
     }
@@ -198,7 +199,8 @@ void Lexer::string() {
     }
 
     if (current_ >= source_.length()) {
-        throw std::runtime_error("Unterminated string.");
+        ErrorReporter::report(line_, "Unterminated string.");
+        return;
     }
 
     // The closing ".

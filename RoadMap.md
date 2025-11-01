@@ -14,7 +14,7 @@
 - [x] Functions (including main entry point)
 - [x] Basic operators (+, -, *, /)
 - [x] Control flow (if, else)
-- [ ] Basic error handling
+- [x] Basic error handling
 
 ## Phase 2: Advanced Language Features
 

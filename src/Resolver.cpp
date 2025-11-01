@@ -1,5 +1,5 @@
 #include "Resolver.h"
-#include <stdexcept>
+#include "Error.h"
 #include "Type.h"
 
 Resolver::Resolver() = default;
@@ -48,7 +48,7 @@ void Resolver::visitFuncStmt(const FuncStmt& stmt) {
 
 void Resolver::visitLetStmt(const LetStmt& stmt) {
     if (symbolTable_.isDeclaredInCurrentScope(stmt.name.lexeme)) {
-        throw std::runtime_error("Variable with this name already declared in this scope.");
+        ErrorReporter::report(stmt.name.line, "Variable with this name already declared in this scope.");
     }
     symbolTable_.declare(stmt.name.lexeme, stmt.isMutable, stmt.type ? std::make_unique<PrimitiveType>(stmt.type->toString()) : nullptr);
     if (stmt.initializer) {
@@ -78,7 +78,7 @@ void Resolver::visitIfStmt(const IfStmt& stmt) {
 void Resolver::visitAssignExpr(const Assign& expr) {
     resolve(expr.value.get());
     if (!symbolTable_.isMutable(expr.name.lexeme)) {
-        throw std::runtime_error("Cannot assign to immutable variable '" + expr.name.lexeme + "'.");
+        ErrorReporter::report(expr.name.line, "Cannot assign to immutable variable '" + expr.name.lexeme + "'.");
     }
 }
 
@@ -109,6 +109,6 @@ void Resolver::visitUnaryExpr(const Unary& expr) {
 
 void Resolver::visitVariableExpr(const Variable& expr) {
     if (!symbolTable_.isDeclared(expr.name.lexeme)) {
-        throw std::runtime_error("Undefined variable '" + expr.name.lexeme + "'.");
+        ErrorReporter::report(expr.name.line, "Undefined variable '" + expr.name.lexeme + "'.");
     }
 }

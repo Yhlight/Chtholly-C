@@ -1,5 +1,5 @@
 #include "Parser.h"
-#include <stdexcept>
+#include "Error.h"
 #include <vector>
 #include "Type.h"
 
@@ -18,7 +18,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
         if (match({TokenType::FUNC})) return functionDeclaration();
         if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
-    } catch (std::runtime_error& error) {
+    } catch (ParseError& error) {
         synchronize();
         return nullptr;
     }
@@ -31,7 +31,7 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
             if (parameters.size() >= 255) {
-                throw std::runtime_error("Cannot have more than 255 parameters.");
+                ErrorReporter::report(peek().line, "Cannot have more than 255 parameters.");
             }
             Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
             consume(TokenType::COLON, "Expect ':' after parameter name.");
@@ -121,7 +121,7 @@ std::unique_ptr<Type> Parser::type() {
                  TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::STRUCT})) {
         return std::make_unique<PrimitiveType>(previous().lexeme);
     }
-    throw std::runtime_error("Expect a type name.");
+    throw error(peek(), "Expect a type name.");
 }
 
 std::unique_ptr<Expr> Parser::expression() {
@@ -140,7 +140,7 @@ std::unique_ptr<Expr> Parser::assignment() {
             return std::make_unique<Assign>(name, std::move(value));
         }
 
-        throw std::runtime_error("Invalid assignment target.");
+        throw error(equals, "Invalid assignment target.");
     }
 
     return expr;
@@ -204,7 +204,7 @@ std::unique_ptr<Expr> Parser::call() {
             if (!check(TokenType::RIGHT_PAREN)) {
                 do {
                     if (arguments.size() >= 255) {
-                        throw std::runtime_error("Cannot have more than 255 arguments.");
+                        throw error(peek(), "Cannot have more than 255 arguments.");
                     }
                     arguments.push_back(expression());
                 } while (match({TokenType::COMMA}));
@@ -231,7 +231,7 @@ std::unique_ptr<Expr> Parser::primary() {
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_unique<Grouping>(std::move(expr));
     }
-    throw std::runtime_error("Expect expression.");
+    throw error(peek(), "Expect expression.");
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {
@@ -246,7 +246,12 @@ bool Parser::match(const std::vector<TokenType>& types) {
 
 Token Parser::consume(TokenType type, const std::string& message) {
     if (check(type)) return advance();
-    throw std::runtime_error(message);
+    throw error(peek(), message);
+}
+
+Parser::ParseError Parser::error(const Token& token, const std::string& message) {
+    ErrorReporter::report(token.line, " at '" + token.lexeme + "' " + message);
+    return ParseError();
 }
 
 bool Parser::check(TokenType type) {

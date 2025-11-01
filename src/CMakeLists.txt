@@ -7,6 +7,7 @@ add_library(chtholly_lib
     Resolver.cpp
     Transpiler.cpp
     Type.cpp
+    Error.cpp
 )
 
 target_include_directories(chtholly_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

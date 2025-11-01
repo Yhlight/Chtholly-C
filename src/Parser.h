@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <stdexcept>
 #include "Token.h"
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
@@ -41,6 +42,13 @@ private:
     Token peek();
     Token previous();
     void synchronize();
+
+    class ParseError : public std::runtime_error {
+    public:
+        ParseError() : std::runtime_error("") {}
+    };
+
+    ParseError error(const Token& token, const std::string& message);
 
     std::vector<Token> tokens_;
     int current_ = 0;

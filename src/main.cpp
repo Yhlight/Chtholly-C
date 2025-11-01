@@ -6,16 +6,20 @@
 #include "Parser.h"
 #include "Resolver.h"
 #include "Transpiler.h"
+#include "Error.h"
 
 void run(const std::string& source) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
+    if (ErrorReporter::hadError) return;
 
     Parser parser(tokens);
     std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+    if (ErrorReporter::hadError) return;
 
     Resolver resolver;
     resolver.resolve(statements);
+    if (ErrorReporter::hadError) return;
 
     Transpiler transpiler;
     std::string output = transpiler.transpile(statements);
