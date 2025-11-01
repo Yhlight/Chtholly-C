@@ -24,6 +24,8 @@ struct MemberAccessExpr;
 struct ScopedAccessExpr;
 struct ArrayLiteralExpr;
 struct SubscriptExpr;
+struct BorrowExpr;
+struct DerefExpr;
 
 // Type Expressions
 class TypeExpr {
@@ -41,6 +43,13 @@ struct ArrayTypeExpr : TypeExpr {
         : element_type(std::move(element_type)), size(size) {}
     const std::unique_ptr<TypeExpr> element_type;
     const std::optional<int> size;
+};
+
+struct ReferenceTypeExpr : TypeExpr {
+    ReferenceTypeExpr(Token ampersand, std::unique_ptr<TypeExpr> referenced_type)
+        : ampersand(std::move(ampersand)), referenced_type(std::move(referenced_type)) {}
+    const Token ampersand;
+    const std::unique_ptr<TypeExpr> referenced_type;
 };
 
 
@@ -77,6 +86,8 @@ public:
     virtual R visit(const ScopedAccessExpr& expr) = 0;
     virtual R visit(const ArrayLiteralExpr& expr) = 0;
     virtual R visit(const SubscriptExpr& expr) = 0;
+    virtual R visit(const BorrowExpr& expr) = 0;
+    virtual R visit(const DerefExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -184,6 +195,23 @@ struct SubscriptExpr : Expr {
     const Token bracket;
     const std::unique_ptr<Expr> index;
     const Token& getToken() const override { return bracket; }
+};
+
+struct BorrowExpr : Expr {
+    BorrowExpr(Token ampersand, bool isMutable, std::unique_ptr<Expr> expression)
+        : ampersand(std::move(ampersand)), isMutable(isMutable), expression(std::move(expression)) {}
+    const Token ampersand;
+    const bool isMutable;
+    const std::unique_ptr<Expr> expression;
+    const Token& getToken() const override { return ampersand; }
+};
+
+struct DerefExpr : Expr {
+    DerefExpr(Token star, std::unique_ptr<Expr> expression)
+        : star(std::move(star)), expression(std::move(expression)) {}
+    const Token star;
+    const std::unique_ptr<Expr> expression;
+    const Token& getToken() const override { return star; }
 };
 
 
@@ -378,6 +406,8 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const ScopedAccessExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const ArrayLiteralExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const SubscriptExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const BorrowExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const DerefExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -464,6 +494,14 @@ public:
 
     std::string visit(const SubscriptExpr& expr) override {
         return "(subscript " + print(*expr.array) + " " + print(*expr.index) + ")";
+    }
+
+    std::string visit(const BorrowExpr& expr) override {
+        return "(& " + print(*expr.expression) + ")";
+    }
+
+    std::string visit(const DerefExpr& expr) override {
+        return "(* " + print(*expr.expression) + ")";
     }
 
     std::string visit(const VarDeclStmt& stmt) override {

@@ -254,7 +254,7 @@ std::unique_ptr<Expr> Parser::assignment() {
         Token equals = previous();
         std::unique_ptr<Expr> value = assignment();
 
-        if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
+        if (dynamic_cast<VariableExpr*>(expr.get()) || dynamic_cast<DerefExpr*>(expr.get())) {
             return std::make_unique<BinaryExpr>(std::move(expr), std::move(equals), std::move(value));
         }
 
@@ -329,6 +329,17 @@ std::unique_ptr<Expr> Parser::unary() {
         Token op = previous();
         std::unique_ptr<Expr> right = unary();
         return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
+    }
+    if (match({TokenType::AMPERSAND})) {
+        Token op = previous();
+        bool isMutable = match({TokenType::MUT});
+        std::unique_ptr<Expr> right = unary();
+        return std::make_unique<BorrowExpr>(std::move(op), isMutable, std::move(right));
+    }
+    if (match({TokenType::STAR})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = unary();
+        return std::make_unique<DerefExpr>(std::move(op), std::move(right));
     }
 
     return call();
@@ -430,6 +441,10 @@ std::unique_ptr<Expr> Parser::primary() {
 }
 
 std::unique_ptr<TypeExpr> Parser::parseType() {
+    if (match({TokenType::AMPERSAND})) {
+        Token ampersand = previous();
+        return std::make_unique<ReferenceTypeExpr>(std::move(ampersand), parseType());
+    }
     if (match({TokenType::LEFT_BRACKET})) {
         std::unique_ptr<TypeExpr> elementType = parseType();
         std::optional<int> size;

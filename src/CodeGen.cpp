@@ -19,7 +19,7 @@ std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statemen
 
 std::string CodeGen::generateVarDecl(const VarDeclStmt& stmt) {
     std::stringstream temp_out;
-    if (stmt.keyword.type == TokenType::LET) {
+    if (stmt.keyword.type == TokenType::LET && !dynamic_cast<const ReferenceType*>(stmt.resolvedType.get())) {
         temp_out << "const ";
     }
 
@@ -75,7 +75,7 @@ void CodeGen::visit(const ForStmt& stmt) {
     }
     out << "; ";
     if (stmt.increment) {
-        out << stmt.increment->accept(*this);
+        out << "(" << stmt.increment->accept(*this) << ")";
     }
     out << ") ";
     stmt.body->accept(*this);
@@ -115,6 +115,11 @@ std::string CodeGen::visit(const UnaryExpr& expr) {
 }
 
 std::string CodeGen::visit(const BinaryExpr& expr) {
+    if (expr.op.type == TokenType::EQUAL || expr.op.type == TokenType::PLUS_EQUAL ||
+        expr.op.type == TokenType::MINUS_EQUAL || expr.op.type == TokenType::STAR_EQUAL ||
+        expr.op.type == TokenType::SLASH_EQUAL || expr.op.type == TokenType::PERCENT_EQUAL) {
+        return expr.left->accept(*this) + " " + expr.op.lexeme + " " + expr.right->accept(*this);
+    }
     return "(" + expr.left->accept(*this) + " " + expr.op.lexeme + " " + expr.right->accept(*this) + ")";
 }
 
@@ -259,6 +264,14 @@ std::string CodeGen::visit(const SubscriptExpr& expr) {
     return expr.array->accept(*this) + "[" + expr.index->accept(*this) + "]";
 }
 
+std::string CodeGen::visit(const BorrowExpr& expr) {
+    return "&(" + expr.expression->accept(*this) + ")";
+}
+
+std::string CodeGen::visit(const DerefExpr& expr) {
+    return "*(" + expr.expression->accept(*this) + ")";
+}
+
 std::string CodeGen::typeToString(const Type& type) {
     if (dynamic_cast<const IntType*>(&type)) return "int";
     if (dynamic_cast<const StringType*>(&type)) return "std::string";
@@ -270,6 +283,13 @@ std::string CodeGen::typeToString(const Type& type) {
             return "std::array<" + typeToString(*arrayType->getElementType()) + ", " + std::to_string(arrayType->getSize().value()) + ">";
         } else {
             return "std::vector<" + typeToString(*arrayType->getElementType()) + ">";
+        }
+    }
+    if (auto* refType = dynamic_cast<const ReferenceType*>(&type)) {
+        if (refType->getIsMutable()) {
+            return typeToString(*refType->getReferencedType()) + "*";
+        } else {
+            return "const " + typeToString(*refType->getReferencedType()) + "*";
         }
     }
     return "auto";

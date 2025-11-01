@@ -9,6 +9,7 @@ add_executable(chtholly_tests
     CodeGenTest.cpp
     VariableTest.cpp
     ArrayTest.cpp
+    OwnershipTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)

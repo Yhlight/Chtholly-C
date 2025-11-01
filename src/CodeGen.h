@@ -39,6 +39,8 @@ private:
     std::string visit(const ScopedAccessExpr& expr) override;
     std::string visit(const ArrayLiteralExpr& expr) override;
     std::string visit(const SubscriptExpr& expr) override;
+    std::string visit(const BorrowExpr& expr) override;
+    std::string visit(const DerefExpr& expr) override;
 
     std::string generateVarDecl(const VarDeclStmt& stmt);
     std::string typeToString(const Type& type);

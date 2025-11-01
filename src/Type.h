@@ -151,4 +151,25 @@ private:
     std::optional<int> size;
 };
 
+class ReferenceType : public Type {
+public:
+    ReferenceType(std::unique_ptr<Type> referencedType, bool isMutable)
+        : referencedType(std::move(referencedType)), isMutable(isMutable) {}
+
+    std::unique_ptr<Type> clone() const override {
+        return std::make_unique<ReferenceType>(referencedType->clone(), isMutable);
+    }
+
+    std::string toString() const override {
+        return (isMutable ? "&mut " : "&") + referencedType->toString();
+    }
+
+    const Type* getReferencedType() const { return referencedType.get(); }
+    bool getIsMutable() const { return isMutable; }
+
+private:
+    std::unique_ptr<Type> referencedType;
+    bool isMutable;
+};
+
 } // namespace chtholly

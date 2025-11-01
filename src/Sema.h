@@ -40,6 +40,8 @@ private:
     std::unique_ptr<Type> visit(const ScopedAccessExpr& expr) override;
     std::unique_ptr<Type> visit(const ArrayLiteralExpr& expr) override;
     std::unique_ptr<Type> visit(const SubscriptExpr& expr) override;
+    std::unique_ptr<Type> visit(const BorrowExpr& expr) override;
+    std::unique_ptr<Type> visit(const DerefExpr& expr) override;
 
     std::unique_ptr<Type> resolveType(const Token& typeToken);
     std::unique_ptr<Type> resolveType(const TypeExpr& typeExpr);

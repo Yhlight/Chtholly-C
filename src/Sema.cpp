@@ -27,6 +27,12 @@ bool areTypesEqual(const Type* a, const Type* b) {
         return areTypesEqual(arrayA->getElementType(), arrayB->getElementType());
     }
 
+    if (auto* refA = dynamic_cast<const ReferenceType*>(a)) {
+        auto* refB = dynamic_cast<const ReferenceType*>(b);
+        return refA->getIsMutable() == refB->getIsMutable() &&
+               areTypesEqual(refA->getReferencedType(), refB->getReferencedType());
+    }
+
     return false;
 }
 
@@ -213,24 +219,32 @@ std::unique_ptr<Type> Sema::visit(const BinaryExpr& expr) {
     if (expr.op.type == TokenType::EQUAL || expr.op.type == TokenType::PLUS_EQUAL ||
         expr.op.type == TokenType::MINUS_EQUAL || expr.op.type == TokenType::STAR_EQUAL ||
         expr.op.type == TokenType::SLASH_EQUAL || expr.op.type == TokenType::PERCENT_EQUAL) {
-        auto* varExpr = dynamic_cast<VariableExpr*>(expr.left.get());
-        if (!varExpr) {
+
+        std::unique_ptr<Type> leftType = expr.left->accept(*this);
+        if (!leftType) return nullptr;
+
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.left.get())) {
+            Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+            if (!symbol) {
+                error(varExpr->name, "Undefined variable.");
+                return nullptr;
+            }
+            if (symbol->mutability != Mutability::Mutable) {
+                error(varExpr->name, "Cannot assign to an immutable variable.");
+            }
+        } else if (auto* derefExpr = dynamic_cast<DerefExpr*>(expr.left.get())) {
+            std::unique_ptr<Type> refType = derefExpr->expression->accept(*this);
+            auto* referenceType = dynamic_cast<ReferenceType*>(refType.get());
+            if (!referenceType || !referenceType->getIsMutable()) {
+                error(expr.op, "Cannot assign to an immutable reference.");
+            }
+        } else {
             error(expr.op, "Invalid assignment target.");
             return nullptr;
         }
 
-        Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
-        if (!symbol) {
-            error(varExpr->name, "Undefined variable.");
-            return nullptr;
-        }
-
-        if (symbol->mutability != Mutability::Mutable) {
-            error(varExpr->name, "Cannot assign to an immutable variable.");
-        }
-
         std::unique_ptr<Type> rightType = expr.right->accept(*this);
-        if (rightType && !areTypesEqual(symbol->type.get(), rightType.get())) {
+        if (rightType && !areTypesEqual(leftType.get(), rightType.get())) {
             error(expr.op, "Type mismatch in assignment.");
         }
         return std::move(rightType);
@@ -579,6 +593,35 @@ std::unique_ptr<Type> Sema::visit(const SubscriptExpr& expr) {
     return arrType->getElementType()->clone();
 }
 
+std::unique_ptr<Type> Sema::visit(const BorrowExpr& expr) {
+    std::unique_ptr<Type> referencedType = expr.expression->accept(*this);
+    if (!referencedType) return nullptr;
+
+    if (expr.isMutable) {
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.expression.get())) {
+            Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+            if (symbol && symbol->mutability != Mutability::Mutable) {
+                error(expr.ampersand, "Cannot mutably borrow an immutable variable.");
+            }
+        }
+    }
+
+    return std::make_unique<ReferenceType>(std::move(referencedType), expr.isMutable);
+}
+
+std::unique_ptr<Type> Sema::visit(const DerefExpr& expr) {
+    std::unique_ptr<Type> refType = expr.expression->accept(*this);
+    if (!refType) return nullptr;
+
+    auto* referenceType = dynamic_cast<ReferenceType*>(refType.get());
+    if (!referenceType) {
+        error(expr.star, "Cannot dereference a non-reference type.");
+        return nullptr;
+    }
+
+    return referenceType->getReferencedType()->clone();
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
@@ -602,6 +645,12 @@ std::unique_ptr<Type> Sema::resolveType(const TypeExpr& typeExpr) {
     if (auto* array = dynamic_cast<const ArrayTypeExpr*>(&typeExpr)) {
         std::unique_ptr<Type> elementType = resolveType(*array->element_type);
         return std::make_unique<ArrayType>(std::move(elementType), array->size);
+    }
+    if (auto* ref = dynamic_cast<const ReferenceTypeExpr*>(&typeExpr)) {
+        std::unique_ptr<Type> referencedType = resolveType(*ref->referenced_type);
+        // For now, we assume all references in type annotations are immutable.
+        // Mutable borrows are only introduced by `&mut` expressions.
+        return std::make_unique<ReferenceType>(std::move(referencedType), false);
     }
     return nullptr;
 }
