@@ -159,10 +159,11 @@ Token Lexer::scanToken() {
         case ';': return makeToken(TokenType::SEMICOLON);
         case ',': return makeToken(TokenType::COMMA);
         case '.': return makeToken(TokenType::DOT);
-        case '-': return makeToken(match('>') ? TokenType::ARROW : TokenType::MINUS);
-        case '+': return makeToken(TokenType::PLUS);
-        case '/': return makeToken(TokenType::SLASH);
-        case '*': return makeToken(TokenType::STAR);
+        case '-': return makeToken(match('=') ? TokenType::MINUS_EQUAL : (match('>') ? TokenType::ARROW : TokenType::MINUS));
+        case '+': return makeToken(match('=') ? TokenType::PLUS_EQUAL : TokenType::PLUS);
+        case '/': return makeToken(match('=') ? TokenType::SLASH_EQUAL : TokenType::SLASH);
+        case '*': return makeToken(match('=') ? TokenType::STAR_EQUAL : TokenType::STAR);
+        case '%': return makeToken(match('=') ? TokenType::PERCENT_EQUAL : TokenType::PERCENT);
         case '!': return makeToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
         case '=': return makeToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
         case '<': return makeToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);

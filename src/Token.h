@@ -11,7 +11,7 @@ enum class TokenType {
     LEFT_BRACE, RIGHT_BRACE,
     LEFT_BRACKET, RIGHT_BRACKET,
     COMMA, DOT, MINUS, PLUS,
-    SEMICOLON, SLASH, STAR,
+    SEMICOLON, SLASH, STAR, PERCENT,
 
     // One or two character tokens.
     BANG, BANG_EQUAL,
@@ -20,6 +20,9 @@ enum class TokenType {
     LESS, LESS_EQUAL,
     COLON, COLON_COLON,
     AMPERSAND, PIPE,
+
+    // Compound assignment tokens.
+    PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,

@@ -192,7 +192,9 @@ std::unique_ptr<Type> Sema::visit(const UnaryExpr& expr) {
 }
 
 std::unique_ptr<Type> Sema::visit(const BinaryExpr& expr) {
-    if (expr.op.type == TokenType::EQUAL) {
+    if (expr.op.type == TokenType::EQUAL || expr.op.type == TokenType::PLUS_EQUAL ||
+        expr.op.type == TokenType::MINUS_EQUAL || expr.op.type == TokenType::STAR_EQUAL ||
+        expr.op.type == TokenType::SLASH_EQUAL || expr.op.type == TokenType::PERCENT_EQUAL) {
         auto* varExpr = dynamic_cast<VariableExpr*>(expr.left.get());
         if (!varExpr) {
             error(expr.op, "Invalid assignment target.");

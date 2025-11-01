@@ -234,7 +234,7 @@ std::unique_ptr<Expr> Parser::expression() {
 std::unique_ptr<Expr> Parser::assignment() {
     std::unique_ptr<Expr> expr = logical_or();
 
-    if (match({TokenType::EQUAL})) {
+    if (match({TokenType::EQUAL, TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL, TokenType::SLASH_EQUAL, TokenType::PERCENT_EQUAL})) {
         Token equals = previous();
         std::unique_ptr<Expr> value = assignment();
 
