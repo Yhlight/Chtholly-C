@@ -37,6 +37,7 @@ private:
     std::shared_ptr<Expr> call();
     std::shared_ptr<Expr> primary();
     std::shared_ptr<Expr> finishCall(std::shared_ptr<Expr> callee);
+    std::shared_ptr<Type> type();
 
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);

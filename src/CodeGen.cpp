@@ -13,12 +13,20 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
 std::string CodeGen::visitFuncStmt(const std::shared_ptr<Func>& stmt) {
     std::string code = "auto " + stmt->name.lexeme + " = [](";
     for (size_t i = 0; i < stmt->params.size(); ++i) {
-        code += "auto " + stmt->params[i].lexeme;
+        if (stmt->params[i].type) {
+            code += stmt->params[i].type->name.lexeme + " " + stmt->params[i].name.lexeme;
+        } else {
+            code += "auto " + stmt->params[i].name.lexeme;
+        }
         if (i < stmt->params.size() - 1) {
             code += ", ";
         }
     }
-    code += ") {\n";
+    code += ")";
+    if (stmt->returnType) {
+        code += " -> " + stmt->returnType->name.lexeme;
+    }
+    code += " {\n";
     for (const auto& statement : stmt->body) {
         code += statement->accept(*this);
     }
@@ -88,7 +96,11 @@ std::string CodeGen::visitPrintStmt(const std::shared_ptr<Print>& stmt) {
 }
 
 std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt) {
-    std::string code = (stmt->is_mutable ? "auto " : "const auto ") + stmt->name.lexeme;
+    std::string type_str = "auto";
+    if (stmt->type) {
+        type_str = stmt->type->name.lexeme;
+    }
+    std::string code = (stmt->is_mutable ? "" : "const ") + type_str + " " + stmt->name.lexeme;
     if (stmt->initializer) {
         code += " = " + stmt->initializer->accept(*this);
     }

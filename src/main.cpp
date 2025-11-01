@@ -8,11 +8,11 @@
 
 int main() {
     std::string source = R"(
-        func add(a, b) {
+        func add(a: int, b: int) -> int {
             return a + b;
         }
 
-        let result = add(10, 20);
+        let result: int = add(10, 20);
     )";
 
     try {

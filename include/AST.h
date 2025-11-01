@@ -5,6 +5,10 @@
 #include <vector>
 #include <memory>
 
+struct Type {
+    Token name;
+};
+
 // Forward declarations for visitor pattern
 struct Binary;
 struct Grouping;
@@ -163,14 +167,15 @@ struct Print : Stmt, public std::enable_shared_from_this<Print> {
 };
 
 struct Var : Stmt, public std::enable_shared_from_this<Var> {
-    Var(Token name, std::shared_ptr<Expr> initializer, bool is_mutable)
-        : name(name), initializer(initializer), is_mutable(is_mutable) {}
+    Var(Token name, std::shared_ptr<Type> type, std::shared_ptr<Expr> initializer, bool is_mutable)
+        : name(name), type(type), initializer(initializer), is_mutable(is_mutable) {}
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitVarStmt(shared_from_this());
     }
 
     Token name;
+    std::shared_ptr<Type> type;
     std::shared_ptr<Expr> initializer;
     bool is_mutable;
 };
@@ -210,17 +215,23 @@ struct While : Stmt, public std::enable_shared_from_this<While> {
     std::shared_ptr<Stmt> body;
 };
 
+struct Parameter {
+    Token name;
+    std::shared_ptr<Type> type;
+};
+
 struct Func : Stmt, public std::enable_shared_from_this<Func> {
-    Func(Token name, std::vector<Token> params, std::vector<std::shared_ptr<Stmt>> body)
-        : name(name), params(params), body(body) {}
+    Func(Token name, std::vector<Parameter> params, std::vector<std::shared_ptr<Stmt>> body, std::shared_ptr<Type> returnType)
+        : name(name), params(params), body(body), returnType(returnType) {}
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitFuncStmt(shared_from_this());
     }
 
     Token name;
-    std::vector<Token> params;
+    std::vector<Parameter> params;
     std::vector<std::shared_ptr<Stmt>> body;
+    std::shared_ptr<Type> returnType;
 };
 
 struct Return : Stmt, public std::enable_shared_from_this<Return> {

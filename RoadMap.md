@@ -12,7 +12,7 @@ This document outlines the development roadmap for the Chtholly compiler.
 ## Phase 2: Basic Language Features
 
 - [x] **Variables:** Implement `let` and `mut` variable declarations.
-- [ ] **Data Types:** Support for basic data types (int, double, char, bool, string).
+- [ ] **Data Types:** Support for basic data types (int, double, char, bool, string). (Currently supports explicit type annotations)
 - [ ] **Operators:** Implement all C++ operators. (Currently supports arithmetic, comparison, and logical operators)
 - [ ] **Functions:** Implement function definitions and calls. (Currently supports basic function declaration, calls, and return statements)
 - [ ] **Control Flow:** Implement `if`, `else`, `switch`, `for`, and `while` statements. (Currently supports `if-else` and `while`)
