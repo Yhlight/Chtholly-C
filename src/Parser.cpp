@@ -13,6 +13,7 @@ std::vector<std::shared_ptr<Stmt>> Parser::parse() {
 
 std::shared_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::FUNC})) return function("function");
         if (match({TokenType::LET, TokenType::MUT})) {
             return varDeclaration();
@@ -37,6 +38,28 @@ std::shared_ptr<Stmt> Parser::varDeclaration() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
     return std::make_shared<Var>(name, varType, initializer, is_mutable);
+}
+
+std::shared_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+
+    std::vector<std::shared_ptr<Var>> fields;
+    std::vector<std::shared_ptr<Func>> methods;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        // TODO: Access modifiers public, private
+        if (current + 1 < tokens.size() && peek().type == TokenType::IDENTIFIER && tokens[current + 1].type == TokenType::LEFT_PAREN) {
+            methods.push_back(std::dynamic_pointer_cast<Func>(function("method")));
+        } else if (match({TokenType::LET, TokenType::MUT})) {
+            fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration()));
+        } else {
+            throw std::runtime_error("Unexpected token '" + peek().lexeme + "' in struct body.");
+        }
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_shared<Struct>(name, fields, methods);
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
@@ -216,6 +239,9 @@ std::shared_ptr<Expr> Parser::assignment() {
         if (auto var = std::dynamic_pointer_cast<Variable>(expr)) {
             Token name = var->name;
             return std::make_shared<Assign>(name, value);
+        } else if (auto get = std::dynamic_pointer_cast<Get>(expr)) {
+            // TODO: This is a hack. Revisit.
+            return std::make_shared<Set>(get->object, get->name, value);
         }
         throw std::runtime_error("Invalid assignment target.");
     }
@@ -296,7 +322,19 @@ std::shared_ptr<Expr> Parser::call() {
 
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
-            expr = finishCall(expr);
+            if (auto var = std::dynamic_pointer_cast<Variable>(expr)) {
+                if (var->name.lexeme == "print") {
+                    // This is a hack. Revisit.
+                    expr = finishCall(expr);
+                } else {
+                    expr = finishCall(expr);
+                }
+            } else {
+                expr = finishCall(expr);
+            }
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_shared<Get>(expr, name);
         } else {
             break;
         }
@@ -324,6 +362,9 @@ std::shared_ptr<Expr> Parser::finishCall(std::shared_ptr<Expr> callee) {
 std::shared_ptr<Expr> Parser::primary() {
     if (match({TokenType::NUMBER, TokenType::STRING})) {
         return std::make_shared<Literal>(previous().lexeme, previous().type);
+    }
+     if (match({TokenType::SELF})) {
+        return std::make_shared<Self>(previous());
     }
     if (match({TokenType::IDENTIFIER})) {
         return std::make_shared<Variable>(previous());

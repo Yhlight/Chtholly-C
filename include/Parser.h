@@ -16,6 +16,7 @@ private:
     int current = 0;
 
     std::shared_ptr<Stmt> declaration();
+    std::shared_ptr<Stmt> structDeclaration();
     std::shared_ptr<Stmt> function(std::string kind);
     std::shared_ptr<Stmt> varDeclaration();
     std::shared_ptr<Stmt> statement();

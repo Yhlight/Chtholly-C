@@ -19,7 +19,7 @@ This document outlines the development roadmap for the Chtholly compiler.
 
 ## Phase 3: Advanced Language Features
 
-- [ ] **Structs:** Implement `struct` definitions and instantiation.
+- [x] **Structs:** Implement `struct` definitions and instantiation.
 - [ ] **Ownership and Borrowing:** Implement the ownership system with `&` and `&mut`.
 - [ ] **Generics:** Implement generic functions and structs.
 - [ ] **Traits and Constraints:** Implement `trait` and `impl` with `?` constraints.

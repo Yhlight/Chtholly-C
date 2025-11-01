@@ -18,6 +18,7 @@ static std::map<std::string, TokenType> keywords = {
     {"return", TokenType::RETURN},
     {"struct", TokenType::STRUCT},
     {"enum", TokenType::ENUM},
+    {"self", TokenType::SELF},
     {"public", TokenType::PUBLIC},
     {"private", TokenType::PRIVATE},
     {"import", TokenType::IMPORT},

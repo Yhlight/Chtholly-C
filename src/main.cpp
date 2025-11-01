@@ -8,20 +8,15 @@
 
 int main() {
     std::string source = R"(
-        mut a = 1;
-        switch (a) {
-            case 1: {
-                a = 2;
-                fallthrough;
-            }
-            case 2: {
-                a = 3;
-                break;
-            }
-            case 3: {
-                a = 4;
+        struct Test {
+            mut name: string = "hello";
+            printName() {
+                print(self.name);
             }
         }
+        mut t: Test;
+        t.name = "world";
+        t.printName();
     )";
 
     try {
@@ -35,7 +30,8 @@ int main() {
             CodeGen codegen;
             std::string code = codegen.generate(statements);
 
-            std::cout << "#include <iostream>\n\n";
+            std::cout << "#include <iostream>\n";
+            std::cout << "#include <string>\n\n";
             std::cout << "int main() {\n";
             std::cout << code;
             std::cout << "    return 0;\n";

@@ -17,6 +17,9 @@ struct Unary;
 struct Variable;
 struct Assign;
 struct Call;
+struct Get;
+struct Set;
+struct Self;
 
 // Visitor for expressions
 template<typename R>
@@ -28,6 +31,9 @@ struct ExprVisitor {
     virtual R visitVariableExpr(const std::shared_ptr<Variable>& expr) = 0;
     virtual R visitAssignExpr(const std::shared_ptr<Assign>& expr) = 0;
     virtual R visitCallExpr(const std::shared_ptr<Call>& expr) = 0;
+    virtual R visitGetExpr(const std::shared_ptr<Get>& expr) = 0;
+    virtual R visitSetExpr(const std::shared_ptr<Set>& expr) = 0;
+    virtual R visitSelfExpr(const std::shared_ptr<Self>& expr) = 0;
 };
 
 // Base class for all expressions
@@ -116,6 +122,41 @@ struct Call : Expr, public std::enable_shared_from_this<Call> {
     std::vector<std::shared_ptr<Expr>> arguments;
 };
 
+struct Get : Expr, public std::enable_shared_from_this<Get> {
+    Get(std::shared_ptr<Expr> object, Token name)
+        : object(object), name(name) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitGetExpr(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> object;
+    Token name;
+};
+
+struct Set : Expr, public std::enable_shared_from_this<Set> {
+    Set(std::shared_ptr<Expr> object, Token name, std::shared_ptr<Expr> value)
+        : object(object), name(name), value(value) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitSetExpr(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> object;
+    Token name;
+    std::shared_ptr<Expr> value;
+};
+
+struct Self : Expr, public std::enable_shared_from_this<Self> {
+    Self(Token keyword) : keyword(keyword) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitSelfExpr(shared_from_this());
+    }
+
+    Token keyword;
+};
+
 // Forward declarations for statement visitor
 struct Expression;
 struct Var;
@@ -128,6 +169,7 @@ struct For;
 struct Switch;
 struct Break;
 struct Fallthrough;
+struct Struct;
 
 // Visitor for statements
 template<typename R>
@@ -143,6 +185,7 @@ struct StmtVisitor {
     virtual R visitSwitchStmt(const std::shared_ptr<Switch>& stmt) = 0;
     virtual R visitBreakStmt(const std::shared_ptr<Break>& stmt) = 0;
     virtual R visitFallthroughStmt(const std::shared_ptr<Fallthrough>& stmt) = 0;
+    virtual R visitStructStmt(const std::shared_ptr<Struct>& stmt) = 0;
 };
 
 // Base class for all statements
@@ -299,6 +342,19 @@ struct Fallthrough : Stmt, public std::enable_shared_from_this<Fallthrough> {
     }
 
     Token keyword;
+};
+
+struct Struct : Stmt, public std::enable_shared_from_this<Struct> {
+    Struct(Token name, std::vector<std::shared_ptr<Var>> fields, std::vector<std::shared_ptr<Func>> methods)
+        : name(name), fields(fields), methods(methods) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitStructStmt(shared_from_this());
+    }
+
+    Token name;
+    std::vector<std::shared_ptr<Var>> fields;
+    std::vector<std::shared_ptr<Func>> methods;
 };
 
 #endif //CHTHOLLY_AST_H

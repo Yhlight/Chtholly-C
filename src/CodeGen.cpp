@@ -10,6 +10,55 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
     return code;
 }
 
+std::string CodeGen::visitGetExpr(const std::shared_ptr<Get>& expr) {
+    if (auto self = std::dynamic_pointer_cast<Self>(expr->object)) {
+        return self->accept(*this) + expr->name.lexeme;
+    }
+    return expr->object->accept(*this) + "." + expr->name.lexeme;
+}
+
+std::string CodeGen::visitSetExpr(const std::shared_ptr<Set>& expr) {
+    return expr->object->accept(*this) + "." + expr->name.lexeme + " = " + expr->value->accept(*this);
+}
+
+std::string CodeGen::visitSelfExpr(const std::shared_ptr<Self>& expr) {
+    return "this->";
+}
+
+std::string CodeGen::visitStructStmt(const std::shared_ptr<Struct>& stmt) {
+    std::string code = "struct " + stmt->name.lexeme + " {\n";
+
+    for (const auto& field : stmt->fields) {
+        code += field->accept(*this);
+    }
+
+    for (const auto& method : stmt->methods) {
+        std::string returnType = "void";
+        if (method->returnType) {
+            returnType = method->returnType->name.lexeme;
+        }
+        code += "    " + returnType + " " + method->name.lexeme + "(";
+        for (size_t i = 0; i < method->params.size(); ++i) {
+            if (method->params[i].type) {
+                code += method->params[i].type->name.lexeme + " " + method->params[i].name.lexeme;
+            } else {
+                code += "auto " + method->params[i].name.lexeme;
+            }
+            if (i < method->params.size() - 1) {
+                code += ", ";
+            }
+        }
+        code += ") {\n";
+        for (const auto& statement : method->body) {
+            code += "        " + statement->accept(*this);
+        }
+        code += "    }\n";
+    }
+
+    code += "};\n";
+    return code;
+}
+
 std::string CodeGen::visitSwitchStmt(const std::shared_ptr<Switch>& stmt) {
     std::string code = "switch (" + stmt->condition->accept(*this) + ") {\n";
     for (const auto& case_stmt : stmt->cases) {
@@ -83,6 +132,21 @@ std::string CodeGen::visitReturnStmt(const std::shared_ptr<Return>& stmt) {
 }
 
 std::string CodeGen::visitCallExpr(const std::shared_ptr<Call>& expr) {
+    if (auto var = std::dynamic_pointer_cast<Variable>(expr->callee)) {
+        if (var->name.lexeme == "print") {
+            // This is a hack. Revisit.
+            std::string code = "std::cout << ";
+            for (size_t i = 0; i < expr->arguments.size(); ++i) {
+                code += expr->arguments[i]->accept(*this);
+                if (i < expr->arguments.size() - 1) {
+                    code += " << ";
+                }
+            }
+            code += " << std::endl";
+            return code;
+        }
+    }
+
     std::string code = expr->callee->accept(*this) + "(";
     for (size_t i = 0; i < expr->arguments.size(); ++i) {
         code += expr->arguments[i]->accept(*this);
@@ -145,7 +209,11 @@ std::string CodeGen::visitExpressionStmt(const std::shared_ptr<Expression>& stmt
 std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt, bool semicolon) {
     std::string type_str = "auto";
     if (stmt->type) {
-        type_str = stmt->type->name.lexeme;
+        if (stmt->type->name.lexeme == "string") {
+            type_str = "std::string";
+        } else {
+            type_str = stmt->type->name.lexeme;
+        }
     }
     std::string code = (stmt->is_mutable ? "" : "const ") + type_str + " " + stmt->name.lexeme;
     if (stmt->initializer) {

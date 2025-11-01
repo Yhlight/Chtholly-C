@@ -17,6 +17,9 @@ public:
     std::string visitVariableExpr(const std::shared_ptr<Variable>& expr) override;
     std::string visitAssignExpr(const std::shared_ptr<Assign>& expr) override;
     std::string visitCallExpr(const std::shared_ptr<Call>& expr) override;
+    std::string visitGetExpr(const std::shared_ptr<Get>& expr) override;
+    std::string visitSetExpr(const std::shared_ptr<Set>& expr) override;
+    std::string visitSelfExpr(const std::shared_ptr<Self>& expr) override;
 
     std::string visitExpressionStmt(const std::shared_ptr<Expression>& stmt) override;
     std::string visitVarStmt(const std::shared_ptr<Var>& stmt) override;
@@ -33,6 +36,7 @@ public:
     std::string visitSwitchStmt(const std::shared_ptr<Switch>& stmt) override;
     std::string visitBreakStmt(const std::shared_ptr<Break>& stmt) override;
     std::string visitFallthroughStmt(const std::shared_ptr<Fallthrough>& stmt) override;
+    std::string visitStructStmt(const std::shared_ptr<Struct>& stmt) override;
 };
 
 #endif //CHTHOLLY_CODEGEN_H
