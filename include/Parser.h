@@ -43,6 +43,7 @@ private:
     std::shared_ptr<Expr> primary();
     std::shared_ptr<Expr> finishCall(std::shared_ptr<Expr> callee);
     std::shared_ptr<Type> type();
+    std::shared_ptr<Expr> structInstantiation();
 
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);

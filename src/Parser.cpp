@@ -154,7 +154,17 @@ std::shared_ptr<Stmt> Parser::function(std::string kind) {
             Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
             std::shared_ptr<Type> paramType = nullptr;
             if (check(TokenType::COLON)) {
-                paramType = type();
+                consume(TokenType::COLON, "Expect ':' before type.");
+                bool is_ref = false;
+                bool is_mut_ref = false;
+                if (match({TokenType::AMPERSAND})) {
+                    is_ref = true;
+                    if (match({TokenType::MUT})) {
+                        is_mut_ref = true;
+                    }
+                }
+                Token typeName = consume(TokenType::IDENTIFIER, "Expect type name.");
+                paramType = std::make_shared<Type>(Type{typeName, is_ref, is_mut_ref});
             }
             parameters.push_back({paramName, paramType});
         } while (match({TokenType::COMMA}));
@@ -236,14 +246,7 @@ std::shared_ptr<Expr> Parser::assignment() {
     if (match({TokenType::EQUAL})) {
         Token equals = previous();
         std::shared_ptr<Expr> value = assignment();
-        if (auto var = std::dynamic_pointer_cast<Variable>(expr)) {
-            Token name = var->name;
-            return std::make_shared<Assign>(name, value);
-        } else if (auto get = std::dynamic_pointer_cast<Get>(expr)) {
-            // TODO: This is a hack. Revisit.
-            return std::make_shared<Set>(get->object, get->name, value);
-        }
-        throw std::runtime_error("Invalid assignment target.");
+        return std::make_shared<Assign>(expr, value);
     }
     return expr;
 }
@@ -314,6 +317,16 @@ std::shared_ptr<Expr> Parser::unary() {
         std::shared_ptr<Expr> right = unary();
         return std::make_shared<Unary>(op, right);
     }
+    if (match({TokenType::AMPERSAND})) {
+        Token op = previous();
+        std::shared_ptr<Expr> right = unary();
+        return std::make_shared<Reference>(op, right);
+    }
+    if (match({TokenType::STAR})) {
+        Token op = previous();
+        std::shared_ptr<Expr> right = unary();
+        return std::make_shared<Dereference>(op, right);
+    }
     return call();
 }
 
@@ -322,16 +335,7 @@ std::shared_ptr<Expr> Parser::call() {
 
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
-            if (auto var = std::dynamic_pointer_cast<Variable>(expr)) {
-                if (var->name.lexeme == "print") {
-                    // This is a hack. Revisit.
-                    expr = finishCall(expr);
-                } else {
-                    expr = finishCall(expr);
-                }
-            } else {
-                expr = finishCall(expr);
-            }
+            expr = finishCall(expr);
         } else if (match({TokenType::DOT})) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
             expr = std::make_shared<Get>(expr, name);
@@ -367,6 +371,9 @@ std::shared_ptr<Expr> Parser::primary() {
         return std::make_shared<Self>(previous());
     }
     if (match({TokenType::IDENTIFIER})) {
+        if (check(TokenType::LEFT_BRACE)) {
+            return structInstantiation();
+        }
         return std::make_shared<Variable>(previous());
     }
     if (match({TokenType::LEFT_PAREN})) {
@@ -377,10 +384,34 @@ std::shared_ptr<Expr> Parser::primary() {
     throw std::runtime_error("Expect expression.");
 }
 
+std::shared_ptr<Expr> Parser::structInstantiation() {
+    Token name = previous();
+    consume(TokenType::LEFT_BRACE, "Expect '{' after struct name.");
+    std::vector<std::pair<Token, std::shared_ptr<Expr>>> fields;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
+            consume(TokenType::COLON, "Expect ':' after field name.");
+            std::shared_ptr<Expr> value = expression();
+            fields.push_back({fieldName, value});
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+    return std::make_shared<Instantiation>(name, fields);
+}
+
 std::shared_ptr<Type> Parser::type() {
     consume(TokenType::COLON, "Expect ':' before type.");
+    bool is_ref = false;
+    bool is_mut_ref = false;
+    if (match({TokenType::AMPERSAND})) {
+        is_ref = true;
+        if (match({TokenType::MUT})) {
+            is_mut_ref = true;
+        }
+    }
     Token typeName = consume(TokenType::IDENTIFIER, "Expect type name.");
-    return std::make_shared<Type>(Type{typeName});
+    return std::make_shared<Type>(Type{typeName, is_ref, is_mut_ref});
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

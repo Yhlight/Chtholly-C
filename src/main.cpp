@@ -8,15 +8,15 @@
 
 int main() {
     std::string source = R"(
-        struct Test {
-            mut name: string = "hello";
-            printName() {
-                print(self.name);
-            }
+        func print(i: int) {
+            // This is a placeholder for a proper standard library function
         }
-        mut t: Test;
-        t.name = "world";
-        t.printName();
+        struct Point {
+            mut x: int;
+            mut y: int;
+        };
+        let p = Point{x: 1, y: 2};
+        print(p.x);
     )";
 
     try {

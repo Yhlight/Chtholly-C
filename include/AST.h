@@ -7,6 +7,8 @@
 
 struct Type {
     Token name;
+    bool is_ref = false;
+    bool is_mut_ref = false;
 };
 
 // Forward declarations for visitor pattern
@@ -20,6 +22,9 @@ struct Call;
 struct Get;
 struct Set;
 struct Self;
+struct Reference;
+struct Dereference;
+struct Instantiation;
 
 // Visitor for expressions
 template<typename R>
@@ -34,6 +39,9 @@ struct ExprVisitor {
     virtual R visitGetExpr(const std::shared_ptr<Get>& expr) = 0;
     virtual R visitSetExpr(const std::shared_ptr<Set>& expr) = 0;
     virtual R visitSelfExpr(const std::shared_ptr<Self>& expr) = 0;
+    virtual R visitReferenceExpr(const std::shared_ptr<Reference>& expr) = 0;
+    virtual R visitDereferenceExpr(const std::shared_ptr<Dereference>& expr) = 0;
+    virtual R visitInstantiationExpr(const std::shared_ptr<Instantiation>& expr) = 0;
 };
 
 // Base class for all expressions
@@ -99,13 +107,13 @@ struct Variable : Expr, public std::enable_shared_from_this<Variable> {
 };
 
 struct Assign : Expr, public std::enable_shared_from_this<Assign> {
-    Assign(Token name, std::shared_ptr<Expr> value) : name(name), value(value) {}
+    Assign(std::shared_ptr<Expr> target, std::shared_ptr<Expr> value) : target(target), value(value) {}
 
     std::string accept(ExprVisitor<std::string>& visitor) override {
         return visitor.visitAssignExpr(shared_from_this());
     }
 
-    Token name;
+    std::shared_ptr<Expr> target;
     std::shared_ptr<Expr> value;
 };
 
@@ -155,6 +163,39 @@ struct Self : Expr, public std::enable_shared_from_this<Self> {
     }
 
     Token keyword;
+};
+
+struct Reference : Expr, public std::enable_shared_from_this<Reference> {
+    Reference(Token op, std::shared_ptr<Expr> right) : op(op), right(right) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitReferenceExpr(shared_from_this());
+    }
+
+    Token op;
+    std::shared_ptr<Expr> right;
+};
+
+struct Dereference : Expr, public std::enable_shared_from_this<Dereference> {
+    Dereference(Token op, std::shared_ptr<Expr> right) : op(op), right(right) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitDereferenceExpr(shared_from_this());
+    }
+
+    Token op;
+    std::shared_ptr<Expr> right;
+};
+
+struct Instantiation : Expr, public std::enable_shared_from_this<Instantiation> {
+    Instantiation(Token name, std::vector<std::pair<Token, std::shared_ptr<Expr>>> fields) : name(name), fields(fields) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitInstantiationExpr(shared_from_this());
+    }
+
+    Token name;
+    std::vector<std::pair<Token, std::shared_ptr<Expr>>> fields;
 };
 
 // Forward declarations for statement visitor
