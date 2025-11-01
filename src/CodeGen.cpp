@@ -1,9 +1,26 @@
 #include "CodeGen.h"
 #include "AST.h"
+#include <set>
 
 namespace chtholly {
 
+// Helper to check for string type usage
+bool usesStringType(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    for (const auto& stmt : statements) {
+        if (auto* varDecl = dynamic_cast<const VarDeclStmt*>(stmt.get())) {
+            if (varDecl->type && varDecl->type->lexeme == "string") {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    if (usesStringType(statements)) {
+        out << "#include <string>\n";
+    }
+
     for (const auto& stmt : statements) {
         stmt->accept(*this);
     }
@@ -15,7 +32,18 @@ std::string CodeGen::generateVarDecl(const VarDeclStmt& stmt) {
     if (stmt.keyword.type == TokenType::LET) {
         temp_out << "const ";
     }
-    temp_out << "auto " << stmt.name.lexeme;
+
+    // Use the explicit type if provided, otherwise use auto.
+    if (stmt.type) {
+        if (stmt.type->lexeme == "string") {
+            temp_out << "std::string " << stmt.name.lexeme;
+        } else {
+            temp_out << stmt.type->lexeme << " " << stmt.name.lexeme;
+        }
+    } else {
+        temp_out << "auto " << stmt.name.lexeme;
+    }
+
     if (stmt.initializer) {
         temp_out << " = " << stmt.initializer->accept(*this);
     }
