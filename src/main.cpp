@@ -8,15 +8,19 @@
 
 int main() {
     std::string source = R"(
-        func print(i: int) {
-            // This is a placeholder for a proper standard library function
+        func swap<T>(a: &mut T, b: &mut T) {
+            let temp = *a;
+            *a = *b;
+            *b = temp;
         }
-        struct Point {
-            mut x: int;
-            mut y: int;
+
+        struct Point<T> {
+            mut x: T;
+            mut y: T;
         };
-        let p = Point{x: 1, y: 2};
-        print(p.x);
+
+        let p = Point<int>{x: 1, y: 2};
+        swap(&mut p.x, &mut p.y);
     )";
 
     try {

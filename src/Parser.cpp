@@ -42,6 +42,15 @@ std::shared_ptr<Stmt> Parser::varDeclaration() {
 
 std::shared_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+
+    std::vector<Token> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
+
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
 
     std::vector<std::shared_ptr<Var>> fields;
@@ -59,7 +68,7 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     }
 
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_shared<Struct>(name, fields, methods);
+    return std::make_shared<Struct>(name, generics, fields, methods);
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
@@ -144,6 +153,15 @@ std::shared_ptr<Stmt> Parser::forStatement() {
 
 std::shared_ptr<Stmt> Parser::function(std::string kind) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+
+    std::vector<Token> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
+
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Parameter> parameters;
     if (!check(TokenType::RIGHT_PAREN)) {
@@ -179,7 +197,7 @@ std::shared_ptr<Stmt> Parser::function(std::string kind) {
 
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     std::vector<std::shared_ptr<Stmt>> body = block();
-    return std::make_shared<Func>(name, parameters, body, returnType);
+    return std::make_shared<Func>(name, generics, parameters, body, returnType);
 }
 
 std::shared_ptr<Stmt> Parser::returnStatement() {
@@ -339,6 +357,13 @@ std::shared_ptr<Expr> Parser::call() {
         } else if (match({TokenType::DOT})) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
             expr = std::make_shared<Get>(expr, name);
+        } else if (match({TokenType::LESS})) {
+            std::vector<std::shared_ptr<Type>> generic_types;
+            do {
+                generic_types.push_back(type());
+            } while (match({TokenType::COMMA}));
+            consume(TokenType::GREATER, "Expect '>' after generic type list.");
+            expr = std::make_shared<Generic>(expr, generic_types);
         } else {
             break;
         }
@@ -411,7 +436,14 @@ std::shared_ptr<Type> Parser::type() {
         }
     }
     Token typeName = consume(TokenType::IDENTIFIER, "Expect type name.");
-    return std::make_shared<Type>(Type{typeName, is_ref, is_mut_ref});
+    std::vector<std::shared_ptr<Type>> generic_types;
+    if (match({TokenType::LESS})) {
+        do {
+            generic_types.push_back(type());
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
+    return std::make_shared<Type>(Type{typeName, is_ref, is_mut_ref, generic_types});
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

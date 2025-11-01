@@ -22,6 +22,19 @@ std::string CodeGen::visitInstantiationExpr(const std::shared_ptr<Instantiation>
     return code;
 }
 
+std::string CodeGen::visitGenericExpr(const std::shared_ptr<Generic>& expr) {
+    std::string code = expr->callee->accept(*this);
+    code += "<";
+    for (size_t i = 0; i < expr->generic_types.size(); ++i) {
+        code += expr->generic_types[i]->name.lexeme;
+        if (i < expr->generic_types.size() - 1) {
+            code += ", ";
+        }
+    }
+    code += ">";
+    return code;
+}
+
 std::string CodeGen::visitReferenceExpr(const std::shared_ptr<Reference>& expr) {
     return "&" + expr->right->accept(*this);
 }
@@ -46,7 +59,18 @@ std::string CodeGen::visitSelfExpr(const std::shared_ptr<Self>& expr) {
 }
 
 std::string CodeGen::visitStructStmt(const std::shared_ptr<Struct>& stmt) {
-    std::string code = "struct " + stmt->name.lexeme + " {\n";
+    std::string code;
+    if (!stmt->generics.empty()) {
+        code += "template<";
+        for (size_t i = 0; i < stmt->generics.size(); ++i) {
+            code += "typename " + stmt->generics[i].lexeme;
+            if (i < stmt->generics.size() - 1) {
+                code += ", ";
+            }
+        }
+        code += ">\n";
+    }
+    code += "struct " + stmt->name.lexeme + " {\n";
 
     for (const auto& field : stmt->fields) {
         code += field->accept(*this);
@@ -118,34 +142,56 @@ std::string CodeGen::visitForStmt(const std::shared_ptr<For>& stmt) {
     return code;
 }
 
-std::string CodeGen::visitFuncStmt(const std::shared_ptr<Func>& stmt) {
-    std::string code = "auto " + stmt->name.lexeme + " = [](";
-    for (size_t i = 0; i < stmt->params.size(); ++i) {
-        if (stmt->params[i].type) {
-            std::string type_str;
-            if (stmt->params[i].type->name.lexeme == "string") {
-                type_str = "std::string";
-            } else {
-                type_str = stmt->params[i].type->name.lexeme;
+std::string getTypeString(const std::shared_ptr<Type>& type) {
+    if (!type) return "auto";
+    std::string type_str;
+    if (type->name.lexeme == "string") {
+        type_str = "std::string";
+    } else {
+        type_str = type->name.lexeme;
+    }
+    if (!type->generic_types.empty()) {
+        type_str += "<";
+        for (size_t i = 0; i < type->generic_types.size(); ++i) {
+            type_str += getTypeString(type->generic_types[i]);
+            if (i < type->generic_types.size() - 1) {
+                type_str += ", ";
             }
-            if (stmt->params[i].type->is_ref) {
-                if (stmt->params[i].type->is_mut_ref) {
-                    type_str += "&";
-                } else {
-                    type_str = "const " + type_str + "&";
-                }
-            }
-            code += type_str + " " + stmt->params[i].name.lexeme;
-        } else {
-            code += "auto " + stmt->params[i].name.lexeme;
         }
+        type_str += ">";
+    }
+    if (type->is_ref) {
+        if (type->is_mut_ref) {
+            type_str += "&";
+        } else {
+            type_str = "const " + type_str + "&";
+        }
+    }
+    return type_str;
+}
+
+std::string CodeGen::visitFuncStmt(const std::shared_ptr<Func>& stmt) {
+    std::string code;
+    if (!stmt->generics.empty()) {
+        code += "template<";
+        for (size_t i = 0; i < stmt->generics.size(); ++i) {
+            code += "typename " + stmt->generics[i].lexeme;
+            if (i < stmt->generics.size() - 1) {
+                code += ", ";
+            }
+        }
+        code += ">\n";
+    }
+    code += "auto " + stmt->name.lexeme + " = [](";
+    for (size_t i = 0; i < stmt->params.size(); ++i) {
+        code += getTypeString(stmt->params[i].type) + " " + stmt->params[i].name.lexeme;
         if (i < stmt->params.size() - 1) {
             code += ", ";
         }
     }
     code += ")";
     if (stmt->returnType) {
-        code += " -> " + stmt->returnType->name.lexeme;
+        code += " -> " + getTypeString(stmt->returnType);
     }
     code += " {\n";
     for (const auto& statement : stmt->body) {
@@ -229,17 +275,7 @@ std::string CodeGen::visitExpressionStmt(const std::shared_ptr<Expression>& stmt
 }
 
 std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt, bool semicolon) {
-    std::string type_str = "auto";
-    if (stmt->type) {
-        if (stmt->type->name.lexeme == "string") {
-            type_str = "std::string";
-        } else {
-            type_str = stmt->type->name.lexeme;
-        }
-        if (stmt->type->is_ref) {
-            type_str += "&";
-        }
-    }
+    std::string type_str = getTypeString(stmt->type);
     std::string code = (stmt->is_mutable ? "" : "const ") + type_str + " " + stmt->name.lexeme;
     if (stmt->initializer) {
         code += " = " + stmt->initializer->accept(*this);

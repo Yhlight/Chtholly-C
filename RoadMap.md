@@ -21,7 +21,7 @@ This document outlines the development roadmap for the Chtholly compiler.
 
 - [x] **Structs:** Implement `struct` definitions and instantiation.
 - [x] **Ownership and Borrowing:** Implement the ownership system with `&` and `&mut`.
-- [ ] **Generics:** Implement generic functions and structs.
+- [x] **Generics:** Implement generic functions and structs.
 - [ ] **Traits and Constraints:** Implement `trait` and `impl` with `?` constraints.
 - [ ] **Modules:** Implement `import` statements.
 

@@ -9,6 +9,7 @@ struct Type {
     Token name;
     bool is_ref = false;
     bool is_mut_ref = false;
+    std::vector<std::shared_ptr<Type>> generic_types;
 };
 
 // Forward declarations for visitor pattern
@@ -25,6 +26,7 @@ struct Self;
 struct Reference;
 struct Dereference;
 struct Instantiation;
+struct Generic;
 
 // Visitor for expressions
 template<typename R>
@@ -42,6 +44,7 @@ struct ExprVisitor {
     virtual R visitReferenceExpr(const std::shared_ptr<Reference>& expr) = 0;
     virtual R visitDereferenceExpr(const std::shared_ptr<Dereference>& expr) = 0;
     virtual R visitInstantiationExpr(const std::shared_ptr<Instantiation>& expr) = 0;
+    virtual R visitGenericExpr(const std::shared_ptr<Generic>& expr) = 0;
 };
 
 // Base class for all expressions
@@ -198,6 +201,17 @@ struct Instantiation : Expr, public std::enable_shared_from_this<Instantiation> 
     std::vector<std::pair<Token, std::shared_ptr<Expr>>> fields;
 };
 
+struct Generic : Expr, public std::enable_shared_from_this<Generic> {
+    Generic(std::shared_ptr<Expr> callee, std::vector<std::shared_ptr<Type>> generic_types) : callee(callee), generic_types(generic_types) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitGenericExpr(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> callee;
+    std::vector<std::shared_ptr<Type>> generic_types;
+};
+
 // Forward declarations for statement visitor
 struct Expression;
 struct Var;
@@ -301,14 +315,15 @@ struct Parameter {
 };
 
 struct Func : Stmt, public std::enable_shared_from_this<Func> {
-    Func(Token name, std::vector<Parameter> params, std::vector<std::shared_ptr<Stmt>> body, std::shared_ptr<Type> returnType)
-        : name(name), params(params), body(body), returnType(returnType) {}
+    Func(Token name, std::vector<Token> generics, std::vector<Parameter> params, std::vector<std::shared_ptr<Stmt>> body, std::shared_ptr<Type> returnType)
+        : name(name), generics(generics), params(params), body(body), returnType(returnType) {}
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitFuncStmt(shared_from_this());
     }
 
     Token name;
+    std::vector<Token> generics;
     std::vector<Parameter> params;
     std::vector<std::shared_ptr<Stmt>> body;
     std::shared_ptr<Type> returnType;
@@ -386,14 +401,15 @@ struct Fallthrough : Stmt, public std::enable_shared_from_this<Fallthrough> {
 };
 
 struct Struct : Stmt, public std::enable_shared_from_this<Struct> {
-    Struct(Token name, std::vector<std::shared_ptr<Var>> fields, std::vector<std::shared_ptr<Func>> methods)
-        : name(name), fields(fields), methods(methods) {}
+    Struct(Token name, std::vector<Token> generics, std::vector<std::shared_ptr<Var>> fields, std::vector<std::shared_ptr<Func>> methods)
+        : name(name), generics(generics), fields(fields), methods(methods) {}
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitStructStmt(shared_from_this());
     }
 
     Token name;
+    std::vector<Token> generics;
     std::vector<std::shared_ptr<Var>> fields;
     std::vector<std::shared_ptr<Func>> methods;
 };

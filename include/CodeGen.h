@@ -23,6 +23,7 @@ public:
     std::string visitReferenceExpr(const std::shared_ptr<Reference>& expr) override;
     std::string visitDereferenceExpr(const std::shared_ptr<Dereference>& expr) override;
     std::string visitInstantiationExpr(const std::shared_ptr<Instantiation>& expr) override;
+    std::string visitGenericExpr(const std::shared_ptr<Generic>& expr) override;
 
     std::string visitExpressionStmt(const std::shared_ptr<Expression>& stmt) override;
     std::string visitVarStmt(const std::shared_ptr<Var>& stmt) override;
