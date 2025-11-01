@@ -4,16 +4,16 @@ This document outlines the development plan for the Chtholly programming languag
 
 ## Phase 1: Core Compiler Infrastructure
 
-*   [ ] Set up the basic project structure (`src`, `tests`, `build`).
-*   [ ] Implement the CMake build system.
-*   [ ] Create a Python build script (`build.py`).
-*   [ ] Set up the GoogleTest framework for testing.
+*   [x] Set up the basic project structure (`src`, `tests`, `build`).
+*   [x] Implement the CMake build system.
+*   [x] Create a Python build script (`build.py`).
+*   [x] Set up the GoogleTest framework for testing.
 
 ## Phase 2: Lexer (Tokenization)
 
-*   [ ] Define all token types in `src/Token.h`.
-*   [ ] Implement the Lexer in `src/Lexer.h` and `src/Lexer.cpp`.
-*   [ ] Write comprehensive tests for the Lexer to cover all tokens and edge cases.
+*   [x] Define all token types in `src/Token.h`.
+*   [x] Implement the Lexer in `src/Lexer.h` and `src/Lexer.cpp`.
+*   [x] Write comprehensive tests for the Lexer to cover all tokens and edge cases.
 
 ## Phase 3: Parser (AST Generation)
 
