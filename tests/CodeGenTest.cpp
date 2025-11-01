@@ -75,3 +75,9 @@ TEST(CodeGenTest, GeneratesStruct) {
     std::string expected = PREAMBLE + "struct Point { int x; int y; }; const auto p = Point{ .x = 1, .y = 2 }; const int a = p.x;";
     EXPECT_EQ(normalize(compile(source)), normalize(expected));
 }
+
+TEST(CodeGenTest, GeneratesPrintStatement) {
+    std::string source = "import iostream; print(1);";
+    std::string expected = "#include <string>\n#include <vector>\n#include <array>\n#include <iostream>\nstd::cout << 1;";
+    EXPECT_EQ(normalize(compile(source)), normalize(expected));
+}

@@ -394,6 +394,14 @@ std::unique_ptr<Type> Sema::visit(const CallExpr& expr) {
 
     Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
     if (!symbol) {
+        if (varExpr->name.lexeme == "print" && importedModules.count("iostream")) {
+            if (expr.arguments.size() != 1) {
+                error(expr.getToken(), "print() requires exactly one argument.");
+                return nullptr;
+            }
+            expr.arguments[0]->accept(*this);
+            return std::make_unique<VoidType>();
+        }
         error(varExpr->name, "Undefined function.");
         return nullptr;
     }
@@ -498,6 +506,10 @@ void Sema::visit(const SwitchStmt& stmt) {
 
 void Sema::visit(const CaseStmt& stmt) {
     // This is handled by visit(SwitchStmt&)
+}
+
+void Sema::visit(const ImportStmt& stmt) {
+    importedModules.insert(stmt.path.lexeme);
 }
 
 void Sema::visit(const BreakStmt& stmt) {

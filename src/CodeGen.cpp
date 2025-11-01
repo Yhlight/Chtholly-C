@@ -19,6 +19,9 @@ std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statemen
     if (hasOptionals) {
         preamble += "#include <optional>\n";
     }
+    if (hasPrint) {
+        preamble += "#include <iostream>\n";
+    }
 
     return preamble + out.str();
 }
@@ -106,6 +109,10 @@ void CodeGen::visit(const FuncDeclStmt& stmt) {
     out << "\n";
 }
 
+void CodeGen::visit(const ImportStmt& stmt) {
+    // Do nothing for now.
+}
+
 void CodeGen::visit(const ReturnStmt& stmt) {
     out << "return";
     if (stmt.value) {
@@ -152,6 +159,13 @@ std::string CodeGen::visit(const CallExpr& expr) {
             std::string obj = memberAccess->object->accept(*this);
             std::string arg = expr.arguments[0]->accept(*this);
             return obj + ".value_or(" + arg + ")";
+        }
+    }
+
+    if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.callee.get())) {
+        if (varExpr->name.lexeme == "print") {
+            hasPrint = true;
+            return "std::cout << " + expr.arguments[0]->accept(*this);
         }
     }
 

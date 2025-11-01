@@ -26,6 +26,7 @@ private:
     void visit(const FallthroughStmt& stmt) override;
     void visit(const StructDeclStmt& stmt) override;
     void visit(const EnumDeclStmt& stmt) override;
+    void visit(const ImportStmt& stmt) override;
 
     std::string visit(const LiteralExpr& expr) override;
     std::string visit(const UnaryExpr& expr) override;
@@ -49,6 +50,7 @@ private:
     std::stringstream out;
     bool hasMoves = false;
     bool hasOptionals = false;
+    bool hasPrint = false;
 };
 
 } // namespace chtholly

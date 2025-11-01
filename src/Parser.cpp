@@ -26,23 +26,30 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 std::vector<std::unique_ptr<Stmt>> Parser::declaration() {
     try {
         if (match({TokenType::IMPORT})) {
-            Token path_token = consume(TokenType::STRING, "Expect file path string.");
+            Token path_token = consume(peek().type == TokenType::STRING ? TokenType::STRING : TokenType::IDENTIFIER, "Expect file path string or module name.");
             consume(TokenType::SEMICOLON, "Expect ';' after import path.");
-            std::string path = path_token.lexeme.substr(1, path_token.lexeme.length() - 2);
 
-            std::ifstream file(path);
-            if (!file.is_open()) {
-                throw error(path_token, "Failed to open import file: " + path);
+            if (path_token.type == TokenType::STRING) {
+                std::string path = path_token.lexeme.substr(1, path_token.lexeme.length() - 2);
+
+                std::ifstream file(path);
+                if (!file.is_open()) {
+                    throw error(path_token, "Failed to open import file: " + path);
+                }
+
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                std::string source = buffer.str();
+
+                Lexer import_lexer(source);
+                std::vector<Token> import_tokens = import_lexer.scanTokens();
+                Parser import_parser(import_tokens);
+                return import_parser.parse();
+            } else {
+                std::vector<std::unique_ptr<Stmt>> result;
+                result.push_back(std::make_unique<ImportStmt>(std::move(path_token)));
+                return result;
             }
-
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            std::string source = buffer.str();
-
-            Lexer import_lexer(source);
-            std::vector<Token> import_tokens = import_lexer.scanTokens();
-            Parser import_parser(import_tokens);
-            return import_parser.parse();
         }
 
         std::unique_ptr<Stmt> stmt = nullptr;

@@ -4,6 +4,7 @@
 #include "AST.h"
 #include <vector>
 #include <iostream>
+#include <set>
 
 namespace chtholly {
 
@@ -27,6 +28,7 @@ private:
     void visit(const FallthroughStmt& stmt) override;
     void visit(const StructDeclStmt& stmt) override;
     void visit(const EnumDeclStmt& stmt) override;
+    void visit(const ImportStmt& stmt) override;
 
     std::unique_ptr<Type> visit(const LiteralExpr& expr) override;
     std::unique_ptr<Type> visit(const UnaryExpr& expr) override;
@@ -52,6 +54,7 @@ private:
     Type* currentFunctionType = nullptr;
     bool inSwitch = false;
     bool errorOccurred = false;
+    std::set<std::string> importedModules;
 };
 
 } // namespace chtholly

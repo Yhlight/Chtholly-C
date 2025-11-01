@@ -75,6 +75,7 @@ struct BreakStmt;
 struct FallthroughStmt;
 struct StructDeclStmt;
 struct EnumDeclStmt;
+struct ImportStmt;
 
 
 // Expr Visitor interface
@@ -249,6 +250,7 @@ public:
     virtual R visit(const FallthroughStmt& stmt) = 0;
     virtual R visit(const StructDeclStmt& stmt) = 0;
     virtual R visit(const EnumDeclStmt& stmt) = 0;
+    virtual R visit(const ImportStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -376,6 +378,11 @@ struct EnumDeclStmt : Stmt {
     const std::vector<Token> members;
 };
 
+struct ImportStmt : Stmt {
+    ImportStmt(Token path) : path(std::move(path)) {}
+    const Token path;
+};
+
 // Now define LambdaExpr, which depends on FuncDeclStmt::Param
 struct LambdaExpr : Expr {
     LambdaExpr(Token keyword, std::vector<FuncDeclStmt::Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
@@ -405,6 +412,7 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const FallthroughStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const StructDeclStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const EnumDeclStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const ImportStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -637,6 +645,10 @@ public:
         }
         result += ")";
         return result;
+    }
+
+    std::string visit(const ImportStmt& stmt) override {
+        return "(import " + stmt.path.lexeme + ")";
     }
 
 private:
