@@ -125,6 +125,9 @@ struct While;
 struct Func;
 struct Return;
 struct For;
+struct Switch;
+struct Break;
+struct Fallthrough;
 
 // Visitor for statements
 template<typename R>
@@ -137,6 +140,9 @@ struct StmtVisitor {
     virtual R visitFuncStmt(const std::shared_ptr<Func>& stmt) = 0;
     virtual R visitReturnStmt(const std::shared_ptr<Return>& stmt) = 0;
     virtual R visitForStmt(const std::shared_ptr<For>& stmt) = 0;
+    virtual R visitSwitchStmt(const std::shared_ptr<Switch>& stmt) = 0;
+    virtual R visitBreakStmt(const std::shared_ptr<Break>& stmt) = 0;
+    virtual R visitFallthroughStmt(const std::shared_ptr<Fallthrough>& stmt) = 0;
 };
 
 // Base class for all statements
@@ -248,6 +254,51 @@ struct For : Stmt, public std::enable_shared_from_this<For> {
     std::shared_ptr<Expr> condition;
     std::shared_ptr<Expr> increment;
     std::shared_ptr<Stmt> body;
+};
+
+struct Case : Stmt, public std::enable_shared_from_this<Case> {
+    Case(std::shared_ptr<Expr> condition, std::shared_ptr<Stmt> body)
+        : condition(condition), body(body) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        // Not directly visited, handled by SwitchStmt
+        return "";
+    }
+
+    std::shared_ptr<Expr> condition;
+    std::shared_ptr<Stmt> body;
+};
+
+struct Switch : Stmt, public std::enable_shared_from_this<Switch> {
+    Switch(std::shared_ptr<Expr> condition, std::vector<std::shared_ptr<Case>> cases)
+        : condition(condition), cases(cases) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitSwitchStmt(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> condition;
+    std::vector<std::shared_ptr<Case>> cases;
+};
+
+struct Break : Stmt, public std::enable_shared_from_this<Break> {
+    Break(Token keyword) : keyword(keyword) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitBreakStmt(shared_from_this());
+    }
+
+    Token keyword;
+};
+
+struct Fallthrough : Stmt, public std::enable_shared_from_this<Fallthrough> {
+    Fallthrough(Token keyword) : keyword(keyword) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitFallthroughStmt(shared_from_this());
+    }
+
+    Token keyword;
 };
 
 #endif //CHTHOLLY_AST_H

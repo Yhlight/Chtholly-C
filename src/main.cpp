@@ -8,8 +8,19 @@
 
 int main() {
     std::string source = R"(
-        for (mut i = 0; i < 10; i = i + 1) {
-            let x = i;
+        mut a = 1;
+        switch (a) {
+            case 1: {
+                a = 2;
+                fallthrough;
+            }
+            case 2: {
+                a = 3;
+                break;
+            }
+            case 3: {
+                a = 4;
+            }
         }
     )";
 

@@ -30,6 +30,9 @@ public:
     std::string visitFuncStmt(const std::shared_ptr<Func>& stmt) override;
     std::string visitReturnStmt(const std::shared_ptr<Return>& stmt) override;
     std::string visitForStmt(const std::shared_ptr<For>& stmt) override;
+    std::string visitSwitchStmt(const std::shared_ptr<Switch>& stmt) override;
+    std::string visitBreakStmt(const std::shared_ptr<Break>& stmt) override;
+    std::string visitFallthroughStmt(const std::shared_ptr<Fallthrough>& stmt) override;
 };
 
 #endif //CHTHOLLY_CODEGEN_H

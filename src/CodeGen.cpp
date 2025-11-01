@@ -10,6 +10,24 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
     return code;
 }
 
+std::string CodeGen::visitSwitchStmt(const std::shared_ptr<Switch>& stmt) {
+    std::string code = "switch (" + stmt->condition->accept(*this) + ") {\n";
+    for (const auto& case_stmt : stmt->cases) {
+        code += "case " + case_stmt->condition->accept(*this) + ":\n";
+        code += case_stmt->body->accept(*this);
+    }
+    code += "}\n";
+    return code;
+}
+
+std::string CodeGen::visitBreakStmt(const std::shared_ptr<Break>& stmt) {
+    return "break;\n";
+}
+
+std::string CodeGen::visitFallthroughStmt(const std::shared_ptr<Fallthrough>& stmt) {
+    return "[[fallthrough]];\n";
+}
+
 std::string CodeGen::visitForStmt(const std::shared_ptr<For>& stmt) {
     std::string code = "for (";
     if (stmt->initializer) {

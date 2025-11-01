@@ -43,6 +43,9 @@ std::shared_ptr<Stmt> Parser::statement() {
     if (match({TokenType::IF})) {
         return ifStatement();
     }
+    if (match({TokenType::SWITCH})) {
+        return switchStatement();
+    }
     if (match({TokenType::WHILE})) {
         return whileStatement();
     }
@@ -51,6 +54,12 @@ std::shared_ptr<Stmt> Parser::statement() {
     }
     if (match({TokenType::RETURN})) {
         return returnStatement();
+    }
+    if (match({TokenType::BREAK})) {
+        return breakStatement();
+    }
+    if (match({TokenType::FALLTHROUGH})) {
+        return fallthroughStatement();
     }
     if (match({TokenType::LEFT_BRACE})) {
         return std::make_shared<Block>(block());
@@ -163,6 +172,36 @@ std::shared_ptr<Stmt> Parser::expressionStatement() {
     std::shared_ptr<Expr> expr = expression();
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
     return std::make_shared<Expression>(expr);
+}
+
+std::shared_ptr<Stmt> Parser::switchStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
+    std::shared_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after switch condition.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before switch cases.");
+
+    std::vector<std::shared_ptr<Case>> cases;
+    while (match({TokenType::CASE})) {
+        std::shared_ptr<Expr> case_condition = expression();
+        consume(TokenType::COLON, "Expect ':' after case condition.");
+        std::shared_ptr<Stmt> body = statement();
+        cases.push_back(std::make_shared<Case>(case_condition, body));
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after switch cases.");
+    return std::make_shared<Switch>(condition, cases);
+}
+
+std::shared_ptr<Stmt> Parser::breakStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+    return std::make_shared<Break>(keyword);
+}
+
+std::shared_ptr<Stmt> Parser::fallthroughStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'fallthrough'.");
+    return std::make_shared<Fallthrough>(keyword);
 }
 
 std::shared_ptr<Expr> Parser::expression() {

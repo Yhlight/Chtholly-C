@@ -11,6 +11,7 @@ static std::map<std::string, TokenType> keywords = {
     {"else", TokenType::ELSE},
     {"switch", TokenType::SWITCH},
     {"case", TokenType::CASE},
+    {"break", TokenType::BREAK},
     {"fallthrough", TokenType::FALLTHROUGH},
     {"for", TokenType::FOR},
     {"while", TokenType::WHILE},
