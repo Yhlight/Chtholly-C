@@ -69,6 +69,23 @@ std::any CodeGen::visitCallExpr(std::shared_ptr<Call> expr) {
     return callee + "(" + args + ")";
 }
 
+std::any CodeGen::visitGetExpr(std::shared_ptr<Get> expr) {
+    return evaluate(expr->object) + "." + expr->name.lexeme;
+}
+
+std::any CodeGen::visitInstantiationExpr(std::shared_ptr<Instantiation> expr) {
+    std::string fields;
+    for (size_t i = 0; i < expr->fields.size(); ++i) {
+        fields += "." + expr->fields[i].lexeme + " = " + evaluate(expr->values[i]) + ", ";
+    }
+    if (!fields.empty()) {
+        fields.pop_back();
+        fields.pop_back();
+    }
+    return expr->name.lexeme + "{" + fields + "}";
+}
+
+
 // Statement visitors
 void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
     source += evaluate(stmt->expression) + ";\n";
@@ -81,6 +98,14 @@ void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
         source += " = " + evaluate(stmt->initializer);
     }
     source += ";\n";
+}
+
+void CodeGen::visitStructStmt(std::shared_ptr<Struct> stmt) {
+    source += "struct " + stmt->name.lexeme + " {\n";
+    for (const auto& field : stmt->fields) {
+        execute(field);
+    }
+    source += "};\n";
 }
 
 void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {

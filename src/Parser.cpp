@@ -13,6 +13,7 @@ std::vector<std::shared_ptr<Stmt>> Parser::parse() {
 
 std::shared_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::FUNC})) return function("function");
         if (match({TokenType::LET})) return varDeclaration(false);
         if (match({TokenType::MUT})) return varDeclaration(true);
@@ -23,11 +24,13 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable) {
+std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool in_struct) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::shared_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
+    } else if (in_struct) {
+        throw error(peek(), "Expect initializer for struct field.");
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
     return std::make_shared<Var>(name, initializer, isMutable);
@@ -139,6 +142,21 @@ std::shared_ptr<Expr> Parser::primary() {
     }
 
     if (match({TokenType::IDENTIFIER})) {
+        if (check(TokenType::LEFT_BRACE)) {
+            Token name = previous();
+            consume(TokenType::LEFT_BRACE, "Expect '{' after struct name for instantiation.");
+            std::vector<Token> fields;
+            std::vector<std::shared_ptr<Expr>> values;
+            if (!check(TokenType::RIGHT_BRACE)) {
+                do {
+                    fields.push_back(consume(TokenType::IDENTIFIER, "Expect field name."));
+                    consume(TokenType::COLON, "Expect ':' after field name.");
+                    values.push_back(expression());
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+            return std::make_shared<Instantiation>(name, fields, values);
+        }
         return std::make_shared<Variable>(previous());
     }
 
@@ -156,6 +174,9 @@ std::shared_ptr<Expr> Parser::call() {
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
             expr = finishCall(expr);
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_shared<Get>(expr, name);
         } else {
             break;
         }
@@ -203,6 +224,23 @@ std::shared_ptr<Stmt> Parser::returnStatement() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_shared<Return>(keyword, value);
+}
+
+std::shared_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+    std::vector<std::shared_ptr<Var>> fields;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        bool isMutable = false;
+        if (match({TokenType::MUT})) {
+            isMutable = true;
+        } else if (!match({TokenType::LET})) {
+            throw error(peek(), "Expect 'let' or 'mut' for field declaration.");
+        }
+        fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration(isMutable, true)));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_shared<Struct>(name, fields);
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

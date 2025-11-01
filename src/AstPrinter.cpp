@@ -61,6 +61,23 @@ std::any AstPrinter::visitCallExpr(std::shared_ptr<Call> expr) {
     return parenthesize("call", {expr->callee});
 }
 
+std::any AstPrinter::visitGetExpr(std::shared_ptr<Get> expr) {
+    return parenthesize("." + expr->name.lexeme, {expr->object});
+}
+
+std::any AstPrinter::visitInstantiationExpr(std::shared_ptr<Instantiation> expr) {
+    return parenthesize("new " + expr->name.lexeme, {});
+}
+
+void AstPrinter::visitStructStmt(std::shared_ptr<Struct> stmt) {
+    std::string out = "(struct " + stmt->name.lexeme;
+    for (const auto& field : stmt->fields) {
+        out += " " + print(field);
+    }
+    out += ")";
+    result.append(out);
+}
+
 void AstPrinter::visitFuncStmt(std::shared_ptr<Func> stmt) {
     std::string out = "(func " + stmt->name.lexeme + " (";
     for (const auto& param : stmt->params) {

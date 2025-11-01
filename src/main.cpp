@@ -7,11 +7,13 @@
 
 int main() {
     std::string source = R"(
-        func add(a, b) {
-            return a + b;
+        struct Point {
+            let x = 0;
+            let y = 0;
         }
 
-        let result = add(5, 10);
+        let p = Point{x: 10, y: 20};
+        let x = p.x;
     )";
 
     Lexer lexer(source);
@@ -25,9 +27,9 @@ int main() {
 
     std::cout << "// Generated C++ Code:\n";
     std::cout << "#include <iostream>\n\n";
-    std::cout << "int main() {\n";
     std::cout << generated_code;
-    std::cout << "std::cout << result << std::endl;\n";
+    std::cout << "int main() {\n";
+    std::cout << "std::cout << x << std::endl;\n";
     std::cout << "return 0;\n";
     std::cout << "}\n";
 

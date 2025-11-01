@@ -24,7 +24,7 @@
 
 ## Phase 5: Advanced Features
 - [x] Implement functions
-- [ ] Implement structs
+- [ ] Implement structs (declarations, instantiation, and member access)
 - [ ] Implement ownership and borrowing
 - [ ] Implement generics
 - [ ] Implement traits and constraints

@@ -17,8 +17,9 @@ private:
     int current = 0;
 
     std::shared_ptr<Stmt> declaration();
+    std::shared_ptr<Stmt> structDeclaration();
     std::shared_ptr<Stmt> function(const std::string& kind);
-    std::shared_ptr<Stmt> varDeclaration(bool isMutable);
+    std::shared_ptr<Stmt> varDeclaration(bool isMutable, bool in_struct = false);
     std::shared_ptr<Stmt> statement();
     std::shared_ptr<Stmt> returnStatement();
     std::shared_ptr<Stmt> expressionStatement();
