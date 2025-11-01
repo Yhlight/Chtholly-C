@@ -204,3 +204,24 @@ TEST(ParserTest, ParsesVarDeclarationWithType) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(var a: int = 10)");
 }
+
+TEST(ParserTest, ParsesCallExpression) {
+    // add(1, 2);
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "add", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::COMMA, ",", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "2", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(; (call add 1 2))");
+}

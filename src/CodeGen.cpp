@@ -112,4 +112,16 @@ std::string CodeGen::visit(const GroupingExpr& expr) {
     return expr.expression->accept(*this);
 }
 
+std::string CodeGen::visit(const CallExpr& expr) {
+    std::string result = expr.callee->accept(*this) + "(";
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        result += expr.arguments[i]->accept(*this);
+        if (i < expr.arguments.size() - 1) {
+            result += ", ";
+        }
+    }
+    result += ")";
+    return result;
+}
+
 } // namespace chtholly

@@ -87,3 +87,9 @@ TEST(CodeGenTest, GeneratesComplexExpression) {
     std::string expected = "const auto a = ((1 + 2) * 3);";
     EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
 }
+
+TEST(CodeGenTest, GeneratesFunctionCall) {
+    std::string source = "func add(a: int, b: int) -> int { return a + b; } let c = add(1, 2);";
+    std::string expected = "auto add(int a, int b) -> int { return (a + b); } const auto c = add(1, 2);";
+    EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
+}

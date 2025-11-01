@@ -16,6 +16,7 @@ struct UnaryExpr;
 struct BinaryExpr;
 struct VariableExpr;
 struct GroupingExpr;
+struct CallExpr;
 
 // Expr Visitor interface
 template <typename R>
@@ -27,6 +28,7 @@ public:
     virtual R visit(const BinaryExpr& expr) = 0;
     virtual R visit(const VariableExpr& expr) = 0;
     virtual R visit(const GroupingExpr& expr) = 0;
+    virtual R visit(const CallExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -75,6 +77,16 @@ struct GroupingExpr : Expr {
     const Token& getToken() const override { return expression->getToken(); }
 };
 
+struct CallExpr : Expr {
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
+
+    const std::unique_ptr<Expr> callee;
+    const Token paren; // The closing ')' for error reporting.
+    const std::vector<std::unique_ptr<Expr>> arguments;
+    const Token& getToken() const override { return paren; }
+};
+
 // Implementation of the generic accept method for Expr
 template <typename R>
 R Expr::accept(ExprVisitor<R>& visitor) const {
@@ -83,6 +95,7 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const BinaryExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const VariableExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const CallExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -212,6 +225,14 @@ public:
     std::string visit(const BinaryExpr& expr) override { return parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()}); }
     std::string visit(const VariableExpr& expr) override { return expr.name.lexeme; }
     std::string visit(const GroupingExpr& expr) override { return parenthesize("group", {expr.expression.get()}); }
+    std::string visit(const CallExpr& expr) override {
+        std::vector<const Expr*> exprs;
+        exprs.push_back(expr.callee.get());
+        for(const auto& arg : expr.arguments) {
+            exprs.push_back(arg.get());
+        }
+        return parenthesize("call", exprs);
+    }
 
     std::string visit(const VarDeclStmt& stmt) override {
         std::string result = "(var " + stmt.name.lexeme;

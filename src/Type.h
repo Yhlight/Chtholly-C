@@ -32,6 +32,29 @@ public:
     std::string toString() const override { return "void"; }
 };
 
-// More complex types to be added later, e.g., FunctionType, StructType
+class FunctionType : public Type {
+public:
+    FunctionType(std::vector<std::unique_ptr<Type>> paramTypes, std::unique_ptr<Type> returnType)
+        : paramTypes(std::move(paramTypes)), returnType(std::move(returnType)) {}
+
+    std::string toString() const override {
+        std::string str = "func(";
+        for (size_t i = 0; i < paramTypes.size(); ++i) {
+            str += paramTypes[i]->toString();
+            if (i < paramTypes.size() - 1) {
+                str += ", ";
+            }
+        }
+        str += ") -> " + returnType->toString();
+        return str;
+    }
+
+    const std::vector<std::unique_ptr<Type>>& getParamTypes() const { return paramTypes; }
+    const Type* getReturnType() const { return returnType.get(); }
+
+private:
+    std::vector<std::unique_ptr<Type>> paramTypes;
+    std::unique_ptr<Type> returnType;
+};
 
 } // namespace chtholly

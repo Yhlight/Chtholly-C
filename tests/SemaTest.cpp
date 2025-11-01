@@ -115,3 +115,23 @@ TEST(SemaTest, ReturnInVoidFuncError) {
     Sema sema = analyzeSource("func a() { return 1; }");
     EXPECT_TRUE(sema.hadError());
 }
+
+TEST(SemaTest, CallSuccess) {
+    Sema sema = analyzeSource("func add(a: int, b: int) -> int { return a + b; } let c = add(1, 2);");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, CallNonFunctionError) {
+    Sema sema = analyzeSource("let a = 1; let b = a();");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, CallWrongArgumentCountError) {
+    Sema sema = analyzeSource("func a(b: int) {} a();");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, CallWrongArgumentTypeError) {
+    Sema sema = analyzeSource("func a(b: int) {} a(\"hello\");");
+    EXPECT_TRUE(sema.hadError());
+}

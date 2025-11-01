@@ -103,19 +103,25 @@ void Sema::visit(const ForStmt& stmt) {
 }
 
 void Sema::visit(const FuncDeclStmt& stmt) {
+    std::vector<std::unique_ptr<Type>> paramTypes;
+    for (const auto& param : stmt.params) {
+        paramTypes.push_back(resolveType(param.type));
+    }
+
     std::unique_ptr<Type> returnType = std::make_unique<VoidType>();
     if (stmt.returnType) {
         returnType = resolveType(*stmt.returnType);
     }
 
-    // For now, we'll just use a placeholder for function types in the symbol table.
-    if (!symbolTable.define(stmt.name.lexeme, std::make_unique<IntType>(), Mutability::Immutable)) {
+    auto funcType = std::make_unique<FunctionType>(std::move(paramTypes), std::move(returnType));
+
+    if (!symbolTable.define(stmt.name.lexeme, std::move(funcType), Mutability::Immutable)) {
         error(stmt.name, "Function with this name already declared.");
         return; // Don't analyze body if redefinition.
     }
 
     Type* oldFunctionType = currentFunctionType;
-    currentFunctionType = returnType.get();
+    currentFunctionType = symbolTable.lookup(stmt.name.lexeme)->type.get();
 
     symbolTable.enterScope();
     for (const auto& param : stmt.params) {
@@ -134,15 +140,18 @@ void Sema::visit(const ReturnStmt& stmt) {
         return;
     }
 
+    auto* funcType = dynamic_cast<FunctionType*>(currentFunctionType);
+    if (!funcType) return;
+
     if (stmt.value) {
         std::unique_ptr<Type> returnValType = stmt.value->accept(*this);
-        if (dynamic_cast<VoidType*>(currentFunctionType)) {
+        if (dynamic_cast<const VoidType*>(funcType->getReturnType())) {
             error(stmt.keyword, "Cannot return a value from a void function.");
-        } else if (returnValType && !areTypesEqual(currentFunctionType, returnValType.get())) {
+        } else if (returnValType && !areTypesEqual(funcType->getReturnType(), returnValType.get())) {
             error(stmt.keyword, "Return value type does not match function's return type.");
         }
     } else {
-        if (!dynamic_cast<VoidType*>(currentFunctionType)) {
+        if (!dynamic_cast<const VoidType*>(funcType->getReturnType())) {
              error(stmt.keyword, "Must return a value from a non-void function.");
         }
     }
@@ -245,6 +254,11 @@ std::unique_ptr<Type> Sema::visit(const VariableExpr& expr) {
         return std::make_unique<IntType>();
     }
 
+    // Don't "evaluate" a function variable to a type here. Let CallExpr handle it.
+    if (dynamic_cast<FunctionType*>(symbol->type.get())) {
+        return nullptr;
+    }
+
     if (auto* intType = dynamic_cast<IntType*>(symbol->type.get())) return std::make_unique<IntType>();
     if (auto* strType = dynamic_cast<StringType*>(symbol->type.get())) return std::make_unique<StringType>();
     if (auto* boolType = dynamic_cast<BoolType*>(symbol->type.get())) return std::make_unique<BoolType>();
@@ -254,6 +268,47 @@ std::unique_ptr<Type> Sema::visit(const VariableExpr& expr) {
 std::unique_ptr<Type> Sema::visit(const GroupingExpr& expr) {
     return expr.expression->accept(*this);
 }
+
+std::unique_ptr<Type> Sema::visit(const CallExpr& expr) {
+    auto* varExpr = dynamic_cast<VariableExpr*>(expr.callee.get());
+    if (!varExpr) {
+        error(expr.getToken(), "Can only call functions by name.");
+        return nullptr;
+    }
+
+    Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+    if (!symbol) {
+        error(varExpr->name, "Undefined function.");
+        return nullptr;
+    }
+
+    auto* funcType = dynamic_cast<FunctionType*>(symbol->type.get());
+    if (!funcType) {
+        error(expr.getToken(), "Can only call functions and methods.");
+        return nullptr;
+    }
+
+    if (expr.arguments.size() != funcType->getParamTypes().size()) {
+        error(expr.getToken(), "Expected " + std::to_string(funcType->getParamTypes().size()) + " arguments but got " + std::to_string(expr.arguments.size()) + ".");
+        return nullptr;
+    }
+
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        std::unique_ptr<Type> argType = expr.arguments[i]->accept(*this);
+        if (argType && !areTypesEqual(funcType->getParamTypes()[i].get(), argType.get())) {
+            error(expr.arguments[i]->getToken(), "Argument type mismatch.");
+        }
+    }
+
+    // This is not a proper clone, but good enough for now.
+    if (dynamic_cast<const IntType*>(funcType->getReturnType())) return std::make_unique<IntType>();
+    if (dynamic_cast<const StringType*>(funcType->getReturnType())) return std::make_unique<StringType>();
+    if (dynamic_cast<const BoolType*>(funcType->getReturnType())) return std::make_unique<BoolType>();
+    if (dynamic_cast<const VoidType*>(funcType->getReturnType())) return std::make_unique<VoidType>();
+
+    return nullptr;
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
