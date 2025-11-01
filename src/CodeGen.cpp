@@ -183,4 +183,35 @@ void CodeGen::visit(const FallthroughStmt& stmt) {
     out << "[[fallthrough]];\n";
 }
 
+void CodeGen::visit(const StructDeclStmt& stmt) {
+    out << "struct " << stmt.name.lexeme << " {\n";
+    for (const auto& member : stmt.members) {
+        if (member.visibility == StructDeclStmt::Visibility::PRIVATE) {
+            out << "private:\n";
+        }
+        out << member.type.lexeme << " " << member.name.lexeme << ";\n";
+    }
+    for (const auto& method : stmt.methods) {
+        method->accept(*this);
+    }
+    out << "};\n";
+}
+
+std::string CodeGen::visit(const StructInitExpr& expr) {
+    std::stringstream ss;
+    ss << expr.name.lexeme << "{ ";
+    for (size_t i = 0; i < expr.members.size(); ++i) {
+        ss << "." << expr.members[i].name.lexeme << " = " << expr.members[i].initializer->accept(*this);
+        if (i < expr.members.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << " }";
+    return ss.str();
+}
+
+std::string CodeGen::visit(const MemberAccessExpr& expr) {
+    return expr.object->accept(*this) + "." + expr.name.lexeme;
+}
+
 } // namespace chtholly

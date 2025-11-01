@@ -18,6 +18,8 @@ struct VariableExpr;
 struct GroupingExpr;
 struct CallExpr;
 struct LambdaExpr;
+struct StructInitExpr;
+struct MemberAccessExpr;
 
 // Forward declarations for Stmt
 struct VarDeclStmt;
@@ -31,6 +33,7 @@ struct SwitchStmt;
 struct CaseStmt;
 struct BreakStmt;
 struct FallthroughStmt;
+struct StructDeclStmt;
 
 
 // Expr Visitor interface
@@ -45,6 +48,8 @@ public:
     virtual R visit(const GroupingExpr& expr) = 0;
     virtual R visit(const CallExpr& expr) = 0;
     virtual R visit(const LambdaExpr& expr) = 0;
+    virtual R visit(const StructInitExpr& expr) = 0;
+    virtual R visit(const MemberAccessExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -103,6 +108,29 @@ struct CallExpr : Expr {
     const Token& getToken() const override { return paren; }
 };
 
+struct StructInitExpr : Expr {
+    struct MemberInit {
+        Token name;
+        std::unique_ptr<Expr> initializer;
+    };
+
+    StructInitExpr(Token name, std::vector<MemberInit> members)
+        : name(std::move(name)), members(std::move(members)) {}
+
+    const Token name;
+    const std::vector<MemberInit> members;
+    const Token& getToken() const override { return name; }
+};
+
+struct MemberAccessExpr : Expr {
+    MemberAccessExpr(std::unique_ptr<Expr> object, Token name)
+        : object(std::move(object)), name(std::move(name)) {}
+
+    const std::unique_ptr<Expr> object;
+    const Token name;
+    const Token& getToken() const override { return name; }
+};
+
 
 // Stmt Visitor interface
 template <typename R>
@@ -120,6 +148,7 @@ public:
     virtual R visit(const CaseStmt& stmt) = 0;
     virtual R visit(const BreakStmt& stmt) = 0;
     virtual R visit(const FallthroughStmt& stmt) = 0;
+    virtual R visit(const StructDeclStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -220,6 +249,23 @@ struct SwitchStmt : Stmt {
     const std::vector<std::unique_ptr<CaseStmt>> cases;
 };
 
+struct StructDeclStmt : Stmt {
+    enum class Visibility { PUBLIC, PRIVATE };
+
+    struct MemberVar {
+        Visibility visibility;
+        Token name;
+        Token type;
+    };
+
+    StructDeclStmt(Token name, std::vector<MemberVar> members, std::vector<std::unique_ptr<FuncDeclStmt>> methods)
+        : name(std::move(name)), members(std::move(members)), methods(std::move(methods)) {}
+
+    const Token name;
+    const std::vector<MemberVar> members;
+    const std::vector<std::unique_ptr<FuncDeclStmt>> methods;
+};
+
 // Now define LambdaExpr, which depends on FuncDeclStmt::Param
 struct LambdaExpr : Expr {
     LambdaExpr(Token keyword, std::vector<FuncDeclStmt::Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
@@ -247,6 +293,7 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const CaseStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const BreakStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const FallthroughStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const StructDeclStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -260,6 +307,8 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const CallExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const LambdaExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const StructInitExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const MemberAccessExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -302,6 +351,19 @@ public:
         }
         result += " " + print(*expr.body) + ")";
         return result;
+    }
+
+    std::string visit(const StructInitExpr& expr) override {
+        std::string result = "(init " + expr.name.lexeme;
+        for (const auto& member : expr.members) {
+            result += " (member " + member.name.lexeme + " = " + print(*member.initializer) + ")";
+        }
+        result += ")";
+        return result;
+    }
+
+    std::string visit(const MemberAccessExpr& expr) override {
+        return "(. " + print(*expr.object) + " " + expr.name.lexeme + ")";
     }
 
     std::string visit(const VarDeclStmt& stmt) override {
@@ -392,6 +454,20 @@ public:
 
     std::string visit(const FallthroughStmt& stmt) override {
         return "(fallthrough)";
+    }
+
+    std::string visit(const StructDeclStmt& stmt) override {
+        std::string result = "(struct " + stmt.name.lexeme;
+        for (const auto& member : stmt.members) {
+            result += " (member ";
+            result += (member.visibility == StructDeclStmt::Visibility::PUBLIC) ? "public " : "private ";
+            result += member.name.lexeme + ": " + member.type.lexeme + ")";
+        }
+        for (const auto& method : stmt.methods) {
+            result += " " + print(*method);
+        }
+        result += ")";
+        return result;
     }
 
 private:

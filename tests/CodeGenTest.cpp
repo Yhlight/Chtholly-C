@@ -105,3 +105,9 @@ TEST(CodeGenTest, GeneratesSwitchStatement) {
     std::string expected = "const auto x = 1; switch (x) { case 1: { break; } case 2: { [[fallthrough]]; } default: { break; } }";
     EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
 }
+
+TEST(CodeGenTest, GeneratesStruct) {
+    std::string source = "struct Point { x: int; y: int; } let p = Point { x: 1, y: 2 }; let a = p.x;";
+    std::string expected = "struct Point { int x; int y; }; const auto p = Point{ .x = 1, .y = 2 }; const auto a = p.x;";
+    EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
+}

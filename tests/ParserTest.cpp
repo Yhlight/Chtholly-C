@@ -294,3 +294,88 @@ TEST(ParserTest, ParsesSwitchStatement) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(switch x (case 1 (block (break))) (case 2 (block (fallthrough))) (case default (block (break))))");
 }
+
+TEST(ParserTest, ParsesStructDeclaration) {
+    // struct Point { public x: int; private y: int; func distance() -> int { return 0; } }
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::STRUCT, "struct", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "Point", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::PUBLIC, "public", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "x", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::PRIVATE, "private", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "y", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::FUNC, "func", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "distance", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::ARROW, "->", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::RETURN, "return", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "0", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(struct Point (member public x: int) (member private y: int) (func distance() -> int (block (return 0))))");
+}
+
+TEST(ParserTest, ParsesStructInitialization) {
+    // let p = Point { x: 1, y: 2 };
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::LET, "let", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "p", 1),
+        chtholly::Token(chtholly::TokenType::EQUAL, "=", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "Point", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "x", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::COMMA, ",", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "y", 1),
+        chtholly::Token(chtholly::TokenType::COLON, ":", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "2", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(var p = (init Point (member x = 1) (member y = 2)))");
+}
+
+TEST(ParserTest, ParsesMemberAccess) {
+    // p.x;
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "p", 1),
+        chtholly::Token(chtholly::TokenType::DOT, ".", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "x", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(; (. p x))");
+}

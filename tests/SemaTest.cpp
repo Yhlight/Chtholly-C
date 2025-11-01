@@ -170,3 +170,48 @@ TEST(SemaTest, FallthroughInLastCase) {
     Sema sema = analyzeSource("let x = 1; switch (x) { case 1: { fallthrough; } }");
     EXPECT_TRUE(sema.hadError());
 }
+
+TEST(SemaTest, StructDeclSuccess) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; }");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, StructRedefinitionError) {
+    Sema sema = analyzeSource("struct Point {} struct Point {}");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, StructInitSuccess) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; } let p = Point { x: 1, y: 2 };");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, StructInitNonExistent) {
+    Sema sema = analyzeSource("let p = Point { x: 1, y: 2 };");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, StructInitWrongMemberCount) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; } let p = Point { x: 1 };");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, StructInitWrongMemberType) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; } let p = Point { x: 1, y: \"hello\" };");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, MemberAccessSuccess) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; } let p = Point { x: 1, y: 2 }; let a = p.x;");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, MemberAccessNonExistent) {
+    Sema sema = analyzeSource("struct Point { x: int; y: int; } let p = Point { x: 1, y: 2 }; let a = p.z;");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, MemberAccessOnNonStruct) {
+    Sema sema = analyzeSource("let x = 1; let a = x.y;");
+    EXPECT_TRUE(sema.hadError());
+}

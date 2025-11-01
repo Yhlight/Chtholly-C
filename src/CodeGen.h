@@ -23,6 +23,7 @@ private:
     void visit(const CaseStmt& stmt) override;
     void visit(const BreakStmt& stmt) override;
     void visit(const FallthroughStmt& stmt) override;
+    void visit(const StructDeclStmt& stmt) override;
 
     std::string visit(const LiteralExpr& expr) override;
     std::string visit(const UnaryExpr& expr) override;
@@ -31,6 +32,8 @@ private:
     std::string visit(const GroupingExpr& expr) override;
     std::string visit(const CallExpr& expr) override;
     std::string visit(const LambdaExpr& expr) override;
+    std::string visit(const StructInitExpr& expr) override;
+    std::string visit(const MemberAccessExpr& expr) override;
 
     std::string generateVarDecl(const VarDeclStmt& stmt);
 

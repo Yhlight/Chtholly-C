@@ -18,6 +18,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::FUNC})) return function();
         if (match({TokenType::LET, TokenType::MUT})) {
             std::unique_ptr<Stmt> stmt = varDeclaration();
@@ -145,6 +146,37 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+
+    std::vector<StructDeclStmt::MemberVar> members;
+    std::vector<std::unique_ptr<FuncDeclStmt>> methods;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        StructDeclStmt::Visibility visibility = StructDeclStmt::Visibility::PUBLIC;
+        if (match({TokenType::PUBLIC})) {
+            // Default is public, so this is optional
+        } else if (match({TokenType::PRIVATE})) {
+            visibility = StructDeclStmt::Visibility::PRIVATE;
+        }
+
+        if (check(TokenType::FUNC)) {
+            advance();
+            methods.push_back(std::unique_ptr<FuncDeclStmt>(static_cast<FuncDeclStmt*>(function().release())));
+        } else {
+            Token memberName = consume(TokenType::IDENTIFIER, "Expect member name.");
+            consume(TokenType::COLON, "Expect ':' after member name.");
+            Token memberType = consume(TokenType::IDENTIFIER, "Expect member type.");
+            consume(TokenType::SEMICOLON, "Expect ';' after member declaration.");
+            members.push_back({visibility, std::move(memberName), std::move(memberType)});
+        }
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_unique<StructDeclStmt>(std::move(name), std::move(members), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::switchStatement() {
@@ -275,6 +307,9 @@ std::unique_ptr<Expr> Parser::call() {
             }
             Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
             expr = std::make_unique<CallExpr>(std::move(expr), std::move(paren), std::move(arguments));
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(name));
         } else {
             break;
         }
@@ -292,6 +327,21 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous());
     }
     if (match({TokenType::IDENTIFIER})) {
+        if (check(TokenType::LEFT_BRACE)) {
+            Token name = previous();
+            consume(TokenType::LEFT_BRACE, "Expect '{' after struct name.");
+            std::vector<StructInitExpr::MemberInit> members;
+            if (!check(TokenType::RIGHT_BRACE)) {
+                do {
+                    Token memberName = consume(TokenType::IDENTIFIER, "Expect member name.");
+                    consume(TokenType::COLON, "Expect ':' after member name.");
+                    std::unique_ptr<Expr> initializer = expression();
+                    members.push_back({std::move(memberName), std::move(initializer)});
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RIGHT_BRACE, "Expect '}' after struct members.");
+            return std::make_unique<StructInitExpr>(std::move(name), std::move(members));
+        }
         return std::make_unique<VariableExpr>(previous());
     }
     if (match({TokenType::LEFT_BRACKET})) {

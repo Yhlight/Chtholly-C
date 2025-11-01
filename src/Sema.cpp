@@ -390,12 +390,99 @@ void Sema::visit(const FallthroughStmt& stmt) {
     // would be needed to correctly identify the last case.
 }
 
+std::unique_ptr<Type> Sema::visit(const StructInitExpr& expr) {
+    Symbol* symbol = symbolTable.lookup(expr.name.lexeme);
+    if (!symbol) {
+        error(expr.name, "Struct with this name not found.");
+        return nullptr;
+    }
+
+    auto* structType = dynamic_cast<StructType*>(symbol->type.get());
+    if (!structType) {
+        error(expr.name, "Identifier is not a struct type.");
+        return nullptr;
+    }
+
+    if (expr.members.size() != structType->getMembers().size()) {
+        error(expr.name, "Incorrect number of members in struct initializer.");
+        return nullptr;
+    }
+
+    for (const auto& initMember : expr.members) {
+        bool found = false;
+        for (const auto& structMember : structType->getMembers()) {
+            if (initMember.name.lexeme == structMember.name) {
+                found = true;
+                std::unique_ptr<Type> initType = initMember.initializer->accept(*this);
+                if (initType && !areTypesEqual(structMember.type.get(), initType.get())) {
+                    error(initMember.name, "Initializer type does not match member type.");
+                }
+                break;
+            }
+        }
+        if (!found) {
+            error(initMember.name, "Member with this name not found in struct.");
+        }
+    }
+
+    return structType->clone();
+}
+
+std::unique_ptr<Type> Sema::visit(const MemberAccessExpr& expr) {
+    std::unique_ptr<Type> objectType;
+    if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.object.get())) {
+        Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+        if (!symbol) {
+            error(varExpr->name, "Undefined variable.");
+            return nullptr;
+        }
+        objectType = symbol->type->clone();
+    } else {
+        objectType = expr.object->accept(*this);
+    }
+
+    if (!objectType) return nullptr;
+
+    auto* structType = dynamic_cast<StructType*>(objectType.get());
+    if (!structType) {
+        error(expr.name, "Can only access members of a struct.");
+        return nullptr;
+    }
+
+    for (const auto& member : structType->getMembers()) {
+        if (expr.name.lexeme == member.name) {
+            return member.type->clone();
+        }
+    }
+
+    error(expr.name, "Member with this name not found in struct.");
+    return nullptr;
+}
+
+void Sema::visit(const StructDeclStmt& stmt) {
+    std::vector<StructType::Member> members;
+    for (const auto& member : stmt.members) {
+        members.push_back({member.name.lexeme, resolveType(member.type)});
+    }
+
+    auto structType = std::make_unique<StructType>(stmt.name.lexeme, std::move(members));
+
+    if (!symbolTable.define(stmt.name.lexeme, std::move(structType), Mutability::Immutable)) {
+        error(stmt.name, "Struct with this name already declared in this scope.");
+    }
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
     if (typeToken.lexeme == "string") return std::make_unique<StringType>();
     if (typeToken.lexeme == "bool") return std::make_unique<BoolType>();
     if (typeToken.lexeme == "void") return std::make_unique<VoidType>();
+
+    Symbol* symbol = symbolTable.lookup(typeToken.lexeme);
+    if (symbol && dynamic_cast<StructType*>(symbol->type.get())) {
+        return symbol->type->clone();
+    }
 
     error(typeToken, "Unknown type name.");
     return nullptr;
