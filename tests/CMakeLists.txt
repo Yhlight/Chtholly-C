@@ -1,4 +1,8 @@
-add_executable(chtholly_tests main.cpp)
+add_executable(chtholly_tests
+    ErrorReporterTests.cpp
+    LexerTests.cpp
+    ASTPrinterTests.cpp
+)
 
 target_link_libraries(chtholly_tests
     PRIVATE

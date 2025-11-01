@@ -4,19 +4,19 @@ This document outlines the planned development stages for the Chtholly programmi
 
 ## Phase 1: Project Foundation and Core Compiler
 
-- [ ] **Project Scaffolding**
-  - [ ] Create directory structure (`src`, `tests`, `scripts`).
-  - [ ] Initialize `CMakeLists.txt` for the main project and tests.
-  - [ ] Integrate Google Test for unit testing.
-  - [ ] Create a Python build script (`scripts/build.py`) to automate the build process.
-  - [ ] Set up `.gitignore` to exclude build artifacts.
+- [x] **Project Scaffolding**
+  - [x] Create directory structure (`src`, `tests`, `scripts`).
+  - [x] Initialize `CMakeLists.txt` for the main project and tests.
+  - [x] Integrate Google Test for unit testing.
+  - [x] Create a Python build script (`scripts/build.py`) to automate the build process.
+  - [x] Set up `.gitignore` to exclude build artifacts.
 
-- [ ] **Core Compiler Components**
-  - [ ] Implement a centralized `ErrorReporter`.
-  - [ ] Define `Token` and `TokenType` for lexical analysis.
-  - [ ] Implement the `Lexer` to scan source code and produce tokens.
-  - [ ] Design the base AST nodes and Visitor pattern (`Expr.h`, `Stmt.h`).
-  - [ ] Implement an `ASTPrinter` for debugging and testing.
+- [x] **Core Compiler Components**
+  - [x] Implement a centralized `ErrorReporter`.
+  - [x] Define `Token` and `TokenType` for lexical analysis.
+  - [x] Implement the `Lexer` to scan source code and produce tokens.
+  - [x] Design the base AST nodes and Visitor pattern (`Expr.h`, `Stmt.h`).
+  - [x] Implement an `ASTPrinter` for debugging and testing.
 
 ## Phase 2: Basic Language Features
 
