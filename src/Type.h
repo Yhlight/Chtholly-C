@@ -97,4 +97,31 @@ private:
     std::vector<Member> members;
 };
 
+class EnumType : public Type {
+public:
+    EnumType(std::string name, std::vector<std::string> members)
+        : name(std::move(name)), members(std::move(members)) {}
+
+    std::unique_ptr<Type> clone() const override {
+        return std::make_unique<EnumType>(name, members);
+    }
+
+    std::string toString() const override { return name; }
+    const std::string& getName() const { return name; }
+    const std::vector<std::string>& getMembers() const { return members; }
+
+    bool hasMember(const std::string& memberName) const {
+        for (const auto& member : members) {
+            if (member == memberName) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    std::string name;
+    std::vector<std::string> members;
+};
+
 } // namespace chtholly

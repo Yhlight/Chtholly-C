@@ -19,6 +19,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::STRUCT})) return structDeclaration();
+        if (match({TokenType::ENUM})) return enumDeclaration();
         if (match({TokenType::FUNC})) return function();
         if (match({TokenType::LET, TokenType::MUT})) {
             std::unique_ptr<Stmt> stmt = varDeclaration();
@@ -179,6 +180,21 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     return std::make_unique<StructDeclStmt>(std::move(name), std::move(members), std::move(methods));
 }
 
+std::unique_ptr<Stmt> Parser::enumDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect enum name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before enum body.");
+
+    std::vector<Token> members;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            members.push_back(consume(TokenType::IDENTIFIER, "Expect enum member."));
+        } while (match({TokenType::COMMA}));
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after enum body.");
+    return std::make_unique<EnumDeclStmt>(std::move(name), std::move(members));
+}
+
 std::unique_ptr<Stmt> Parser::switchStatement() {
     consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
     std::unique_ptr<Expr> condition = expression();
@@ -334,6 +350,9 @@ std::unique_ptr<Expr> Parser::call() {
         } else if (match({TokenType::DOT})) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
             expr = std::make_unique<MemberAccessExpr>(std::move(expr), std::move(name));
+        } else if (match({TokenType::COLON_COLON})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::'.");
+            expr = std::make_unique<ScopedAccessExpr>(std::move(expr), std::move(name));
         } else {
             break;
         }

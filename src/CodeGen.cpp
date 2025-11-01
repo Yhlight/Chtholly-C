@@ -242,4 +242,19 @@ std::string CodeGen::visit(const MemberAccessExpr& expr) {
     return expr.object->accept(*this) + "." + expr.name.lexeme;
 }
 
+void CodeGen::visit(const EnumDeclStmt& stmt) {
+    out << "enum class " << stmt.name.lexeme << " {\n";
+    for (size_t i = 0; i < stmt.members.size(); ++i) {
+        out << stmt.members[i].lexeme;
+        if (i < stmt.members.size() - 1) {
+            out << ",\n";
+        }
+    }
+    out << "\n};\n";
+}
+
+std::string CodeGen::visit(const ScopedAccessExpr& expr) {
+    return expr.scope->accept(*this) + "::" + expr.name.lexeme;
+}
+
 } // namespace chtholly

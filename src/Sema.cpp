@@ -10,6 +10,11 @@ bool areTypesEqual(const Type* a, const Type* b) {
     if (dynamic_cast<const StringType*>(a) && dynamic_cast<const StringType*>(b)) return true;
     if (dynamic_cast<const BoolType*>(a) && dynamic_cast<const BoolType*>(b)) return true;
     if (dynamic_cast<const VoidType*>(a) && dynamic_cast<const VoidType*>(b)) return true;
+    if (auto* enumA = dynamic_cast<const EnumType*>(a)) {
+        if (auto* enumB = dynamic_cast<const EnumType*>(b)) {
+            return enumA->getName() == enumB->getName();
+        }
+    }
     return false;
 }
 
@@ -484,6 +489,46 @@ void Sema::visit(const StructDeclStmt& stmt) {
     }
 }
 
+void Sema::visit(const EnumDeclStmt& stmt) {
+    std::vector<std::string> memberNames;
+    for (const auto& member : stmt.members) {
+        memberNames.push_back(member.lexeme);
+    }
+
+    auto enumType = std::make_unique<EnumType>(stmt.name.lexeme, std::move(memberNames));
+
+    if (!symbolTable.define(stmt.name.lexeme, std::move(enumType), Mutability::Immutable)) {
+        error(stmt.name, "Enum with this name already declared in this scope.");
+    }
+}
+
+std::unique_ptr<Type> Sema::visit(const ScopedAccessExpr& expr) {
+    auto* varExpr = dynamic_cast<VariableExpr*>(expr.scope.get());
+    if (!varExpr) {
+        error(expr.getToken(), "Invalid scope resolution target.");
+        return nullptr;
+    }
+
+    Symbol* symbol = symbolTable.lookup(varExpr->name.lexeme);
+    if (!symbol) {
+        error(varExpr->name, "Undefined variable.");
+        return nullptr;
+    }
+
+    auto* enumType = dynamic_cast<EnumType*>(symbol->type.get());
+    if (!enumType) {
+        error(expr.getToken(), "Can only access members of an enum.");
+        return nullptr;
+    }
+
+    if (!enumType->hasMember(expr.name.lexeme)) {
+        error(expr.name, "Member with this name not found in enum.");
+        return nullptr;
+    }
+
+    return enumType->clone();
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
@@ -492,7 +537,7 @@ std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "void") return std::make_unique<VoidType>();
 
     Symbol* symbol = symbolTable.lookup(typeToken.lexeme);
-    if (symbol && dynamic_cast<StructType*>(symbol->type.get())) {
+    if (symbol && (dynamic_cast<StructType*>(symbol->type.get()) || dynamic_cast<EnumType*>(symbol->type.get()))) {
         return symbol->type->clone();
     }
 

@@ -20,6 +20,7 @@ struct CallExpr;
 struct LambdaExpr;
 struct StructInitExpr;
 struct MemberAccessExpr;
+struct ScopedAccessExpr;
 
 // Forward declarations for Stmt
 struct VarDeclStmt;
@@ -34,6 +35,7 @@ struct CaseStmt;
 struct BreakStmt;
 struct FallthroughStmt;
 struct StructDeclStmt;
+struct EnumDeclStmt;
 
 
 // Expr Visitor interface
@@ -50,6 +52,7 @@ public:
     virtual R visit(const LambdaExpr& expr) = 0;
     virtual R visit(const StructInitExpr& expr) = 0;
     virtual R visit(const MemberAccessExpr& expr) = 0;
+    virtual R visit(const ScopedAccessExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -131,6 +134,15 @@ struct MemberAccessExpr : Expr {
     const Token& getToken() const override { return name; }
 };
 
+struct ScopedAccessExpr : Expr {
+    ScopedAccessExpr(std::unique_ptr<Expr> scope, Token name)
+        : scope(std::move(scope)), name(std::move(name)) {}
+
+    const std::unique_ptr<Expr> scope;
+    const Token name;
+    const Token& getToken() const override { return name; }
+};
+
 
 // Stmt Visitor interface
 template <typename R>
@@ -149,6 +161,7 @@ public:
     virtual R visit(const BreakStmt& stmt) = 0;
     virtual R visit(const FallthroughStmt& stmt) = 0;
     virtual R visit(const StructDeclStmt& stmt) = 0;
+    virtual R visit(const EnumDeclStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -266,6 +279,14 @@ struct StructDeclStmt : Stmt {
     const std::vector<std::unique_ptr<FuncDeclStmt>> methods;
 };
 
+struct EnumDeclStmt : Stmt {
+    EnumDeclStmt(Token name, std::vector<Token> members)
+        : name(std::move(name)), members(std::move(members)) {}
+
+    const Token name;
+    const std::vector<Token> members;
+};
+
 // Now define LambdaExpr, which depends on FuncDeclStmt::Param
 struct LambdaExpr : Expr {
     LambdaExpr(Token keyword, std::vector<FuncDeclStmt::Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
@@ -294,6 +315,7 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const BreakStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const FallthroughStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const StructDeclStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const EnumDeclStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -309,6 +331,7 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const LambdaExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const StructInitExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const MemberAccessExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const ScopedAccessExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -364,6 +387,10 @@ public:
 
     std::string visit(const MemberAccessExpr& expr) override {
         return "(. " + print(*expr.object) + " " + expr.name.lexeme + ")";
+    }
+
+    std::string visit(const ScopedAccessExpr& expr) override {
+        return "(:: " + print(*expr.scope) + " " + expr.name.lexeme + ")";
     }
 
     std::string visit(const VarDeclStmt& stmt) override {
@@ -465,6 +492,15 @@ public:
         }
         for (const auto& method : stmt.methods) {
             result += " " + print(*method);
+        }
+        result += ")";
+        return result;
+    }
+
+    std::string visit(const EnumDeclStmt& stmt) override {
+        std::string result = "(enum " + stmt.name.lexeme;
+        for (const auto& member : stmt.members) {
+            result += " " + member.lexeme;
         }
         result += ")";
         return result;

@@ -17,6 +17,7 @@ private:
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Stmt> enumDeclaration();
     std::unique_ptr<Stmt> function();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> forStatement();

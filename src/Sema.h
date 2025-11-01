@@ -26,6 +26,7 @@ private:
     void visit(const BreakStmt& stmt) override;
     void visit(const FallthroughStmt& stmt) override;
     void visit(const StructDeclStmt& stmt) override;
+    void visit(const EnumDeclStmt& stmt) override;
 
     std::unique_ptr<Type> visit(const LiteralExpr& expr) override;
     std::unique_ptr<Type> visit(const UnaryExpr& expr) override;
@@ -36,6 +37,7 @@ private:
     std::unique_ptr<Type> visit(const LambdaExpr& expr) override;
     std::unique_ptr<Type> visit(const StructInitExpr& expr) override;
     std::unique_ptr<Type> visit(const MemberAccessExpr& expr) override;
+    std::unique_ptr<Type> visit(const ScopedAccessExpr& expr) override;
 
     std::unique_ptr<Type> resolveType(const Token& typeToken);
     void error(const Token& token, const std::string& message);
