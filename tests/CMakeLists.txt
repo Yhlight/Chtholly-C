@@ -5,6 +5,7 @@ add_executable(chtholly_tests
     ParserTest.cpp
     SymbolTableTest.cpp
     SemaTest.cpp
+    CodeGenTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)
