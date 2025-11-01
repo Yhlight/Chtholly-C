@@ -17,10 +17,13 @@ public:
     std::any visitUnaryExpr(std::shared_ptr<Unary> expr) override;
     std::any visitVariableExpr(std::shared_ptr<Variable> expr) override;
     std::any visitAssignExpr(std::shared_ptr<Assign> expr) override;
+    std::any visitCallExpr(std::shared_ptr<Call> expr) override;
 
     void visitExpressionStmt(std::shared_ptr<Expression> stmt) override;
     void visitVarStmt(std::shared_ptr<Var> stmt) override;
     void visitBlockStmt(std::shared_ptr<Block> stmt) override;
+    void visitFuncStmt(std::shared_ptr<Func> stmt) override;
+    void visitReturnStmt(std::shared_ptr<Return> stmt) override;
 
 private:
     std::string result;

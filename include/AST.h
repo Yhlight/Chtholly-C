@@ -13,6 +13,7 @@ struct Literal;
 struct Unary;
 struct Variable;
 struct Assign;
+struct Call;
 
 // Visitor interface for expressions
 class ExprVisitor {
@@ -24,6 +25,7 @@ public:
     virtual std::any visitUnaryExpr(std::shared_ptr<Unary> expr) = 0;
     virtual std::any visitVariableExpr(std::shared_ptr<Variable> expr) = 0;
     virtual std::any visitAssignExpr(std::shared_ptr<Assign> expr) = 0;
+    virtual std::any visitCallExpr(std::shared_ptr<Call> expr) = 0;
 };
 
 // Base class for all expressions
@@ -36,6 +38,8 @@ struct Expr {
 struct Expression;
 struct Var;
 struct Block;
+struct Func;
+struct Return;
 
 // Visitor interface for statements
 class StmtVisitor {
@@ -44,6 +48,8 @@ public:
     virtual void visitExpressionStmt(std::shared_ptr<Expression> stmt) = 0;
     virtual void visitVarStmt(std::shared_ptr<Var> stmt) = 0;
     virtual void visitBlockStmt(std::shared_ptr<Block> stmt) = 0;
+    virtual void visitFuncStmt(std::shared_ptr<Func> stmt) = 0;
+    virtual void visitReturnStmt(std::shared_ptr<Return> stmt) = 0;
 };
 
 // Base class for all statements
@@ -151,6 +157,44 @@ struct Block : Stmt, public std::enable_shared_from_this<Block> {
 
     void accept(StmtVisitor& visitor) override {
         visitor.visitBlockStmt(shared_from_this());
+    }
+};
+
+struct Func : Stmt, public std::enable_shared_from_this<Func> {
+    const Token name;
+    const std::vector<Token> params;
+    const std::vector<std::shared_ptr<Stmt>> body;
+
+    Func(Token name, std::vector<Token> params, std::vector<std::shared_ptr<Stmt>> body)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
+
+    void accept(StmtVisitor& visitor) override {
+        visitor.visitFuncStmt(shared_from_this());
+    }
+};
+
+struct Return : Stmt, public std::enable_shared_from_this<Return> {
+    const Token keyword;
+    const std::shared_ptr<Expr> value;
+
+    Return(Token keyword, std::shared_ptr<Expr> value)
+        : keyword(std::move(keyword)), value(std::move(value)) {}
+
+    void accept(StmtVisitor& visitor) override {
+        visitor.visitReturnStmt(shared_from_this());
+    }
+};
+
+struct Call : Expr, public std::enable_shared_from_this<Call> {
+    const std::shared_ptr<Expr> callee;
+    const Token paren; // For error reporting.
+    const std::vector<std::shared_ptr<Expr>> arguments;
+
+    Call(std::shared_ptr<Expr> callee, Token paren, std::vector<std::shared_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
+
+    std::any accept(ExprVisitor& visitor) override {
+        return visitor.visitCallExpr(shared_from_this());
     }
 };
 

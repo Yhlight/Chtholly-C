@@ -17,8 +17,10 @@ private:
     int current = 0;
 
     std::shared_ptr<Stmt> declaration();
+    std::shared_ptr<Stmt> function(const std::string& kind);
     std::shared_ptr<Stmt> varDeclaration(bool isMutable);
     std::shared_ptr<Stmt> statement();
+    std::shared_ptr<Stmt> returnStatement();
     std::shared_ptr<Stmt> expressionStatement();
     std::vector<std::shared_ptr<Stmt>> block();
 
@@ -29,7 +31,9 @@ private:
     std::shared_ptr<Expr> term();
     std::shared_ptr<Expr> factor();
     std::shared_ptr<Expr> unary();
+    std::shared_ptr<Expr> call();
     std::shared_ptr<Expr> primary();
+    std::shared_ptr<Expr> finishCall(std::shared_ptr<Expr> callee);
 
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);

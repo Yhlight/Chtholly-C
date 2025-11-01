@@ -7,10 +7,11 @@
 
 int main() {
     std::string source = R"(
-        let a = 10;
-        mut b = "hello";
-        let c = a + 5;
-        b = "world";
+        func add(a, b) {
+            return a + b;
+        }
+
+        let result = add(5, 10);
     )";
 
     Lexer lexer(source);
@@ -23,7 +24,13 @@ int main() {
     std::string generated_code = generator.generate(statements);
 
     std::cout << "// Generated C++ Code:\n";
+    std::cout << "#include <iostream>\n\n";
+    std::cout << "int main() {\n";
     std::cout << generated_code;
+    std::cout << "std::cout << result << std::endl;\n";
+    std::cout << "return 0;\n";
+    std::cout << "}\n";
+
 
     return 0;
 }

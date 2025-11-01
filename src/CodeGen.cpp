@@ -56,6 +56,19 @@ std::any CodeGen::visitAssignExpr(std::shared_ptr<Assign> expr) {
     return expr->name.lexeme + " = " + evaluate(expr->value);
 }
 
+std::any CodeGen::visitCallExpr(std::shared_ptr<Call> expr) {
+    std::string callee = evaluate(expr->callee);
+    std::string args;
+    for (const auto& arg : expr->arguments) {
+        args += evaluate(arg) + ", ";
+    }
+    if (!args.empty()) {
+        args.pop_back();
+        args.pop_back();
+    }
+    return callee + "(" + args + ")";
+}
+
 // Statement visitors
 void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
     source += evaluate(stmt->expression) + ";\n";
@@ -76,4 +89,28 @@ void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
         execute(statement);
     }
     source += "}\n";
+}
+
+void CodeGen::visitFuncStmt(std::shared_ptr<Func> stmt) {
+    source += "auto " + stmt->name.lexeme + " = [](";
+    for (const auto& param : stmt->params) {
+        source += "auto " + param.lexeme + ", ";
+    }
+    if (!stmt->params.empty()) {
+        source.pop_back();
+        source.pop_back();
+    }
+    source += ") {\n";
+    for (const auto& statement : stmt->body) {
+        execute(statement);
+    }
+    source += "};\n";
+}
+
+void CodeGen::visitReturnStmt(std::shared_ptr<Return> stmt) {
+    source += "return";
+    if (stmt->value) {
+        source += " " + evaluate(stmt->value);
+    }
+    source += ";\n";
 }

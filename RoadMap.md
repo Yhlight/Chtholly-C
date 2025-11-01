@@ -23,7 +23,7 @@
 - [x] Implement code generation for basic expressions and statements
 
 ## Phase 5: Advanced Features
-- [ ] Implement functions
+- [x] Implement functions
 - [ ] Implement structs
 - [ ] Implement ownership and borrowing
 - [ ] Implement generics

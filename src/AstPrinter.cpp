@@ -57,6 +57,26 @@ std::any AstPrinter::visitAssignExpr(std::shared_ptr<Assign> expr) {
     return parenthesize("=", {std::make_shared<Variable>(expr->name), expr->value});
 }
 
+std::any AstPrinter::visitCallExpr(std::shared_ptr<Call> expr) {
+    return parenthesize("call", {expr->callee});
+}
+
+void AstPrinter::visitFuncStmt(std::shared_ptr<Func> stmt) {
+    std::string out = "(func " + stmt->name.lexeme + " (";
+    for (const auto& param : stmt->params) {
+        out += param.lexeme + " ";
+    }
+    out += ") ";
+    for (const auto& statement : stmt->body) {
+        out += print(statement);
+    }
+    out += ")";
+    result.append(out);
+}
+
+void AstPrinter::visitReturnStmt(std::shared_ptr<Return> stmt) {
+    result.append("(return " + (stmt->value ? print(stmt->value) : "") + ")");
+}
 
 void AstPrinter::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
     result.append(print(stmt->expression)).append(";\n");
