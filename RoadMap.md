@@ -13,7 +13,7 @@
 - [x] Comments (single-line, multi-line)
 - [x] Functions (including main entry point)
 - [x] Basic operators (+, -, *, /)
-- [ ] Control flow (if, else)
+- [x] Control flow (if, else)
 - [ ] Basic error handling
 
 ## Phase 2: Advanced Language Features

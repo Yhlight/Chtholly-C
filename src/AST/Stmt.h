@@ -11,6 +11,7 @@
 class Block;
 class ExpressionStmt;
 class FuncStmt;
+class IfStmt;
 class LetStmt;
 class PrintStmt;
 class ReturnStmt;
@@ -21,6 +22,7 @@ public:
     virtual void visitBlockStmt(const Block& stmt) = 0;
     virtual void visitExpressionStmt(const ExpressionStmt& stmt) = 0;
     virtual void visitFuncStmt(const FuncStmt& stmt) = 0;
+    virtual void visitIfStmt(const IfStmt& stmt) = 0;
     virtual void visitLetStmt(const LetStmt& stmt) = 0;
     virtual void visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual void visitReturnStmt(const ReturnStmt& stmt) = 0;
@@ -112,6 +114,20 @@ public:
 
     const Token keyword;
     const std::unique_ptr<Expr> value;
+};
+
+class IfStmt : public Stmt {
+public:
+    IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visitIfStmt(*this);
+    }
+
+    const std::unique_ptr<Expr> condition;
+    const std::unique_ptr<Stmt> thenBranch;
+    const std::unique_ptr<Stmt> elseBranch;
 };
 
 #endif // CHTHOLLY_STMT_H

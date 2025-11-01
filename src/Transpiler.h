@@ -26,6 +26,7 @@ private:
     void visitLetStmt(const LetStmt& stmt) override;
     void visitPrintStmt(const PrintStmt& stmt) override;
     void visitReturnStmt(const ReturnStmt& stmt) override;
+    void visitIfStmt(const IfStmt& stmt) override;
 
     std::stringstream out_;
 };

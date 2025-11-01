@@ -5,6 +5,8 @@
 static std::unordered_map<std::string, TokenType> keywords;
 
 static void initializeKeywords() {
+    keywords["if"] = TokenType::IF;
+    keywords["else"] = TokenType::ELSE;
     keywords["func"] = TokenType::FUNC;
     keywords["result"] = TokenType::RESULT;
     keywords["pass"] = TokenType::PASS;

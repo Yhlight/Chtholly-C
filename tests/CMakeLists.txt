@@ -5,6 +5,7 @@ add_executable(chtholly_tests
     TranspilerTests.cpp
     FunctionTests.cpp
     OperatorTests.cpp
+    ControlFlowTests.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib gtest_main)

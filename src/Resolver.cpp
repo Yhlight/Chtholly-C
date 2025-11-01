@@ -67,6 +67,14 @@ void Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     }
 }
 
+void Resolver::visitIfStmt(const IfStmt& stmt) {
+    resolve(stmt.condition.get());
+    resolve(stmt.thenBranch.get());
+    if (stmt.elseBranch) {
+        resolve(stmt.elseBranch.get());
+    }
+}
+
 void Resolver::visitAssignExpr(const Assign& expr) {
     resolve(expr.value.get());
     if (!symbolTable_.isMutable(expr.name.lexeme)) {

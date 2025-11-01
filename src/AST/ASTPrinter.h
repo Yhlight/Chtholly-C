@@ -24,6 +24,7 @@ public:
     void visitLetStmt(const LetStmt& stmt) override;
     void visitPrintStmt(const PrintStmt& stmt) override;
     void visitReturnStmt(const ReturnStmt& stmt) override;
+    void visitIfStmt(const IfStmt& stmt) override;
 
 private:
     void parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);

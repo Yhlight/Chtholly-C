@@ -95,6 +95,18 @@ void ASTPrinter::visitReturnStmt(const ReturnStmt& stmt) {
     }
 }
 
+void ASTPrinter::visitIfStmt(const IfStmt& stmt) {
+    result_ += "(if ";
+    stmt.condition->accept(*this);
+    result_ += " ";
+    stmt.thenBranch->accept(*this);
+    if (stmt.elseBranch) {
+        result_ += " else ";
+        stmt.elseBranch->accept(*this);
+    }
+    result_ += ")";
+}
+
 void ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     result_ += "(" + name;
     for (const auto& expr : exprs) {

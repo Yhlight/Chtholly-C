@@ -124,6 +124,17 @@ void Transpiler::visitLetStmt(const LetStmt& stmt) {
     out_ << ";\n";
 }
 
+void Transpiler::visitIfStmt(const IfStmt& stmt) {
+    out_ << "    if (";
+    stmt.condition->accept(*this);
+    out_ << ") ";
+    stmt.thenBranch->accept(*this);
+    if (stmt.elseBranch) {
+        out_ << "else ";
+        stmt.elseBranch->accept(*this);
+    }
+}
+
 void Transpiler::visitPrintStmt(const PrintStmt& stmt) {
     out_ << "    std::cout << ";
     stmt.expression->accept(*this);
