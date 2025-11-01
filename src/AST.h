@@ -27,6 +27,10 @@ struct IfStmt;
 struct ForStmt;
 struct FuncDeclStmt;
 struct ReturnStmt;
+struct SwitchStmt;
+struct CaseStmt;
+struct BreakStmt;
+struct FallthroughStmt;
 
 
 // Expr Visitor interface
@@ -112,6 +116,10 @@ public:
     virtual R visit(const ForStmt& stmt) = 0;
     virtual R visit(const FuncDeclStmt& stmt) = 0;
     virtual R visit(const ReturnStmt& stmt) = 0;
+    virtual R visit(const SwitchStmt& stmt) = 0;
+    virtual R visit(const CaseStmt& stmt) = 0;
+    virtual R visit(const BreakStmt& stmt) = 0;
+    virtual R visit(const FallthroughStmt& stmt) = 0;
 };
 
 // Base class for all statement nodes
@@ -120,6 +128,7 @@ public:
     virtual ~Stmt() = default;
     template <typename R>
     R accept(StmtVisitor<R>& visitor) const;
+    virtual bool isFallthrough() const { return false; }
 };
 
 // Statement nodes
@@ -186,6 +195,31 @@ struct ReturnStmt : Stmt {
     const std::unique_ptr<Expr> value;
 };
 
+struct BreakStmt : Stmt {
+    BreakStmt(Token keyword) : keyword(std::move(keyword)) {}
+    const Token keyword;
+};
+
+struct FallthroughStmt : Stmt {
+    FallthroughStmt(Token keyword) : keyword(std::move(keyword)) {}
+    const Token keyword;
+    bool isFallthrough() const override { return true; }
+};
+
+struct CaseStmt : Stmt {
+    CaseStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body)) {}
+    const std::unique_ptr<Expr> condition; // nullptr for default case
+    const std::unique_ptr<Stmt> body;
+};
+
+struct SwitchStmt : Stmt {
+    SwitchStmt(std::unique_ptr<Expr> condition, std::vector<std::unique_ptr<CaseStmt>> cases)
+        : condition(std::move(condition)), cases(std::move(cases)) {}
+    const std::unique_ptr<Expr> condition;
+    const std::vector<std::unique_ptr<CaseStmt>> cases;
+};
+
 // Now define LambdaExpr, which depends on FuncDeclStmt::Param
 struct LambdaExpr : Expr {
     LambdaExpr(Token keyword, std::vector<FuncDeclStmt::Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
@@ -209,6 +243,10 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const ForStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const FuncDeclStmt*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const ReturnStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const SwitchStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const CaseStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const BreakStmt*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const FallthroughStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
 
@@ -326,6 +364,34 @@ public:
 
     std::string visit(const ReturnStmt& stmt) override {
         return "(return " + (stmt.value ? print(*stmt.value) : "") + ")";
+    }
+
+    std::string visit(const SwitchStmt& stmt) override {
+        std::string result = "(switch " + print(*stmt.condition);
+        for (const auto& caseStmt : stmt.cases) {
+            result += " " + print(*caseStmt);
+        }
+        result += ")";
+        return result;
+    }
+
+    std::string visit(const CaseStmt& stmt) override {
+        std::string result = "(case";
+        if (stmt.condition) {
+            result += " " + print(*stmt.condition);
+        } else {
+            result += " default";
+        }
+        result += " " + print(*stmt.body) + ")";
+        return result;
+    }
+
+    std::string visit(const BreakStmt& stmt) override {
+        return "(break)";
+    }
+
+    std::string visit(const FallthroughStmt& stmt) override {
+        return "(fallthrough)";
     }
 
 private:

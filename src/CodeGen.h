@@ -19,6 +19,10 @@ private:
     void visit(const ForStmt& stmt) override;
     void visit(const FuncDeclStmt& stmt) override;
     void visit(const ReturnStmt& stmt) override;
+    void visit(const SwitchStmt& stmt) override;
+    void visit(const CaseStmt& stmt) override;
+    void visit(const BreakStmt& stmt) override;
+    void visit(const FallthroughStmt& stmt) override;
 
     std::string visit(const LiteralExpr& expr) override;
     std::string visit(const UnaryExpr& expr) override;

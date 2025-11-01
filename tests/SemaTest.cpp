@@ -145,3 +145,28 @@ TEST(SemaTest, LambdaReturnTypeMismatch) {
     Sema sema = analyzeSource("let f = []() -> int { return \"hello\"; };");
     EXPECT_TRUE(sema.hadError());
 }
+
+TEST(SemaTest, SwitchSuccess) {
+    Sema sema = analyzeSource("let x = 1; switch (x) { case 1: { break; } default: { break; } }");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, SwitchCaseTypeMismatch) {
+    Sema sema = analyzeSource("let x = 1; switch (x) { case \"hello\": { break; } }");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, BreakOutsideLoopOrSwitch) {
+    Sema sema = analyzeSource("break;");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, FallthroughOutsideSwitch) {
+    Sema sema = analyzeSource("fallthrough;");
+    EXPECT_TRUE(sema.hadError());
+}
+
+TEST(SemaTest, FallthroughInLastCase) {
+    Sema sema = analyzeSource("let x = 1; switch (x) { case 1: { fallthrough; } }");
+    EXPECT_TRUE(sema.hadError());
+}

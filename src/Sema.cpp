@@ -251,7 +251,7 @@ std::unique_ptr<Type> Sema::visit(const VariableExpr& expr) {
     Symbol* symbol = symbolTable.lookup(expr.name.lexeme);
     if (!symbol) {
         error(expr.name, "Undefined variable.");
-        return std::make_unique<IntType>();
+        return nullptr;
     }
 
     // Don't "evaluate" a function variable to a type here. Let CallExpr handle it.
@@ -340,6 +340,54 @@ std::unique_ptr<Type> Sema::visit(const LambdaExpr& expr) {
     currentFunctionType = oldFunctionType;
 
     return funcType;
+}
+
+void Sema::visit(const SwitchStmt& stmt) {
+    std::unique_ptr<Type> conditionType = stmt.condition->accept(*this);
+    if (!conditionType) return;
+
+    bool oldInSwitch = inSwitch;
+    inSwitch = true;
+
+    for (size_t i = 0; i < stmt.cases.size(); ++i) {
+        const auto& caseStmt = stmt.cases[i];
+        if (caseStmt->condition) {
+            std::unique_ptr<Type> caseConditionType = caseStmt->condition->accept(*this);
+            if (caseConditionType && !areTypesEqual(conditionType.get(), caseConditionType.get())) {
+                error(caseStmt->condition->getToken(), "Case condition type does not match switch condition type.");
+            }
+        }
+        caseStmt->body->accept(*this);
+
+        if (i == stmt.cases.size() - 1) {
+            if (auto* block = dynamic_cast<BlockStmt*>(caseStmt->body.get())) {
+                if (!block->statements.empty() && block->statements.back()->isFallthrough()) {
+                    error(dynamic_cast<FallthroughStmt*>(block->statements.back().get())->keyword, "Cannot use 'fallthrough' in the last case of a switch statement.");
+                }
+            }
+        }
+    }
+
+    inSwitch = oldInSwitch;
+}
+
+void Sema::visit(const CaseStmt& stmt) {
+    // This is handled by visit(SwitchStmt&)
+}
+
+void Sema::visit(const BreakStmt& stmt) {
+    if (!inSwitch) {
+        error(stmt.keyword, "Cannot use 'break' outside of a switch statement or loop.");
+    }
+}
+
+void Sema::visit(const FallthroughStmt& stmt) {
+    if (!inSwitch) {
+        error(stmt.keyword, "Cannot use 'fallthrough' outside of a switch statement.");
+    }
+    // A simple check for being the last statement in a block can be tricky.
+    // For now, we will rely on a runtime check. A more advanced static analysis
+    // would be needed to correctly identify the last case.
 }
 
 

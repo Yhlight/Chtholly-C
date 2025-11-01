@@ -35,6 +35,9 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::FOR})) return forStatement();
     if (match({TokenType::IF})) return ifStatement();
     if (match({TokenType::RETURN})) return returnStatement();
+    if (match({TokenType::SWITCH})) return switchStatement();
+    if (match({TokenType::BREAK})) return breakStatement();
+    if (match({TokenType::FALLTHROUGH})) return fallthroughStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
 
     std::unique_ptr<Stmt> stmt = expressionStatement();
@@ -142,6 +145,43 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::switchStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
+    std::unique_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after switch condition.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before switch cases.");
+
+    std::vector<std::unique_ptr<CaseStmt>> cases;
+    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
+        if (match({TokenType::CASE})) {
+            std::unique_ptr<Expr> caseCondition = expression();
+            consume(TokenType::COLON, "Expect ':' after case value.");
+            std::unique_ptr<Stmt> body = statement();
+            cases.push_back(std::make_unique<CaseStmt>(std::move(caseCondition), std::move(body)));
+        } else if (match({TokenType::DEFAULT})) {
+            consume(TokenType::COLON, "Expect ':' after default.");
+            std::unique_ptr<Stmt> body = statement();
+            cases.push_back(std::make_unique<CaseStmt>(nullptr, std::move(body)));
+        } else {
+            throw error(peek(), "Expect 'case' or 'default'.");
+        }
+    }
+
+    return std::make_unique<SwitchStmt>(std::move(condition), std::move(cases));
+}
+
+std::unique_ptr<Stmt> Parser::breakStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+    return std::make_unique<BreakStmt>(std::move(keyword));
+}
+
+std::unique_ptr<Stmt> Parser::fallthroughStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'fallthrough'.");
+    return std::make_unique<FallthroughStmt>(std::move(keyword));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {

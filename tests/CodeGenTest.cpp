@@ -99,3 +99,9 @@ TEST(CodeGenTest, GeneratesLambdaExpression) {
     std::string expected = "const auto add = [](int a, int b) -> int { return (a + b); };";
     EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
 }
+
+TEST(CodeGenTest, GeneratesSwitchStatement) {
+    std::string source = "let x = 1; switch (x) { case 1: { break; } case 2: { fallthrough; } default: { break; } }";
+    std::string expected = "const auto x = 1; switch (x) { case 1: { break; } case 2: { [[fallthrough]]; } default: { break; } }";
+    EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
+}

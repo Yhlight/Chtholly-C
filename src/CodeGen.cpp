@@ -157,4 +157,30 @@ std::string CodeGen::visit(const LambdaExpr& expr) {
     return lambda_out.str();
 }
 
+void CodeGen::visit(const SwitchStmt& stmt) {
+    out << "switch (" << stmt.condition->accept(*this) << ") {\n";
+    for (const auto& caseStmt : stmt.cases) {
+        caseStmt->accept(*this);
+    }
+    out << "}\n";
+}
+
+void CodeGen::visit(const CaseStmt& stmt) {
+    if (stmt.condition) {
+        out << "case " << stmt.condition->accept(*this) << ":\n";
+    } else {
+        out << "default:\n";
+    }
+    stmt.body->accept(*this);
+    out << "\n";
+}
+
+void CodeGen::visit(const BreakStmt& stmt) {
+    out << "break;\n";
+}
+
+void CodeGen::visit(const FallthroughStmt& stmt) {
+    out << "[[fallthrough]];\n";
+}
+
 } // namespace chtholly

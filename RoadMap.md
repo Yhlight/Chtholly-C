@@ -56,7 +56,7 @@
 - [ ] **控制流**
     - [ ] `if`/`else` 条件语句
     - [ ] C-Style `for` 循环
-    - [ ] `switch`/`case` 语句 (支持 `fallthrough`)
+    - [x] `switch`/`case` 语句 (支持 `fallthrough`)
 - [x] **函数**
     - [x] 函数声明和调用 (`func`)
     - [x] 返回类型和参数列表
