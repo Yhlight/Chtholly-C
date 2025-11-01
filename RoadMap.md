@@ -13,9 +13,9 @@
 - [x] Handle identifiers, keywords, literals, and operators
 
 ## Phase 3: Parser
-- [ ] Implement the Parser
-- [ ] Define the Abstract Syntax Tree (AST)
-- [ ] Implement parsing for basic expressions and statements
+- [x] Implement the Parser
+- [x] Define the Abstract Syntax Tree (AST)
+- [x] Implement parsing for basic expressions and statements
 
 ## Phase 4: Code Generator
 - [ ] Implement the Code Generator

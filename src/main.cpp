@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include "../include/Lexer.h"
+#include "../include/Parser.h"
+#include "../include/AstPrinter.h"
 #include "../include/Token.h"
 
 // Helper to convert TokenType to string for printing
@@ -81,37 +83,23 @@ std::string Token::toString() const {
            "', line: " + std::to_string(line) + "]";
 }
 
+
 int main() {
     std::string source = R"(
-        // Test cases for the fixes
-        /* A multi-line comment
-           with a * inside. */
-        let d = 'c'; // Valid character literal
-        let e = 'ab'; // Invalid character literal
-        let f = 'f;  // Unterminated character literal
-
-        // Original test cases
         let a = 10;
         mut b = "hello";
-        let c = 12.5;
-
-        func add(x: int, y: int) -> int {
-            return x + y;
-        }
-
-        if (a > 5) {
-            b = "world";
-        } else {
-            add(a, 2);
-        }
+        let c = a + 5;
+        b = "world";
     )";
 
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
 
-    for (const auto& token : tokens) {
-        std::cout << token.toString() << std::endl;
-    }
+    Parser parser(tokens);
+    std::vector<std::shared_ptr<Stmt>> statements = parser.parse();
+
+    AstPrinter printer;
+    std::cout << printer.print(statements);
 
     return 0;
 }
