@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <optional>
 
 namespace chtholly {
 
@@ -122,6 +123,32 @@ public:
 private:
     std::string name;
     std::vector<std::string> members;
+};
+
+class ArrayType : public Type {
+public:
+    ArrayType(std::unique_ptr<Type> elementType, std::optional<int> size = std::nullopt)
+        : elementType(std::move(elementType)), size(size) {}
+
+    std::unique_ptr<Type> clone() const override {
+        return std::make_unique<ArrayType>(elementType->clone(), size);
+    }
+
+    std::string toString() const override {
+        std::string str = "array[" + elementType->toString();
+        if (size) {
+            str += "; " + std::to_string(*size);
+        }
+        str += "]";
+        return str;
+    }
+
+    const Type* getElementType() const { return elementType.get(); }
+    std::optional<int> getSize() const { return size; }
+
+private:
+    std::unique_ptr<Type> elementType;
+    std::optional<int> size;
 };
 
 } // namespace chtholly

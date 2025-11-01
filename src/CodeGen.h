@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AST.h"
+#include "Type.h"
 #include <sstream>
 #include <string>
 #include <vector>
@@ -36,8 +37,11 @@ private:
     std::string visit(const StructInitExpr& expr) override;
     std::string visit(const MemberAccessExpr& expr) override;
     std::string visit(const ScopedAccessExpr& expr) override;
+    std::string visit(const ArrayLiteralExpr& expr) override;
+    std::string visit(const SubscriptExpr& expr) override;
 
     std::string generateVarDecl(const VarDeclStmt& stmt);
+    std::string typeToString(const Type& type);
 
     std::stringstream out;
 };

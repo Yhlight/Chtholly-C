@@ -38,8 +38,11 @@ private:
     std::unique_ptr<Type> visit(const StructInitExpr& expr) override;
     std::unique_ptr<Type> visit(const MemberAccessExpr& expr) override;
     std::unique_ptr<Type> visit(const ScopedAccessExpr& expr) override;
+    std::unique_ptr<Type> visit(const ArrayLiteralExpr& expr) override;
+    std::unique_ptr<Type> visit(const SubscriptExpr& expr) override;
 
     std::unique_ptr<Type> resolveType(const Token& typeToken);
+    std::unique_ptr<Type> resolveType(const TypeExpr& typeExpr);
     void error(const Token& token, const std::string& message);
 
     SymbolTable symbolTable;

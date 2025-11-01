@@ -5,16 +5,28 @@ namespace chtholly {
 
 // Helper to check if two types are the same.
 bool areTypesEqual(const Type* a, const Type* b) {
-    if (!a || !b) return a == b; // Both null is considered equal.
-    if (dynamic_cast<const IntType*>(a) && dynamic_cast<const IntType*>(b)) return true;
-    if (dynamic_cast<const StringType*>(a) && dynamic_cast<const StringType*>(b)) return true;
-    if (dynamic_cast<const BoolType*>(a) && dynamic_cast<const BoolType*>(b)) return true;
-    if (dynamic_cast<const VoidType*>(a) && dynamic_cast<const VoidType*>(b)) return true;
+    if (!a || !b) return a == b;
+
+    if (typeid(*a) != typeid(*b)) return false;
+
+    if (dynamic_cast<const IntType*>(a)) return true;
+    if (dynamic_cast<const StringType*>(a)) return true;
+    if (dynamic_cast<const BoolType*>(a)) return true;
+    if (dynamic_cast<const VoidType*>(a)) return true;
+
     if (auto* enumA = dynamic_cast<const EnumType*>(a)) {
-        if (auto* enumB = dynamic_cast<const EnumType*>(b)) {
-            return enumA->getName() == enumB->getName();
-        }
+        auto* enumB = dynamic_cast<const EnumType*>(b);
+        return enumA->getName() == enumB->getName();
     }
+
+    if (auto* arrayA = dynamic_cast<const ArrayType*>(a)) {
+        auto* arrayB = dynamic_cast<const ArrayType*>(b);
+        if (arrayA->getElementType() == nullptr || arrayB->getElementType() == nullptr) {
+            return true;
+        }
+        return areTypesEqual(arrayA->getElementType(), arrayB->getElementType());
+    }
+
     return false;
 }
 
@@ -44,8 +56,8 @@ void Sema::visit(const BlockStmt& stmt) {
 
 void Sema::visit(const VarDeclStmt& stmt) {
     std::unique_ptr<Type> declaredType = nullptr;
-    if (stmt.type) {
-        declaredType = resolveType(*stmt.type);
+    if (stmt.type_expr) {
+        declaredType = resolveType(*stmt.type_expr);
     }
 
     std::unique_ptr<Type> initializerType = nullptr;
@@ -67,6 +79,7 @@ void Sema::visit(const VarDeclStmt& stmt) {
         return;
     }
 
+    stmt.resolvedType = finalType->clone();
     Mutability mutability = (stmt.keyword.type == TokenType::MUT) ? Mutability::Mutable : Mutability::Immutable;
 
     if (!symbolTable.define(stmt.name.lexeme, std::move(finalType), mutability)) {
@@ -276,10 +289,7 @@ std::unique_ptr<Type> Sema::visit(const VariableExpr& expr) {
         return nullptr;
     }
 
-    if (auto* intType = dynamic_cast<IntType*>(symbol->type.get())) return std::make_unique<IntType>();
-    if (auto* strType = dynamic_cast<StringType*>(symbol->type.get())) return std::make_unique<StringType>();
-    if (auto* boolType = dynamic_cast<BoolType*>(symbol->type.get())) return std::make_unique<BoolType>();
-    return nullptr;
+    return symbol->type->clone();
 }
 
 std::unique_ptr<Type> Sema::visit(const GroupingExpr& expr) {
@@ -529,6 +539,46 @@ std::unique_ptr<Type> Sema::visit(const ScopedAccessExpr& expr) {
     return enumType->clone();
 }
 
+std::unique_ptr<Type> Sema::visit(const ArrayLiteralExpr& expr) {
+    if (expr.elements.empty()) {
+        // Cannot determine the type of an empty array literal without context.
+        // This should be resolved by the variable declaration's type annotation.
+        return std::make_unique<ArrayType>(nullptr);
+    }
+
+    std::unique_ptr<Type> firstElementType = expr.elements[0]->accept(*this);
+    if (!firstElementType) return nullptr;
+
+    for (size_t i = 1; i < expr.elements.size(); ++i) {
+        std::unique_ptr<Type> elementType = expr.elements[i]->accept(*this);
+        if (elementType && !areTypesEqual(firstElementType.get(), elementType.get())) {
+            error(expr.elements[i]->getToken(), "Array elements must have the same type.");
+            return nullptr;
+        }
+    }
+
+    return std::make_unique<ArrayType>(std::move(firstElementType));
+}
+
+std::unique_ptr<Type> Sema::visit(const SubscriptExpr& expr) {
+    std::unique_ptr<Type> arrayType = expr.array->accept(*this);
+    if (!arrayType) return nullptr;
+
+    auto* arrType = dynamic_cast<ArrayType*>(arrayType.get());
+    if (!arrType) {
+        error(expr.bracket, "Can only subscript an array.");
+        return nullptr;
+    }
+
+    std::unique_ptr<Type> indexType = expr.index->accept(*this);
+    if (indexType && !dynamic_cast<IntType*>(indexType.get())) {
+        error(expr.index->getToken(), "Array index must be an integer.");
+        return nullptr;
+    }
+
+    return arrType->getElementType()->clone();
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
@@ -542,6 +592,17 @@ std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     }
 
     error(typeToken, "Unknown type name.");
+    return nullptr;
+}
+
+std::unique_ptr<Type> Sema::resolveType(const TypeExpr& typeExpr) {
+    if (auto* simple = dynamic_cast<const SimpleTypeExpr*>(&typeExpr)) {
+        return resolveType(simple->name);
+    }
+    if (auto* array = dynamic_cast<const ArrayTypeExpr*>(&typeExpr)) {
+        std::unique_ptr<Type> elementType = resolveType(*array->element_type);
+        return std::make_unique<ArrayType>(std::move(elementType), array->size);
+    }
     return nullptr;
 }
 

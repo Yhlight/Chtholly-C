@@ -51,16 +51,16 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
     Token keyword = previous(); // The 'let' or 'mut' token
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
 
-    std::optional<Token> type;
+    std::unique_ptr<TypeExpr> typeExpr = nullptr;
     if (match({TokenType::COLON})) {
-        type = consume(TokenType::IDENTIFIER, "Expect type annotation.");
+        typeExpr = parseType();
     }
 
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
-    return std::make_unique<VarDeclStmt>(std::move(keyword), std::move(name), std::move(type), std::move(initializer));
+    return std::make_unique<VarDeclStmt>(std::move(keyword), std::move(name), std::move(typeExpr), std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement() {
@@ -353,6 +353,10 @@ std::unique_ptr<Expr> Parser::call() {
         } else if (match({TokenType::COLON_COLON})) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::'.");
             expr = std::make_unique<ScopedAccessExpr>(std::move(expr), std::move(name));
+        } else if (match({TokenType::LEFT_BRACKET})) {
+            std::unique_ptr<Expr> index = expression();
+            Token bracket = consume(TokenType::RIGHT_BRACKET, "Expect ']' after subscript.");
+            expr = std::make_unique<SubscriptExpr>(std::move(expr), std::move(bracket), std::move(index));
         } else {
             break;
         }
@@ -388,29 +392,33 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<VariableExpr>(previous());
     }
     if (match({TokenType::LEFT_BRACKET})) {
-        Token bracket = previous();
-        // Captures are not supported yet.
-        consume(TokenType::RIGHT_BRACKET, "Expect ']' after capture list.");
-        consume(TokenType::LEFT_PAREN, "Expect '(' after '[]'.");
-        std::vector<FuncDeclStmt::Param> params;
-        if (!check(TokenType::RIGHT_PAREN)) {
-            do {
-                Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
-                consume(TokenType::COLON, "Expect ':' after parameter name.");
-                Token paramType = consume(TokenType::IDENTIFIER, "Expect parameter type.");
-                params.push_back({std::move(paramName), std::move(paramType)});
-            } while (match({TokenType::COMMA}));
-        }
-        consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+        if (check(TokenType::RIGHT_BRACKET) && (current + 1 < tokens.size()) && tokens[current + 1].type == TokenType::LEFT_PAREN) {
+            // Lambda expression
+            Token bracket = previous();
+            consume(TokenType::RIGHT_BRACKET, "Expect ']' after capture list.");
+            consume(TokenType::LEFT_PAREN, "Expect '(' after '[]'.");
+            std::vector<FuncDeclStmt::Param> params;
+            if (!check(TokenType::RIGHT_PAREN)) {
+                do {
+                    Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                    consume(TokenType::COLON, "Expect ':' after parameter name.");
+                    Token paramType = consume(TokenType::IDENTIFIER, "Expect parameter type.");
+                    params.push_back({std::move(paramName), std::move(paramType)});
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
 
-        std::optional<Token> returnType;
-        if (match({TokenType::ARROW})) {
-            returnType = consume(TokenType::IDENTIFIER, "Expect return type.");
-        }
+            std::optional<Token> returnType;
+            if (match({TokenType::ARROW})) {
+                returnType = consume(TokenType::IDENTIFIER, "Expect return type.");
+            }
 
-        consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
-        auto body = std::make_unique<BlockStmt>(block());
-        return std::make_unique<LambdaExpr>(std::move(bracket), std::move(params), std::move(returnType), std::move(body));
+            consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
+            auto body = std::make_unique<BlockStmt>(block());
+            return std::make_unique<LambdaExpr>(std::move(bracket), std::move(params), std::move(returnType), std::move(body));
+        } else {
+            return arrayLiteral();
+        }
     }
     if (match({TokenType::LEFT_PAREN})) {
         std::unique_ptr<Expr> expr = expression();
@@ -419,6 +427,32 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     throw error(peek(), "Expect expression.");
+}
+
+std::unique_ptr<TypeExpr> Parser::parseType() {
+    if (match({TokenType::LEFT_BRACKET})) {
+        std::unique_ptr<TypeExpr> elementType = parseType();
+        std::optional<int> size;
+        if (match({TokenType::COMMA})) {
+            size = std::stoi(consume(TokenType::NUMBER, "Expect size after comma.").lexeme);
+        }
+        consume(TokenType::RIGHT_BRACKET, "Expect ']' after array type.");
+        return std::make_unique<ArrayTypeExpr>(std::move(elementType), size);
+    }
+    Token typeName = consume(TokenType::IDENTIFIER, "Expect type name.");
+    return std::make_unique<SimpleTypeExpr>(std::move(typeName));
+}
+
+std::unique_ptr<Expr> Parser::arrayLiteral() {
+    Token bracket = previous();
+    std::vector<std::unique_ptr<Expr>> elements;
+    if (!check(TokenType::RIGHT_BRACKET)) {
+        do {
+            elements.push_back(expression());
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_BRACKET, "Expect ']' after array elements.");
+    return std::make_unique<ArrayLiteralExpr>(std::move(bracket), std::move(elements));
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

@@ -1,25 +1,15 @@
 #include "CodeGen.h"
 #include "AST.h"
 #include <set>
+#include <vector>
+#include <array>
 
 namespace chtholly {
 
-// Helper to check for string type usage
-bool usesStringType(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    for (const auto& stmt : statements) {
-        if (auto* varDecl = dynamic_cast<const VarDeclStmt*>(stmt.get())) {
-            if (varDecl->type && varDecl->type->lexeme == "string") {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    if (usesStringType(statements)) {
-        out << "#include <string>\n";
-    }
+    out << "#include <string>\n";
+    out << "#include <vector>\n";
+    out << "#include <array>\n";
 
     for (const auto& stmt : statements) {
         stmt->accept(*this);
@@ -33,13 +23,8 @@ std::string CodeGen::generateVarDecl(const VarDeclStmt& stmt) {
         temp_out << "const ";
     }
 
-    // Use the explicit type if provided, otherwise use auto.
-    if (stmt.type) {
-        if (stmt.type->lexeme == "string") {
-            temp_out << "std::string " << stmt.name.lexeme;
-        } else {
-            temp_out << stmt.type->lexeme << " " << stmt.name.lexeme;
-        }
+    if (stmt.resolvedType) {
+        temp_out << typeToString(*stmt.resolvedType) << " " << stmt.name.lexeme;
     } else {
         temp_out << "auto " << stmt.name.lexeme;
     }
@@ -255,6 +240,39 @@ void CodeGen::visit(const EnumDeclStmt& stmt) {
 
 std::string CodeGen::visit(const ScopedAccessExpr& expr) {
     return expr.scope->accept(*this) + "::" + expr.name.lexeme;
+}
+
+std::string CodeGen::visit(const ArrayLiteralExpr& expr) {
+    std::stringstream ss;
+    ss << "{";
+    for (size_t i = 0; i < expr.elements.size(); ++i) {
+        ss << expr.elements[i]->accept(*this);
+        if (i < expr.elements.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "}";
+    return ss.str();
+}
+
+std::string CodeGen::visit(const SubscriptExpr& expr) {
+    return expr.array->accept(*this) + "[" + expr.index->accept(*this) + "]";
+}
+
+std::string CodeGen::typeToString(const Type& type) {
+    if (dynamic_cast<const IntType*>(&type)) return "int";
+    if (dynamic_cast<const StringType*>(&type)) return "std::string";
+    if (dynamic_cast<const BoolType*>(&type)) return "bool";
+    if (dynamic_cast<const VoidType*>(&type)) return "void";
+    if (auto* enumType = dynamic_cast<const EnumType*>(&type)) return enumType->getName();
+    if (auto* arrayType = dynamic_cast<const ArrayType*>(&type)) {
+        if (arrayType->getSize().has_value()) {
+            return "std::array<" + typeToString(*arrayType->getElementType()) + ", " + std::to_string(arrayType->getSize().value()) + ">";
+        } else {
+            return "std::vector<" + typeToString(*arrayType->getElementType()) + ">";
+        }
+    }
+    return "auto";
 }
 
 } // namespace chtholly

@@ -8,6 +8,7 @@ add_executable(chtholly_tests
     SemaTest.cpp
     CodeGenTest.cpp
     VariableTest.cpp
+    ArrayTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)

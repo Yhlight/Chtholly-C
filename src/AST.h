@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Token.h"
+#include "Type.h"
 #include <memory>
 #include <any>
 #include <vector>
@@ -21,6 +22,27 @@ struct LambdaExpr;
 struct StructInitExpr;
 struct MemberAccessExpr;
 struct ScopedAccessExpr;
+struct ArrayLiteralExpr;
+struct SubscriptExpr;
+
+// Type Expressions
+class TypeExpr {
+public:
+    virtual ~TypeExpr() = default;
+};
+
+struct SimpleTypeExpr : TypeExpr {
+    SimpleTypeExpr(Token name) : name(std::move(name)) {}
+    const Token name;
+};
+
+struct ArrayTypeExpr : TypeExpr {
+    ArrayTypeExpr(std::unique_ptr<TypeExpr> element_type, std::optional<int> size)
+        : element_type(std::move(element_type)), size(size) {}
+    const std::unique_ptr<TypeExpr> element_type;
+    const std::optional<int> size;
+};
+
 
 // Forward declarations for Stmt
 struct VarDeclStmt;
@@ -53,6 +75,8 @@ public:
     virtual R visit(const StructInitExpr& expr) = 0;
     virtual R visit(const MemberAccessExpr& expr) = 0;
     virtual R visit(const ScopedAccessExpr& expr) = 0;
+    virtual R visit(const ArrayLiteralExpr& expr) = 0;
+    virtual R visit(const SubscriptExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -143,6 +167,25 @@ struct ScopedAccessExpr : Expr {
     const Token& getToken() const override { return name; }
 };
 
+struct ArrayLiteralExpr : Expr {
+    ArrayLiteralExpr(Token bracket, std::vector<std::unique_ptr<Expr>> elements)
+        : bracket(std::move(bracket)), elements(std::move(elements)) {}
+
+    const Token bracket;
+    const std::vector<std::unique_ptr<Expr>> elements;
+    const Token& getToken() const override { return bracket; }
+};
+
+struct SubscriptExpr : Expr {
+    SubscriptExpr(std::unique_ptr<Expr> array, Token bracket, std::unique_ptr<Expr> index)
+        : array(std::move(array)), bracket(std::move(bracket)), index(std::move(index)) {}
+
+    const std::unique_ptr<Expr> array;
+    const Token bracket;
+    const std::unique_ptr<Expr> index;
+    const Token& getToken() const override { return bracket; }
+};
+
 
 // Stmt Visitor interface
 template <typename R>
@@ -175,12 +218,13 @@ public:
 
 // Statement nodes
 struct VarDeclStmt : Stmt {
-    VarDeclStmt(Token keyword, Token name, std::optional<Token> type, std::unique_ptr<Expr> initializer)
-        : keyword(std::move(keyword)), name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)) {}
+    VarDeclStmt(Token keyword, Token name, std::unique_ptr<TypeExpr> type_expr, std::unique_ptr<Expr> initializer)
+        : keyword(std::move(keyword)), name(std::move(name)), type_expr(std::move(type_expr)), initializer(std::move(initializer)) {}
     const Token keyword; // let or mut
     const Token name;
-    const std::optional<Token> type;
+    const std::unique_ptr<TypeExpr> type_expr;
     const std::unique_ptr<Expr> initializer;
+    mutable std::unique_ptr<Type> resolvedType;
 };
 
 struct ExprStmt : Stmt {
@@ -332,6 +376,8 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const StructInitExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const MemberAccessExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const ScopedAccessExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const ArrayLiteralExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const SubscriptExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -346,6 +392,20 @@ class AstPrinter : public ExprVisitor<std::string>, public StmtVisitor<std::stri
 public:
     std::string print(const Stmt& stmt) { return stmt.accept(*this); }
     std::string print(const Expr& expr) { return expr.accept(*this); }
+    std::string print(const TypeExpr& type) {
+        if (auto p = dynamic_cast<const SimpleTypeExpr*>(&type)) {
+            return p->name.lexeme;
+        }
+        if (auto p = dynamic_cast<const ArrayTypeExpr*>(&type)) {
+            std::string result = "[" + print(*p->element_type);
+            if (p->size) {
+                result += ", " + std::to_string(*p->size);
+            }
+            result += "]";
+            return result;
+        }
+        return "<unknown_type>";
+    }
 
     std::string visit(const LiteralExpr& expr) override { return expr.token.lexeme; }
     std::string visit(const UnaryExpr& expr) override { return parenthesize(expr.op.lexeme, {expr.right.get()}); }
@@ -393,10 +453,23 @@ public:
         return "(:: " + print(*expr.scope) + " " + expr.name.lexeme + ")";
     }
 
+    std::string visit(const ArrayLiteralExpr& expr) override {
+        std::string result = "(array-literal";
+        for (const auto& element : expr.elements) {
+            result += " " + print(*element);
+        }
+        result += ")";
+        return result;
+    }
+
+    std::string visit(const SubscriptExpr& expr) override {
+        return "(subscript " + print(*expr.array) + " " + print(*expr.index) + ")";
+    }
+
     std::string visit(const VarDeclStmt& stmt) override {
         std::string result = "(var " + stmt.name.lexeme;
-        if (stmt.type) {
-            result += ": " + stmt.type->lexeme;
+        if (stmt.type_expr) {
+            result += ": " + print(*stmt.type_expr);
         }
         if (stmt.initializer) {
             result += " = " + print(*stmt.initializer);
