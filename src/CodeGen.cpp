@@ -10,6 +10,11 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
     return code;
 }
 
+std::string CodeGen::visitWhileStmt(const std::shared_ptr<While>& stmt) {
+    std::string code = "while (" + stmt->condition->accept(*this) + ") " + stmt->body->accept(*this);
+    return code;
+}
+
 std::string CodeGen::visitBinaryExpr(const std::shared_ptr<Binary>& expr) {
     return expr->left->accept(*this) + " " + expr->op.lexeme + " " + expr->right->accept(*this);
 }

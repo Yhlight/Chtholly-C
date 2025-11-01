@@ -22,6 +22,7 @@ public:
     std::string visitVarStmt(const std::shared_ptr<Var>& stmt) override;
     std::string visitBlockStmt(const std::shared_ptr<Block>& stmt) override;
     std::string visitIfStmt(const std::shared_ptr<If>& stmt) override;
+    std::string visitWhileStmt(const std::shared_ptr<While>& stmt) override;
 };
 
 #endif //CHTHOLLY_CODEGEN_H

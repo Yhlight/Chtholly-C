@@ -8,10 +8,9 @@
 
 int main() {
     std::string source = R"(
-        let x = 10;
-        let y = 20;
-        if (x > 5 && y > 15) {
-            let z = 30;
+        mut i = 0;
+        while (i < 10) {
+            i = i + 1;
         }
     )";
 
