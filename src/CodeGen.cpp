@@ -10,6 +10,43 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
     return code;
 }
 
+std::string CodeGen::visitFuncStmt(const std::shared_ptr<Func>& stmt) {
+    std::string code = "auto " + stmt->name.lexeme + " = [](";
+    for (size_t i = 0; i < stmt->params.size(); ++i) {
+        code += "auto " + stmt->params[i].lexeme;
+        if (i < stmt->params.size() - 1) {
+            code += ", ";
+        }
+    }
+    code += ") {\n";
+    for (const auto& statement : stmt->body) {
+        code += statement->accept(*this);
+    }
+    code += "};\n";
+    return code;
+}
+
+std::string CodeGen::visitReturnStmt(const std::shared_ptr<Return>& stmt) {
+    std::string code = "return";
+    if (stmt->value) {
+        code += " " + stmt->value->accept(*this);
+    }
+    code += ";\n";
+    return code;
+}
+
+std::string CodeGen::visitCallExpr(const std::shared_ptr<Call>& expr) {
+    std::string code = expr->callee->accept(*this) + "(";
+    for (size_t i = 0; i < expr->arguments.size(); ++i) {
+        code += expr->arguments[i]->accept(*this);
+        if (i < expr->arguments.size() - 1) {
+            code += ", ";
+        }
+    }
+    code += ")";
+    return code;
+}
+
 std::string CodeGen::visitWhileStmt(const std::shared_ptr<While>& stmt) {
     std::string code = "while (" + stmt->condition->accept(*this) + ") " + stmt->body->accept(*this);
     return code;

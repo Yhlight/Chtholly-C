@@ -12,6 +12,7 @@ struct Literal;
 struct Unary;
 struct Variable;
 struct Assign;
+struct Call;
 
 // Visitor for expressions
 template<typename R>
@@ -22,6 +23,7 @@ struct ExprVisitor {
     virtual R visitUnaryExpr(const std::shared_ptr<Unary>& expr) = 0;
     virtual R visitVariableExpr(const std::shared_ptr<Variable>& expr) = 0;
     virtual R visitAssignExpr(const std::shared_ptr<Assign>& expr) = 0;
+    virtual R visitCallExpr(const std::shared_ptr<Call>& expr) = 0;
 };
 
 // Base class for all expressions
@@ -97,6 +99,19 @@ struct Assign : Expr, public std::enable_shared_from_this<Assign> {
     std::shared_ptr<Expr> value;
 };
 
+struct Call : Expr, public std::enable_shared_from_this<Call> {
+    Call(std::shared_ptr<Expr> callee, Token paren, std::vector<std::shared_ptr<Expr>> arguments)
+        : callee(callee), paren(paren), arguments(arguments) {}
+
+    std::string accept(ExprVisitor<std::string>& visitor) override {
+        return visitor.visitCallExpr(shared_from_this());
+    }
+
+    std::shared_ptr<Expr> callee;
+    Token paren;
+    std::vector<std::shared_ptr<Expr>> arguments;
+};
+
 // Forward declarations for statement visitor
 struct Expression;
 struct Print;
@@ -104,6 +119,8 @@ struct Var;
 struct Block;
 struct If;
 struct While;
+struct Func;
+struct Return;
 
 // Visitor for statements
 template<typename R>
@@ -114,6 +131,8 @@ struct StmtVisitor {
     virtual R visitBlockStmt(const std::shared_ptr<Block>& stmt) = 0;
     virtual R visitIfStmt(const std::shared_ptr<If>& stmt) = 0;
     virtual R visitWhileStmt(const std::shared_ptr<While>& stmt) = 0;
+    virtual R visitFuncStmt(const std::shared_ptr<Func>& stmt) = 0;
+    virtual R visitReturnStmt(const std::shared_ptr<Return>& stmt) = 0;
 };
 
 // Base class for all statements
@@ -189,6 +208,31 @@ struct While : Stmt, public std::enable_shared_from_this<While> {
 
     std::shared_ptr<Expr> condition;
     std::shared_ptr<Stmt> body;
+};
+
+struct Func : Stmt, public std::enable_shared_from_this<Func> {
+    Func(Token name, std::vector<Token> params, std::vector<std::shared_ptr<Stmt>> body)
+        : name(name), params(params), body(body) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitFuncStmt(shared_from_this());
+    }
+
+    Token name;
+    std::vector<Token> params;
+    std::vector<std::shared_ptr<Stmt>> body;
+};
+
+struct Return : Stmt, public std::enable_shared_from_this<Return> {
+    Return(Token keyword, std::shared_ptr<Expr> value)
+        : keyword(keyword), value(value) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitReturnStmt(shared_from_this());
+    }
+
+    Token keyword;
+    std::shared_ptr<Expr> value;
 };
 
 #endif //CHTHOLLY_AST_H
