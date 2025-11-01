@@ -1,4 +1,6 @@
 #include "AstPrinter.h"
+#include <vector>
+#include <functional>
 
 namespace chtholly {
 
@@ -10,12 +12,22 @@ std::string AstPrinter::print(const Expr& expr) {
     return std::any_cast<std::string>(expr.accept(*this));
 }
 
+std::string parenthesize(AstPrinter& printer, const std::string& name, const std::vector<std::reference_wrapper<const Expr>>& exprs) {
+    std::string s = "(" + name;
+    for (const auto& expr : exprs) {
+        s += " " + printer.print(expr.get());
+    }
+    s += ")";
+    return s;
+}
+
+
 std::any AstPrinter::visit(const BinaryExpr& expr) {
-    return std::string(""); // To be implemented
+    return parenthesize(*this, expr.op.lexeme, {*expr.left, *expr.right});
 }
 
 std::any AstPrinter::visit(const GroupingExpr& expr) {
-    return std::string(""); // To be implemented
+    return parenthesize(*this, "group", {*expr.expression});
 }
 
 std::any AstPrinter::visit(const LiteralExpr& expr) {
@@ -25,11 +37,14 @@ std::any AstPrinter::visit(const LiteralExpr& expr) {
     if (std::holds_alternative<double>(expr.value)) {
         return std::to_string(std::get<double>(expr.value));
     }
-    return std::string("nil");
+    if (std::holds_alternative<bool>(expr.value)) {
+        return std::get<bool>(expr.value) ? std::string("true") : std::string("false");
+    }
+    return std::string("none");
 }
 
 std::any AstPrinter::visit(const UnaryExpr& expr) {
-    return std::string(""); // To be implemented
+    return parenthesize(*this, expr.op.lexeme, {*expr.right});
 }
 
 std::any AstPrinter::visit(const VariableExpr& expr) {

@@ -11,28 +11,28 @@ This document outlines the development plan for the Chtholly programming languag
 
 ## Phase 2: Lexer (Tokenization)
 
-*   [x] Define all token types in `src/Token.h`.
-*   [x] Implement the Lexer in `src/Lexer.h` and `src/Lexer.cpp`.
+*   [x] Define all token types in `src_Token.h`.
+*   [x] Implement the Lexer in `src_Lexer.h` and `src_Lexer.cpp`.
 *   [x] Write comprehensive tests for the Lexer to cover all tokens and edge cases.
 
 ## Phase 3: Parser (AST Generation)
 
-*   [ ] Define the Abstract Syntax Tree (AST) node structures in `src/AST.h`.
-*   [ ] Implement the Parser in `src/Parser.h` and `src/Parser.cpp`.
-*   [ ] Implement an AST printer for debugging and testing.
-*   [ ] Write tests for parsing basic language constructs (variables, literals, operators).
+*   [x] Define the Abstract Syntax Tree (AST) node structures in `src_AST.h`.
+*   [x] Implement the Parser in `src_Parser.h` and `src_Parser.cpp`.
+*   [x] Implement an AST printer for debugging and testing.
+*   [x] Write tests for parsing basic language constructs (variables, literals, operators).
 
 ## Phase 4: Semantic Analysis
 
-*   [ ] Implement the Symbol Table in `src/SymbolTable.h` and `src/SymbolTable.cpp`.
-*   [ ] Implement the Semantic Analyzer (`Sema`) in `src/Sema.h` and `src/Sema.cpp`.
+*   [ ] Implement the Symbol Table in `src_SymbolTable.h` and `src_SymbolTable.cpp`.
+*   [ ] Implement the Semantic Analyzer (`Sema`) in `src_Sema.h` and `src_Sema.cpp`.
 *   [ ] Add type checking for variable declarations and expressions.
 *   [ ] Implement scope resolution.
 *   [ ] Write tests for semantic validation (type errors, scope errors, etc.).
 
 ## Phase 5: Code Generation
 
-*   [ ] Implement the Code Generator (`CodeGen`) in `src/CodeGen.h` and `src/CodeGen.cpp`.
+*   [ ] Implement the Code Generator (`CodeGen`) in `src_CodeGen.h` and `src_CodeGen.cpp`.
 *   [ ] Translate the AST to C++ code.
 *   [ ] Write tests to verify the generated C++ code for basic features.
 

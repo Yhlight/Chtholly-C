@@ -51,6 +51,31 @@ struct Stmt {
 
 // --- Concrete Expression Nodes ---
 
+struct BinaryExpr : Expr {
+    BinaryExpr(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
+        : left(std::move(left)), op(std::move(op)), right(std::move(right)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> left;
+    const Token op;
+    const std::unique_ptr<Expr> right;
+};
+
+struct GroupingExpr : Expr {
+    GroupingExpr(std::unique_ptr<Expr> expression)
+        : expression(std::move(expression)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const std::unique_ptr<Expr> expression;
+};
+
+
 struct LiteralExpr : Expr {
     LiteralExpr(Literal value) : value(std::move(value)) {}
 
@@ -59,6 +84,18 @@ struct LiteralExpr : Expr {
     }
 
     const Literal value;
+};
+
+struct UnaryExpr : Expr {
+    UnaryExpr(Token op, std::unique_ptr<Expr> right)
+        : op(std::move(op)), right(std::move(right)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visit(*this);
+    }
+
+    const Token op;
+    const std::unique_ptr<Expr> right;
 };
 
 struct VariableExpr : Expr {
@@ -107,11 +144,5 @@ struct BlockStmt : Stmt {
 
     const std::vector<std::unique_ptr<Stmt>> statements;
 };
-
-// Dummy nodes for unimplemented features
-struct BinaryExpr : Expr { std::any accept(ExprVisitor& visitor) const override { return {}; } };
-struct GroupingExpr : Expr { std::any accept(ExprVisitor& visitor) const override { return {}; } };
-struct UnaryExpr : Expr { std::any accept(ExprVisitor& visitor) const override { return {}; } };
-
 
 } // namespace chtholly
