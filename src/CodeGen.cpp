@@ -45,6 +45,7 @@ void CodeGen::visit(const IfStmt& stmt) {
         out << " else ";
         stmt.elseBranch->accept(*this);
     }
+    out << "\n";
 }
 
 void CodeGen::visit(const ForStmt& stmt) {

@@ -1,11 +1,13 @@
 enable_testing()
 
 add_executable(chtholly_tests
+    TestHelpers.cpp
     LexerTest.cpp
     ParserTest.cpp
     SymbolTableTest.cpp
     SemaTest.cpp
     CodeGenTest.cpp
+    IfElseTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)
