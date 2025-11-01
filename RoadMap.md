@@ -18,9 +18,9 @@
 - [x] Implement parsing for basic expressions and statements
 
 ## Phase 4: Code Generator
-- [ ] Implement the Code Generator
-- [ ] Traverse the AST to generate C++ code
-- [ ] Implement code generation for basic expressions and statements
+- [x] Implement the Code Generator
+- [x] Traverse the AST to generate C++ code
+- [x] Implement code generation for basic expressions and statements
 
 ## Phase 5: Advanced Features
 - [ ] Implement functions

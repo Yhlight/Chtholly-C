@@ -1,0 +1,79 @@
+#include "../include/CodeGen.h"
+
+std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statements) {
+    source.clear();
+    for (const auto& stmt : statements) {
+        execute(stmt);
+    }
+    return source;
+}
+
+std::string CodeGen::evaluate(const std::shared_ptr<Expr>& expr) {
+    return std::any_cast<std::string>(expr->accept(*this));
+}
+
+void CodeGen::execute(const std::shared_ptr<Stmt>& stmt) {
+    stmt->accept(*this);
+}
+
+// Expression visitors
+std::any CodeGen::visitBinaryExpr(std::shared_ptr<Binary> expr) {
+    return evaluate(expr->left) + " " + expr->op.lexeme + " " + evaluate(expr->right);
+}
+
+std::any CodeGen::visitGroupingExpr(std::shared_ptr<Grouping> expr) {
+    return "(" + evaluate(expr->expression) + ")";
+}
+
+std::any CodeGen::visitLiteralExpr(std::shared_ptr<Literal> expr) {
+    if (expr->value.type() == typeid(std::string)) {
+        return "\"" + std::any_cast<std::string>(expr->value) + "\"";
+    }
+    if (expr->value.type() == typeid(bool)) {
+        return std::any_cast<bool>(expr->value) ? "true" : "false";
+    }
+    if (expr->value.type() == typeid(nullptr_t)) {
+        return "nullptr";
+    }
+    if (expr->value.type() == typeid(int)) {
+        return std::to_string(std::any_cast<int>(expr->value));
+    }
+    if (expr->value.type() == typeid(double)) {
+        return std::to_string(std::any_cast<double>(expr->value));
+    }
+    return "/* unhandled literal */";
+}
+
+std::any CodeGen::visitUnaryExpr(std::shared_ptr<Unary> expr) {
+    return expr->op.lexeme + evaluate(expr->right);
+}
+
+std::any CodeGen::visitVariableExpr(std::shared_ptr<Variable> expr) {
+    return expr->name.lexeme;
+}
+
+std::any CodeGen::visitAssignExpr(std::shared_ptr<Assign> expr) {
+    return expr->name.lexeme + " = " + evaluate(expr->value);
+}
+
+// Statement visitors
+void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
+    source += evaluate(stmt->expression) + ";\n";
+}
+
+void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
+    source += stmt->isMutable ? "auto " : "const auto ";
+    source += stmt->name.lexeme;
+    if (stmt->initializer) {
+        source += " = " + evaluate(stmt->initializer);
+    }
+    source += ";\n";
+}
+
+void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
+    source += "{\n";
+    for (const auto& statement : stmt->statements) {
+        execute(statement);
+    }
+    source += "}\n";
+}

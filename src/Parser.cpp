@@ -126,8 +126,14 @@ std::shared_ptr<Expr> Parser::primary() {
     if (match({TokenType::TRUE})) return std::make_shared<Literal>(true);
     if (match({TokenType::NONE})) return std::make_shared<Literal>(nullptr);
 
-    if (match({TokenType::INTEGER, TokenType::DOUBLE, TokenType::STRING})) {
+    if (match({TokenType::STRING})) {
         return std::make_shared<Literal>(previous().lexeme);
+    }
+    if (match({TokenType::INTEGER})) {
+        return std::make_shared<Literal>(std::stoi(previous().lexeme));
+    }
+    if (match({TokenType::DOUBLE})) {
+        return std::make_shared<Literal>(std::stod(previous().lexeme));
     }
 
     if (match({TokenType::IDENTIFIER})) {
