@@ -309,6 +309,39 @@ std::unique_ptr<Type> Sema::visit(const CallExpr& expr) {
     return nullptr;
 }
 
+std::unique_ptr<Type> Sema::visit(const LambdaExpr& expr) {
+    std::vector<std::unique_ptr<Type>> paramTypes;
+    for (const auto& param : expr.params) {
+        paramTypes.push_back(resolveType(param.type));
+    }
+
+    std::unique_ptr<Type> returnType = std::make_unique<VoidType>();
+    if (expr.returnType) {
+        returnType = resolveType(*expr.returnType);
+    }
+
+    auto funcType = std::make_unique<FunctionType>(std::move(paramTypes), std::move(returnType));
+
+    // We need to clone the function type because the original will be moved into the symbol table
+    // (if we were to give lambdas names), but we need to return it from this visitor.
+    // For now, since lambdas are anonymous, we just analyze the body and return the type.
+
+    Type* oldFunctionType = currentFunctionType;
+    currentFunctionType = funcType.get(); // Set the current function type for return statement checking
+
+    symbolTable.enterScope();
+    for (const auto& param : expr.params) {
+        symbolTable.define(param.name.lexeme, resolveType(param.type), Mutability::Immutable);
+    }
+
+    expr.body->accept(*this);
+
+    symbolTable.exitScope();
+    currentFunctionType = oldFunctionType;
+
+    return funcType;
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();

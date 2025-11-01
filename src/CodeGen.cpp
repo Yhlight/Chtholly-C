@@ -35,14 +35,14 @@ void CodeGen::visit(const BlockStmt& stmt) {
     for (const auto& statement : stmt.statements) {
         statement->accept(*this);
     }
-    out << "}\n";
+    out << "}";
 }
 
 void CodeGen::visit(const IfStmt& stmt) {
     out << "if (" << stmt.condition->accept(*this) << ") ";
     stmt.thenBranch->accept(*this);
     if (stmt.elseBranch) {
-        out << "else ";
+        out << " else ";
         stmt.elseBranch->accept(*this);
     }
 }
@@ -82,6 +82,7 @@ void CodeGen::visit(const FuncDeclStmt& stmt) {
     }
     out << " ";
     stmt.body->accept(*this);
+    out << "\n";
 }
 
 void CodeGen::visit(const ReturnStmt& stmt) {
@@ -122,6 +123,38 @@ std::string CodeGen::visit(const CallExpr& expr) {
     }
     result += ")";
     return result;
+}
+
+std::string CodeGen::visit(const LambdaExpr& expr) {
+    std::stringstream lambda_out;
+    lambda_out << "[](";
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        lambda_out << expr.params[i].type.lexeme << " " << expr.params[i].name.lexeme;
+        if (i < expr.params.size() - 1) {
+            lambda_out << ", ";
+        }
+    }
+    lambda_out << ")";
+    if (expr.returnType) {
+        lambda_out << " -> " << expr.returnType->lexeme;
+    }
+    lambda_out << " ";
+
+    // Temporarily redirect the main output stream to capture the body
+    std::stringstream body_out;
+    auto* old_out = &out;
+    out.swap(body_out);
+
+    expr.body->accept(*this);
+
+    // Restore the main output stream
+    out.swap(body_out);
+
+    // Get the body content and append it to the lambda expression
+    std::string body_str = body_out.str();
+    lambda_out << body_str;
+
+    return lambda_out.str();
 }
 
 } // namespace chtholly

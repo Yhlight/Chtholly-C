@@ -26,6 +26,7 @@ private:
     std::string visit(const VariableExpr& expr) override;
     std::string visit(const GroupingExpr& expr) override;
     std::string visit(const CallExpr& expr) override;
+    std::string visit(const LambdaExpr& expr) override;
 
     std::string generateVarDecl(const VarDeclStmt& stmt);
 

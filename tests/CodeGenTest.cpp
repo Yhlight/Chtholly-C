@@ -93,3 +93,9 @@ TEST(CodeGenTest, GeneratesFunctionCall) {
     std::string expected = "auto add(int a, int b) -> int { return (a + b); } const auto c = add(1, 2);";
     EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
 }
+
+TEST(CodeGenTest, GeneratesLambdaExpression) {
+    std::string source = "let add = [](a: int, b: int) -> int { return a + b; };";
+    std::string expected = "const auto add = [](int a, int b) -> int { return (a + b); };";
+    EXPECT_EQ(normalize(generateCode(source)), normalize(expected));
+}

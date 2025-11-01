@@ -135,3 +135,13 @@ TEST(SemaTest, CallWrongArgumentTypeError) {
     Sema sema = analyzeSource("func a(b: int) {} a(\"hello\");");
     EXPECT_TRUE(sema.hadError());
 }
+
+TEST(SemaTest, LambdaSuccess) {
+    Sema sema = analyzeSource("let f = [](a: int) -> int { return a; };");
+    EXPECT_FALSE(sema.hadError());
+}
+
+TEST(SemaTest, LambdaReturnTypeMismatch) {
+    Sema sema = analyzeSource("let f = []() -> int { return \"hello\"; };");
+    EXPECT_TRUE(sema.hadError());
+}

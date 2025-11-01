@@ -225,3 +225,32 @@ TEST(ParserTest, ParsesCallExpression) {
     std::string result = printer.print(*statements[0]);
     EXPECT_EQ(result, "(; (call add 1 2))");
 }
+
+TEST(ParserTest, ParsesLambdaExpression) {
+    // let f = []() -> int { return 1; };
+    std::vector<chtholly::Token> tokens = {
+        chtholly::Token(chtholly::TokenType::LET, "let", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "f", 1),
+        chtholly::Token(chtholly::TokenType::EQUAL, "=", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACKET, "[", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACKET, "]", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_PAREN, "(", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_PAREN, ")", 1),
+        chtholly::Token(chtholly::TokenType::ARROW, "->", 1),
+        chtholly::Token(chtholly::TokenType::IDENTIFIER, "int", 1),
+        chtholly::Token(chtholly::TokenType::LEFT_BRACE, "{", 1),
+        chtholly::Token(chtholly::TokenType::RETURN, "return", 1),
+        chtholly::Token(chtholly::TokenType::NUMBER, "1", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::RIGHT_BRACE, "}", 1),
+        chtholly::Token(chtholly::TokenType::SEMICOLON, ";", 1),
+        chtholly::Token(chtholly::TokenType::END_OF_FILE, "", 1)
+    };
+    chtholly::Parser parser(tokens);
+    std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    ASSERT_EQ(statements.size(), 1);
+
+    chtholly::AstPrinter printer;
+    std::string result = printer.print(*statements[0]);
+    EXPECT_EQ(result, "(var f = (lambda []() -> int (block (return 1))))");
+}

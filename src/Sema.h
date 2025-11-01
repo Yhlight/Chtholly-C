@@ -28,6 +28,7 @@ private:
     std::unique_ptr<Type> visit(const VariableExpr& expr) override;
     std::unique_ptr<Type> visit(const GroupingExpr& expr) override;
     std::unique_ptr<Type> visit(const CallExpr& expr) override;
+    std::unique_ptr<Type> visit(const LambdaExpr& expr) override;
 
     std::unique_ptr<Type> resolveType(const Token& typeToken);
     void error(const Token& token, const std::string& message);

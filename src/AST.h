@@ -17,6 +17,17 @@ struct BinaryExpr;
 struct VariableExpr;
 struct GroupingExpr;
 struct CallExpr;
+struct LambdaExpr;
+
+// Forward declarations for Stmt
+struct VarDeclStmt;
+struct ExprStmt;
+struct BlockStmt;
+struct IfStmt;
+struct ForStmt;
+struct FuncDeclStmt;
+struct ReturnStmt;
+
 
 // Expr Visitor interface
 template <typename R>
@@ -29,6 +40,7 @@ public:
     virtual R visit(const VariableExpr& expr) = 0;
     virtual R visit(const GroupingExpr& expr) = 0;
     virtual R visit(const CallExpr& expr) = 0;
+    virtual R visit(const LambdaExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -87,27 +99,6 @@ struct CallExpr : Expr {
     const Token& getToken() const override { return paren; }
 };
 
-// Implementation of the generic accept method for Expr
-template <typename R>
-R Expr::accept(ExprVisitor<R>& visitor) const {
-    if (auto p = dynamic_cast<const LiteralExpr*>(this)) return visitor.visit(*p);
-    if (auto p = dynamic_cast<const UnaryExpr*>(this)) return visitor.visit(*p);
-    if (auto p = dynamic_cast<const BinaryExpr*>(this)) return visitor.visit(*p);
-    if (auto p = dynamic_cast<const VariableExpr*>(this)) return visitor.visit(*p);
-    if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
-    if (auto p = dynamic_cast<const CallExpr*>(this)) return visitor.visit(*p);
-    throw std::runtime_error("Unknown expression type in accept.");
-}
-
-
-// Forward declarations for Stmt
-struct VarDeclStmt;
-struct ExprStmt;
-struct BlockStmt;
-struct IfStmt;
-struct ForStmt;
-struct FuncDeclStmt;
-struct ReturnStmt;
 
 // Stmt Visitor interface
 template <typename R>
@@ -195,6 +186,18 @@ struct ReturnStmt : Stmt {
     const std::unique_ptr<Expr> value;
 };
 
+// Now define LambdaExpr, which depends on FuncDeclStmt::Param
+struct LambdaExpr : Expr {
+    LambdaExpr(Token keyword, std::vector<FuncDeclStmt::Param> params, std::optional<Token> returnType, std::unique_ptr<BlockStmt> body)
+        : keyword(std::move(keyword)), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
+
+    const Token keyword; // The opening '['
+    const std::vector<FuncDeclStmt::Param> params;
+    const std::optional<Token> returnType;
+    const std::unique_ptr<BlockStmt> body;
+    const Token& getToken() const override { return keyword; }
+};
+
 
 // Implementation of the generic accept method for Stmt
 template <typename R>
@@ -208,6 +211,20 @@ R Stmt::accept(StmtVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const ReturnStmt*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown statement type in accept.");
 }
+
+// Implementation of the generic accept method for Expr
+template <typename R>
+R Expr::accept(ExprVisitor<R>& visitor) const {
+    if (auto p = dynamic_cast<const LiteralExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const UnaryExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const BinaryExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const VariableExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const GroupingExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const CallExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const LambdaExpr*>(this)) return visitor.visit(*p);
+    throw std::runtime_error("Unknown expression type in accept.");
+}
+
 
 // A custom exception for parse errors
 struct ParseError : public std::runtime_error {
@@ -232,6 +249,21 @@ public:
             exprs.push_back(arg.get());
         }
         return parenthesize("call", exprs);
+    }
+    std::string visit(const LambdaExpr& expr) override {
+        std::string result = "(lambda [](";
+        for (size_t i = 0; i < expr.params.size(); ++i) {
+            result += expr.params[i].name.lexeme + ": " + expr.params[i].type.lexeme;
+            if (i < expr.params.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += ")";
+        if (expr.returnType) {
+            result += " -> " + expr.returnType->lexeme;
+        }
+        result += " " + print(*expr.body) + ")";
+        return result;
     }
 
     std::string visit(const VarDeclStmt& stmt) override {
