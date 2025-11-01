@@ -28,6 +28,7 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"private",TokenType::PRIVATE},
     {"trait",  TokenType::TRAIT},
     {"impl",   TokenType::IMPL},
+    {"none",   TokenType::NONE},
 };
 
 

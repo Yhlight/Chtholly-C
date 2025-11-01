@@ -16,6 +16,9 @@ std::string CodeGen::generate(const std::vector<std::unique_ptr<Stmt>>& statemen
     if (hasMoves) {
         preamble += "#include <utility>\n";
     }
+    if (hasOptionals) {
+        preamble += "#include <optional>\n";
+    }
 
     return preamble + out.str();
 }
@@ -141,6 +144,17 @@ std::string CodeGen::visit(const GroupingExpr& expr) {
 }
 
 std::string CodeGen::visit(const CallExpr& expr) {
+    if (auto* memberAccess = dynamic_cast<MemberAccessExpr*>(expr.callee.get())) {
+        if (memberAccess->name.lexeme == "unwrap") {
+            return memberAccess->object->accept(*this) + ".value()";
+        }
+        if (memberAccess->name.lexeme == "unwrap_or") {
+            std::string obj = memberAccess->object->accept(*this);
+            std::string arg = expr.arguments[0]->accept(*this);
+            return obj + ".value_or(" + arg + ")";
+        }
+    }
+
     std::string result = expr.callee->accept(*this) + "(";
     for (size_t i = 0; i < expr.arguments.size(); ++i) {
         result += expr.arguments[i]->accept(*this);
@@ -281,6 +295,11 @@ std::string CodeGen::visit(const DerefExpr& expr) {
     return "*(" + expr.expression->accept(*this) + ")";
 }
 
+std::string CodeGen::visit(const NoneLiteralExpr& expr) {
+    hasOptionals = true;
+    return "std::nullopt";
+}
+
 std::string CodeGen::typeToString(const Type& type) {
     if (dynamic_cast<const IntType*>(&type)) return "int";
     if (dynamic_cast<const StringType*>(&type)) return "std::string";
@@ -295,11 +314,16 @@ std::string CodeGen::typeToString(const Type& type) {
         }
     }
     if (auto* refType = dynamic_cast<const ReferenceType*>(&type)) {
+        std::string referencedType = typeToString(*refType->getReferencedType());
         if (refType->getIsMutable()) {
-            return typeToString(*refType->getReferencedType()) + "*";
+            return referencedType + "*";
         } else {
-            return "const " + typeToString(*refType->getReferencedType()) + "*";
+            return "const " + referencedType + "*";
         }
+    }
+    if (auto* optType = dynamic_cast<const OptionType*>(&type)) {
+        hasOptionals = true;
+        return "std::optional<" + typeToString(*optType->getInnerType()) + ">";
     }
     return "auto";
 }

@@ -176,4 +176,27 @@ private:
     bool isMutable;
 };
 
+class OptionType : public Type {
+public:
+    OptionType(std::unique_ptr<Type> innerType)
+        : innerType(std::move(innerType)) {}
+
+    std::unique_ptr<Type> clone() const override {
+        return std::make_unique<OptionType>(innerType->clone());
+    }
+
+    std::string toString() const override {
+        return "option<" + innerType->toString() + ">";
+    }
+
+    bool isCopyable() const override {
+        return innerType->isCopyable();
+    }
+
+    const Type* getInnerType() const { return innerType.get(); }
+
+private:
+    std::unique_ptr<Type> innerType;
+};
+
 } // namespace chtholly

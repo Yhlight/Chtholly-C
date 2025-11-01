@@ -26,6 +26,7 @@ struct ArrayLiteralExpr;
 struct SubscriptExpr;
 struct BorrowExpr;
 struct DerefExpr;
+struct NoneLiteralExpr;
 
 // Type Expressions
 class TypeExpr {
@@ -50,6 +51,13 @@ struct ReferenceTypeExpr : TypeExpr {
         : ampersand(std::move(ampersand)), referenced_type(std::move(referenced_type)) {}
     const Token ampersand;
     const std::unique_ptr<TypeExpr> referenced_type;
+};
+
+struct GenericTypeExpr : TypeExpr {
+    GenericTypeExpr(Token name, std::vector<std::unique_ptr<TypeExpr>> type_args)
+        : name(std::move(name)), type_args(std::move(type_args)) {}
+    const Token name;
+    const std::vector<std::unique_ptr<TypeExpr>> type_args;
 };
 
 
@@ -88,6 +96,7 @@ public:
     virtual R visit(const SubscriptExpr& expr) = 0;
     virtual R visit(const BorrowExpr& expr) = 0;
     virtual R visit(const DerefExpr& expr) = 0;
+    virtual R visit(const NoneLiteralExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -213,6 +222,12 @@ struct DerefExpr : Expr {
     const Token star;
     const std::unique_ptr<Expr> expression;
     const Token& getToken() const override { return star; }
+};
+
+struct NoneLiteralExpr : Expr {
+    NoneLiteralExpr(Token token) : token(std::move(token)) {}
+    const Token token;
+    const Token& getToken() const override { return token; }
 };
 
 
@@ -410,6 +425,7 @@ R Expr::accept(ExprVisitor<R>& visitor) const {
     if (auto p = dynamic_cast<const SubscriptExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const BorrowExpr*>(this)) return visitor.visit(*p);
     if (auto p = dynamic_cast<const DerefExpr*>(this)) return visitor.visit(*p);
+    if (auto p = dynamic_cast<const NoneLiteralExpr*>(this)) return visitor.visit(*p);
     throw std::runtime_error("Unknown expression type in accept.");
 }
 
@@ -504,6 +520,10 @@ public:
 
     std::string visit(const DerefExpr& expr) override {
         return "(* " + print(*expr.expression) + ")";
+    }
+
+    std::string visit(const NoneLiteralExpr& expr) override {
+        return "none";
     }
 
     std::string visit(const VarDeclStmt& stmt) override {

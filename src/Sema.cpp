@@ -5,7 +5,19 @@ namespace chtholly {
 
 // Helper to check if two types are the same.
 bool areTypesEqual(const Type* a, const Type* b) {
-    if (!a || !b) return a == b;
+    if (!a || !b) {
+        // Allow comparing an OptionType with a null type from a 'none' literal
+        if (a && dynamic_cast<const OptionType*>(a) && !b) return true;
+        if (b && dynamic_cast<const OptionType*>(b) && !a) return true;
+        return a == b;
+    }
+
+    if (auto* optA = dynamic_cast<const OptionType*>(a)) {
+        return areTypesEqual(optA->getInnerType(), b);
+    }
+    if (auto* optB = dynamic_cast<const OptionType*>(b)) {
+        return areTypesEqual(a, optB->getInnerType());
+    }
 
     if (typeid(*a) != typeid(*b)) return false;
 
@@ -354,6 +366,26 @@ std::unique_ptr<Type> Sema::visit(const GroupingExpr& expr) {
 }
 
 std::unique_ptr<Type> Sema::visit(const CallExpr& expr) {
+    if (auto* memberAccess = dynamic_cast<MemberAccessExpr*>(expr.callee.get())) {
+        std::unique_ptr<Type> objectType = memberAccess->object->accept(*this);
+        if (auto* optionType = dynamic_cast<OptionType*>(objectType.get())) {
+            if (memberAccess->name.lexeme == "unwrap") {
+                return optionType->getInnerType()->clone();
+            }
+            if (memberAccess->name.lexeme == "unwrap_or") {
+                if (expr.arguments.size() != 1) {
+                    error(expr.getToken(), "unwrap_or requires exactly one argument.");
+                    return nullptr;
+                }
+                std::unique_ptr<Type> argType = expr.arguments[0]->accept(*this);
+                if (!areTypesEqual(optionType->getInnerType(), argType.get())) {
+                    error(expr.arguments[0]->getToken(), "Argument to unwrap_or must be of the same type as the option's inner type.");
+                }
+                return optionType->getInnerType()->clone();
+            }
+        }
+    }
+
     auto* varExpr = dynamic_cast<VariableExpr*>(expr.callee.get());
     if (!varExpr) {
         error(expr.getToken(), "Can only call functions by name.");
@@ -536,9 +568,15 @@ std::unique_ptr<Type> Sema::visit(const MemberAccessExpr& expr) {
 
     if (!objectType) return nullptr;
 
+    if (auto* optionType = dynamic_cast<OptionType*>(objectType.get())) {
+        if (expr.name.lexeme == "unwrap" || expr.name.lexeme == "unwrap_or") {
+            return optionType->getInnerType()->clone();
+        }
+    }
+
     auto* structType = dynamic_cast<StructType*>(objectType.get());
     if (!structType) {
-        error(expr.name, "Can only access members of a struct.");
+        error(expr.name, "Can only access members of a struct or option type.");
         return nullptr;
     }
 
@@ -674,6 +712,12 @@ std::unique_ptr<Type> Sema::visit(const DerefExpr& expr) {
     return referenceType->getReferencedType()->clone();
 }
 
+std::unique_ptr<Type> Sema::visit(const NoneLiteralExpr& expr) {
+    // The type of 'none' can only be determined by context, so for now
+    // we return a null type. The VarDeclStmt visitor will handle this.
+    return nullptr;
+}
+
 
 std::unique_ptr<Type> Sema::resolveType(const Token& typeToken) {
     if (typeToken.lexeme == "int") return std::make_unique<IntType>();
@@ -703,6 +747,18 @@ std::unique_ptr<Type> Sema::resolveType(const TypeExpr& typeExpr) {
         // For now, we assume all references in type annotations are immutable.
         // Mutable borrows are only introduced by `&mut` expressions.
         return std::make_unique<ReferenceType>(std::move(referencedType), false);
+    }
+    if (auto* generic = dynamic_cast<const GenericTypeExpr*>(&typeExpr)) {
+        if (generic->name.lexeme == "option") {
+            if (generic->type_args.size() != 1) {
+                error(generic->name, "option<T> requires exactly one type argument.");
+                return nullptr;
+            }
+            std::unique_ptr<Type> innerType = resolveType(*generic->type_args[0]);
+            return std::make_unique<OptionType>(std::move(innerType));
+        }
+        error(generic->name, "Unknown generic type.");
+        return nullptr;
     }
     return nullptr;
 }

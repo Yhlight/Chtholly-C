@@ -10,6 +10,7 @@ add_executable(chtholly_tests
     VariableTest.cpp
     ArrayTest.cpp
     OwnershipTest.cpp
+    OptionTest.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib)

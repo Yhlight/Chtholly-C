@@ -381,6 +381,9 @@ std::unique_ptr<Expr> Parser::primary() {
     if (match({TokenType::FALSE, TokenType::TRUE})) {
         return std::make_unique<LiteralExpr>(previous());
     }
+    if (match({TokenType::NONE})) {
+        return std::make_unique<NoneLiteralExpr>(previous());
+    }
     if (match({TokenType::NUMBER, TokenType::STRING})) {
         return std::make_unique<LiteralExpr>(previous());
     }
@@ -455,6 +458,16 @@ std::unique_ptr<TypeExpr> Parser::parseType() {
         return std::make_unique<ArrayTypeExpr>(std::move(elementType), size);
     }
     Token typeName = consume(TokenType::IDENTIFIER, "Expect type name.");
+
+    if (match({TokenType::LESS})) {
+        std::vector<std::unique_ptr<TypeExpr>> typeArgs;
+        do {
+            typeArgs.push_back(parseType());
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type arguments.");
+        return std::make_unique<GenericTypeExpr>(std::move(typeName), std::move(typeArgs));
+    }
+
     return std::make_unique<SimpleTypeExpr>(std::move(typeName));
 }
 
