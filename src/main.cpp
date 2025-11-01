@@ -8,11 +8,9 @@
 
 int main() {
     std::string source = R"(
-        func add(a: int, b: int) -> int {
-            return a + b;
+        for (mut i = 0; i < 10; i = i + 1) {
+            let x = i;
         }
-
-        let result: int = add(10, 20);
     )";
 
     try {

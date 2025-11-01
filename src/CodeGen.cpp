@@ -10,6 +10,27 @@ std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statemen
     return code;
 }
 
+std::string CodeGen::visitForStmt(const std::shared_ptr<For>& stmt) {
+    std::string code = "for (";
+    if (stmt->initializer) {
+        if (auto varStmt = std::dynamic_pointer_cast<Var>(stmt->initializer)) {
+            code += visitVarStmt(varStmt, false);
+        } else if (auto exprStmt = std::dynamic_pointer_cast<Expression>(stmt->initializer)) {
+            code += visitExpressionStmt(exprStmt, false);
+        }
+    }
+    code += "; ";
+    if (stmt->condition) {
+        code += stmt->condition->accept(*this);
+    }
+    code += "; ";
+    if (stmt->increment) {
+        code += stmt->increment->accept(*this);
+    }
+    code += ") " + stmt->body->accept(*this);
+    return code;
+}
+
 std::string CodeGen::visitFuncStmt(const std::shared_ptr<Func>& stmt) {
     std::string code = "auto " + stmt->name.lexeme + " = [](";
     for (size_t i = 0; i < stmt->params.size(); ++i) {
@@ -88,14 +109,22 @@ std::string CodeGen::visitAssignExpr(const std::shared_ptr<Assign>& expr) {
 }
 
 std::string CodeGen::visitExpressionStmt(const std::shared_ptr<Expression>& stmt) {
-    return stmt->expression->accept(*this) + ";\n";
-}
-
-std::string CodeGen::visitPrintStmt(const std::shared_ptr<Print>& stmt) {
-    return "std::cout << " + stmt->expression->accept(*this) + " << std::endl;\n";
+    return visitExpressionStmt(stmt, true);
 }
 
 std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt) {
+    return visitVarStmt(stmt, true);
+}
+
+std::string CodeGen::visitExpressionStmt(const std::shared_ptr<Expression>& stmt, bool semicolon) {
+    std::string code = stmt->expression->accept(*this);
+    if (semicolon) {
+        code += ";\n";
+    }
+    return code;
+}
+
+std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt, bool semicolon) {
     std::string type_str = "auto";
     if (stmt->type) {
         type_str = stmt->type->name.lexeme;
@@ -104,7 +133,9 @@ std::string CodeGen::visitVarStmt(const std::shared_ptr<Var>& stmt) {
     if (stmt->initializer) {
         code += " = " + stmt->initializer->accept(*this);
     }
-    code += ";\n";
+    if (semicolon) {
+        code += ";\n";
+    }
     return code;
 }
 

@@ -118,25 +118,25 @@ struct Call : Expr, public std::enable_shared_from_this<Call> {
 
 // Forward declarations for statement visitor
 struct Expression;
-struct Print;
 struct Var;
 struct Block;
 struct If;
 struct While;
 struct Func;
 struct Return;
+struct For;
 
 // Visitor for statements
 template<typename R>
 struct StmtVisitor {
     virtual R visitExpressionStmt(const std::shared_ptr<Expression>& stmt) = 0;
-    virtual R visitPrintStmt(const std::shared_ptr<Print>& stmt) = 0;
     virtual R visitVarStmt(const std::shared_ptr<Var>& stmt) = 0;
     virtual R visitBlockStmt(const std::shared_ptr<Block>& stmt) = 0;
     virtual R visitIfStmt(const std::shared_ptr<If>& stmt) = 0;
     virtual R visitWhileStmt(const std::shared_ptr<While>& stmt) = 0;
     virtual R visitFuncStmt(const std::shared_ptr<Func>& stmt) = 0;
     virtual R visitReturnStmt(const std::shared_ptr<Return>& stmt) = 0;
+    virtual R visitForStmt(const std::shared_ptr<For>& stmt) = 0;
 };
 
 // Base class for all statements
@@ -151,16 +151,6 @@ struct Expression : Stmt, public std::enable_shared_from_this<Expression> {
 
     std::string accept(StmtVisitor<std::string>& visitor) override {
         return visitor.visitExpressionStmt(shared_from_this());
-    }
-
-    std::shared_ptr<Expr> expression;
-};
-
-struct Print : Stmt, public std::enable_shared_from_this<Print> {
-    Print(std::shared_ptr<Expr> expression) : expression(expression) {}
-
-    std::string accept(StmtVisitor<std::string>& visitor) override {
-        return visitor.visitPrintStmt(shared_from_this());
     }
 
     std::shared_ptr<Expr> expression;
@@ -244,6 +234,20 @@ struct Return : Stmt, public std::enable_shared_from_this<Return> {
 
     Token keyword;
     std::shared_ptr<Expr> value;
+};
+
+struct For : Stmt, public std::enable_shared_from_this<For> {
+    For(std::shared_ptr<Stmt> initializer, std::shared_ptr<Expr> condition, std::shared_ptr<Expr> increment, std::shared_ptr<Stmt> body)
+        : initializer(initializer), condition(condition), increment(increment), body(body) {}
+
+    std::string accept(StmtVisitor<std::string>& visitor) override {
+        return visitor.visitForStmt(shared_from_this());
+    }
+
+    std::shared_ptr<Stmt> initializer;
+    std::shared_ptr<Expr> condition;
+    std::shared_ptr<Expr> increment;
+    std::shared_ptr<Stmt> body;
 };
 
 #endif //CHTHOLLY_AST_H

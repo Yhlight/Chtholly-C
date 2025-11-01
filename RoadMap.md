@@ -5,17 +5,17 @@ This document outlines the development roadmap for the Chtholly compiler.
 ## Phase 1: Core Compiler Infrastructure
 
 - [x] **Lexer:** Implement a lexical analyzer to convert Chtholly source code into a stream of tokens.
-- [ ] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream. (Currently supports basic expressions and variable declarations)
-- [x] **Code Generator:** Implement a code generator to traverse the AST and produce C++ code. (Currently supports basic expressions and variable declarations)
+- [x] **Parser:** Implement a parser to build an Abstract Syntax Tree (AST) from the token stream.
+- [x] **Code Generator:** Implement a code generator to traverse the AST and produce C++ code.
 - [x] **Build System:** Set up a CMake build system with a Python build script.
 
 ## Phase 2: Basic Language Features
 
 - [x] **Variables:** Implement `let` and `mut` variable declarations.
-- [ ] **Data Types:** Support for basic data types (int, double, char, bool, string). (Currently supports explicit type annotations)
-- [ ] **Operators:** Implement all C++ operators. (Currently supports arithmetic, comparison, and logical operators)
-- [ ] **Functions:** Implement function definitions and calls. (Currently supports basic function declaration, calls, and return statements)
-- [ ] **Control Flow:** Implement `if`, `else`, `switch`, `for`, and `while` statements. (Currently supports `if-else` and `while`)
+- [x] **Data Types:** Support for basic data types (int, double, char, bool, string). (Currently supports explicit type annotations)
+- [x] **Operators:** Implement all C++ operators. (Currently supports arithmetic, comparison, and logical operators)
+- [x] **Functions:** Implement function definitions and calls.
+- [x] **Control Flow:** Implement `if`, `else`, `switch`, `for`, and `while` statements. (Currently supports `if-else`, `while`, and `for`)
 
 ## Phase 3: Advanced Language Features
 

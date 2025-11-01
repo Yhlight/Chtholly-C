@@ -19,13 +19,17 @@ public:
     std::string visitCallExpr(const std::shared_ptr<Call>& expr) override;
 
     std::string visitExpressionStmt(const std::shared_ptr<Expression>& stmt) override;
-    std::string visitPrintStmt(const std::shared_ptr<Print>& stmt) override;
     std::string visitVarStmt(const std::shared_ptr<Var>& stmt) override;
+
+    std::string visitExpressionStmt(const std::shared_ptr<Expression>& stmt, bool semicolon);
+    std::string visitVarStmt(const std::shared_ptr<Var>& stmt, bool semicolon);
+
     std::string visitBlockStmt(const std::shared_ptr<Block>& stmt) override;
     std::string visitIfStmt(const std::shared_ptr<If>& stmt) override;
     std::string visitWhileStmt(const std::shared_ptr<While>& stmt) override;
     std::string visitFuncStmt(const std::shared_ptr<Func>& stmt) override;
     std::string visitReturnStmt(const std::shared_ptr<Return>& stmt) override;
+    std::string visitForStmt(const std::shared_ptr<For>& stmt) override;
 };
 
 #endif //CHTHOLLY_CODEGEN_H
