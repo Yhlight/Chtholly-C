@@ -19,6 +19,7 @@ enum class TokenType {
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
     COLON, COLON_COLON,
+    AMPERSAND, PIPE,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,

@@ -7,8 +7,6 @@ namespace chtholly {
 
 // Global map for keywords
 static const std::unordered_map<std::string, TokenType> keywords = {
-    {"and",    TokenType::AND},
-    {"or",     TokenType::OR},
     {"if",     TokenType::IF},
     {"else",   TokenType::ELSE},
     {"true",   TokenType::TRUE},
@@ -170,6 +168,8 @@ Token Lexer::scanToken() {
         case '<': return makeToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
         case '>': return makeToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
         case ':': return makeToken(match(':') ? TokenType::COLON_COLON : TokenType::COLON);
+        case '&': return makeToken(match('&') ? TokenType::AND : TokenType::AMPERSAND);
+        case '|': return makeToken(match('|') ? TokenType::OR : TokenType::PIPE);
         case '"': return string();
     }
 

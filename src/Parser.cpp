@@ -232,7 +232,7 @@ std::unique_ptr<Expr> Parser::expression() {
 }
 
 std::unique_ptr<Expr> Parser::assignment() {
-    std::unique_ptr<Expr> expr = comparison();
+    std::unique_ptr<Expr> expr = logical_or();
 
     if (match({TokenType::EQUAL})) {
         Token equals = previous();
@@ -248,10 +248,34 @@ std::unique_ptr<Expr> Parser::assignment() {
     return expr;
 }
 
+std::unique_ptr<Expr> Parser::logical_or() {
+    std::unique_ptr<Expr> expr = logical_and();
+
+    while (match({TokenType::OR})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = logical_and();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logical_and() {
+    std::unique_ptr<Expr> expr = comparison();
+
+    while (match({TokenType::AND})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = comparison();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
+}
+
 std::unique_ptr<Expr> Parser::comparison() {
     std::unique_ptr<Expr> expr = term();
 
-    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL})) {
+    while (match({TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL, TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
         Token op = previous();
         std::unique_ptr<Expr> right = term();
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));

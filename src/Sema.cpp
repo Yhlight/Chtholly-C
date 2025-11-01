@@ -236,10 +236,20 @@ std::unique_ptr<Type> Sema::visit(const BinaryExpr& expr) {
         case TokenType::GREATER_EQUAL:
         case TokenType::LESS:
         case TokenType::LESS_EQUAL:
+        case TokenType::BANG_EQUAL:
+        case TokenType::EQUAL_EQUAL:
              if (dynamic_cast<IntType*>(leftType.get()) && dynamic_cast<IntType*>(rightType.get())) {
                 return std::make_unique<BoolType>();
             }
             error(expr.op, "Operands of comparison operators must be numbers.");
+            return nullptr;
+
+        case TokenType::AND:
+        case TokenType::OR:
+            if (dynamic_cast<BoolType*>(leftType.get()) && dynamic_cast<BoolType*>(rightType.get())) {
+                return std::make_unique<BoolType>();
+            }
+            error(expr.op, "Operands of logical operators must be booleans.");
             return nullptr;
 
         default:
