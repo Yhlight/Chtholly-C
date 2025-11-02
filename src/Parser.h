@@ -20,6 +20,7 @@ private:
     int current = 0;
 
     std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> function(const std::string& kind);
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();

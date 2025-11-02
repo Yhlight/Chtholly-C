@@ -21,6 +21,30 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, Struct) {
+    std::string source = "struct Point { mut x: int; mut y: int; } let p: Point; p.x = 1; print p.x;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "struct Point {\n"
+        "    int x;\n"
+        "    int y;\n"
+        "};\n\n"
+        "int main() {\n"
+        "    Point p;\n"
+        "    p.x = 1;\n"
+        "    std::cout << p.x << std::endl;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
 TEST(TranspilerTest, Function) {
     std::string source = "func add(a, b) { return a + b; } print add(1, 2);";
     Lexer lexer(source);

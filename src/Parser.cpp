@@ -13,6 +13,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::FUNC})) return function("function");
         if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
@@ -20,6 +21,21 @@ std::unique_ptr<Stmt> Parser::declaration() {
         synchronize();
         return nullptr;
     }
+}
+
+std::unique_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+    std::vector<std::unique_ptr<LetStmt>> fields;
+    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
+        if (match({TokenType::LET, TokenType::MUT})) {
+            fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release())));
+        } else {
+            ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
+            synchronize();
+        }
+    }
+    return std::make_unique<StructStmt>(name, std::move(fields));
 }
 
 std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
@@ -134,6 +150,8 @@ std::unique_ptr<Expr> Parser::assignment() {
 
         if (auto* var = dynamic_cast<VariableExpr*>(expr.get())) {
             return std::make_unique<AssignExpr>(var->name, std::move(value));
+        } else if (auto* get = dynamic_cast<GetExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(get->object), get->name, std::move(value));
         }
 
         ErrorReporter::error(equals.line, "Invalid assignment target.");
@@ -230,6 +248,9 @@ std::unique_ptr<Expr> Parser::call() {
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
             expr = finishCall(std::move(expr));
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_unique<GetExpr>(std::move(expr), name);
         } else {
             break;
         }

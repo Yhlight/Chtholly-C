@@ -24,6 +24,8 @@ private:
     std::any visitVariableExpr(const VariableExpr& expr) override;
     std::any visitAssignExpr(const AssignExpr& expr) override;
     std::any visitCallExpr(const CallExpr& expr) override;
+    std::any visitGetExpr(const GetExpr& expr) override;
+    std::any visitSetExpr(const SetExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitPrintStmt(const PrintStmt& stmt) override;
@@ -33,4 +35,5 @@ private:
     std::any visitWhileStmt(const WhileStmt& stmt) override;
     std::any visitFunctionStmt(const FunctionStmt& stmt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
+    std::any visitStructStmt(const StructStmt& stmt) override;
 };

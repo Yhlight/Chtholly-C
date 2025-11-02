@@ -12,6 +12,8 @@ struct UnaryExpr;
 struct VariableExpr;
 struct AssignExpr;
 struct CallExpr;
+struct GetExpr;
+struct SetExpr;
 
 class ExprVisitor {
 public:
@@ -22,6 +24,8 @@ public:
     virtual std::any visitVariableExpr(const VariableExpr& expr) = 0;
     virtual std::any visitAssignExpr(const AssignExpr& expr) = 0;
     virtual std::any visitCallExpr(const CallExpr& expr) = 0;
+    virtual std::any visitGetExpr(const GetExpr& expr) = 0;
+    virtual std::any visitSetExpr(const SetExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -110,5 +114,30 @@ struct CallExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitCallExpr(*this);
+    }
+};
+
+struct GetExpr : Expr {
+    std::unique_ptr<Expr> object;
+    Token name;
+
+    GetExpr(std::unique_ptr<Expr> object, Token name)
+        : object(std::move(object)), name(name) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitGetExpr(*this);
+    }
+};
+
+struct SetExpr : Expr {
+    std::unique_ptr<Expr> object;
+    Token name;
+    std::unique_ptr<Expr> value;
+
+    SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value)
+        : object(std::move(object)), name(name), value(std::move(value)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitSetExpr(*this);
     }
 };

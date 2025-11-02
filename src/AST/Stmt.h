@@ -14,6 +14,7 @@ struct IfStmt;
 struct WhileStmt;
 struct FunctionStmt;
 struct ReturnStmt;
+struct StructStmt;
 
 class StmtVisitor {
 public:
@@ -25,6 +26,7 @@ public:
     virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
     virtual std::any visitFunctionStmt(const FunctionStmt& stmt) = 0;
     virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
+    virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -128,5 +130,17 @@ struct ReturnStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitReturnStmt(*this);
+    }
+};
+
+struct StructStmt : Stmt {
+    Token name;
+    std::vector<std::unique_ptr<LetStmt>> fields;
+
+    StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields)
+        : name(name), fields(std::move(fields)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitStructStmt(*this);
     }
 };

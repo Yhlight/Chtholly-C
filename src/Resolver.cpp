@@ -93,6 +93,34 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     return {};
 }
 
+std::any Resolver::visitGetExpr(const GetExpr& expr) {
+    resolve(*expr.object);
+    return {};
+}
+
+std::any Resolver::visitSetExpr(const SetExpr& expr) {
+    resolve(*expr.value);
+    resolve(*expr.object);
+    return {};
+}
+
+std::any Resolver::visitStructStmt(const StructStmt& stmt) {
+    ClassType enclosingClass = currentClass;
+    currentClass = ClassType::CLASS;
+    declare(stmt.name);
+    define(stmt.name);
+
+    beginScope();
+    scopes.back()["self"] = true;
+
+    for (const auto& field : stmt.fields) {
+        resolve(*field);
+    }
+    endScope();
+    currentClass = enclosingClass;
+    return {};
+}
+
 std::any Resolver::visitCallExpr(const CallExpr& expr) {
     resolve(*expr.callee);
 

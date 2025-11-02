@@ -7,14 +7,14 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     out << "#include <variant>\n\n";
 
     for (const auto& statement : statements) {
-        if (dynamic_cast<FunctionStmt*>(statement.get())) {
+        if (dynamic_cast<FunctionStmt*>(statement.get()) || dynamic_cast<StructStmt*>(statement.get())) {
             execute(*statement);
         }
     }
 
     out << "int main() {\n";
     for (const auto& statement : statements) {
-        if (!dynamic_cast<FunctionStmt*>(statement.get())) {
+        if (!dynamic_cast<FunctionStmt*>(statement.get()) && !dynamic_cast<StructStmt*>(statement.get())) {
             execute(*statement);
         }
     }
@@ -73,7 +73,8 @@ std::string to_cpp_type(const std::string& chtholly_type) {
 
 std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     out << "    ";
-    if (!stmt.isMutable) {
+    bool is_struct = stmt.type && std::isupper(stmt.type->lexeme[0]);
+    if (!stmt.isMutable && !is_struct) {
         out << "const ";
     }
     if (stmt.type) {
@@ -85,6 +86,32 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
         out << " = " << evaluate(*stmt.initializer);
     }
     out << ";\n";
+    return {};
+}
+
+std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+    return evaluate(*expr.object) + "." + expr.name.lexeme;
+}
+
+std::any Transpiler::visitSetExpr(const SetExpr& expr) {
+    return evaluate(*expr.object) + "." + expr.name.lexeme + " = " + evaluate(*expr.value);
+}
+
+std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
+    out << "struct " << stmt.name.lexeme << " {\n";
+    for (const auto& field : stmt.fields) {
+        out << "    ";
+        if (field->type) {
+            out << to_cpp_type(field->type->lexeme) << " " << field->name.lexeme;
+        } else {
+            out << "auto " << field->name.lexeme;
+        }
+        if (field->initializer) {
+            out << " = " << evaluate(*field->initializer);
+        }
+        out << ";\n";
+    }
+    out << "};\n\n";
     return {};
 }
 

@@ -42,6 +42,14 @@ std::any ASTPrinter::visitCallExpr(const CallExpr& expr) {
     return parenthesize("call", {expr.callee.get()});
 }
 
+std::any ASTPrinter::visitGetExpr(const GetExpr& expr) {
+    return parenthesize("." + expr.name.lexeme, {expr.object.get()});
+}
+
+std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
+    return parenthesize("= ." + expr.name.lexeme, {expr.object.get(), expr.value.get()});
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

@@ -211,3 +211,18 @@ TEST(ParserTest, CallExpression) {
     auto* callExpr = dynamic_cast<CallExpr*>(exprStmt->expression.get());
     ASSERT_NE(callExpr, nullptr);
 }
+
+TEST(ParserTest, StructDeclaration) {
+    std::string source = "struct Point { let x: int; let y: int; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* structStmt = dynamic_cast<StructStmt*>(stmts[0].get());
+    ASSERT_NE(structStmt, nullptr);
+    EXPECT_EQ(structStmt->name.lexeme, "Point");
+    ASSERT_EQ(structStmt->fields.size(), 2);
+    EXPECT_EQ(structStmt->fields[0]->name.lexeme, "x");
+    EXPECT_EQ(structStmt->fields[1]->name.lexeme, "y");
+}
