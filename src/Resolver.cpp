@@ -56,12 +56,25 @@ std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
     if (!scopes.empty() && scopes.back().count(expr.name.lexeme) && !scopes.back().at(expr.name.lexeme)) {
         ErrorReporter::error(expr.name.line, "Can't read local variable in its own initializer.");
     }
+
+    resolveLocal(expr, expr.name);
     return {};
 }
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     resolve(*expr.value);
+    resolveLocal(expr, expr.name);
     return {};
+}
+
+void Resolver::resolveLocal(const Expr& expr, const Token& name) {
+    for (int i = scopes.size() - 1; i >= 0; i--) {
+        if (scopes[i].count(name.lexeme)) {
+            return;
+        }
+    }
+
+    ErrorReporter::error(name.line, "Use of unresolved variable '" + name.lexeme + "'.");
 }
 
 std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
@@ -77,6 +90,19 @@ std::any Resolver::visitPrintStmt(const PrintStmt& stmt) {
 std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     resolve(*expr.left);
     resolve(*expr.right);
+    return {};
+}
+
+std::any Resolver::visitIfStmt(const IfStmt& stmt) {
+    resolve(*stmt.condition);
+    resolve(*stmt.thenBranch);
+    if (stmt.elseBranch) resolve(*stmt.elseBranch);
+    return {};
+}
+
+std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
+    resolve(*stmt.condition);
+    resolve(*stmt.body);
     return {};
 }
 

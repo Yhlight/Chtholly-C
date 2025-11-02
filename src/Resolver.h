@@ -21,6 +21,8 @@ public:
     std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitBlockStmt(const BlockStmt& stmt) override;
+    std::any visitIfStmt(const IfStmt& stmt) override;
+    std::any visitWhileStmt(const WhileStmt& stmt) override;
 
 private:
     void resolve(const Stmt& stmt);
@@ -31,6 +33,7 @@ private:
 
     void declare(const Token& name);
     void define(const Token& name);
+    void resolveLocal(const Expr& expr, const Token& name);
 
     std::vector<std::map<std::string, bool>> scopes;
 };

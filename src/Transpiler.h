@@ -28,4 +28,6 @@ private:
     std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitBlockStmt(const BlockStmt& stmt) override;
+    std::any visitIfStmt(const IfStmt& stmt) override;
+    std::any visitWhileStmt(const WhileStmt& stmt) override;
 };

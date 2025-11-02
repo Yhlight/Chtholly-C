@@ -9,6 +9,8 @@ struct ExpressionStmt;
 struct PrintStmt;
 struct LetStmt;
 struct BlockStmt;
+struct IfStmt;
+struct WhileStmt;
 
 class StmtVisitor {
 public:
@@ -16,6 +18,8 @@ public:
     virtual std::any visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
     virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
+    virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
+    virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -68,5 +72,30 @@ struct BlockStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitBlockStmt(*this);
+    }
+};
+
+struct IfStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+
+    IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitIfStmt(*this);
+    }
+};
+
+struct WhileStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> body;
+
+    WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitWhileStmt(*this);
     }
 };

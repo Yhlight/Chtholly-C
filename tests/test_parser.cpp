@@ -85,3 +85,44 @@ TEST(ParserTest, AssignmentExpression) {
     ASSERT_NE(expr, nullptr);
     EXPECT_EQ(expr->name.lexeme, "x");
 }
+
+TEST(ParserTest, IfStatement) {
+    std::string source = "if (x) print 1;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    IfStmt* ifStmt = dynamic_cast<IfStmt*>(statements[0].get());
+    ASSERT_NE(ifStmt, nullptr);
+    EXPECT_NE(ifStmt->thenBranch, nullptr);
+    EXPECT_EQ(ifStmt->elseBranch, nullptr);
+}
+
+TEST(ParserTest, IfElseStatement) {
+    std::string source = "if (x) print 1; else print 2;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    IfStmt* ifStmt = dynamic_cast<IfStmt*>(statements[0].get());
+    ASSERT_NE(ifStmt, nullptr);
+    EXPECT_NE(ifStmt->thenBranch, nullptr);
+    EXPECT_NE(ifStmt->elseBranch, nullptr);
+}
+
+TEST(ParserTest, WhileStatement) {
+    std::string source = "while (x) print 1;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    WhileStmt* whileStmt = dynamic_cast<WhileStmt*>(statements[0].get());
+    ASSERT_NE(whileStmt, nullptr);
+    EXPECT_NE(whileStmt->body, nullptr);
+}

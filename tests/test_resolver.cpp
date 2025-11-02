@@ -26,6 +26,28 @@ TEST_F(ResolverTest, RedeclareVariable) {
     ASSERT_TRUE(ErrorReporter::hadError);
 }
 
+TEST_F(ResolverTest, IfScope) {
+    std::string source = "if (true) { let a = 1; } print a;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
+TEST_F(ResolverTest, WhileScope) {
+    std::string source = "while (true) { let a = 1; } print a;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
 TEST_F(ResolverTest, ReadInInitializer) {
     std::string source = "{ let a = a; }";
     Lexer lexer(source);

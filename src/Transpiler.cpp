@@ -86,3 +86,19 @@ std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
     out << "    }\n";
     return {};
 }
+
+std::any Transpiler::visitIfStmt(const IfStmt& stmt) {
+    out << "    if (" << evaluate(*stmt.condition) << ") ";
+    execute(*stmt.thenBranch);
+    if (stmt.elseBranch) {
+        out << " else ";
+        execute(*stmt.elseBranch);
+    }
+    return {};
+}
+
+std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
+    out << "    while (" << evaluate(*stmt.condition) << ") ";
+    execute(*stmt.body);
+    return {};
+}
