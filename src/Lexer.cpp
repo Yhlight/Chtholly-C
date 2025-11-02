@@ -12,6 +12,7 @@ std::map<std::string, TokenType> keywords = {
     {"else",   TokenType::ELSE},
     {"while",  TokenType::WHILE},
     {"func",   TokenType::FUNC},
+    {"function", TokenType::FUNCTION},
     {"return", TokenType::RETURN},
     {"struct", TokenType::STRUCT},
     {"print",  TokenType::PRINT},
@@ -59,6 +60,8 @@ void Lexer::scanToken() {
     switch (c) {
         case '(': addToken(TokenType::LEFT_PAREN); break;
         case ')': addToken(TokenType::RIGHT_PAREN); break;
+        case '[': addToken(TokenType::LEFT_BRACKET); break;
+        case ']': addToken(TokenType::RIGHT_BRACKET); break;
         case '{': addToken(TokenType::LEFT_BRACE); break;
         case '}': addToken(TokenType::RIGHT_BRACE); break;
         case ':': addToken(TokenType::COLON); break;

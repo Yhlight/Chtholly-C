@@ -1,4 +1,5 @@
 #include "ASTPrinter.h"
+#include "Stmt.h"
 #include <sstream>
 
 std::string ASTPrinter::print(const Expr& expr) {
@@ -52,6 +53,10 @@ std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
 
 std::any ASTPrinter::visitBorrowExpr(const BorrowExpr& expr) {
     return parenthesize(expr.isMutable ? "&mut" : "&", {expr.expression.get()});
+}
+
+std::any ASTPrinter::visitLambdaExpr(const LambdaExpr& expr) {
+    return "lambda";
 }
 
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {

@@ -27,6 +27,7 @@ public:
     std::any visitGetExpr(const GetExpr& expr) override;
     std::any visitSetExpr(const SetExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
+    std::any visitLambdaExpr(const LambdaExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitPrintStmt(const PrintStmt& stmt) override;
@@ -52,6 +53,7 @@ private:
     void resolve(const Stmt& stmt);
     void resolve(const Expr& expr);
     void resolveFunction(const FunctionStmt& function, FunctionType type);
+    void resolveLambda(const LambdaExpr& lambda, FunctionType type);
 
     void beginScope();
     void endScope();

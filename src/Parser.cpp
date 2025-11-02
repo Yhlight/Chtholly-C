@@ -69,7 +69,7 @@ std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
 
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     auto body = block();
-    return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), returnType);
+    return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), std::move(returnType));
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
@@ -84,7 +84,7 @@ std::unique_ptr<Stmt> Parser::letDeclaration() {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<LetStmt>(name, type, std::move(initializer), isMutable);
+    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer), isMutable);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -317,6 +317,30 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<VariableExpr>(previous());
     }
 
+    if (match({TokenType::LEFT_BRACKET})) {
+        consume(TokenType::RIGHT_BRACKET, "Expect ']' after lambda capture list.");
+        consume(TokenType::LEFT_PAREN, "Expect '(' after lambda capture list.");
+        std::vector<std::pair<Token, TypeInfo>> parameters;
+        if (peek().type != TokenType::RIGHT_PAREN) {
+            do {
+                Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                consume(TokenType::COLON, "Expect ':' after parameter name.");
+                parameters.emplace_back(paramName, parseType());
+            } while (match({TokenType::COMMA}));
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after lambda parameters.");
+
+        std::optional<TypeInfo> returnType;
+        if (match({TokenType::MINUS})) {
+            consume(TokenType::GREATER, "Expect '>' after '-' for return type arrow.");
+            returnType = parseType();
+        }
+
+        consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
+        auto body = block();
+        return std::make_unique<LambdaExpr>(std::move(parameters), std::move(body), std::move(returnType));
+    }
+
     if (match({TokenType::LEFT_PAREN})) {
         auto expr = expression();
         if (peek().type != TokenType::RIGHT_PAREN) {
@@ -338,7 +362,22 @@ TypeInfo Parser::parseType() {
             type.isMutable = true;
         }
     }
-    type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
+    if (match({TokenType::FUNCTION})) {
+        type.baseType = previous();
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'function'.");
+        if (!match({TokenType::RIGHT_PAREN})) {
+            do {
+                type.params.push_back(parseType());
+            } while (match({TokenType::COMMA}));
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after function type parameters.");
+        }
+        if (match({TokenType::MINUS})) {
+            consume(TokenType::GREATER, "Expect '>' after '-' for function type return arrow.");
+            type.returnType = std::make_unique<TypeInfo>(parseType());
+        }
+    } else {
+        type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
+    }
     return type;
 }
 

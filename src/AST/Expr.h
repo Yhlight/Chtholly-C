@@ -5,6 +5,9 @@
 #include <any>
 #include <memory>
 #include <vector>
+#include <optional>
+
+class Stmt;
 
 struct BinaryExpr;
 struct GroupingExpr;
@@ -16,6 +19,7 @@ struct CallExpr;
 struct GetExpr;
 struct SetExpr;
 struct BorrowExpr;
+struct LambdaExpr;
 
 class ExprVisitor {
 public:
@@ -29,6 +33,7 @@ public:
     virtual std::any visitGetExpr(const GetExpr& expr) = 0;
     virtual std::any visitSetExpr(const SetExpr& expr) = 0;
     virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
+    virtual std::any visitLambdaExpr(const LambdaExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -155,5 +160,18 @@ struct BorrowExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitBorrowExpr(*this);
+    }
+};
+
+struct LambdaExpr : Expr {
+    std::vector<std::pair<Token, TypeInfo>> params;
+    std::vector<std::unique_ptr<Stmt>> body;
+    std::optional<TypeInfo> returnType;
+
+    LambdaExpr(std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType)
+        : params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitLambdaExpr(*this);
     }
 };

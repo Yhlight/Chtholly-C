@@ -21,7 +21,8 @@
 
 - [x] **Structs**: Implement struct definitions and instantiation.
 - [x] **Ownership System**: Implement the ownership system with `&` and `&mut` references.
-- [ ] **Generics**: Implement generic functions and structs. (In Progress)
+- [x] **Generics**: Implement generic functions and structs.
+- [ ] **Lambda Expressions and Function Types**: Implement lambda expressions and function types. (In Progress)
 - [ ] **Traits**: Implement traits for defining shared behavior.
 - [ ] **Modules**: Implement the module system with `import`.
 

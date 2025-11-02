@@ -291,3 +291,41 @@ TEST(ParserTest, GenericFunctionDeclaration) {
     EXPECT_EQ(funcStmt->params[1].first.lexeme, "b");
     EXPECT_EQ(funcStmt->params[1].second.baseType.lexeme, "U");
 }
+
+TEST(ParserTest, LambdaExpression) {
+    std::string source = "let x = [](a: int) -> int { return a; };";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* letStmt = dynamic_cast<LetStmt*>(stmts[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    auto* lambdaExpr = dynamic_cast<LambdaExpr*>(letStmt->initializer.get());
+    ASSERT_NE(lambdaExpr, nullptr);
+
+    ASSERT_EQ(lambdaExpr->params.size(), 1);
+    EXPECT_EQ(lambdaExpr->params[0].first.lexeme, "a");
+    EXPECT_EQ(lambdaExpr->params[0].second.baseType.lexeme, "int");
+
+    ASSERT_TRUE(lambdaExpr->returnType.has_value());
+    EXPECT_EQ(lambdaExpr->returnType->baseType.lexeme, "int");
+}
+
+TEST(ParserTest, FunctionType) {
+    std::string source = "let x: function(int) -> bool;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* letStmt = dynamic_cast<LetStmt*>(stmts[0].get());
+    ASSERT_NE(letStmt, nullptr);
+
+    ASSERT_TRUE(letStmt->type.has_value());
+    EXPECT_EQ(letStmt->type->baseType.type, TokenType::FUNCTION);
+    ASSERT_EQ(letStmt->type->params.size(), 1);
+    EXPECT_EQ(letStmt->type->params[0].baseType.lexeme, "int");
+    ASSERT_TRUE(letStmt->type->returnType);
+    EXPECT_EQ(letStmt->type->returnType->baseType.lexeme, "bool");
+}

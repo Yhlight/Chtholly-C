@@ -6,6 +6,7 @@
 enum class TokenType {
     // Single-character tokens.
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
+    LEFT_BRACKET, RIGHT_BRACKET,
     COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, COLON, AMPERSAND,
 
     // One or two character tokens.
@@ -18,7 +19,7 @@ enum class TokenType {
     IDENTIFIER, STRING, NUMBER,
 
     // Keywords.
-    LET, MUT, TRUE, FALSE, IF, ELSE, WHILE, FUNC, RETURN, STRUCT,
+    LET, MUT, TRUE, FALSE, IF, ELSE, WHILE, FUNC, FUNCTION, RETURN, STRUCT,
     PRINT,
 
     // Logical operators

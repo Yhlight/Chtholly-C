@@ -149,6 +149,11 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
     return {};
 }
 
+std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
+    resolveLambda(expr, FunctionType::FUNCTION);
+    return {};
+}
+
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
@@ -190,6 +195,20 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
         define(param.first);
     }
     resolve(function.body);
+    endScope();
+    currentFunction = enclosingFunction;
+}
+
+void Resolver::resolveLambda(const LambdaExpr& lambda, FunctionType type) {
+    FunctionType enclosingFunction = currentFunction;
+    currentFunction = type;
+
+    beginScope();
+    for (const auto& param : lambda.params) {
+        declare(param.first);
+        define(param.first);
+    }
+    resolve(lambda.body);
     endScope();
     currentFunction = enclosingFunction;
 }

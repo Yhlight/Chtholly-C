@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Expr.h"
 #include "../TypeInfo.h"
 #include <any>
 #include <memory>
 #include <vector>
 #include <optional>
+
+class Expr;
 
 struct ExpressionStmt;
 struct PrintStmt;
