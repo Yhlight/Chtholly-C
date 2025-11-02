@@ -12,7 +12,7 @@
 ## Phase 2: Core Language Features
 
 - [x] **Variables**: Implement `let` and `mut` variable declarations.
-- [ ] **Data Types**: Implement basic data types (int, double, bool, string).
+- [x] **Data Types**: Implement basic data types (int, double, bool, string).
 - [x] **Operators**: Implement basic arithmetic and logical operators.
 - [x] **Control Flow**: Implement `if`, `else`, and `while` statements.
 - [ ] **Functions**: Implement function definitions and calls.

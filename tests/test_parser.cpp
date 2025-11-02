@@ -127,6 +127,21 @@ TEST(ParserTest, WhileStatement) {
     EXPECT_NE(whileStmt->body, nullptr);
 }
 
+TEST(ParserTest, LetStatementWithType) {
+    std::string source = "let x: int = 10;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    LetStmt* letStmt = dynamic_cast<LetStmt*>(statements[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    EXPECT_EQ(letStmt->name.lexeme, "x");
+    ASSERT_TRUE(letStmt->type.has_value());
+    EXPECT_EQ(letStmt->type->lexeme, "int");
+}
+
 TEST(ParserTest, LogicalAndExpression) {
     std::string source = "true && false;";
     Lexer lexer(source);

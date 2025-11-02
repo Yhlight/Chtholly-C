@@ -57,12 +57,21 @@ std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
     return {};
 }
 
+std::string to_cpp_type(const std::string& chtholly_type) {
+    if (chtholly_type == "string") return "std::string";
+    return chtholly_type;
+}
+
 std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     out << "    ";
     if (!stmt.isMutable) {
         out << "const ";
     }
-    out << "auto " << stmt.name.lexeme;
+    if (stmt.type) {
+        out << to_cpp_type(stmt.type->lexeme) << " " << stmt.name.lexeme;
+    } else {
+        out << "auto " << stmt.name.lexeme;
+    }
     if (stmt.initializer) {
         out << " = " << evaluate(*stmt.initializer);
     }
