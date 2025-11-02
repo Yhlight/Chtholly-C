@@ -14,7 +14,9 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::STRUCT})) return structDeclaration();
-        if (match({TokenType::FUNC})) return function("function");
+        if (match({TokenType::TRAIT})) return traitDeclaration();
+        if (match({TokenType::IMPL})) return implDeclaration();
+        if (match({TokenType::FUNC})) return function("function", true);
         if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
     } catch (ParseError& error) {
@@ -38,7 +40,31 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     return std::make_unique<StructStmt>(name, std::move(fields));
 }
 
-std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
+std::unique_ptr<Stmt> Parser::traitDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before trait body.");
+    std::vector<std::unique_ptr<Stmt>> methods;
+    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+        methods.push_back(function("method", false));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
+    return std::make_unique<TraitStmt>(name, std::move(methods));
+}
+
+std::unique_ptr<Stmt> Parser::implDeclaration() {
+    Token traitName = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    consume(TokenType::FOR, "Expect 'for' after trait name.");
+    Token structName = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before impl body.");
+    std::vector<std::unique_ptr<Stmt>> methods;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        methods.push_back(function("method", true));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
+    return std::make_unique<ImplStmt>(structName, traitName, std::move(methods));
+}
+
+std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_required) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generics;
     if (match({TokenType::LESS})) {
@@ -67,8 +93,13 @@ std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
         returnType = parseType();
     }
 
-    consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
-    auto body = block();
+    std::vector<std::unique_ptr<Stmt>> body;
+    if (body_required) {
+        consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        body = block();
+    } else {
+        consume(TokenType::SEMICOLON, "Expect ';' after " + kind + " declaration.");
+    }
     return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), std::move(returnType));
 }
 
@@ -410,6 +441,11 @@ bool Parser::match(const std::vector<TokenType>& types) {
         }
     }
     return false;
+}
+
+bool Parser::check(TokenType type) {
+    if (isAtEnd()) return false;
+    return peek().type == type;
 }
 
 Token Parser::advance() {

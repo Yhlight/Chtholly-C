@@ -21,7 +21,9 @@ private:
 
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> structDeclaration();
-    std::unique_ptr<Stmt> function(const std::string& kind);
+    std::unique_ptr<Stmt> traitDeclaration();
+    std::unique_ptr<Stmt> implDeclaration();
+    std::unique_ptr<Stmt> function(const std::string& kind, bool body_required);
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> printStatement();
@@ -49,6 +51,7 @@ private:
     bool match(const std::vector<TokenType>& types);
     Token advance();
     bool isAtEnd();
+    bool check(TokenType type);
     Token peek();
     Token previous();
     Token consume(TokenType type, const std::string& message);

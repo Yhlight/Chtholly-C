@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <sstream>
+#include <map>
 
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
@@ -16,6 +17,7 @@ private:
     void execute(const Stmt& stmt);
 
     std::stringstream out;
+    std::map<std::string, const ImplStmt*> impls;
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
@@ -38,4 +40,6 @@ private:
     std::any visitFunctionStmt(const FunctionStmt& stmt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
+    std::any visitImplStmt(const ImplStmt& stmt) override;
 };

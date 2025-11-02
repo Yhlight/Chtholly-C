@@ -11,3 +11,7 @@ void ErrorReporter::report(int line, const std::string& where, const std::string
     std::cerr << "[line " << line << "] Error" << where << ": " << message << std::endl;
     hadError = true;
 }
+
+void ErrorReporter::reset() {
+    hadError = false;
+}

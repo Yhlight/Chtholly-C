@@ -29,14 +29,20 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     }
 
     for (const auto& statement : statements) {
-        if (dynamic_cast<FunctionStmt*>(statement.get()) || dynamic_cast<StructStmt*>(statement.get())) {
+        if (auto* impl = dynamic_cast<ImplStmt*>(statement.get())) {
+            impls[impl->structName.lexeme] = impl;
+        }
+    }
+
+    for (const auto& statement : statements) {
+        if (dynamic_cast<FunctionStmt*>(statement.get()) || dynamic_cast<StructStmt*>(statement.get()) || dynamic_cast<TraitStmt*>(statement.get())) {
             execute(*statement);
         }
     }
 
     out << "int main() {\n";
     for (const auto& statement : statements) {
-        if (!dynamic_cast<FunctionStmt*>(statement.get()) && !dynamic_cast<StructStmt*>(statement.get())) {
+        if (!dynamic_cast<FunctionStmt*>(statement.get()) && !dynamic_cast<StructStmt*>(statement.get()) && !dynamic_cast<TraitStmt*>(statement.get()) && !dynamic_cast<ImplStmt*>(statement.get())) {
             execute(*statement);
         }
     }
@@ -139,6 +145,33 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     return {};
 }
 
+std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
+    out << "struct " << stmt.name.lexeme << " {\n";
+    for (const auto& method : stmt.methods) {
+        out << "    virtual ";
+        if (method->returnType) {
+            out << to_cpp_type(*method->returnType);
+        } else {
+            out << "void";
+        }
+        out << " " << method->name.lexeme << "(";
+        for (size_t i = 0; i < method->params.size(); ++i) {
+            out << to_cpp_type(method->params[i].second) << " " << method->params[i].first.lexeme;
+            if (i < method->params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ") = 0;\n";
+    }
+    out << "};\n\n";
+    return {};
+}
+
+std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
+    impls[stmt.structName.lexeme] = &stmt;
+    return {};
+}
+
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     return evaluate(*expr.object) + "." + expr.name.lexeme;
 }
@@ -179,7 +212,15 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
 }
 
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
-    out << "struct " << stmt.name.lexeme << " {\n";
+    out << "struct " << stmt.name.lexeme;
+    if (impls.count(stmt.name.lexeme)) {
+        const auto* impl = impls.at(stmt.name.lexeme);
+        if (impl->traitName) {
+            out << " : public " << impl->traitName->lexeme;
+        }
+    }
+    out << " {\n";
+
     for (const auto& field : stmt.fields) {
         out << "    ";
         if (field->type) {
@@ -191,6 +232,13 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             out << " = " << evaluate(*field->initializer);
         }
         out << ";\n";
+    }
+
+    if (impls.count(stmt.name.lexeme)) {
+        const auto* impl = impls.at(stmt.name.lexeme);
+        for (const auto& method : impl->methods) {
+            visitFunctionStmt(*method);
+        }
     }
     out << "};\n\n";
     return {};

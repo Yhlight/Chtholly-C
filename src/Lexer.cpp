@@ -15,6 +15,9 @@ std::map<std::string, TokenType> keywords = {
     {"function", TokenType::FUNCTION},
     {"return", TokenType::RETURN},
     {"struct", TokenType::STRUCT},
+    {"trait",  TokenType::TRAIT},
+    {"impl",   TokenType::IMPL},
+    {"for",    TokenType::FOR},
     {"print",  TokenType::PRINT},
 };
 

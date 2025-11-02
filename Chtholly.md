@@ -179,7 +179,14 @@ Chtholly的lambda函数使用与C++完全一致的语法
 默认情况下，捕获属于不可变引用  
 
 ```Chtholly
-let add = (形参列表)[捕获参数] -> <返回值类型> {函数体}  // 如果语法错误请自行修正
+let add = [](a: int, b: int) -> int { return a + b; };
+```
+
+#### function类型
+Chtholly使用`function`关键字来表示函数类型，可以用于变量的类型注解。
+
+```Chtholly
+let my_func: function(int, int) -> int = add;
 ```
 
 #### 参数所有权

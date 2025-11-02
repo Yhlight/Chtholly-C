@@ -38,8 +38,15 @@ public:
     std::any visitFunctionStmt(const FunctionStmt& stmt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
+#include <map>
+
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
+    std::any visitImplStmt(const ImplStmt& stmt) override;
 
 private:
+    std::map<std::string, const TraitStmt*> traits;
+    std::map<std::string, const StructStmt*> structs;
+
     enum class FunctionType {
         NONE,
         FUNCTION

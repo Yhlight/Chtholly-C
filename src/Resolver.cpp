@@ -3,6 +3,14 @@
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     for (const auto& statement : statements) {
+        if (auto* trait = dynamic_cast<TraitStmt*>(statement.get())) {
+            traits[trait->name.lexeme] = trait;
+        } else if (auto* s = dynamic_cast<StructStmt*>(statement.get())) {
+            structs[s->name.lexeme] = s;
+        }
+    }
+
+    for (const auto& statement : statements) {
         resolve(*statement);
     }
 }
@@ -115,6 +123,63 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     return {};
 }
 
+std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+    beginScope();
+    for (const auto& method : stmt.methods) {
+        resolveFunction(*method, FunctionType::FUNCTION);
+    }
+    endScope();
+    return {};
+}
+
+std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
+    if (stmt.traitName) {
+        if (traits.find(stmt.traitName->lexeme) == traits.end()) {
+            ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
+            return {};
+        }
+        if (!structs.count(stmt.structName.lexeme)) {
+            ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+            return {};
+        }
+
+        const auto* trait = traits.at(stmt.traitName->lexeme);
+        if (trait->methods.size() != stmt.methods.size()) {
+            ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
+            return {};
+        }
+
+        for (size_t i = 0; i < trait->methods.size(); ++i) {
+            const auto& traitMethod = trait->methods[i];
+            const auto& implMethod = stmt.methods[i];
+            if (traitMethod->name.lexeme != implMethod->name.lexeme) {
+                ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+            }
+            if (traitMethod->params.size() != implMethod->params.size()) {
+                ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+            }
+            for (size_t j = 0; j < traitMethod->params.size(); ++j) {
+                if (traitMethod->params[j].second.baseType.lexeme != implMethod->params[j].second.baseType.lexeme) {
+                    ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+                }
+            }
+        }
+    }
+
+    ClassType enclosingClass = currentClass;
+    currentClass = ClassType::CLASS;
+    beginScope();
+    scopes.back()["self"] = VariableState{true, false, 0, false};
+    for (const auto& method : stmt.methods) {
+        resolveFunction(*method, FunctionType::FUNCTION);
+    }
+    endScope();
+    currentClass = enclosingClass;
+    return {};
+}
+
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
     resolve(*expr.object);
     return {};
@@ -155,10 +220,10 @@ std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
 }
 
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
-    ClassType enclosingClass = currentClass;
-    currentClass = ClassType::CLASS;
     declare(stmt.name);
     define(stmt.name);
+    ClassType enclosingClass = currentClass;
+    currentClass = ClassType::CLASS;
 
     beginScope();
     scopes.back()["self"] = VariableState{true, false, 0, false};

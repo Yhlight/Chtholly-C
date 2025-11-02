@@ -8,6 +8,7 @@ add_executable(
     test_parser.cpp
     test_transpiler.cpp
     test_resolver.cpp
+    test_traits.cpp
 )
 
 target_link_libraries(
