@@ -15,33 +15,6 @@ CodeGen::CodeGen() {
     };
 }
 
-std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statements) {
-    std::string declarations;
-    std::string main_body;
-
-    for (const auto& stmt : statements) {
-        source.clear();
-        execute(stmt);
-        std::string generated = source;
-
-        if (std::dynamic_pointer_cast<Struct>(stmt) || std::dynamic_pointer_cast<Func>(stmt)) {
-            declarations += generated;
-        } else {
-            main_body += generated;
-        }
-    }
-
-    return "#include <iostream>\n\n" + declarations + "int main() {\n" + main_body + "    return 0;\n}\n";
-}
-
-std::string CodeGen::evaluate(const std::shared_ptr<Expr>& expr) {
-    return std::any_cast<std::string>(expr->accept(*this));
-}
-
-void CodeGen::execute(const std::shared_ptr<Stmt>& stmt) {
-    stmt->accept(*this);
-}
-
 std::string CodeGen::typeToString(const std::shared_ptr<Type>& type) {
     if (!type) {
         return "auto";
@@ -56,13 +29,47 @@ std::string CodeGen::typeToString(const std::shared_ptr<Type>& type) {
         type_str = "auto";
     }
 
+    if (type_str == "std::string") {
+        headers.insert("<string>");
+    }
+
     if (type->is_mut_ref) {
         type_str += "&";
     } else if (type->is_ref) {
-        type_str = "const " + type_str + "&";
+        type_str += "&";
     }
 
     return type_str;
+}
+
+std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statements) {
+    source.clear();
+    headers.clear();
+    headers.insert("<iostream>");
+
+    for (const auto& stmt : statements) {
+        execute(stmt);
+    }
+
+    std::string final_source;
+    for (const auto& header : headers) {
+        final_source += "#include " + header + "\n";
+    }
+    final_source += "\n";
+    final_source += "int main() {\n";
+    final_source += source;
+    final_source += "return 0;\n";
+    final_source += "}\n";
+
+    return final_source;
+}
+
+std::string CodeGen::evaluate(const std::shared_ptr<Expr>& expr) {
+    return std::any_cast<std::string>(expr->accept(*this));
+}
+
+void CodeGen::execute(const std::shared_ptr<Stmt>& stmt) {
+    stmt->accept(*this);
 }
 
 // Expression visitors
@@ -79,10 +86,10 @@ std::any CodeGen::visitLiteralExpr(std::shared_ptr<Literal> expr) {
         return "\"" + std::any_cast<std::string>(expr->value) + "\"";
     }
     if (expr->value.type() == typeid(bool)) {
-        return std::string(std::any_cast<bool>(expr->value) ? "true" : "false");
+        return std::any_cast<bool>(expr->value) ? "true" : "false";
     }
     if (expr->value.type() == typeid(nullptr_t)) {
-        return std::string("nullptr");
+        return "nullptr";
     }
     if (expr->value.type() == typeid(int)) {
         return std::to_string(std::any_cast<int>(expr->value));
@@ -94,6 +101,9 @@ std::any CodeGen::visitLiteralExpr(std::shared_ptr<Literal> expr) {
 }
 
 std::any CodeGen::visitUnaryExpr(std::shared_ptr<Unary> expr) {
+    if (expr->op.type == TokenType::AMPERSAND) {
+        return evaluate(expr->right);
+    }
     return expr->op.lexeme + evaluate(expr->right);
 }
 
@@ -146,28 +156,27 @@ void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
 }
 
 void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
-    std::string type = typeToString(stmt->type);
-    source += stmt->isMutable ? type + " " : "const " + type + " ";
-    source += stmt->name.lexeme;
-    if (stmt->initializer) {
-        source += " = " + evaluate(stmt->initializer);
+    std::string type_str = typeToString(stmt->type);
+    std::string var_decl;
+
+    if (!stmt->isMutable) {
+        var_decl += "const ";
     }
-    source += ";\n";
+    var_decl += type_str + " " + stmt->name.lexeme;
+
+    if (stmt->initializer) {
+        var_decl += " = " + evaluate(stmt->initializer);
+    }
+
+    source += var_decl + ";\n";
 }
 
 void CodeGen::visitStructStmt(std::shared_ptr<Struct> stmt) {
-    in_struct = true;
     source += "struct " + stmt->name.lexeme + " {\n";
     for (const auto& field : stmt->fields) {
-        source += field->is_public ? "public: " : "private: ";
         execute(field);
     }
-    for (const auto& method : stmt->methods) {
-        source += method->is_public ? "public: " : "private: ";
-        execute(method);
-    }
     source += "};\n";
-    in_struct = false;
 }
 
 void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
@@ -179,11 +188,7 @@ void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
 }
 
 void CodeGen::visitFuncStmt(std::shared_ptr<Func> stmt) {
-    source += "auto " + stmt->name.lexeme + " = [";
-    if (in_struct) {
-        source += "this";
-    }
-    source += "](";
+    source += "auto " + stmt->name.lexeme + " = [&](";
     for (const auto& param : stmt->params) {
         source += typeToString(param.type) + " " + param.name.lexeme + ", ";
     }

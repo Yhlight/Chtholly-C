@@ -97,25 +97,6 @@ struct Literal : Expr, public std::enable_shared_from_this<Literal> {
 
     Literal(std::any value) : value(std::move(value)) {}
 
-    std::string getType() const {
-        if (value.type() == typeid(std::string)) {
-            return "std::string";
-        }
-        if (value.type() == typeid(bool)) {
-            return "bool";
-        }
-        if (value.type() == typeid(nullptr_t)) {
-            return "nullptr_t";
-        }
-        if (value.type() == typeid(int)) {
-            return "int";
-        }
-        if (value.type() == typeid(double)) {
-            return "double";
-        }
-        return "auto";
-    }
-
     std::any accept(ExprVisitor& visitor) override {
         return visitor.visitLiteralExpr(shared_from_this());
     }
@@ -170,11 +151,10 @@ struct Var : Stmt, public std::enable_shared_from_this<Var> {
     const Token name;
     const std::shared_ptr<Expr> initializer;
     const bool isMutable;
-    const bool is_public;
     std::shared_ptr<Type> type;
 
-    Var(Token name, std::shared_ptr<Expr> initializer, bool isMutable, bool is_public)
-        : name(std::move(name)), initializer(std::move(initializer)), isMutable(isMutable), is_public(is_public) {}
+    Var(Token name, std::shared_ptr<Expr> initializer, bool isMutable)
+        : name(std::move(name)), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     void accept(StmtVisitor& visitor) override {
         visitor.visitVarStmt(shared_from_this());
@@ -200,10 +180,9 @@ struct Func : Stmt, public std::enable_shared_from_this<Func> {
     const Token name;
     const std::vector<Param> params;
     const std::vector<std::shared_ptr<Stmt>> body;
-    const bool is_public;
 
-    Func(Token name, std::vector<Param> params, std::vector<std::shared_ptr<Stmt>> body, bool is_public)
-        : name(std::move(name)), params(std::move(params)), body(std::move(body)), is_public(is_public) {}
+    Func(Token name, std::vector<Param> params, std::vector<std::shared_ptr<Stmt>> body)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 
     void accept(StmtVisitor& visitor) override {
         visitor.visitFuncStmt(shared_from_this());
@@ -263,10 +242,9 @@ struct Instantiation : Expr, public std::enable_shared_from_this<Instantiation> 
 struct Struct : Stmt, public std::enable_shared_from_this<Struct> {
     const Token name;
     const std::vector<std::shared_ptr<Var>> fields;
-    const std::vector<std::shared_ptr<Func>> methods;
 
-    Struct(Token name, std::vector<std::shared_ptr<Var>> fields, std::vector<std::shared_ptr<Func>> methods)
-        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
+    Struct(Token name, std::vector<std::shared_ptr<Var>> fields)
+        : name(std::move(name)), fields(std::move(fields)) {}
 
     void accept(StmtVisitor& visitor) override {
         visitor.visitStructStmt(shared_from_this());

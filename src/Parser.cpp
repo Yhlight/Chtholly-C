@@ -14,9 +14,8 @@ std::vector<std::shared_ptr<Stmt>> Parser::parse() {
 std::shared_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::STRUCT})) return structDeclaration();
-        if (match({TokenType::FUNC})) return function("function", true);
-        if (match({TokenType::LET})) return varDeclaration(false, true);
-        if (match({TokenType::MUT})) return varDeclaration(true, true);
+        if (match({TokenType::FUNC})) return function("function");
+        if (match({TokenType::LET, TokenType::MUT})) return varDeclaration(previous().type == TokenType::MUT);
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -24,7 +23,7 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool is_public, bool in_struct) {
+std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool in_struct) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::shared_ptr<Type> type = nullptr;
     if (match({TokenType::COLON})) {
@@ -40,7 +39,7 @@ std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool is_public, boo
     }
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    auto var = std::make_shared<Var>(name, initializer, isMutable, is_public);
+    auto var = std::make_shared<Var>(name, initializer, isMutable);
     if (type) {
         var->type = type;
     }
@@ -89,7 +88,9 @@ std::shared_ptr<Expr> Parser::assignment() {
         std::shared_ptr<Expr> value = assignment();
         if (auto var = std::dynamic_pointer_cast<Variable>(expr)) {
             Token name = var->name;
-            return std::make_shared<Assign>(name, value);
+            auto assign = std::make_shared<Assign>(name, value);
+            assign->type = value->type;
+            return assign;
         }
         error(equals, "Invalid assignment target.");
     }
@@ -102,6 +103,7 @@ std::shared_ptr<Expr> Parser::equality() {
         Token op = previous();
         std::shared_ptr<Expr> right = comparison();
         expr = std::make_shared<Binary>(expr, op, right);
+        expr->type = std::make_shared<PrimitiveType>("bool");
     }
     return expr;
 }
@@ -112,6 +114,7 @@ std::shared_ptr<Expr> Parser::comparison() {
         Token op = previous();
         std::shared_ptr<Expr> right = term();
         expr = std::make_shared<Binary>(expr, op, right);
+        expr->type = std::make_shared<PrimitiveType>("bool");
     }
     return expr;
 }
@@ -121,7 +124,9 @@ std::shared_ptr<Expr> Parser::term() {
     while (match({TokenType::MINUS, TokenType::PLUS})) {
         Token op = previous();
         std::shared_ptr<Expr> right = factor();
-        expr = std::make_shared<Binary>(expr, op, right);
+        auto new_expr = std::make_shared<Binary>(expr, op, right);
+        new_expr->type = expr->type;
+        expr = new_expr;
     }
     return expr;
 }
@@ -131,7 +136,9 @@ std::shared_ptr<Expr> Parser::factor() {
     while (match({TokenType::SLASH, TokenType::STAR, TokenType::PERCENT})) {
         Token op = previous();
         std::shared_ptr<Expr> right = unary();
-        expr = std::make_shared<Binary>(expr, op, right);
+        auto new_expr = std::make_shared<Binary>(expr, op, right);
+        new_expr->type = expr->type;
+        expr = new_expr;
     }
     return expr;
 }
@@ -140,7 +147,21 @@ std::shared_ptr<Expr> Parser::unary() {
     if (match({TokenType::BANG, TokenType::MINUS})) {
         Token op = previous();
         std::shared_ptr<Expr> right = unary();
-        return std::make_shared<Unary>(op, right);
+        auto unary = std::make_shared<Unary>(op, right);
+        unary->type = right->type;
+        return unary;
+    }
+    if (match({TokenType::AMPERSAND})) {
+        Token op = previous();
+        bool is_mut = match({TokenType::MUT});
+        std::shared_ptr<Expr> right = unary();
+        auto unary = std::make_shared<Unary>(op, right);
+        if (right->type) {
+            unary->type = right->type->clone();
+            unary->type->is_ref = true;
+            unary->type->is_mut_ref = is_mut;
+        }
+        return unary;
     }
     return call();
 }
@@ -204,7 +225,9 @@ std::shared_ptr<Expr> Parser::primary() {
     if (match({TokenType::LEFT_PAREN})) {
         std::shared_ptr<Expr> expr = expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
-        return std::make_shared<Grouping>(expr);
+        auto grouping = std::make_shared<Grouping>(expr);
+        grouping->type = expr->type;
+        return grouping;
     }
 
     throw error(peek(), "Expect expression.");
@@ -239,7 +262,7 @@ std::shared_ptr<Expr> Parser::finishCall(std::shared_ptr<Expr> callee) {
     return std::make_shared<Call>(callee, paren, arguments);
 }
 
-std::shared_ptr<Stmt> Parser::function(const std::string& kind, bool is_public) {
+std::shared_ptr<Stmt> Parser::function(const std::string& kind) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Param> parameters;
@@ -257,7 +280,7 @@ std::shared_ptr<Stmt> Parser::function(const std::string& kind, bool is_public) 
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     std::vector<std::shared_ptr<Stmt>> body = block();
-    return std::make_shared<Func>(name, parameters, body, is_public);
+    return std::make_shared<Func>(name, parameters, body);
 }
 
 std::shared_ptr<Stmt> Parser::returnStatement() {
@@ -274,31 +297,15 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::shared_ptr<Var>> fields;
-    std::vector<std::shared_ptr<Func>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        bool is_public = true;
-        if (match({TokenType::PRIVATE})) {
-            is_public = false;
-        } else if (match({TokenType::PUBLIC})) {
-            is_public = true;
-        }
-
-        if (peek().type == TokenType::FUNC) {
-            advance();
-            methods.push_back(std::dynamic_pointer_cast<Func>(function("method", is_public)));
-        }
-        else {
-            bool isMutable = false;
-            if (match({TokenType::MUT})) {
-                isMutable = true;
-            } else if (!match({TokenType::LET})) {
-                throw error(peek(), "Expect 'let' or 'mut' for field declaration.");
-            }
-            fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration(isMutable, is_public, true)));
+        if (match({TokenType::LET, TokenType::MUT})) {
+            fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration(previous().type == TokenType::MUT, true)));
+        } else {
+            throw error(peek(), "Expect 'let' or 'mut' for field declaration.");
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_shared<Struct>(name, fields, methods);
+    return std::make_shared<Struct>(name, fields);
 }
 
 std::shared_ptr<Type> Parser::parseType() {

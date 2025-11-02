@@ -6,6 +6,7 @@
 #include <any>
 #include <functional>
 #include <map>
+#include <set>
 
 class CodeGen : public ExprVisitor, public StmtVisitor {
 public:
@@ -28,11 +29,13 @@ public:
     void visitVarStmt(std::shared_ptr<Var> stmt) override;
     void visitBlockStmt(std::shared_ptr<Block> stmt) override;
     void visitFuncStmt(std::shared_ptr<Func> stmt) override;
+
     void visitReturnStmt(std::shared_ptr<Return> stmt) override;
     void visitStructStmt(std::shared_ptr<Struct> stmt) override;
 
 private:
     std::string source;
+    std::set<std::string> headers;
     bool in_struct = false;
     std::map<std::string, std::function<std::string(const std::vector<std::shared_ptr<Expr>>&)>> builtins;
 

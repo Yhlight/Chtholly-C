@@ -6,14 +6,41 @@
 #include <string>
 #include <map>
 
+struct BorrowState {
+    bool is_mutable = false;
+    bool moved = false;
+    int immutable_borrows = 0;
+    bool mutable_borrow = false;
+};
+
+class Scope {
+public:
+    void declare(const std::string& name, bool is_mutable);
+    bool is_declared(const std::string& name);
+    bool is_mutable(const std::string& name);
+    bool is_moved(const std::string& name);
+    void move(const std::string& name);
+    bool is_borrowed(const std::string& name);
+    bool is_mutably_borrowed(const std::string& name);
+    void borrow(const std::string& name, bool is_mutable);
+    void unborrow(const std::string& name, bool is_mutable);
+
+private:
+    friend class SemanticAnalyzer;
+    std::map<std::string, BorrowState> var_states;
+};
+
 class SemanticAnalyzer : public StmtVisitor, public ExprVisitor {
 public:
     std::vector<std::string> analyze(const std::vector<std::shared_ptr<Stmt>>& statements);
 
 private:
     // Scope management
-    std::map<std::string, bool> moved_vars;
+    std::vector<Scope> scopes;
     std::vector<std::string> errors;
+
+    void begin_scope();
+    void end_scope();
 
     // Visitor methods
     void visitExpressionStmt(std::shared_ptr<Expression> stmt) override;

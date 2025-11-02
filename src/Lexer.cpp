@@ -115,9 +115,7 @@ void Lexer::scanToken() {
             }
             break;
         case '&':
-            if (match('&')) {
-                addToken(TokenType::AND);
-            }
+            addToken(match('&') ? TokenType::AND : TokenType::AMPERSAND);
             break;
         case '|':
             if (match('|')) {

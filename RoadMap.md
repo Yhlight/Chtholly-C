@@ -22,10 +22,7 @@
 - [x] Traverse the AST to generate C++ code
 - [x] Implement code generation for basic expressions and statements
 
-## Phase 5: Semantic Analyzer
-- [x] Implement Semantic Analyzer for Ownership
-
-## Phase 6: Advanced Features
+## Phase 5: Advanced Features
 - [x] Implement functions
 - [ ] Implement structs (declarations, instantiation, and member access)
 - [ ] Implement ownership and borrowing
