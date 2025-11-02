@@ -21,9 +21,9 @@ std::any ASTPrinter::visitLiteralExpr(const LiteralExpr& expr) {
         oss << std::get<double>(expr.value);
         return oss.str();
     } else if (std::holds_alternative<bool>(expr.value)) {
-        return std::get<bool>(expr.value) ? "true" : "false";
+        return std::get<bool>(expr.value) ? std::string("true") : std::string("false");
     }
-    return "nil";
+    return std::string("nil");
 }
 
 std::any ASTPrinter::visitUnaryExpr(const UnaryExpr& expr) {

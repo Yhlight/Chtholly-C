@@ -38,9 +38,9 @@ std::any Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
         oss << std::get<double>(expr.value);
         return oss.str();
     } else if (std::holds_alternative<bool>(expr.value)) {
-        return std::get<bool>(expr.value) ? "true" : "false";
+        return std::get<bool>(expr.value) ? std::string("true") : std::string("false");
     }
-    return "nullptr";
+    return std::string("nullptr");
 }
 
 std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {

@@ -19,7 +19,10 @@ enum class TokenType {
 
     // Keywords.
     LET, MUT, TRUE, FALSE, IF, ELSE, WHILE, FUNC, RETURN, STRUCT,
-    AND, OR, PRINT,
+    PRINT,
+
+    // Logical operators
+    AMPERSAND_AMPERSAND, PIPE_PIPE,
 
     END_OF_FILE
 };

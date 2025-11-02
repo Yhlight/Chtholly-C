@@ -14,8 +14,6 @@ std::map<std::string, TokenType> keywords = {
     {"func",   TokenType::FUNC},
     {"return", TokenType::RETURN},
     {"struct", TokenType::STRUCT},
-    {"and",    TokenType::AND},
-    {"or",     TokenType::OR},
     {"print",  TokenType::PRINT},
 };
 
@@ -80,6 +78,16 @@ void Lexer::scanToken() {
             break;
         case '>':
             addToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+            break;
+        case '&':
+            if (match('&')) {
+                addToken(TokenType::AMPERSAND_AMPERSAND);
+            }
+            break;
+        case '|':
+            if (match('|')) {
+                addToken(TokenType::PIPE_PIPE);
+            }
             break;
         case '/':
             if (match('/')) {

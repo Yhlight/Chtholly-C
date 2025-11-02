@@ -21,6 +21,42 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, LogicalAnd) {
+    std::string source = "print true && false;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "int main() {\n"
+        "    std::cout << (true && false) << std::endl;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
+TEST(TranspilerTest, LogicalOr) {
+    std::string source = "print true || false;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "int main() {\n"
+        "    std::cout << (true || false) << std::endl;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
 TEST(TranspilerTest, LetStatement) {
     std::string source = "let x = 10;";
     Lexer lexer(source);

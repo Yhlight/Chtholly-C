@@ -91,7 +91,7 @@ std::unique_ptr<Expr> Parser::expression() {
 }
 
 std::unique_ptr<Expr> Parser::assignment() {
-    auto expr = equality();
+    auto expr = logic_or();
 
     if (match({TokenType::EQUAL})) {
         Token equals = previous();
@@ -102,6 +102,30 @@ std::unique_ptr<Expr> Parser::assignment() {
         }
 
         ErrorReporter::error(equals.line, "Invalid assignment target.");
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logic_or() {
+    auto expr = logic_and();
+
+    while (match({TokenType::PIPE_PIPE})) {
+        Token op = previous();
+        auto right = logic_and();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logic_and() {
+    auto expr = equality();
+
+    while (match({TokenType::AMPERSAND_AMPERSAND})) {
+        Token op = previous();
+        auto right = equality();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
     }
 
     return expr;

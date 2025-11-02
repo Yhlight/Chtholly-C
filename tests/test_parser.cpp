@@ -126,3 +126,31 @@ TEST(ParserTest, WhileStatement) {
     ASSERT_NE(whileStmt, nullptr);
     EXPECT_NE(whileStmt->body, nullptr);
 }
+
+TEST(ParserTest, LogicalAndExpression) {
+    std::string source = "true && false;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* exprStmt = dynamic_cast<ExpressionStmt*>(stmts[0].get());
+    ASSERT_NE(exprStmt, nullptr);
+    ASTPrinter printer;
+    std::string result = printer.print(*exprStmt->expression);
+    ASSERT_EQ(result, "(&& true false)");
+}
+
+TEST(ParserTest, LogicalOrExpression) {
+    std::string source = "true || false;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* exprStmt = dynamic_cast<ExpressionStmt*>(stmts[0].get());
+    ASSERT_NE(exprStmt, nullptr);
+    ASTPrinter printer;
+    std::string result = printer.print(*exprStmt->expression);
+    ASSERT_EQ(result, "(|| true false)");
+}
