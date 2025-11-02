@@ -26,6 +26,10 @@ std::any AstPrinter::visit(const BinaryExpr& expr) {
     return parenthesize(*this, expr.op.lexeme, {*expr.left, *expr.right});
 }
 
+std::any AstPrinter::visit(const AssignExpr& expr) {
+    return parenthesize(*this, "= " + expr.name.lexeme, {*expr.value});
+}
+
 std::any AstPrinter::visit(const GroupingExpr& expr) {
     return parenthesize(*this, "group", {*expr.expression});
 }
@@ -70,6 +74,20 @@ std::any AstPrinter::visit(const BlockStmt& stmt) {
         s += " " + print(*statement);
     }
     s += ")";
+    return s;
+}
+
+std::any AstPrinter::visit(const IfStmt& stmt) {
+    std::string s = "(if " + print(*stmt.condition) + " " + print(*stmt.thenBranch);
+    if (stmt.elseBranch) {
+        s += " " + print(*stmt.elseBranch);
+    }
+    s += ")";
+    return s;
+}
+
+std::any AstPrinter::visit(const WhileStmt& stmt) {
+    std::string s = "(while " + print(*stmt.condition) + " " + print(*stmt.body) + ")";
     return s;
 }
 

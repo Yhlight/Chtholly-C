@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <iostream>
 
 namespace chtholly {
 
@@ -28,6 +29,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
+    Token keyword = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
 
     std::unique_ptr<Expr> initializer = nullptr;
@@ -36,11 +38,48 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
     }
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<VarDeclStmt>(std::move(name), std::move(initializer));
+    return std::make_unique<VarDeclStmt>(std::move(keyword), std::move(name), std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
+    if (match({TokenType::IF})) return ifStatement();
+    if (match({TokenType::WHILE})) return whileStatement();
+    if (match({TokenType::LEFT_BRACE})) return blockStatement();
     return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::blockStatement() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        statements.push_back(declaration());
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+    return std::make_unique<BlockStmt>(std::move(statements));
+}
+
+std::unique_ptr<Stmt> Parser::ifStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+    std::unique_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+
+    std::unique_ptr<Stmt> thenBranch = statement();
+    std::unique_ptr<Stmt> elseBranch = nullptr;
+    if (match({TokenType::ELSE})) {
+        elseBranch = statement();
+    }
+
+    return std::make_unique<IfStmt>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<Stmt> Parser::whileStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+    std::unique_ptr<Expr> condition = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after while condition.");
+    std::unique_ptr<Stmt> body = statement();
+
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement() {
@@ -51,7 +90,48 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
 
 
 std::unique_ptr<Expr> Parser::expression() {
-    return equality();
+    return assignment();
+}
+
+std::unique_ptr<Expr> Parser::assignment() {
+    std::unique_ptr<Expr> expr = logicalOr();
+
+    if (match({TokenType::EQUAL})) {
+        Token equals = previous();
+        std::unique_ptr<Expr> value = assignment();
+
+        if (auto* varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
+            return std::make_unique<AssignExpr>(varExpr->name, std::move(value));
+        }
+
+        error(equals, "Invalid assignment target.");
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicalOr() {
+    std::unique_ptr<Expr> expr = logicalAnd();
+
+    while (match({TokenType::OR})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = logicalAnd();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicalAnd() {
+    std::unique_ptr<Expr> expr = equality();
+
+    while (match({TokenType::AND})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = equality();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expr> Parser::equality() {
@@ -178,6 +258,7 @@ Token Parser::consume(TokenType type, const std::string& message) {
 ParseError Parser::error(const Token& token, const std::string& message) const {
     // In a real compiler, we would report the error to the user.
     // For now, we'll just throw an exception.
+    std::cerr << "ParseError at token " << token.toString() << ": " << message << std::endl;
     return ParseError(message);
 }
 

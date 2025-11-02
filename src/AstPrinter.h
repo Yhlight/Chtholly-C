@@ -11,6 +11,7 @@ public:
     std::string print(const Stmt& stmt);
     std::string print(const Expr& expr);
 
+    std::any visit(const AssignExpr& expr) override;
     std::any visit(const BinaryExpr& expr) override;
     std::any visit(const GroupingExpr& expr) override;
     std::any visit(const LiteralExpr& expr) override;
@@ -20,6 +21,8 @@ public:
     std::any visit(const ExpressionStmt& stmt) override;
     std::any visit(const VarDeclStmt& stmt) override;
     std::any visit(const BlockStmt& stmt) override;
+    std::any visit(const IfStmt& stmt) override;
+    std::any visit(const WhileStmt& stmt) override;
 };
 
 } // namespace chtholly

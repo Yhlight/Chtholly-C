@@ -34,7 +34,7 @@ std::any Sema::visit(const VarDeclStmt& stmt) {
     auto symbol = std::make_shared<Symbol>();
     symbol->name = stmt.name.lexeme;
     symbol->type = type;
-    symbol->isMutable = false;
+    symbol->isMutable = stmt.keyword.type == TokenType::MUT;
 
     if (!symbolTable.define(symbol->name, symbol)) {
         std::cerr << "Error: Variable '" << stmt.name.lexeme << "' already defined in this scope." << std::endl;
@@ -55,17 +55,74 @@ std::any Sema::visit(const BlockStmt& stmt) {
 std::any Sema::visit(const BinaryExpr& expr) {
     auto leftType = std::any_cast<std::shared_ptr<Type>>(expr.left->accept(*this));
     auto rightType = std::any_cast<std::shared_ptr<Type>>(expr.right->accept(*this));
+    std::shared_ptr<Type> resultType;
 
-    // Numbers are parsed as doubles for now.
-    if (dynamic_cast<DoubleType*>(leftType.get()) && dynamic_cast<DoubleType*>(rightType.get())) {
-        std::shared_ptr<Type> resultType = std::make_shared<DoubleType>();
-        return resultType;
+    switch (expr.op.type) {
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+        case TokenType::STAR:
+        case TokenType::SLASH:
+            if (dynamic_cast<DoubleType*>(leftType.get()) && dynamic_cast<DoubleType*>(rightType.get())) {
+                resultType = std::make_shared<DoubleType>();
+                return resultType;
+            }
+            break;
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+            if (dynamic_cast<DoubleType*>(leftType.get()) && dynamic_cast<DoubleType*>(rightType.get())) {
+                resultType = std::make_shared<BoolType>();
+                return resultType;
+            }
+            break;
+        case TokenType::EQUAL_EQUAL:
+        case TokenType::BANG_EQUAL:
+            if (dynamic_cast<DoubleType*>(leftType.get()) && dynamic_cast<DoubleType*>(rightType.get())) {
+                resultType = std::make_shared<BoolType>();
+                return resultType;
+            }
+            if (dynamic_cast<BoolType*>(leftType.get()) && dynamic_cast<BoolType*>(rightType.get())) {
+                resultType = std::make_shared<BoolType>();
+                return resultType;
+            }
+            break;
+        case TokenType::AND:
+        case TokenType::OR:
+            if (dynamic_cast<BoolType*>(leftType.get()) && dynamic_cast<BoolType*>(rightType.get())) {
+                resultType = std::make_shared<BoolType>();
+                return resultType;
+            }
+            break;
+        default:
+            break;
     }
 
     std::cerr << "Error: Invalid operands for binary expression." << std::endl;
     m_hadError = true;
-    std::shared_ptr<Type> resultType = std::make_shared<VoidType>();
+    resultType = std::make_shared<VoidType>();
     return resultType;
+}
+
+std::any Sema::visit(const AssignExpr& expr) {
+    auto valueType = std::any_cast<std::shared_ptr<Type>>(expr.value->accept(*this));
+
+    if (auto symbol = symbolTable.lookup(expr.name.lexeme)) {
+        if (!symbol->isMutable) {
+            std::cerr << "Error: Cannot assign to immutable variable '" << expr.name.lexeme << "'." << std::endl;
+            m_hadError = true;
+        }
+
+        if (symbol->type->toString() != valueType->toString()) {
+            std::cerr << "Error: Type mismatch in assignment to variable '" << expr.name.lexeme << "'." << std::endl;
+            m_hadError = true;
+        }
+    } else {
+        std::cerr << "Error: Undefined variable '" << expr.name.lexeme << "'." << std::endl;
+        m_hadError = true;
+    }
+
+    return valueType;
 }
 
 std::any Sema::visit(const GroupingExpr& expr) {
@@ -99,6 +156,34 @@ std::any Sema::visit(const VariableExpr& expr) {
     m_hadError = true;
     std::shared_ptr<Type> type = std::make_shared<VoidType>();
     return type;
+}
+
+std::any Sema::visit(const IfStmt& stmt) {
+    auto conditionType = std::any_cast<std::shared_ptr<Type>>(stmt.condition->accept(*this));
+
+    if (!dynamic_cast<BoolType*>(conditionType.get())) {
+        std::cerr << "Error: If condition must be of type bool." << std::endl;
+        m_hadError = true;
+    }
+
+    stmt.thenBranch->accept(*this);
+    if (stmt.elseBranch) {
+        stmt.elseBranch->accept(*this);
+    }
+
+    return {};
+}
+
+std::any Sema::visit(const WhileStmt& stmt) {
+    auto conditionType = std::any_cast<std::shared_ptr<Type>>(stmt.condition->accept(*this));
+
+    if (!dynamic_cast<BoolType*>(conditionType.get())) {
+        std::cerr << "Error: While condition must be of type bool." << std::endl;
+        m_hadError = true;
+    }
+
+    stmt.body->accept(*this);
+    return {};
 }
 
 } // namespace chtholly

@@ -12,9 +12,12 @@ public:
     void analyze(const std::vector<std::unique_ptr<Stmt>>& statements);
     bool hadError() const;
 
+    std::any visit(const AssignExpr& expr) override;
     std::any visit(const ExpressionStmt& stmt) override;
     std::any visit(const VarDeclStmt& stmt) override;
     std::any visit(const BlockStmt& stmt) override;
+    std::any visit(const IfStmt& stmt) override;
+    std::any visit(const WhileStmt& stmt) override;
 
     std::any visit(const BinaryExpr& expr) override;
     std::any visit(const GroupingExpr& expr) override;
