@@ -111,12 +111,13 @@ struct WhileStmt : Stmt {
 
 struct FunctionStmt : Stmt {
     Token name;
+    std::vector<Token> generics;
     std::vector<std::pair<Token, TypeInfo>> params;
     std::vector<std::unique_ptr<Stmt>> body;
     std::optional<TypeInfo> returnType;
 
-    FunctionStmt(Token name, std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType)
-        : name(name), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+    FunctionStmt(Token name, std::vector<Token> generics, std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType)
+        : name(name), generics(std::move(generics)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitFunctionStmt(*this);

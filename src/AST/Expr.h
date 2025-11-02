@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Token.h"
+#include "../TypeInfo.h"
 #include <any>
 #include <memory>
 #include <vector>
@@ -110,9 +111,10 @@ struct CallExpr : Expr {
     std::unique_ptr<Expr> callee;
     Token paren;
     std::vector<std::unique_ptr<Expr>> arguments;
+    std::vector<TypeInfo> generic_args;
 
-    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
-        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)) {}
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments, std::vector<TypeInfo> generic_args)
+        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)), generic_args(std::move(generic_args)) {}
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitCallExpr(*this);

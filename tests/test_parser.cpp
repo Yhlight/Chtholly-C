@@ -270,3 +270,24 @@ TEST(ParserTest, FunctionDeclarationWithReferenceTypes) {
     EXPECT_TRUE(funcStmt->returnType->isReference);
     EXPECT_FALSE(funcStmt->returnType->isMutable);
 }
+
+TEST(ParserTest, GenericFunctionDeclaration) {
+    std::string source = "func foo<T, U>(a: T, b: U) {}";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* funcStmt = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(funcStmt, nullptr);
+
+    ASSERT_EQ(funcStmt->generics.size(), 2);
+    EXPECT_EQ(funcStmt->generics[0].lexeme, "T");
+    EXPECT_EQ(funcStmt->generics[1].lexeme, "U");
+
+    ASSERT_EQ(funcStmt->params.size(), 2);
+    EXPECT_EQ(funcStmt->params[0].first.lexeme, "a");
+    EXPECT_EQ(funcStmt->params[0].second.baseType.lexeme, "T");
+    EXPECT_EQ(funcStmt->params[1].first.lexeme, "b");
+    EXPECT_EQ(funcStmt->params[1].second.baseType.lexeme, "U");
+}

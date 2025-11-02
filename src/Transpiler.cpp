@@ -167,6 +167,16 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     std::string callee = evaluate(*expr.callee);
+    if (!expr.generic_args.empty()) {
+        callee += "<";
+        for (size_t i = 0; i < expr.generic_args.size(); ++i) {
+            callee += to_cpp_type(expr.generic_args[i]);
+            if (i < expr.generic_args.size() - 1) {
+                callee += ", ";
+            }
+        }
+        callee += ">";
+    }
     std::string args;
     for (size_t i = 0; i < expr.arguments.size(); ++i) {
         args += evaluate(*expr.arguments[i]);
@@ -178,6 +188,16 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    if (!stmt.generics.empty()) {
+        out << "template<";
+        for (size_t i = 0; i < stmt.generics.size(); ++i) {
+            out << "typename " << stmt.generics[i].lexeme;
+            if (i < stmt.generics.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ">\n";
+    }
     if (stmt.returnType) {
         out << to_cpp_type(*stmt.returnType);
     } else {

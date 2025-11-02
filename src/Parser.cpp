@@ -40,6 +40,13 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
 
 std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    std::vector<Token> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<std::pair<Token, TypeInfo>> parameters;
     if (peek().type != TokenType::RIGHT_PAREN) {
@@ -62,7 +69,7 @@ std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
 
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     auto body = block();
-    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body), returnType);
+    return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), returnType);
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
@@ -261,10 +268,19 @@ std::unique_ptr<Expr> Parser::call() {
 
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
-            expr = finishCall(std::move(expr));
+            expr = finishCall(std::move(expr), {});
         } else if (match({TokenType::DOT})) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
             expr = std::make_unique<GetExpr>(std::move(expr), name);
+        } else if (peek().type == TokenType::LESS && LA_is_generic_call()) {
+            consume(TokenType::LESS, "Expect '<' for generic arguments.");
+            std::vector<TypeInfo> generic_args;
+            do {
+                generic_args.push_back(parseType());
+            } while (match({TokenType::COMMA}));
+            consume(TokenType::GREATER, "Expect '>' after generic arguments.");
+            consume(TokenType::LEFT_PAREN, "Expect '(' after generic arguments.");
+            expr = finishCall(std::move(expr), std::move(generic_args));
         } else {
             break;
         }
@@ -273,7 +289,7 @@ std::unique_ptr<Expr> Parser::call() {
     return expr;
 }
 
-std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
+std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args) {
     std::vector<std::unique_ptr<Expr>> arguments;
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
@@ -286,7 +302,7 @@ std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
 
     Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
 
-    return std::make_unique<CallExpr>(std::move(callee), paren, std::move(arguments));
+    return std::make_unique<CallExpr>(std::move(callee), paren, std::move(arguments), std::move(generic_args));
 }
 
 std::unique_ptr<Expr> Parser::primary() {
@@ -324,6 +340,27 @@ TypeInfo Parser::parseType() {
     }
     type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
     return type;
+}
+
+bool Parser::LA_is_generic_call() {
+    int saved = current;
+    try {
+        if (!match({TokenType::LESS})) {
+            current = saved;
+            return false;
+        }
+        do {
+            parseType();
+        } while (match({TokenType::COMMA}));
+        if (match({TokenType::GREATER})) {
+            current = saved;
+            return true;
+        }
+    } catch (ParseError& error) {
+        // fall through
+    }
+    current = saved;
+    return false;
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

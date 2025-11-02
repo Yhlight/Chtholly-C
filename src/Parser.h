@@ -42,9 +42,10 @@ private:
     std::unique_ptr<Expr> unary();
     std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
-    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee);
+    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
 
     TypeInfo parseType();
+    bool LA_is_generic_call();
     bool match(const std::vector<TokenType>& types);
     Token advance();
     bool isAtEnd();

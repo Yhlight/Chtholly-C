@@ -181,6 +181,10 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
     currentFunction = type;
 
     beginScope();
+    for (const auto& generic : function.generics) {
+        declare(generic);
+        define(generic);
+    }
     for (const auto& param : function.params) {
         declare(param.first);
         define(param.first);

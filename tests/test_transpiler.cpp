@@ -21,6 +21,28 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, GenericFunction) {
+    std::string source = "func foo<T>(a: T) -> T { return a; } print foo<int>(1);";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "template<typename T>\n"
+        "T foo(T a) {\n"
+        "    return a;\n"
+        "}\n\n"
+        "int main() {\n"
+        "    std::cout << foo<int>(1) << std::endl;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
 TEST(TranspilerTest, LetStatementWithReference) {
     std::string source = "let x: &int = &y;";
     Lexer lexer(source);
