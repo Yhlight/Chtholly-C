@@ -82,6 +82,34 @@ std::any ASTPrinter::visitWhileStmt(const WhileStmt& stmt) {
     return builder.str();
 }
 
+std::any ASTPrinter::visitSwitchStmt(const SwitchStmt& stmt) {
+    std::stringstream builder;
+    builder << "(switch " << print(*stmt.expression);
+    for (const auto& caseStmt : stmt.cases) {
+        builder << " " << print(*caseStmt);
+    }
+    builder << ")";
+    return builder.str();
+}
+
+std::any ASTPrinter::visitCaseStmt(const CaseStmt& stmt) {
+    std::stringstream builder;
+    if (stmt.condition) {
+        builder << "(case " << print(*stmt.condition) << " " << print(*stmt.body) << ")";
+    } else {
+        builder << "(default " << print(*stmt.body) << ")";
+    }
+    return builder.str();
+}
+
+std::any ASTPrinter::visitBreakStmt(const BreakStmt& stmt) {
+    return std::string("break");
+}
+
+std::any ASTPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    return std::string("fallthrough");
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

@@ -4,6 +4,7 @@ add_executable(chtholly_tests
     ASTPrinterTests.cpp
     ParserTests.cpp
     TranspilerTests.cpp
+        SwitchTests.cpp
     ResolverTests.cpp
 )
 
@@ -14,4 +15,4 @@ target_link_libraries(chtholly_tests
 )
 
 include(GoogleTest)
-gtest_discover_tests(chtholly_tests)
+add_test(NAME chtholly_tests COMMAND chtholly_tests)

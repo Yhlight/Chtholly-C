@@ -134,3 +134,39 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
     while_out << "while (" << transpile(*stmt.condition) << ") " << transpile(*stmt.body);
     return while_out.str();
 }
+
+std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
+    std::stringstream switch_out;
+    switch_out << "switch (" << transpile(*stmt.expression) << ") {\n";
+    indent();
+    for (const auto& caseStmt : stmt.cases) {
+        write_indent();
+        switch_out << transpile(*caseStmt);
+    }
+    dedent();
+    write_indent();
+    switch_out << "}";
+    return switch_out.str();
+}
+
+std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
+    std::stringstream case_out;
+    if (stmt.condition) {
+        case_out << "case " << transpile(*stmt.condition) << ":\n";
+    } else {
+        case_out << "default:\n";
+    }
+    indent();
+    write_indent();
+    case_out << transpile(*stmt.body) << "\n";
+    dedent();
+    return case_out.str();
+}
+
+std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
+    return std::string("break;");
+}
+
+std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    return std::string("[[fallthrough]];");
+}

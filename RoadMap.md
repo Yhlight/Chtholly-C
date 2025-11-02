@@ -37,7 +37,7 @@ This document outlines the planned development stages for the Chtholly programmi
 - [x] Implement `if`/`else` statements.
 - [x] Implement `Block` statements (`{ ... }`) and corresponding scope handling in the `Resolver`.
 - [x] Implement `while` loops.
-- [ ] Implement `switch` statements with `case` and `fallthrough`.
+- [x] Implement `switch` statements with `case` and `fallthrough`.
 
 ## Phase 4: Functions
 

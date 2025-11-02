@@ -115,6 +115,39 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     return {};
 }
 
+std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
+    resolve(*stmt.expression);
+    bool previousInSwitch = inSwitch;
+    inSwitch = true;
+    for (const auto& caseStmt : stmt.cases) {
+        resolve(*caseStmt);
+    }
+    inSwitch = previousInSwitch;
+    return {};
+}
+
+std::any Resolver::visitCaseStmt(const CaseStmt& stmt) {
+    if (stmt.condition) {
+        resolve(*stmt.condition);
+    }
+    resolve(*stmt.body);
+    return {};
+}
+
+std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
+    if (!inSwitch) {
+        ErrorReporter::error(stmt.keyword.line, "Cannot use 'break' outside of a switch statement.");
+    }
+    return {};
+}
+
+std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    if (!inSwitch) {
+        ErrorReporter::error(stmt.keyword.line, "Cannot use 'fallthrough' outside of a switch statement.");
+    }
+    return {};
+}
+
 std::any Resolver::visitPrintStmt(const PrintStmt& stmt) {
     resolve(*stmt.expression);
     return {};

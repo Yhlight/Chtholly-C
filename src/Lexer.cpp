@@ -33,7 +33,9 @@ static std::map<std::string, TokenType> keywords = {
     {"switch", TokenType::SWITCH},
     {"case",   TokenType::CASE},
     {"fallthrough", TokenType::FALLTHROUGH},
-    {"none",   TokenType::NONE}
+    {"none",   TokenType::NONE},
+    {"break",  TokenType::BREAK},
+    {"default", TokenType::DEFAULT}
 };
 
 

@@ -26,6 +26,10 @@ public:
     std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitWhileStmt(const WhileStmt& stmt) override;
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override;
+    std::any visitCaseStmt(const CaseStmt& stmt) override;
+    std::any visitBreakStmt(const BreakStmt& stmt) override;
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 
 private:
     std::string transpile(const Expr& expr);

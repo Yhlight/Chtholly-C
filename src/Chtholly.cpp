@@ -1,6 +1,7 @@
 #include "Chtholly.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "Resolver.h"
 #include "Transpiler.h"
 #include "Error.h"
 #include <iostream>
@@ -39,6 +40,11 @@ void Chtholly::run(const std::string& source) {
 
     Parser parser(tokens);
     std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    if(ErrorReporter::hadError) return;
+
+    Resolver resolver;
+    resolver.resolve(statements);
 
     if(ErrorReporter::hadError) return;
 

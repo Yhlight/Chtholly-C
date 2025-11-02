@@ -12,6 +12,10 @@ struct IfStmt;
 struct PrintStmt;
 struct LetStmt;
 struct WhileStmt;
+struct SwitchStmt;
+struct CaseStmt;
+struct BreakStmt;
+struct FallthroughStmt;
 
 // Visitor interface
 struct StmtVisitor {
@@ -21,6 +25,10 @@ struct StmtVisitor {
     virtual std::any visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
     virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
+    virtual std::any visitSwitchStmt(const SwitchStmt& stmt) = 0;
+    virtual std::any visitCaseStmt(const CaseStmt& stmt) = 0;
+    virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
+    virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -98,5 +106,47 @@ struct WhileStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitWhileStmt(*this);
+    }
+};
+
+struct CaseStmt : Stmt {
+	std::unique_ptr<Expr> condition;
+	std::unique_ptr<Stmt> body;
+
+	CaseStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+		: condition(std::move(condition)), body(std::move(body)) {}
+
+	std::any accept(StmtVisitor& visitor) const override {
+		return visitor.visitCaseStmt(*this);
+	}
+};
+
+struct SwitchStmt : Stmt {
+    std::unique_ptr<Expr> expression;
+    std::vector<std::unique_ptr<CaseStmt>> cases;
+
+    SwitchStmt(std::unique_ptr<Expr> expression, std::vector<std::unique_ptr<CaseStmt>> cases)
+        : expression(std::move(expression)), cases(std::move(cases)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitSwitchStmt(*this);
+    }
+};
+
+struct BreakStmt : Stmt {
+    Token keyword;
+    BreakStmt(Token keyword) : keyword(std::move(keyword)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitBreakStmt(*this);
+    }
+};
+
+struct FallthroughStmt : Stmt {
+    Token keyword;
+    FallthroughStmt(Token keyword) : keyword(std::move(keyword)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitFallthroughStmt(*this);
     }
 };

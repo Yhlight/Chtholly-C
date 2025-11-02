@@ -196,7 +196,18 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::IF})) return ifStatement();
     if (match({TokenType::PRINT})) return printStatement();
     if (match({TokenType::WHILE})) return whileStatement();
+    if (match({TokenType::SWITCH})) return switchStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
+    if (match({TokenType::BREAK})) {
+        Token keyword = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+        return std::make_unique<BreakStmt>(std::move(keyword));
+    }
+    if (match({TokenType::FALLTHROUGH})) {
+        Token keyword = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after 'fallthrough'.");
+        return std::make_unique<FallthroughStmt>(std::move(keyword));
+    }
     return expressionStatement();
 }
 
@@ -221,6 +232,34 @@ std::unique_ptr<Stmt> Parser::whileStatement() {
     auto body = statement();
 
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Stmt> Parser::switchStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
+    auto value = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after switch value.");
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before switch cases.");
+
+    std::vector<std::unique_ptr<CaseStmt>> cases;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match({TokenType::CASE})) {
+            auto condition = expression();
+            consume(TokenType::COLON, "Expect ':' after case value.");
+            auto body = statement();
+            cases.push_back(std::make_unique<CaseStmt>(std::move(condition), std::move(body)));
+        } else if (match({TokenType::DEFAULT})) {
+            consume(TokenType::COLON, "Expect ':' after 'default'.");
+            auto body = statement();
+            cases.push_back(std::make_unique<CaseStmt>(nullptr, std::move(body)));
+        } else {
+            error(peek(), "Expect 'case' or 'default'.");
+        }
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after switch cases.");
+
+    return std::make_unique<SwitchStmt>(std::move(value), std::move(cases));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
