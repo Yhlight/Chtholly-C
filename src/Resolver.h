@@ -16,6 +16,7 @@ public:
     std::any visitUnaryExpr(const UnaryExpr& expr) override;
     std::any visitVariableExpr(const VariableExpr& expr) override;
     std::any visitAssignExpr(const AssignExpr& expr) override;
+    std::any visitCallExpr(const CallExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitPrintStmt(const PrintStmt& stmt) override;
@@ -23,10 +24,18 @@ public:
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitIfStmt(const IfStmt& stmt) override;
     std::any visitWhileStmt(const WhileStmt& stmt) override;
+    std::any visitFunctionStmt(const FunctionStmt& stmt) override;
+    std::any visitReturnStmt(const ReturnStmt& stmt) override;
 
 private:
+    enum class FunctionType {
+        NONE,
+        FUNCTION
+    };
+
     void resolve(const Stmt& stmt);
     void resolve(const Expr& expr);
+    void resolveFunction(const FunctionStmt& function, FunctionType type);
 
     void beginScope();
     void endScope();
@@ -36,4 +45,5 @@ private:
     void resolveLocal(const Expr& expr, const Token& name);
 
     std::vector<std::map<std::string, bool>> scopes;
+    FunctionType currentFunction = FunctionType::NONE;
 };

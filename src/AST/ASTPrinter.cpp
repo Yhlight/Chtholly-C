@@ -38,6 +38,10 @@ std::any ASTPrinter::visitAssignExpr(const AssignExpr& expr) {
     return parenthesize("= " + expr.name.lexeme, {expr.value.get()});
 }
 
+std::any ASTPrinter::visitCallExpr(const CallExpr& expr) {
+    return parenthesize("call", {expr.callee.get()});
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

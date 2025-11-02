@@ -93,6 +93,49 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     return {};
 }
 
+std::any Resolver::visitCallExpr(const CallExpr& expr) {
+    resolve(*expr.callee);
+
+    for (const auto& argument : expr.arguments) {
+        resolve(*argument);
+    }
+
+    return {};
+}
+
+void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) {
+    FunctionType enclosingFunction = currentFunction;
+    currentFunction = type;
+
+    beginScope();
+    for (const Token& param : function.params) {
+        declare(param);
+        define(param);
+    }
+    resolve(function.body);
+    endScope();
+    currentFunction = enclosingFunction;
+}
+
+std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+    resolveFunction(stmt, FunctionType::FUNCTION);
+    return {};
+}
+
+std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
+    if (currentFunction == FunctionType::NONE) {
+        ErrorReporter::error(stmt.keyword.line, "Can't return from top-level code.");
+    }
+
+    if (stmt.value) {
+        resolve(*stmt.value);
+    }
+
+    return {};
+}
+
 std::any Resolver::visitIfStmt(const IfStmt& stmt) {
     resolve(*stmt.condition);
     resolve(*stmt.thenBranch);

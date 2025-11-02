@@ -169,3 +169,45 @@ TEST(ParserTest, LogicalOrExpression) {
     std::string result = printer.print(*exprStmt->expression);
     ASSERT_EQ(result, "(|| true false)");
 }
+
+TEST(ParserTest, FunctionDeclaration) {
+    std::string source = "func add(a, b) { return a + b; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* funcStmt = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(funcStmt, nullptr);
+    EXPECT_EQ(funcStmt->name.lexeme, "add");
+    ASSERT_EQ(funcStmt->params.size(), 2);
+    EXPECT_EQ(funcStmt->params[0].lexeme, "a");
+    EXPECT_EQ(funcStmt->params[1].lexeme, "b");
+}
+
+TEST(ParserTest, ReturnStatement) {
+    std::string source = "func add(a, b) { return a + b; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* funcStmt = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(funcStmt, nullptr);
+    ASSERT_EQ(funcStmt->body.size(), 1);
+    auto* returnStmt = dynamic_cast<ReturnStmt*>(funcStmt->body[0].get());
+    ASSERT_NE(returnStmt, nullptr);
+}
+
+TEST(ParserTest, CallExpression) {
+    std::string source = "add(1, 2);";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* exprStmt = dynamic_cast<ExpressionStmt*>(stmts[0].get());
+    ASSERT_NE(exprStmt, nullptr);
+    auto* callExpr = dynamic_cast<CallExpr*>(exprStmt->expression.get());
+    ASSERT_NE(callExpr, nullptr);
+}

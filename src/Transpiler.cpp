@@ -5,9 +5,18 @@
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     out << "#include <iostream>\n";
     out << "#include <variant>\n\n";
+
+    for (const auto& statement : statements) {
+        if (dynamic_cast<FunctionStmt*>(statement.get())) {
+            execute(*statement);
+        }
+    }
+
     out << "int main() {\n";
     for (const auto& statement : statements) {
-        execute(*statement);
+        if (!dynamic_cast<FunctionStmt*>(statement.get())) {
+            execute(*statement);
+        }
     }
     out << "    return 0;\n";
     out << "}\n";
@@ -109,5 +118,42 @@ std::any Transpiler::visitIfStmt(const IfStmt& stmt) {
 std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
     out << "    while (" << evaluate(*stmt.condition) << ") ";
     execute(*stmt.body);
+    return {};
+}
+
+std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    std::string callee = evaluate(*expr.callee);
+    std::string args;
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        args += evaluate(*expr.arguments[i]);
+        if (i < expr.arguments.size() - 1) {
+            args += ", ";
+        }
+    }
+    return callee + "(" + args + ")";
+}
+
+std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    out << "auto " << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out << "auto " << stmt.params[i].lexeme;
+        if (i < stmt.params.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << ") {\n";
+    for (const auto& statement : stmt.body) {
+        execute(*statement);
+    }
+    out << "}\n\n";
+    return {};
+}
+
+std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
+    out << "    return";
+    if (stmt.value) {
+        out << " " << evaluate(*stmt.value);
+    }
+    out << ";\n";
     return {};
 }

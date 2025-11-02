@@ -21,6 +21,27 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, Function) {
+    std::string source = "func add(a, b) { return a + b; } print add(1, 2);";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "auto add(auto a, auto b) {\n"
+        "    return (a + b);\n"
+        "}\n\n"
+        "int main() {\n"
+        "    std::cout << add(1, 2) << std::endl;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
 TEST(TranspilerTest, LetStatementWithType) {
     std::string source = "let x: int = 10;";
     Lexer lexer(source);

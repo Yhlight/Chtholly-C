@@ -12,6 +12,7 @@ public:
     std::any visitUnaryExpr(const UnaryExpr& expr) override;
     std::any visitVariableExpr(const VariableExpr& expr) override;
     std::any visitAssignExpr(const AssignExpr& expr) override;
+    std::any visitCallExpr(const CallExpr& expr) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
