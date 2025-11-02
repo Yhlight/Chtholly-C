@@ -42,6 +42,29 @@ void CodeGen::execute(const std::shared_ptr<Stmt>& stmt) {
     stmt->accept(*this);
 }
 
+std::string CodeGen::typeToString(const std::shared_ptr<Type>& type) {
+    if (!type) {
+        return "auto";
+    }
+
+    std::string type_str;
+    if (type->kind == TypeKind::PRIMITIVE) {
+        type_str = std::dynamic_pointer_cast<PrimitiveType>(type)->name;
+    } else if (type->kind == TypeKind::ARRAY) {
+        type_str = "std::vector<" + typeToString(std::dynamic_pointer_cast<ArrayType>(type)->element_type) + ">";
+    } else {
+        type_str = "auto";
+    }
+
+    if (type->is_mut_ref) {
+        type_str += "&";
+    } else if (type->is_ref) {
+        type_str = "const " + type_str + "&";
+    }
+
+    return type_str;
+}
+
 // Expression visitors
 std::any CodeGen::visitBinaryExpr(std::shared_ptr<Binary> expr) {
     return evaluate(expr->left) + " " + expr->op.lexeme + " " + evaluate(expr->right);
@@ -123,13 +146,7 @@ void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
 }
 
 void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
-    std::string type = "auto";
-    if (stmt->type) {
-        if (stmt->type->kind == TypeKind::PRIMITIVE) {
-            type = std::dynamic_pointer_cast<PrimitiveType>(stmt->type)->name;
-        }
-    }
-
+    std::string type = typeToString(stmt->type);
     source += stmt->isMutable ? type + " " : "const " + type + " ";
     source += stmt->name.lexeme;
     if (stmt->initializer) {
@@ -168,7 +185,7 @@ void CodeGen::visitFuncStmt(std::shared_ptr<Func> stmt) {
     }
     source += "](";
     for (const auto& param : stmt->params) {
-        source += "auto " + param.lexeme + ", ";
+        source += typeToString(param.type) + " " + param.name.lexeme + ", ";
     }
     if (!stmt->params.empty()) {
         source.pop_back();

@@ -81,7 +81,7 @@ void AstPrinter::visitStructStmt(std::shared_ptr<Struct> stmt) {
 void AstPrinter::visitFuncStmt(std::shared_ptr<Func> stmt) {
     std::string out = "(func " + stmt->name.lexeme + " (";
     for (const auto& param : stmt->params) {
-        out += param.lexeme + " ";
+        out += param.name.lexeme + " ";
     }
     out += ") ";
     for (const auto& statement : stmt->body) {

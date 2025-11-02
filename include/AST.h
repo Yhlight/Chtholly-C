@@ -191,13 +191,18 @@ struct Block : Stmt, public std::enable_shared_from_this<Block> {
     }
 };
 
+struct Param {
+    Token name;
+    std::shared_ptr<Type> type;
+};
+
 struct Func : Stmt, public std::enable_shared_from_this<Func> {
     const Token name;
-    const std::vector<Token> params;
+    const std::vector<Param> params;
     const std::vector<std::shared_ptr<Stmt>> body;
     const bool is_public;
 
-    Func(Token name, std::vector<Token> params, std::vector<std::shared_ptr<Stmt>> body, bool is_public)
+    Func(Token name, std::vector<Param> params, std::vector<std::shared_ptr<Stmt>> body, bool is_public)
         : name(std::move(name)), params(std::move(params)), body(std::move(body)), is_public(is_public) {}
 
     void accept(StmtVisitor& visitor) override {

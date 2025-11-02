@@ -26,6 +26,11 @@ std::shared_ptr<Stmt> Parser::declaration() {
 
 std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool is_public, bool in_struct) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+    std::shared_ptr<Type> type = nullptr;
+    if (match({TokenType::COLON})) {
+        type = parseType();
+    }
+
     std::shared_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
@@ -36,9 +41,17 @@ std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool is_public, boo
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
     auto var = std::make_shared<Var>(name, initializer, isMutable, is_public);
-    if (initializer) {
+    if (type) {
+        var->type = type;
+    }
+    else if (initializer) {
         var->type = initializer->type;
     }
+
+    if (var->type) {
+        var_types[name.lexeme] = var->type;
+    }
+
     return var;
 }
 
@@ -181,7 +194,11 @@ std::shared_ptr<Expr> Parser::primary() {
             consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
             return std::make_shared<Instantiation>(name, fields, values);
         }
-        return std::make_shared<Variable>(previous());
+        auto var = std::make_shared<Variable>(previous());
+        if (var_types.count(var->name.lexeme)) {
+            var->type = var_types[var->name.lexeme];
+        }
+        return var;
     }
 
     if (match({TokenType::LEFT_PAREN})) {
@@ -225,13 +242,16 @@ std::shared_ptr<Expr> Parser::finishCall(std::shared_ptr<Expr> callee) {
 std::shared_ptr<Stmt> Parser::function(const std::string& kind, bool is_public) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
-    std::vector<Token> parameters;
+    std::vector<Param> parameters;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
             if (parameters.size() >= 255) {
                 error(peek(), "Can't have more than 255 parameters.");
             }
-            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            Token param_name = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            std::shared_ptr<Type> param_type = parseType();
+            parameters.push_back({param_name, param_type});
         } while (match({TokenType::COMMA}));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
@@ -279,6 +299,37 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
     return std::make_shared<Struct>(name, fields, methods);
+}
+
+std::shared_ptr<Type> Parser::parseType() {
+    bool is_ref = false;
+    bool is_mut_ref = false;
+
+    if (match(std::vector<TokenType>{TokenType::AND})) {
+        is_ref = true;
+        if (match(std::vector<TokenType>{TokenType::MUT})) {
+            is_mut_ref = true;
+        }
+    }
+
+    std::shared_ptr<Type> type;
+    if (match({TokenType::IDENTIFIER})) {
+        Token type_name = previous();
+        if (type_name.lexeme == "array") {
+            consume(TokenType::LEFT_BRACKET, "Expect '[' after 'array'.");
+            std::shared_ptr<Type> element_type = parseType();
+            consume(TokenType::RIGHT_BRACKET, "Expect ']' after array element type.");
+            type = std::make_shared<ArrayType>(element_type);
+        } else {
+            type = std::make_shared<PrimitiveType>(type_name.lexeme);
+        }
+    } else {
+        throw error(peek(), "Expect type name.");
+    }
+
+    type->is_ref = is_ref;
+    type->is_mut_ref = is_mut_ref;
+    return type;
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

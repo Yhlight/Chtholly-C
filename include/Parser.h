@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <stdexcept>
+#include <map>
 
 class Parser {
 public:
@@ -15,6 +16,7 @@ public:
 private:
     std::vector<Token> tokens;
     int current = 0;
+    std::map<std::string, std::shared_ptr<Type>> var_types;
 
     std::shared_ptr<Stmt> declaration();
     std::shared_ptr<Stmt> structDeclaration();
@@ -35,6 +37,8 @@ private:
     std::shared_ptr<Expr> call();
     std::shared_ptr<Expr> primary();
     std::shared_ptr<Expr> finishCall(std::shared_ptr<Expr> callee);
+
+    std::shared_ptr<Type> parseType();
 
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);

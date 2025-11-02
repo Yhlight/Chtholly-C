@@ -4,7 +4,6 @@
 #include "AST.h"
 #include <string>
 #include <any>
-
 #include <functional>
 #include <map>
 
@@ -39,6 +38,7 @@ private:
 
     std::string evaluate(const std::shared_ptr<Expr>& expr);
     void execute(const std::shared_ptr<Stmt>& stmt);
+    std::string typeToString(const std::shared_ptr<Type>& type);
 };
 
 #endif //CHTHOLLY_CODEGEN_H
