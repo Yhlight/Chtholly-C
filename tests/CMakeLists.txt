@@ -10,6 +10,7 @@ enable_testing()
 add_executable(chtholly_tests
     LexerTest.cpp
     ParserTest.cpp
+    SemaTest.cpp
 )
 target_link_libraries(chtholly_tests GTest::gtest_main chtholly_lib)
 include(GoogleTest)

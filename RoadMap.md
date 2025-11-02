@@ -24,11 +24,11 @@ This document outlines the development plan for the Chtholly programming languag
 
 ## Phase 4: Semantic Analysis
 
-*   [ ] Implement the Symbol Table in `src_SymbolTable.h` and `src_SymbolTable.cpp`.
-*   [ ] Implement the Semantic Analyzer (`Sema`) in `src_Sema.h` and `src_Sema.cpp`.
-*   [ ] Add type checking for variable declarations and expressions.
-*   [ ] Implement scope resolution.
-*   [ ] Write tests for semantic validation (type errors, scope errors, etc.).
+*   [x] Implement the Symbol Table in `src_SymbolTable.h` and `src_SymbolTable.cpp`.
+*   [x] Implement the Semantic Analyzer (`Sema`) in `src_Sema.h` and `src_Sema.cpp`.
+*   [x] Add type checking for variable declarations and expressions.
+*   [x] Implement scope resolution.
+*   [x] Write tests for semantic validation (type errors, scope errors, etc.).
 
 ## Phase 5: Code Generation
 
