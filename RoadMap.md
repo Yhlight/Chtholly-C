@@ -5,8 +5,8 @@
 - [x] **Project Setup**: Initialize the project structure, including `src`, `tests`, and `scripts` directories.
 - [x] **Build System**: Implement a CMake build system and a Python build script.
 - [x] **Lexer**: Implement a lexer to tokenize the Chtholly source code.
-- [ ] **Parser**: Implement a recursive descent parser to build an Abstract Syntax Tree (AST).
-- [ ] **AST**: Define the data structures for the AST.
+- [x] **Parser**: Implement a recursive descent parser to build an Abstract Syntax Tree (AST).
+- [x] **AST**: Define the data structures for the AST.
 - [ ] **Basic Transpiler**: Implement a basic transpiler that can generate C++ code from a simple AST.
 
 ## Phase 2: Core Language Features

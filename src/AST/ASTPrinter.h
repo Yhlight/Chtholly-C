@@ -1,0 +1,16 @@
+#pragma once
+
+#include "Expr.h"
+#include <string>
+
+class ASTPrinter : public ExprVisitor {
+public:
+    std::string print(const Expr& expr);
+    std::any visitBinaryExpr(const BinaryExpr& expr) override;
+    std::any visitGroupingExpr(const GroupingExpr& expr) override;
+    std::any visitLiteralExpr(const LiteralExpr& expr) override;
+    std::any visitUnaryExpr(const UnaryExpr& expr) override;
+
+private:
+    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
+};

@@ -5,6 +5,7 @@ project(ChthollyTests)
 add_executable(
     ChthollyTests
     test_lexer.cpp
+    test_parser.cpp
 )
 
 target_link_libraries(
