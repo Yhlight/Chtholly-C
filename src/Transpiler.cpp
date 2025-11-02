@@ -66,19 +66,32 @@ std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
     return {};
 }
 
-std::string to_cpp_type(const std::string& chtholly_type) {
-    if (chtholly_type == "string") return "std::string";
-    return chtholly_type;
+std::string to_cpp_type(const TypeInfo& type) {
+    std::string cpp_type;
+    if (type.baseType.lexeme == "string") {
+        cpp_type = "std::string";
+    } else {
+        cpp_type = type.baseType.lexeme;
+    }
+
+    if (type.isReference) {
+        if (!type.isMutable) {
+            cpp_type = "const " + cpp_type + "&";
+        } else {
+            cpp_type = cpp_type + "&";
+        }
+    }
+    return cpp_type;
 }
 
 std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     out << "    ";
-    bool is_struct = stmt.type && std::isupper(stmt.type->lexeme[0]);
-    if (!stmt.isMutable && !is_struct) {
+    bool is_struct = stmt.type && std::isupper(stmt.type->baseType.lexeme[0]);
+    if (!stmt.isMutable && !is_struct && !(stmt.type && stmt.type->isReference)) {
         out << "const ";
     }
     if (stmt.type) {
-        out << to_cpp_type(stmt.type->lexeme) << " " << stmt.name.lexeme;
+        out << to_cpp_type(*stmt.type) << " " << stmt.name.lexeme;
     } else {
         out << "auto " << stmt.name.lexeme;
     }
@@ -97,12 +110,16 @@ std::any Transpiler::visitSetExpr(const SetExpr& expr) {
     return evaluate(*expr.object) + "." + expr.name.lexeme + " = " + evaluate(*expr.value);
 }
 
+std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) {
+    return "&" + evaluate(*expr.expression);
+}
+
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme << " {\n";
     for (const auto& field : stmt.fields) {
         out << "    ";
         if (field->type) {
-            out << to_cpp_type(field->type->lexeme) << " " << field->name.lexeme;
+            out << to_cpp_type(*field->type) << " " << field->name.lexeme;
         } else {
             out << "auto " << field->name.lexeme;
         }
@@ -161,9 +178,14 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
-    out << "auto " << stmt.name.lexeme << "(";
+    if (stmt.returnType) {
+        out << to_cpp_type(*stmt.returnType);
+    } else {
+        out << "auto";
+    }
+    out << " " << stmt.name.lexeme << "(";
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << "auto " << stmt.params[i].lexeme;
+        out << to_cpp_type(stmt.params[i].second) << " " << stmt.params[i].first.lexeme;
         if (i < stmt.params.size() - 1) {
             out << ", ";
         }
@@ -179,7 +201,11 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
 std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << "    return";
     if (stmt.value) {
-        out << " " << evaluate(*stmt.value);
+        if (auto binary = dynamic_cast<const BinaryExpr*>(stmt.value.get())) {
+            out << " " << evaluate(*stmt.value).substr(1, evaluate(*stmt.value).length() - 2);
+        } else {
+            out << " " << evaluate(*stmt.value);
+        }
     }
     out << ";\n";
     return {};

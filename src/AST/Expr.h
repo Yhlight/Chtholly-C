@@ -14,6 +14,7 @@ struct AssignExpr;
 struct CallExpr;
 struct GetExpr;
 struct SetExpr;
+struct BorrowExpr;
 
 class ExprVisitor {
 public:
@@ -26,6 +27,7 @@ public:
     virtual std::any visitCallExpr(const CallExpr& expr) = 0;
     virtual std::any visitGetExpr(const GetExpr& expr) = 0;
     virtual std::any visitSetExpr(const SetExpr& expr) = 0;
+    virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -139,5 +141,17 @@ struct SetExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitSetExpr(*this);
+    }
+};
+
+struct BorrowExpr : Expr {
+    std::unique_ptr<Expr> expression;
+    bool isMutable;
+
+    BorrowExpr(std::unique_ptr<Expr> expression, bool isMutable)
+        : expression(std::move(expression)), isMutable(isMutable) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitBorrowExpr(*this);
     }
 };

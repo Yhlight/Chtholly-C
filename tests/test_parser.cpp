@@ -139,7 +139,7 @@ TEST(ParserTest, LetStatementWithType) {
     ASSERT_NE(letStmt, nullptr);
     EXPECT_EQ(letStmt->name.lexeme, "x");
     ASSERT_TRUE(letStmt->type.has_value());
-    EXPECT_EQ(letStmt->type->lexeme, "int");
+    EXPECT_EQ(letStmt->type->baseType.lexeme, "int");
 }
 
 TEST(ParserTest, LogicalAndExpression) {
@@ -171,7 +171,7 @@ TEST(ParserTest, LogicalOrExpression) {
 }
 
 TEST(ParserTest, FunctionDeclaration) {
-    std::string source = "func add(a, b) { return a + b; }";
+    std::string source = "func add(a: int, b: int) { return a + b; }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -181,12 +181,12 @@ TEST(ParserTest, FunctionDeclaration) {
     ASSERT_NE(funcStmt, nullptr);
     EXPECT_EQ(funcStmt->name.lexeme, "add");
     ASSERT_EQ(funcStmt->params.size(), 2);
-    EXPECT_EQ(funcStmt->params[0].lexeme, "a");
-    EXPECT_EQ(funcStmt->params[1].lexeme, "b");
+    EXPECT_EQ(funcStmt->params[0].first.lexeme, "a");
+    EXPECT_EQ(funcStmt->params[1].first.lexeme, "b");
 }
 
 TEST(ParserTest, ReturnStatement) {
-    std::string source = "func add(a, b) { return a + b; }";
+    std::string source = "func add(a: int, b: int) { return a + b; }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -225,4 +225,48 @@ TEST(ParserTest, StructDeclaration) {
     ASSERT_EQ(structStmt->fields.size(), 2);
     EXPECT_EQ(structStmt->fields[0]->name.lexeme, "x");
     EXPECT_EQ(structStmt->fields[1]->name.lexeme, "y");
+}
+
+TEST(ParserTest, LetStatementWithReferenceType) {
+    std::string source = "let x: &int = &y;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    LetStmt* letStmt = dynamic_cast<LetStmt*>(statements[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    EXPECT_EQ(letStmt->name.lexeme, "x");
+    ASSERT_TRUE(letStmt->type.has_value());
+    EXPECT_EQ(letStmt->type->baseType.lexeme, "int");
+    EXPECT_TRUE(letStmt->type->isReference);
+    EXPECT_FALSE(letStmt->type->isMutable);
+}
+
+TEST(ParserTest, FunctionDeclarationWithReferenceTypes) {
+    std::string source = "func foo(a: &int, b: &mut string) -> &bool {}";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* funcStmt = dynamic_cast<FunctionStmt*>(stmts[0].get());
+    ASSERT_NE(funcStmt, nullptr);
+
+    ASSERT_EQ(funcStmt->params.size(), 2);
+    EXPECT_EQ(funcStmt->params[0].first.lexeme, "a");
+    EXPECT_EQ(funcStmt->params[0].second.baseType.lexeme, "int");
+    EXPECT_TRUE(funcStmt->params[0].second.isReference);
+    EXPECT_FALSE(funcStmt->params[0].second.isMutable);
+
+    EXPECT_EQ(funcStmt->params[1].first.lexeme, "b");
+    EXPECT_EQ(funcStmt->params[1].second.baseType.lexeme, "string");
+    EXPECT_TRUE(funcStmt->params[1].second.isReference);
+    EXPECT_TRUE(funcStmt->params[1].second.isMutable);
+
+    ASSERT_TRUE(funcStmt->returnType.has_value());
+    EXPECT_EQ(funcStmt->returnType->baseType.lexeme, "bool");
+    EXPECT_TRUE(funcStmt->returnType->isReference);
+    EXPECT_FALSE(funcStmt->returnType->isMutable);
 }

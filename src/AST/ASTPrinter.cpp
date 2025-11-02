@@ -50,6 +50,10 @@ std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
     return parenthesize("= ." + expr.name.lexeme, {expr.object.get(), expr.value.get()});
 }
 
+std::any ASTPrinter::visitBorrowExpr(const BorrowExpr& expr) {
+    return parenthesize(expr.isMutable ? "&mut" : "&", {expr.expression.get()});
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

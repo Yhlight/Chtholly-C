@@ -44,6 +44,7 @@ private:
     std::unique_ptr<Expr> primary();
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee);
 
+    TypeInfo parseType();
     bool match(const std::vector<TokenType>& types);
     Token advance();
     bool isAtEnd();

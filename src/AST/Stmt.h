@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Expr.h"
+#include "../TypeInfo.h"
 #include <any>
 #include <memory>
 #include <vector>
@@ -60,12 +61,12 @@ struct PrintStmt : Stmt {
 
 struct LetStmt : Stmt {
     Token name;
-    std::optional<Token> type;
+    std::optional<TypeInfo> type;
     std::unique_ptr<Expr> initializer;
     bool isMutable;
 
-    LetStmt(Token name, std::optional<Token> type, std::unique_ptr<Expr> initializer, bool isMutable)
-        : name(name), type(type), initializer(std::move(initializer)), isMutable(isMutable) {}
+    LetStmt(Token name, std::optional<TypeInfo> type, std::unique_ptr<Expr> initializer, bool isMutable)
+        : name(name), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitLetStmt(*this);
@@ -110,11 +111,12 @@ struct WhileStmt : Stmt {
 
 struct FunctionStmt : Stmt {
     Token name;
-    std::vector<Token> params;
+    std::vector<std::pair<Token, TypeInfo>> params;
     std::vector<std::unique_ptr<Stmt>> body;
+    std::optional<TypeInfo> returnType;
 
-    FunctionStmt(Token name, std::vector<Token> params, std::vector<std::unique_ptr<Stmt>> body)
-        : name(name), params(std::move(params)), body(std::move(body)) {}
+    FunctionStmt(Token name, std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType)
+        : name(name), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitFunctionStmt(*this);

@@ -104,6 +104,11 @@ std::any Resolver::visitSetExpr(const SetExpr& expr) {
     return {};
 }
 
+std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
+    resolve(*expr.expression);
+    return {};
+}
+
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
@@ -136,9 +141,9 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
     currentFunction = type;
 
     beginScope();
-    for (const Token& param : function.params) {
-        declare(param);
-        define(param);
+    for (const auto& param : function.params) {
+        declare(param.first);
+        define(param.first);
     }
     resolve(function.body);
     endScope();

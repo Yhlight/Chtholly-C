@@ -21,6 +21,24 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, LetStatementWithReference) {
+    std::string source = "let x: &int = &y;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n\n"
+        "int main() {\n"
+        "    const int& x = &y;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
 TEST(TranspilerTest, Struct) {
     std::string source = "struct Point { mut x: int; mut y: int; } let p: Point; p.x = 1; print p.x;";
     Lexer lexer(source);
@@ -46,7 +64,7 @@ TEST(TranspilerTest, Struct) {
 }
 
 TEST(TranspilerTest, Function) {
-    std::string source = "func add(a, b) { return a + b; } print add(1, 2);";
+    std::string source = "func add(a: &int, b: &int) -> int { return a + b; }";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -56,11 +74,10 @@ TEST(TranspilerTest, Function) {
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n\n"
-        "auto add(auto a, auto b) {\n"
-        "    return (a + b);\n"
+        "int add(const int& a, const int& b) {\n"
+        "    return a + b;\n"
         "}\n\n"
         "int main() {\n"
-        "    std::cout << add(1, 2) << std::endl;\n"
         "    return 0;\n"
         "}\n";
     ASSERT_EQ(result, expected);

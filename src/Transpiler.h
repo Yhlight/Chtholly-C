@@ -26,6 +26,7 @@ private:
     std::any visitCallExpr(const CallExpr& expr) override;
     std::any visitGetExpr(const GetExpr& expr) override;
     std::any visitSetExpr(const SetExpr& expr) override;
+    std::any visitBorrowExpr(const BorrowExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitPrintStmt(const PrintStmt& stmt) override;

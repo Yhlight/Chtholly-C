@@ -41,28 +41,36 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
 std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
-    std::vector<Token> parameters;
+    std::vector<std::pair<Token, TypeInfo>> parameters;
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             if (parameters.size() >= 255) {
                 ErrorReporter::error(peek().line, "Can't have more than 255 parameters.");
             }
-            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            parameters.emplace_back(paramName, parseType());
         } while (match({TokenType::COMMA}));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
 
+    std::optional<TypeInfo> returnType;
+    if (match({TokenType::MINUS})) {
+        consume(TokenType::GREATER, "Expect '>' after '-' for return type arrow.");
+        returnType = parseType();
+    }
+
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     auto body = block();
-    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body));
+    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body), returnType);
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
     bool isMutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
-    std::optional<Token> type;
+    std::optional<TypeInfo> type;
     if (match({TokenType::COLON})) {
-        type = consume(TokenType::IDENTIFIER, "Expect type annotation.");
+        type = parseType();
     }
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
@@ -239,6 +247,12 @@ std::unique_ptr<Expr> Parser::unary() {
         return std::make_unique<UnaryExpr>(op, std::move(right));
     }
 
+    if (match({TokenType::AMPERSAND})) {
+        bool isMutable = match({TokenType::MUT});
+        auto expr = unary();
+        return std::make_unique<BorrowExpr>(std::move(expr), isMutable);
+    }
+
     return call();
 }
 
@@ -298,6 +312,18 @@ std::unique_ptr<Expr> Parser::primary() {
 
     ErrorReporter::error(peek().line, "Expect expression.");
     throw std::runtime_error("Expect expression.");
+}
+
+TypeInfo Parser::parseType() {
+    TypeInfo type;
+    if (match({TokenType::AMPERSAND})) {
+        type.isReference = true;
+        if (match({TokenType::MUT})) {
+            type.isMutable = true;
+        }
+    }
+    type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
+    return type;
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

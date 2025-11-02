@@ -1,4 +1,5 @@
 add_library(chtholly_lib
+    TypeInfo.h
     Lexer.cpp
     Error.cpp
     AST/ASTPrinter.cpp
