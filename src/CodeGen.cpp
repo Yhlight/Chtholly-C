@@ -1,11 +1,37 @@
 #include "../include/CodeGen.h"
 
+CodeGen::CodeGen() {
+    builtins["print"] = [this](const std::vector<std::shared_ptr<Expr>>& args) {
+        std::string result = "std::cout << ";
+        for (const auto& arg : args) {
+            result += evaluate(arg) + " << ";
+        }
+        result.pop_back();
+        result.pop_back();
+        result.pop_back();
+        result.pop_back();
+        result += " << std::endl";
+        return result;
+    };
+}
+
 std::string CodeGen::generate(const std::vector<std::shared_ptr<Stmt>>& statements) {
-    source.clear();
+    std::string declarations;
+    std::string main_body;
+
     for (const auto& stmt : statements) {
+        source.clear();
         execute(stmt);
+        std::string generated = source;
+
+        if (std::dynamic_pointer_cast<Struct>(stmt) || std::dynamic_pointer_cast<Func>(stmt)) {
+            declarations += generated;
+        } else {
+            main_body += generated;
+        }
     }
-    return source;
+
+    return "#include <iostream>\n\n" + declarations + "int main() {\n" + main_body + "    return 0;\n}\n";
 }
 
 std::string CodeGen::evaluate(const std::shared_ptr<Expr>& expr) {
@@ -30,10 +56,10 @@ std::any CodeGen::visitLiteralExpr(std::shared_ptr<Literal> expr) {
         return "\"" + std::any_cast<std::string>(expr->value) + "\"";
     }
     if (expr->value.type() == typeid(bool)) {
-        return std::any_cast<bool>(expr->value) ? "true" : "false";
+        return std::string(std::any_cast<bool>(expr->value) ? "true" : "false");
     }
     if (expr->value.type() == typeid(nullptr_t)) {
-        return "nullptr";
+        return std::string("nullptr");
     }
     if (expr->value.type() == typeid(int)) {
         return std::to_string(std::any_cast<int>(expr->value));
@@ -58,6 +84,11 @@ std::any CodeGen::visitAssignExpr(std::shared_ptr<Assign> expr) {
 
 std::any CodeGen::visitCallExpr(std::shared_ptr<Call> expr) {
     std::string callee = evaluate(expr->callee);
+
+    if (builtins.count(callee)) {
+        return builtins[callee](expr->arguments);
+    }
+
     std::string args;
     for (const auto& arg : expr->arguments) {
         args += evaluate(arg) + ", ";
@@ -92,7 +123,14 @@ void CodeGen::visitExpressionStmt(std::shared_ptr<Expression> stmt) {
 }
 
 void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
-    source += stmt->isMutable ? "auto " : "const auto ";
+    std::string type = "auto";
+    if (stmt->type) {
+        if (stmt->type->kind == TypeKind::PRIMITIVE) {
+            type = std::dynamic_pointer_cast<PrimitiveType>(stmt->type)->name;
+        }
+    }
+
+    source += stmt->isMutable ? type + " " : "const " + type + " ";
     source += stmt->name.lexeme;
     if (stmt->initializer) {
         source += " = " + evaluate(stmt->initializer);
@@ -101,11 +139,18 @@ void CodeGen::visitVarStmt(std::shared_ptr<Var> stmt) {
 }
 
 void CodeGen::visitStructStmt(std::shared_ptr<Struct> stmt) {
+    in_struct = true;
     source += "struct " + stmt->name.lexeme + " {\n";
     for (const auto& field : stmt->fields) {
+        source += field->is_public ? "public: " : "private: ";
         execute(field);
     }
+    for (const auto& method : stmt->methods) {
+        source += method->is_public ? "public: " : "private: ";
+        execute(method);
+    }
     source += "};\n";
+    in_struct = false;
 }
 
 void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
@@ -117,7 +162,11 @@ void CodeGen::visitBlockStmt(std::shared_ptr<Block> stmt) {
 }
 
 void CodeGen::visitFuncStmt(std::shared_ptr<Func> stmt) {
-    source += "auto " + stmt->name.lexeme + " = [](";
+    source += "auto " + stmt->name.lexeme + " = [";
+    if (in_struct) {
+        source += "this";
+    }
+    source += "](";
     for (const auto& param : stmt->params) {
         source += "auto " + param.lexeme + ", ";
     }

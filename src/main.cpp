@@ -1,19 +1,25 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <cstdlib>
 #include "../include/Lexer.h"
 #include "../include/Parser.h"
 #include "../include/CodeGen.h"
 
 int main() {
     std::string source = R"(
-        struct Point {
-            let x = 0;
-            let y = 0;
+        struct Test {
+            private let name = "Chtholly";
+            public let id = 114514;
+
+            public func print_name() {
+                print(name);
+            }
         }
 
-        let p = Point{x: 10, y: 20};
-        let x = p.x;
+        let t = Test{};
+        t.print_name();
     )";
 
     Lexer lexer(source);
@@ -25,14 +31,23 @@ int main() {
     CodeGen generator;
     std::string generated_code = generator.generate(statements);
 
-    std::cout << "// Generated C++ Code:\n";
-    std::cout << "#include <iostream>\n\n";
-    std::cout << generated_code;
-    std::cout << "int main() {\n";
-    std::cout << "std::cout << x << std::endl;\n";
-    std::cout << "return 0;\n";
-    std::cout << "}\n";
+    std::ofstream out("temp.cpp");
+    out << generated_code;
+    out.close();
 
+    // The -w flag is added to suppress warnings that are not relevant to this test
+    system("g++ -w temp.cpp -o temp && ./temp > output.txt");
+
+    std::ifstream in("output.txt");
+    std::string output((std::istreambuf_iterator<char>(in)),
+                     std::istreambuf_iterator<char>());
+
+    std::cout << output;
+
+    // Clean up temporary files
+    remove("temp.cpp");
+    remove("temp");
+    remove("output.txt");
 
     return 0;
 }

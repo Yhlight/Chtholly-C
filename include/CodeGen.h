@@ -5,8 +5,12 @@
 #include <string>
 #include <any>
 
+#include <functional>
+#include <map>
+
 class CodeGen : public ExprVisitor, public StmtVisitor {
 public:
+    CodeGen();
     std::string generate(const std::vector<std::shared_ptr<Stmt>>& statements);
 
     // Expression visitors
@@ -30,6 +34,8 @@ public:
 
 private:
     std::string source;
+    bool in_struct = false;
+    std::map<std::string, std::function<std::string(const std::vector<std::shared_ptr<Expr>>&)>> builtins;
 
     std::string evaluate(const std::shared_ptr<Expr>& expr);
     void execute(const std::shared_ptr<Stmt>& stmt);

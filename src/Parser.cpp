@@ -14,9 +14,9 @@ std::vector<std::shared_ptr<Stmt>> Parser::parse() {
 std::shared_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::STRUCT})) return structDeclaration();
-        if (match({TokenType::FUNC})) return function("function");
-        if (match({TokenType::LET})) return varDeclaration(false);
-        if (match({TokenType::MUT})) return varDeclaration(true);
+        if (match({TokenType::FUNC})) return function("function", true);
+        if (match({TokenType::LET})) return varDeclaration(false, true);
+        if (match({TokenType::MUT})) return varDeclaration(true, true);
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -24,16 +24,22 @@ std::shared_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool in_struct) {
+std::shared_ptr<Stmt> Parser::varDeclaration(bool isMutable, bool is_public, bool in_struct) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::shared_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
-    } else if (in_struct) {
+    }
+    else if (in_struct) {
         throw error(peek(), "Expect initializer for struct field.");
     }
+
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_shared<Var>(name, initializer, isMutable);
+    auto var = std::make_shared<Var>(name, initializer, isMutable, is_public);
+    if (initializer) {
+        var->type = initializer->type;
+    }
+    return var;
 }
 
 std::shared_ptr<Stmt> Parser::statement() {
@@ -127,18 +133,36 @@ std::shared_ptr<Expr> Parser::unary() {
 }
 
 std::shared_ptr<Expr> Parser::primary() {
-    if (match({TokenType::FALSE})) return std::make_shared<Literal>(false);
-    if (match({TokenType::TRUE})) return std::make_shared<Literal>(true);
-    if (match({TokenType::NONE})) return std::make_shared<Literal>(nullptr);
+    if (match({TokenType::FALSE})) {
+        auto literal = std::make_shared<Literal>(false);
+        literal->type = std::make_shared<PrimitiveType>("bool");
+        return literal;
+    }
+    if (match({TokenType::TRUE})) {
+        auto literal = std::make_shared<Literal>(true);
+        literal->type = std::make_shared<PrimitiveType>("bool");
+        return literal;
+    }
+    if (match({TokenType::NONE})) {
+        auto literal = std::make_shared<Literal>(nullptr);
+        literal->type = std::make_shared<PrimitiveType>("nullptr_t");
+        return literal;
+    }
 
     if (match({TokenType::STRING})) {
-        return std::make_shared<Literal>(previous().lexeme);
+        auto literal = std::make_shared<Literal>(previous().lexeme);
+        literal->type = std::make_shared<PrimitiveType>("std::string");
+        return literal;
     }
     if (match({TokenType::INTEGER})) {
-        return std::make_shared<Literal>(std::stoi(previous().lexeme));
+        auto literal = std::make_shared<Literal>(std::stoi(previous().lexeme));
+        literal->type = std::make_shared<PrimitiveType>("int");
+        return literal;
     }
     if (match({TokenType::DOUBLE})) {
-        return std::make_shared<Literal>(std::stod(previous().lexeme));
+        auto literal = std::make_shared<Literal>(std::stod(previous().lexeme));
+        literal->type = std::make_shared<PrimitiveType>("double");
+        return literal;
     }
 
     if (match({TokenType::IDENTIFIER})) {
@@ -198,7 +222,7 @@ std::shared_ptr<Expr> Parser::finishCall(std::shared_ptr<Expr> callee) {
     return std::make_shared<Call>(callee, paren, arguments);
 }
 
-std::shared_ptr<Stmt> Parser::function(const std::string& kind) {
+std::shared_ptr<Stmt> Parser::function(const std::string& kind, bool is_public) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Token> parameters;
@@ -213,7 +237,7 @@ std::shared_ptr<Stmt> Parser::function(const std::string& kind) {
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     std::vector<std::shared_ptr<Stmt>> body = block();
-    return std::make_shared<Func>(name, parameters, body);
+    return std::make_shared<Func>(name, parameters, body, is_public);
 }
 
 std::shared_ptr<Stmt> Parser::returnStatement() {
@@ -230,17 +254,31 @@ std::shared_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::shared_ptr<Var>> fields;
+    std::vector<std::shared_ptr<Func>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        bool isMutable = false;
-        if (match({TokenType::MUT})) {
-            isMutable = true;
-        } else if (!match({TokenType::LET})) {
-            throw error(peek(), "Expect 'let' or 'mut' for field declaration.");
+        bool is_public = true;
+        if (match({TokenType::PRIVATE})) {
+            is_public = false;
+        } else if (match({TokenType::PUBLIC})) {
+            is_public = true;
         }
-        fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration(isMutable, true)));
+
+        if (peek().type == TokenType::FUNC) {
+            advance();
+            methods.push_back(std::dynamic_pointer_cast<Func>(function("method", is_public)));
+        }
+        else {
+            bool isMutable = false;
+            if (match({TokenType::MUT})) {
+                isMutable = true;
+            } else if (!match({TokenType::LET})) {
+                throw error(peek(), "Expect 'let' or 'mut' for field declaration.");
+            }
+            fields.push_back(std::dynamic_pointer_cast<Var>(varDeclaration(isMutable, is_public, true)));
+        }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_shared<Struct>(name, fields);
+    return std::make_shared<Struct>(name, fields, methods);
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {
