@@ -49,8 +49,8 @@ This document outlines the planned development stages for the Chtholly programmi
 
 ## Phase 5: Data Structures
 
-- [ ] Implement `struct` declarations, including member variables and methods.
-- [ ] Implement struct instantiation and field access (`.`).
+- [x] Implement `struct` declarations, including member variables and methods.
+- [x] Implement struct instantiation and field access (`.`).
 - [ ] Implement `self` keyword (`self`, `&self`, `&mut self`).
 - [ ] Handle static-like methods (no `self` parameter).
 - [ ] Implement `enum` declarations.

@@ -27,6 +27,8 @@ std::unique_ptr<Expr> Parser::assignment() {
         if (auto var = dynamic_cast<VariableExpr*>(expr.get())) {
             Token name = var->name;
             return std::make_unique<AssignExpr>(std::move(name), std::move(value));
+        } else if (auto get = dynamic_cast<GetExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(get->object), get->name, std::move(value));
         }
 
         error(equals, "Invalid assignment target.");
@@ -121,6 +123,9 @@ std::unique_ptr<Expr> Parser::call() {
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
             expr = finishCall(std::move(expr));
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
         } else {
             break;
         }
@@ -215,6 +220,7 @@ void Parser::synchronize() {
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::FUNC})) return function("function");
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
     } catch (ParseError& error) {
@@ -357,4 +363,25 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+    std::vector<std::unique_ptr<LetStmt>> fields;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match({TokenType::LET, TokenType::MUT})) {
+            Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
+            std::unique_ptr<Expr> initializer = nullptr;
+            if (match({TokenType::EQUAL})) {
+                initializer = expression();
+            }
+            consume(TokenType::SEMICOLON, "Expect ';' after field declaration.");
+            fields.push_back(std::make_unique<LetStmt>(std::move(fieldName), std::move(initializer)));
+        } else {
+            error(peek(), "Expect 'let' or 'mut' in struct body.");
+        }
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_unique<StructStmt>(std::move(name), std::move(fields));
 }

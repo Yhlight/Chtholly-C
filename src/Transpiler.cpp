@@ -12,7 +12,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     out << "#include <variant>\n\n";
 
     for (const auto& statement : statements) {
-        if (statement && dynamic_cast<FuncStmt*>(statement.get())) {
+        if (statement && (dynamic_cast<FuncStmt*>(statement.get()) || dynamic_cast<StructStmt*>(statement.get()))) {
             out << transpile(*statement) << "\n";
         }
     }
@@ -21,7 +21,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     indent();
 
     for (const auto& statement : statements) {
-        if (statement && !dynamic_cast<FuncStmt*>(statement.get())) {
+        if (statement && !dynamic_cast<FuncStmt*>(statement.get()) && !dynamic_cast<StructStmt*>(statement.get())) {
             write_indent();
             out << transpile(*statement) << "\n";
         }
@@ -105,6 +105,14 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     }
     call_out << ")";
     return call_out.str();
+}
+
+std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+    return transpile(*expr.object) + "." + expr.name.lexeme;
+}
+
+std::any Transpiler::visitSetExpr(const SetExpr& expr) {
+    return transpile(*expr.object) + "." + expr.name.lexeme + " = " + transpile(*expr.value);
 }
 
 // Statement visitor methods
@@ -209,4 +217,18 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
         return "return " + transpile(*stmt.value) + ";";
     }
     return std::string("return;");
+}
+
+std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
+    std::stringstream struct_out;
+    struct_out << "struct " << stmt.name.lexeme << " {\n";
+    indent();
+    for (const auto& field : stmt.fields) {
+        write_indent();
+        struct_out << transpile(*field) << "\n";
+    }
+    dedent();
+    write_indent();
+    struct_out << "};";
+    return struct_out.str();
 }

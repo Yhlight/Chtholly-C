@@ -51,6 +51,7 @@ private:
     std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> letDeclaration();
+    std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> function(const std::string& kind);
     std::vector<std::unique_ptr<Stmt>> block();
 

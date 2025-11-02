@@ -115,6 +115,23 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     return {};
 }
 
+std::any Resolver::visitStructStmt(const StructStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+    return {};
+}
+
+std::any Resolver::visitGetExpr(const GetExpr& expr) {
+    resolve(*expr.object);
+    return {};
+}
+
+std::any Resolver::visitSetExpr(const SetExpr& expr) {
+    resolve(*expr.value);
+    resolve(*expr.object);
+    return {};
+}
+
 std::any Resolver::visitFuncStmt(const FuncStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);

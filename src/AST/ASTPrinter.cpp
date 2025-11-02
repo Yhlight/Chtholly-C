@@ -51,6 +51,14 @@ std::any ASTPrinter::visitCallExpr(const CallExpr& expr) {
     return parenthesize("call " + print(*expr.callee), exprs);
 }
 
+std::any ASTPrinter::visitGetExpr(const GetExpr& expr) {
+    return parenthesize("." + expr.name.lexeme, {expr.object.get()});
+}
+
+std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
+    return parenthesize("= ." + expr.name.lexeme, {expr.object.get(), expr.value.get()});
+}
+
 std::any ASTPrinter::visitBlockStmt(const BlockStmt& stmt) {
     std::vector<const Stmt*> stmts;
     for (const auto& s : stmt.statements) {
@@ -133,6 +141,16 @@ std::any ASTPrinter::visitReturnStmt(const ReturnStmt& stmt) {
         return parenthesize("return", {stmt.value.get()});
     }
     return std::string("(return)");
+}
+
+std::any ASTPrinter::visitStructStmt(const StructStmt& stmt) {
+    std::stringstream builder;
+    builder << "(struct " << stmt.name.lexeme;
+    for (const auto& field : stmt.fields) {
+        builder << " " << print(*field);
+    }
+    builder << ")";
+    return builder.str();
 }
 
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {

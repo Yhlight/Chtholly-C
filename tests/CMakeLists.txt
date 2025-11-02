@@ -7,6 +7,7 @@ add_executable(chtholly_tests
         SwitchTests.cpp
     ResolverTests.cpp
     FunctionTests.cpp
+    StructTests.cpp
 )
 
 target_link_libraries(chtholly_tests
