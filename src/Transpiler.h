@@ -7,10 +7,11 @@
 #include <memory>
 #include <sstream>
 #include <map>
+#include <set>
 
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
-    std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
+    std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module = false);
 
 private:
     std::string evaluate(const Expr& expr);
@@ -18,6 +19,7 @@ private:
 
     std::stringstream out;
     std::map<std::string, const ImplStmt*> impls;
+    std::set<std::string> transpiled_files;
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
@@ -42,4 +44,5 @@ private:
     std::any visitStructStmt(const StructStmt& stmt) override;
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
+    std::any visitImportStmt(const ImportStmt& stmt) override;
 };

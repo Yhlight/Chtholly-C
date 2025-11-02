@@ -13,6 +13,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
+        if (match({TokenType::IMPORT})) return importDeclaration();
         if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::TRAIT})) return traitDeclaration();
         if (match({TokenType::IMPL})) return implDeclaration();
@@ -62,6 +63,12 @@ std::unique_ptr<Stmt> Parser::implDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
     return std::make_unique<ImplStmt>(structName, traitName, std::move(methods));
+}
+
+std::unique_ptr<Stmt> Parser::importDeclaration() {
+    Token path = consume(TokenType::STRING, "Expect module path.");
+    consume(TokenType::SEMICOLON, "Expect ';' after module path.");
+    return std::make_unique<ImportStmt>(path);
 }
 
 std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_required) {

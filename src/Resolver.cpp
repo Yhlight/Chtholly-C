@@ -15,6 +15,10 @@ void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     }
 }
 
+const std::map<std::string, VariableState>& Resolver::get_resolved_symbols() const {
+    return scopes.front();
+}
+
 void Resolver::resolve(const Stmt& stmt) {
     stmt.accept(*this);
 }
@@ -177,6 +181,37 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     }
     endScope();
     currentClass = enclosingClass;
+    return {};
+}
+
+#include <fstream>
+#include <sstream>
+#include "Chtholly.h"
+std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
+    std::string path = std::get<std::string>(stmt.path.literal);
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        ErrorReporter::error(stmt.path.line, "Could not open file: " + path);
+        return {};
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    Chtholly chtholly;
+    chtholly.run(buffer.str());
+
+    if (ErrorReporter::hadError) {
+        return {};
+    }
+
+    const auto& imported_symbols = chtholly.get_resolver().get_resolved_symbols();
+    for (const auto& pair : imported_symbols) {
+        if (scopes.back().count(pair.first)) {
+            // TODO: handle name clashes
+        } else {
+            scopes.back()[pair.first] = pair.second;
+        }
+    }
     return {};
 }
 

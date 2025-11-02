@@ -31,7 +31,7 @@ TEST(TranspilerTest, Lambda) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
         "#include <functional>\n\n"
         "int main() {\n"
         "    std::function<int(int)> x = [](int a) -> int {\n"

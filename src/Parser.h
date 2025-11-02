@@ -23,6 +23,7 @@ private:
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();
     std::unique_ptr<Stmt> implDeclaration();
+    std::unique_ptr<Stmt> importDeclaration();
     std::unique_ptr<Stmt> function(const std::string& kind, bool body_required);
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();

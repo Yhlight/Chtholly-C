@@ -2,52 +2,68 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include "Error.h"
 
-std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    out << "#include <iostream>\n";
-    out << "#include <variant>\n";
-    bool has_lambda = false;
-    for (const auto& statement : statements) {
-        if (dynamic_cast<const LetStmt*>(statement.get())) {
-            auto* letStmt = dynamic_cast<const LetStmt*>(statement.get());
-            if (letStmt->type && letStmt->type->baseType.type == TokenType::FUNCTION) {
-                has_lambda = true;
-                break;
-            }
-            if (letStmt->initializer) {
-                if (dynamic_cast<const LambdaExpr*>(letStmt->initializer.get())) {
+std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module) {
+    // Pre-scan for ImplStmts to populate the map
+    for (const auto& stmt : statements) {
+        if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
+            impls[impl->structName.lexeme] = impl;
+        }
+    }
+
+    // Phase 1: Header generation for the main file
+    if (!is_module) {
+        out << "#include <iostream>\n";
+        out << "#include <variant>\n";
+        bool has_lambda = false;
+        for (const auto& statement : statements) {
+            if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
+                if ((letStmt->type && letStmt->type->baseType.type == TokenType::FUNCTION) ||
+                    (letStmt->initializer && dynamic_cast<const LambdaExpr*>(letStmt->initializer.get()))) {
                     has_lambda = true;
                     break;
                 }
             }
         }
-    }
-    if (has_lambda) {
-        out << "\n#include <functional>\n\n";
-    } else {
+        if (has_lambda) {
+            out << "#include <functional>\n";
+        }
         out << "\n";
     }
 
-    for (const auto& statement : statements) {
-        if (auto* impl = dynamic_cast<ImplStmt*>(statement.get())) {
-            impls[impl->structName.lexeme] = impl;
+    // Phase 2: Process imports first
+    for (const auto& stmt : statements) {
+        if (dynamic_cast<ImportStmt*>(stmt.get())) {
+            execute(*stmt);
         }
     }
 
-    for (const auto& statement : statements) {
-        if (dynamic_cast<FunctionStmt*>(statement.get()) || dynamic_cast<StructStmt*>(statement.get()) || dynamic_cast<TraitStmt*>(statement.get())) {
-            execute(*statement);
+    // Phase 3: Process global definitions (structs, traits, functions)
+    for (const auto& stmt : statements) {
+        if (dynamic_cast<StructStmt*>(stmt.get()) ||
+            dynamic_cast<TraitStmt*>(stmt.get()) ||
+            dynamic_cast<FunctionStmt*>(stmt.get())) {
+            execute(*stmt);
         }
     }
 
-    out << "int main() {\n";
-    for (const auto& statement : statements) {
-        if (!dynamic_cast<FunctionStmt*>(statement.get()) && !dynamic_cast<StructStmt*>(statement.get()) && !dynamic_cast<TraitStmt*>(statement.get()) && !dynamic_cast<ImplStmt*>(statement.get())) {
-            execute(*statement);
+    // Phase 4: Process main function body statements if it's not a module
+    if (!is_module) {
+        out << "int main() {\n";
+        for (const auto& stmt : statements) {
+            if (!dynamic_cast<StructStmt*>(stmt.get()) &&
+                !dynamic_cast<TraitStmt*>(stmt.get()) &&
+                !dynamic_cast<FunctionStmt*>(stmt.get()) &&
+                !dynamic_cast<ImplStmt*>(stmt.get()) &&
+                !dynamic_cast<ImportStmt*>(stmt.get())) {
+                execute(*stmt);
+            }
         }
+        out << "    return 0;\n";
+        out << "}\n";
     }
-    out << "    return 0;\n";
-    out << "}\n";
+
     return out.str();
 }
 
@@ -167,8 +183,46 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
     return {};
 }
 
+#include "Chtholly.h"
+#include <fstream>
 std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
     impls[stmt.structName.lexeme] = &stmt;
+    return {};
+}
+
+std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
+    std::string path = std::get<std::string>(stmt.path.literal);
+    if (transpiled_files.count(path)) {
+        return {};
+    }
+
+    transpiled_files.insert(path);
+
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        // Error already reported by resolver
+        return {};
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    Chtholly chtholly;
+    auto statements = chtholly.run(buffer.str());
+
+    if (ErrorReporter::hadError) {
+        return {};
+    }
+
+    Transpiler transpiler;
+    // Share the set of already transpiled files to prevent infinite loops
+    transpiler.transpiled_files = this->transpiled_files;
+
+    // Transpile the module content and append it to the current output
+    out << transpiler.transpile(statements, true);
+
+    // Update the current set of transpiled files
+    this->transpiled_files = transpiler.transpiled_files;
+
     return {};
 }
 

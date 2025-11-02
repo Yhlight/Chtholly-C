@@ -20,6 +20,7 @@ struct ReturnStmt;
 struct StructStmt;
 struct TraitStmt;
 struct ImplStmt;
+struct ImportStmt;
 
 class StmtVisitor {
 public:
@@ -34,6 +35,7 @@ public:
     virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
     virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
     virtual std::any visitImplStmt(const ImplStmt& stmt) = 0;
+    virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -196,5 +198,16 @@ struct ImplStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitImplStmt(*this);
+    }
+};
+
+struct ImportStmt : Stmt {
+    Token path;
+
+    explicit ImportStmt(Token path)
+        : path(path) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitImportStmt(*this);
     }
 };

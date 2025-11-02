@@ -23,8 +23,8 @@
 - [x] **Ownership System**: Implement the ownership system with `&` and `&mut` references.
 - [x] **Generics**: Implement generic functions and structs.
 - [x] **Lambda Expressions and Function Types**: Implement lambda expressions and function types.
-- [ ] **Traits**: Implement traits for defining shared behavior. (In Progress)
-- [ ] **Modules**: Implement the module system with `import`.
+- [x] **Traits**: Implement traits for defining shared behavior.
+- [ ] **Modules**: Implement the module system with `import`. (In Progress)
 
 ## Phase 4: Standard Library
 

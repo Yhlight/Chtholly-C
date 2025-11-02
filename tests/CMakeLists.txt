@@ -9,6 +9,7 @@ add_executable(
     test_transpiler.cpp
     test_resolver.cpp
     test_traits.cpp
+    test_modules.cpp
 )
 
 target_link_libraries(

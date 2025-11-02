@@ -16,6 +16,7 @@ struct VariableState {
 class Resolver : public ExprVisitor, public StmtVisitor {
 public:
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
+    const std::map<std::string, VariableState>& get_resolved_symbols() const;
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
@@ -42,6 +43,7 @@ public:
 
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
+    std::any visitImportStmt(const ImportStmt& stmt) override;
 
 private:
     std::map<std::string, const TraitStmt*> traits;

@@ -20,7 +20,7 @@ enum class TokenType {
 
     // Keywords.
     LET, MUT, TRUE, FALSE, IF, ELSE, WHILE, FUNC, FUNCTION, RETURN, STRUCT,
-    TRAIT, IMPL, FOR,
+    TRAIT, IMPL, FOR, IMPORT,
     PRINT,
 
     // Logical operators

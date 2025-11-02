@@ -18,6 +18,7 @@ std::map<std::string, TokenType> keywords = {
     {"trait",  TokenType::TRAIT},
     {"impl",   TokenType::IMPL},
     {"for",    TokenType::FOR},
+    {"import", TokenType::IMPORT},
     {"print",  TokenType::PRINT},
 };
 
