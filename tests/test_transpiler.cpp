@@ -13,7 +13,13 @@ TEST(TranspilerTest, SimplePrint) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    std::cout << (1 + 2) << std::endl;\n"
         "    return 0;\n"
@@ -32,7 +38,13 @@ TEST(TranspilerTest, Lambda) {
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n"
+        "#include <string>\n"
         "#include <functional>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    std::function<int(int)> x = [](int a) -> int {\n"
         "        return a;\n"
@@ -53,7 +65,13 @@ TEST(TranspilerTest, GenericFunction) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "template<typename T>\n"
         "T foo(T a) {\n"
         "    return a;\n"
@@ -75,7 +93,13 @@ TEST(TranspilerTest, LetStatementWithReference) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    const int& x = &y;\n"
         "    return 0;\n"
@@ -93,7 +117,13 @@ TEST(TranspilerTest, Struct) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "struct Point {\n"
         "    int x;\n"
         "    int y;\n"
@@ -117,7 +147,13 @@ TEST(TranspilerTest, Function) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int add(const int& a, const int& b) {\n"
         "    return a + b;\n"
         "}\n\n"
@@ -137,7 +173,13 @@ TEST(TranspilerTest, LetStatementWithType) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    const int x = 10;\n"
         "    return 0;\n"
@@ -155,7 +197,13 @@ TEST(TranspilerTest, StringDeclaration) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    const std::string s = \"hello\";\n"
         "    return 0;\n"
@@ -173,7 +221,13 @@ TEST(TranspilerTest, LogicalAnd) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    std::cout << (true && false) << std::endl;\n"
         "    return 0;\n"
@@ -191,7 +245,13 @@ TEST(TranspilerTest, LogicalOr) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    std::cout << (true || false) << std::endl;\n"
         "    return 0;\n"
@@ -209,9 +269,39 @@ TEST(TranspilerTest, LetStatement) {
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
-        "#include <variant>\n\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
         "int main() {\n"
         "    const auto x = 10;\n"
+        "    return 0;\n"
+        "}\n";
+    ASSERT_EQ(result, expected);
+}
+
+TEST(TranspilerTest, Input) {
+    std::string source = "let name = input();";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n"
+        "#include <string>\n\n"
+        "std::string chtholly_input() {\n"
+        "    std::string line;\n"
+        "    std::getline(std::cin, line);\n"
+        "    return line;\n"
+        "}\n\n"
+        "int main() {\n"
+        "    const auto name = chtholly_input();\n"
         "    return 0;\n"
         "}\n";
     ASSERT_EQ(result, expected);

@@ -543,8 +543,13 @@ print(123);
 
 尽管 `print` 是内置的，但 `import iostream;` 语句用于正式地将 `iostream` 模块的功能引入作用域。在未来的版本中，`iostream` 模块将包含更多功能。
 
-#### inputstream
-#### outputstream
+#### input 函数
+`input` 是一个内置函数，用于从控制台读取一行文本，并将其作为字符串返回。
+
+```Chtholly
+let name = input();
+print("Hello, " + name);
+```
 
 ### filesystem
 #### file

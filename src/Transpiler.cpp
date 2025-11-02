@@ -16,6 +16,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     if (!is_module) {
         out << "#include <iostream>\n";
         out << "#include <variant>\n";
+        out << "#include <string>\n";
         bool has_lambda = false;
         for (const auto& statement : statements) {
             if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
@@ -30,6 +31,11 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
             out << "#include <functional>\n";
         }
         out << "\n";
+        out << "std::string chtholly_input() {\n"
+            << "    std::string line;\n"
+            << "    std::getline(std::cin, line);\n"
+            << "    return line;\n"
+            << "}\n\n";
     }
 
     // Phase 2: Process imports first
@@ -339,7 +345,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     args += " << ";
                 }
             }
-            return "std::cout << " + args + " << std::endl";
+            return std::make_any<std::string>("std::cout << " + args + " << std::endl");
+        } else if (callee_var->name.lexeme == "input") {
+            return std::make_any<std::string>("chtholly_input()");
         }
     }
 
@@ -361,7 +369,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             args += ", ";
         }
     }
-    return callee + "(" + args + ")";
+    return std::make_any<std::string>(callee + "(" + args + ")");
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {

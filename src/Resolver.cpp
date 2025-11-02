@@ -4,6 +4,7 @@
 Resolver::Resolver() {
     scopes.emplace_back();
     scopes.back()["print"] = VariableState{true, false, 0, false};
+    scopes.back()["input"] = VariableState{true, false, 0, false};
 }
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
