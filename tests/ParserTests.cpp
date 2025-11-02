@@ -56,3 +56,18 @@ TEST(ParserTest, ParsesPrintStatement) {
     std::string result = parseAndPrint("print 10;");
     EXPECT_EQ(result, "(print 10.000000)");
 }
+
+TEST(ParserTest, ParsesIfStatement) {
+    std::string result = parseAndPrint("if (true) print 1;");
+    EXPECT_EQ(result, "(if true (print 1.000000))");
+}
+
+TEST(ParserTest, ParsesIfElseStatement) {
+    std::string result = parseAndPrint("if (true) print 1; else print 2;");
+    EXPECT_EQ(result, "(if-else true (print 1.000000) (print 2.000000))");
+}
+
+TEST(ParserTest, ParsesWhileStatement) {
+    std::string result = parseAndPrint("while (true) print 1;");
+    EXPECT_EQ(result, "(while true (print 1.000000))");
+}

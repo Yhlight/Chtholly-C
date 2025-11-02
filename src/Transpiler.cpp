@@ -3,19 +3,27 @@
 #include <stdexcept>
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    std::stringstream out;
+    out.str("");
+    out.clear();
+    indent_level_ = 0;
+
     out << "#include <iostream>\n";
     out << "#include <string>\n";
     out << "#include <variant>\n\n";
     out << "int main() {\n";
+    indent();
 
     for (const auto& statement : statements) {
         if (statement) {
-            out << "    " << transpile(*statement) << "\n";
+            write_indent();
+            out << transpile(*statement) << "\n";
         }
     }
 
-    out << "    return 0;\n";
+    write_indent();
+    out << "return 0;\n";
+    dedent();
+    write_indent();
     out << "}\n";
     return out.str();
 }
@@ -28,6 +36,22 @@ std::string Transpiler::transpile(const Stmt& stmt) {
 std::string Transpiler::transpile(const Expr& expr) {
     return std::any_cast<std::string>(expr.accept(*this));
 }
+
+// Indentation methods
+void Transpiler::indent() {
+    indent_level_++;
+}
+
+void Transpiler::dedent() {
+    indent_level_--;
+}
+
+void Transpiler::write_indent() {
+    for (int i = 0; i < indent_level_; ++i) {
+        out << "    ";
+    }
+}
+
 
 // Expression visitor methods
 std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
@@ -64,12 +88,31 @@ std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
 }
 
 // Statement visitor methods
+std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
+    std::stringstream block_out;
+    block_out << "{\n";
+    indent();
+    for (const auto& statement : stmt.statements) {
+        for(int i = 0; i < indent_level_; ++i) block_out << "    ";
+        block_out << transpile(*statement) << "\n";
+    }
+    dedent();
+    for(int i = 0; i < indent_level_ + 1; ++i) block_out << "    ";
+    block_out << "}";
+    return block_out.str();
+}
+
 std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
     return transpile(*stmt.expression) + ";";
 }
 
-std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
-    return "std::cout << (" + transpile(*stmt.expression) + ") << std::endl;";
+std::any Transpiler::visitIfStmt(const IfStmt& stmt) {
+    std::stringstream if_out;
+    if_out << "if (" << transpile(*stmt.condition) << ") " << transpile(*stmt.thenBranch);
+    if (stmt.elseBranch) {
+        if_out << " else " << transpile(*stmt.elseBranch);
+    }
+    return if_out.str();
 }
 
 std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
@@ -80,4 +123,14 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
         value += " " + stmt.name.lexeme + ";";
     }
     return value;
+}
+
+std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
+    return "std::cout << (" + transpile(*stmt.expression) + ") << std::endl;";
+}
+
+std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
+    std::stringstream while_out;
+    while_out << "while (" << transpile(*stmt.condition) << ") " << transpile(*stmt.body);
+    return while_out.str();
 }

@@ -42,9 +42,12 @@ private:
     // Statement parsing
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> printStatement();
+    std::unique_ptr<Stmt> whileStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> letDeclaration();
+    std::vector<std::unique_ptr<Stmt>> block();
 
     const Token& consume(TokenType type, const std::string& message);
 };

@@ -29,6 +29,9 @@ std::any ASTPrinter::visitLiteralExpr(const LiteralExpr& expr) {
     if (std::holds_alternative<double>(expr.value)) {
         return std::to_string(std::get<double>(expr.value));
     }
+    if (std::holds_alternative<bool>(expr.value)) {
+        return std::string(std::get<bool>(expr.value) ? "true" : "false");
+    }
     return std::string("nil");
 }
 
@@ -40,8 +43,26 @@ std::any ASTPrinter::visitVariableExpr(const VariableExpr& expr) {
     return expr.name.lexeme;
 }
 
+std::any ASTPrinter::visitBlockStmt(const BlockStmt& stmt) {
+    std::vector<const Stmt*> stmts;
+    for (const auto& s : stmt.statements) {
+        stmts.push_back(s.get());
+    }
+    return parenthesizeStmts("block", stmts);
+}
+
 std::any ASTPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
     return parenthesize(";", {stmt.expression.get()});
+}
+
+std::any ASTPrinter::visitIfStmt(const IfStmt& stmt) {
+    std::stringstream builder;
+    if (stmt.elseBranch) {
+        builder << "(if-else " << print(*stmt.condition) << " " << print(*stmt.thenBranch) << " " << print(*stmt.elseBranch) << ")";
+    } else {
+        builder << "(if " << print(*stmt.condition) << " " << print(*stmt.thenBranch) << ")";
+    }
+    return builder.str();
 }
 
 std::any ASTPrinter::visitPrintStmt(const PrintStmt& stmt) {
@@ -55,12 +76,27 @@ std::any ASTPrinter::visitLetStmt(const LetStmt& stmt) {
     return std::string("(let " + stmt.name.lexeme + ")");
 }
 
+std::any ASTPrinter::visitWhileStmt(const WhileStmt& stmt) {
+    std::stringstream builder;
+    builder << "(while " << print(*stmt.condition) << " " << print(*stmt.body) << ")";
+    return builder.str();
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;
     for (const auto& expr : exprs) {
-        builder << " ";
-        builder << std::any_cast<std::string>(expr->accept(*this));
+        if(expr) builder << " " << print(*expr);
+    }
+    builder << ")";
+    return builder.str();
+}
+
+std::string ASTPrinter::parenthesizeStmts(const std::string& name, const std::vector<const Stmt*>& stmts) {
+    std::stringstream builder;
+    builder << "(" << name;
+    for (const auto& stmt : stmts) {
+        if(stmt) builder << " " << print(*stmt);
     }
     builder << ")";
     return builder.str();

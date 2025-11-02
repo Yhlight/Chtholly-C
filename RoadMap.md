@@ -30,13 +30,13 @@ This document outlines the planned development stages for the Chtholly programmi
   - [x] Implement expression statements (e.g., `a = 10;`).
   - [x] Implement a `print` statement (as a language construct for now).
   - [x] Implement the `Transpiler` to wrap top-level statements in a C++ `main` function.
-  - [ ] Implement the `Resolver` to handle variable declarations and scope.
+  - [x] Implement the `Resolver` to handle variable declarations and scope.
 
 ## Phase 3: Control Flow
 
-- [ ] Implement `if`/`else` statements.
-- [ ] Implement `Block` statements (`{ ... }`) and corresponding scope handling in the `Resolver`.
-- [ ] Implement `while` loops.
+- [x] Implement `if`/`else` statements.
+- [x] Implement `Block` statements (`{ ... }`) and corresponding scope handling in the `Resolver`.
+- [x] Implement `while` loops.
 - [ ] Implement `switch` statements with `case` and `fallthrough`.
 
 ## Phase 4: Functions

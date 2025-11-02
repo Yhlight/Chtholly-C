@@ -8,6 +8,8 @@ add_library(chtholly_lib STATIC
     Lexer.h
     Parser.cpp
     Parser.h
+    Resolver.cpp
+    Resolver.h
     Transpiler.cpp
     Transpiler.h
     AST/Expr.h

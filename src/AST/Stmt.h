@@ -6,15 +6,21 @@
 #include <any>
 
 // Forward declarations
+struct BlockStmt;
 struct ExpressionStmt;
+struct IfStmt;
 struct PrintStmt;
 struct LetStmt;
+struct WhileStmt;
 
 // Visitor interface
 struct StmtVisitor {
+    virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
     virtual std::any visitExpressionStmt(const ExpressionStmt& stmt) = 0;
+    virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
     virtual std::any visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
+    virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -25,6 +31,17 @@ struct Stmt {
 };
 
 // Concrete statement classes
+struct BlockStmt : Stmt {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    explicit BlockStmt(std::vector<std::unique_ptr<Stmt>> statements)
+        : statements(std::move(statements)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitBlockStmt(*this);
+    }
+};
+
 struct ExpressionStmt : Stmt {
     std::unique_ptr<Expr> expression;
 
@@ -33,6 +50,19 @@ struct ExpressionStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitExpressionStmt(*this);
+    }
+};
+
+struct IfStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+
+    IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitIfStmt(*this);
     }
 };
 
@@ -56,5 +86,17 @@ struct LetStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitLetStmt(*this);
+    }
+};
+
+struct WhileStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> body;
+
+    WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitWhileStmt(*this);
     }
 };

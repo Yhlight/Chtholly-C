@@ -4,6 +4,7 @@ add_executable(chtholly_tests
     ASTPrinterTests.cpp
     ParserTests.cpp
     TranspilerTests.cpp
+    ResolverTests.cpp
 )
 
 target_link_libraries(chtholly_tests

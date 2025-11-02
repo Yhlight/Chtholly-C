@@ -1,15 +1,14 @@
 #pragma once
 
-#include "Expr.h"
-#include "Stmt.h"
-#include <string>
+#include "AST/Expr.h"
+#include "AST/Stmt.h"
 #include <vector>
-#include <any>
+#include <map>
+#include <string>
 
-class ASTPrinter : public ExprVisitor, public StmtVisitor {
+class Resolver : public ExprVisitor, public StmtVisitor {
 public:
-    std::string print(const Expr& expr);
-    std::string print(const Stmt& stmt);
+    void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
 
     std::any visitAssignExpr(const AssignExpr& expr) override;
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
@@ -26,6 +25,14 @@ public:
     std::any visitWhileStmt(const WhileStmt& stmt) override;
 
 private:
-    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
-    std::string parenthesizeStmts(const std::string& name, const std::vector<const Stmt*>& stmts);
+    void resolve(const Stmt& stmt);
+    void resolve(const Expr& expr);
+
+    void beginScope();
+    void endScope();
+
+    void declare(const Token& name);
+    void define(const Token& name);
+
+    std::vector<std::map<std::string, bool>> scopes;
 };
