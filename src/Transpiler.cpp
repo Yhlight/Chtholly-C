@@ -58,10 +58,31 @@ std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
 }
 
 std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
-    out << "    auto " << stmt.name.lexeme;
+    out << "    ";
+    if (!stmt.isMutable) {
+        out << "const ";
+    }
+    out << "auto " << stmt.name.lexeme;
     if (stmt.initializer) {
         out << " = " << evaluate(*stmt.initializer);
     }
     out << ";\n";
+    return {};
+}
+
+std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
+std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
+    return expr.name.lexeme + " = " + evaluate(*expr.value);
+}
+
+std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
+    out << "    {\n";
+    for (const auto& statement : stmt.statements) {
+        execute(*statement);
+    }
+    out << "    }\n";
     return {};
 }

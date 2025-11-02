@@ -30,6 +30,14 @@ std::any ASTPrinter::visitUnaryExpr(const UnaryExpr& expr) {
     return parenthesize(expr.op.lexeme, {expr.right.get()});
 }
 
+std::any ASTPrinter::visitVariableExpr(const VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
+std::any ASTPrinter::visitAssignExpr(const AssignExpr& expr) {
+    return parenthesize("= " + expr.name.lexeme, {expr.value.get()});
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

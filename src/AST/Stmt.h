@@ -8,12 +8,14 @@
 struct ExpressionStmt;
 struct PrintStmt;
 struct LetStmt;
+struct BlockStmt;
 
 class StmtVisitor {
 public:
     virtual std::any visitExpressionStmt(const ExpressionStmt& stmt) = 0;
     virtual std::any visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
+    virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -48,11 +50,23 @@ struct PrintStmt : Stmt {
 struct LetStmt : Stmt {
     Token name;
     std::unique_ptr<Expr> initializer;
+    bool isMutable;
 
-    LetStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(name), initializer(std::move(initializer)) {}
+    LetStmt(Token name, std::unique_ptr<Expr> initializer, bool isMutable)
+        : name(name), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitLetStmt(*this);
+    }
+};
+
+struct BlockStmt : Stmt {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    explicit BlockStmt(std::vector<std::unique_ptr<Stmt>> statements)
+        : statements(std::move(statements)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitBlockStmt(*this);
     }
 };

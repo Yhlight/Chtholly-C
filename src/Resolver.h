@@ -2,20 +2,13 @@
 
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
-#include <string>
 #include <vector>
-#include <memory>
-#include <sstream>
+#include <map>
+#include <string>
 
-class Transpiler : public ExprVisitor, public StmtVisitor {
+class Resolver : public ExprVisitor, public StmtVisitor {
 public:
-    std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
-
-private:
-    std::string evaluate(const Expr& expr);
-    void execute(const Stmt& stmt);
-
-    std::stringstream out;
+    void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
@@ -28,4 +21,16 @@ private:
     std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitBlockStmt(const BlockStmt& stmt) override;
+
+private:
+    void resolve(const Stmt& stmt);
+    void resolve(const Expr& expr);
+
+    void beginScope();
+    void endScope();
+
+    void declare(const Token& name);
+    void define(const Token& name);
+
+    std::vector<std::map<std::string, bool>> scopes;
 };

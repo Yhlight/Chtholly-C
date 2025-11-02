@@ -56,3 +56,32 @@ TEST(ParserTest, PrintStatement) {
     PrintStmt* printStmt = dynamic_cast<PrintStmt*>(statements[0].get());
     ASSERT_NE(printStmt, nullptr);
 }
+
+TEST(ParserTest, MutLetStatement) {
+    std::string source = "mut x = 10;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    LetStmt* letStmt = dynamic_cast<LetStmt*>(statements[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    EXPECT_EQ(letStmt->name.lexeme, "x");
+    EXPECT_TRUE(letStmt->isMutable);
+}
+
+TEST(ParserTest, AssignmentExpression) {
+    std::string source = "x = 10;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    ExpressionStmt* stmt = dynamic_cast<ExpressionStmt*>(statements[0].get());
+    ASSERT_NE(stmt, nullptr);
+    AssignExpr* expr = dynamic_cast<AssignExpr*>(stmt->expression.get());
+    ASSERT_NE(expr, nullptr);
+    EXPECT_EQ(expr->name.lexeme, "x");
+}

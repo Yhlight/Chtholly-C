@@ -10,6 +10,8 @@ public:
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
     std::any visitLiteralExpr(const LiteralExpr& expr) override;
     std::any visitUnaryExpr(const UnaryExpr& expr) override;
+    std::any visitVariableExpr(const VariableExpr& expr) override;
+    std::any visitAssignExpr(const AssignExpr& expr) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);

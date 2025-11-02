@@ -2,6 +2,7 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "Transpiler.h"
+#include "Resolver.h"
 #include "Error.h"
 #include <iostream>
 #include <fstream>
@@ -34,6 +35,11 @@ void Chtholly::run(const std::string& source) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto statements = parser.parse();
+
+    if (ErrorReporter::hadError) return;
+
+    Resolver resolver;
+    resolver.resolve(statements);
 
     if (ErrorReporter::hadError) return;
 

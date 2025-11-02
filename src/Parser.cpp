@@ -13,7 +13,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
-        if (match({TokenType::LET})) return letDeclaration();
+        if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -22,18 +22,31 @@ std::unique_ptr<Stmt> Parser::declaration() {
 }
 
 std::unique_ptr<Stmt> Parser::letDeclaration() {
+    bool isMutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<LetStmt>(name, std::move(initializer));
+    return std::make_unique<LetStmt>(name, std::move(initializer), isMutable);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
+    if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
     if (match({TokenType::PRINT})) return printStatement();
     return expressionStatement();
+}
+
+std::vector<std::unique_ptr<Stmt>> Parser::block() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!isAtEnd() && peek().type != TokenType::RIGHT_BRACE) {
+        statements.push_back(declaration());
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
 }
 
 std::unique_ptr<Stmt> Parser::printStatement() {
@@ -49,7 +62,24 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
 }
 
 std::unique_ptr<Expr> Parser::expression() {
-    return equality();
+    return assignment();
+}
+
+std::unique_ptr<Expr> Parser::assignment() {
+    auto expr = equality();
+
+    if (match({TokenType::EQUAL})) {
+        Token equals = previous();
+        auto value = assignment();
+
+        if (auto* var = dynamic_cast<VariableExpr*>(expr.get())) {
+            return std::make_unique<AssignExpr>(var->name, std::move(value));
+        }
+
+        ErrorReporter::error(equals.line, "Invalid assignment target.");
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expr> Parser::equality() {
@@ -116,6 +146,10 @@ std::unique_ptr<Expr> Parser::primary() {
 
     if (match({TokenType::NUMBER, TokenType::STRING})) {
         return std::make_unique<LiteralExpr>(previous().literal);
+    }
+
+    if (match({TokenType::IDENTIFIER})) {
+        return std::make_unique<VariableExpr>(previous());
     }
 
     if (match({TokenType::LEFT_PAREN})) {
