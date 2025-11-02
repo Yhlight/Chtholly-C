@@ -27,7 +27,7 @@ TEST_F(ResolverTest, RedeclareVariable) {
 }
 
 TEST_F(ResolverTest, UseOfMovedValue) {
-    std::string source = "mut x = 1; let y = &mut x; print x;";
+    std::string source = "mut x = 1; let y = &mut x; print(x);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -71,7 +71,7 @@ TEST_F(ResolverTest, ReturnOutsideFunction) {
 }
 
 TEST_F(ResolverTest, IfScope) {
-    std::string source = "if (true) { let a = 1; } print a;";
+    std::string source = "if (true) { let a = 1; } print(a);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -82,7 +82,7 @@ TEST_F(ResolverTest, IfScope) {
 }
 
 TEST_F(ResolverTest, WhileScope) {
-    std::string source = "while (true) { let a = 1; } print a;";
+    std::string source = "while (true) { let a = 1; } print(a);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);

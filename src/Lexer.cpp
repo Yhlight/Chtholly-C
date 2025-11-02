@@ -19,7 +19,6 @@ std::map<std::string, TokenType> keywords = {
     {"impl",   TokenType::IMPL},
     {"for",    TokenType::FOR},
     {"import", TokenType::IMPORT},
-    {"print",  TokenType::PRINT},
 };
 
 Lexer::Lexer(const std::string& source) : source(source) {}

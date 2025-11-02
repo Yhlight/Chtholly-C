@@ -34,7 +34,6 @@ private:
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
-    std::any visitPrintStmt(const PrintStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitIfStmt(const IfStmt& stmt) override;

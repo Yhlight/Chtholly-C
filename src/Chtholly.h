@@ -10,8 +10,7 @@
 class Chtholly {
 public:
     Chtholly() = default;
-    std::vector<std::unique_ptr<Stmt>> run(const std::string& source);
-    Resolver& get_resolver() { return resolver; }
+    std::vector<std::unique_ptr<Stmt>> run(const std::string& source, bool is_module = false);
 
     static void runFile(const std::string& path);
     static void runPrompt();

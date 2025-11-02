@@ -24,11 +24,11 @@
 - [x] **Generics**: Implement generic functions and structs.
 - [x] **Lambda Expressions and Function Types**: Implement lambda expressions and function types.
 - [x] **Traits**: Implement traits for defining shared behavior.
-- [ ] **Modules**: Implement the module system with `import`. (In Progress)
+- [x] **Modules**: Implement the module system with `import`.
 
 ## Phase 4: Standard Library
 
-- [ ] **iostream**: Implement the `iostream` module for input and output.
+- [ ] **iostream**: Implement the `iostream` module for input and output. (In Progress)
 - [ ] **filesystem**: Implement the `filesystem` module for file system operations.
 - [ ] **operator**: Implement the `operator` module for operator overloading.
 - [ ] **reflect**: Implement the `reflect` module for static reflection.

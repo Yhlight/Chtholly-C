@@ -105,11 +105,6 @@ std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
     return {};
 }
 
-std::any Transpiler::visitPrintStmt(const PrintStmt& stmt) {
-    out << "    std::cout << " << evaluate(*stmt.expression) << " << std::endl;\n";
-    return {};
-}
-
 std::string to_cpp_type(const TypeInfo& type) {
     std::string cpp_type;
     if (type.baseType.lexeme == "string") {
@@ -191,6 +186,9 @@ std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
 }
 
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
+    if (stmt.is_std) {
+        return {};
+    }
     std::string path = std::get<std::string>(stmt.path.literal);
     if (transpiled_files.count(path)) {
         return {};
@@ -207,7 +205,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     buffer << file.rdbuf();
 
     Chtholly chtholly;
-    auto statements = chtholly.run(buffer.str());
+    auto statements = chtholly.run(buffer.str(), true);
 
     if (ErrorReporter::hadError) {
         return {};
@@ -332,6 +330,19 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
 }
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    if (auto* callee_var = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        if (callee_var->name.lexeme == "print") {
+            std::string args;
+            for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                args += evaluate(*expr.arguments[i]);
+                if (i < expr.arguments.size() - 1) {
+                    args += " << ";
+                }
+            }
+            return "std::cout << " + args + " << std::endl";
+        }
+    }
+
     std::string callee = evaluate(*expr.callee);
     if (!expr.generic_args.empty()) {
         callee += "<";

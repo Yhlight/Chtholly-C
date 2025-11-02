@@ -1,6 +1,11 @@
 #include "Resolver.h"
 #include "Error.h"
 
+Resolver::Resolver() {
+    scopes.emplace_back();
+    scopes.back()["print"] = VariableState{true, false, 0, false};
+}
+
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     for (const auto& statement : statements) {
         if (auto* trait = dynamic_cast<TraitStmt*>(statement.get())) {
@@ -116,11 +121,6 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     return {};
 }
 
-std::any Resolver::visitPrintStmt(const PrintStmt& stmt) {
-    resolve(*stmt.expression);
-    return {};
-}
-
 std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     resolve(*expr.left);
     resolve(*expr.right);
@@ -187,7 +187,14 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
 #include <fstream>
 #include <sstream>
 #include "Chtholly.h"
+
 std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
+    if (stmt.is_std) {
+        if (stmt.path.lexeme != "iostream") {
+            ErrorReporter::error(stmt.path.line, "Unknown standard library module.");
+        }
+        return {};
+    }
     std::string path = std::get<std::string>(stmt.path.literal);
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -198,20 +205,12 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
     buffer << file.rdbuf();
 
     Chtholly chtholly;
-    chtholly.run(buffer.str());
+    chtholly.run(buffer.str(), true);
 
     if (ErrorReporter::hadError) {
         return {};
     }
 
-    const auto& imported_symbols = chtholly.get_resolver().get_resolved_symbols();
-    for (const auto& pair : imported_symbols) {
-        if (scopes.back().count(pair.first)) {
-            // TODO: handle name clashes
-        } else {
-            scopes.back()[pair.first] = pair.second;
-        }
-    }
     return {};
 }
 

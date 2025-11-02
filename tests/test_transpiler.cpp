@@ -4,7 +4,7 @@
 #include "../src/Parser.h"
 
 TEST(TranspilerTest, SimplePrint) {
-    std::string source = "print 1 + 2;";
+    std::string source = "print(1 + 2);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -22,7 +22,7 @@ TEST(TranspilerTest, SimplePrint) {
 }
 
 TEST(TranspilerTest, Lambda) {
-    std::string source = "let x: function(int) -> int = [](a: int) -> int { return a; }; print x(1);";
+    std::string source = "let x: function(int) -> int = [](a: int) -> int { return a; }; print(x(1));";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -44,7 +44,7 @@ TEST(TranspilerTest, Lambda) {
 }
 
 TEST(TranspilerTest, GenericFunction) {
-    std::string source = "func foo<T>(a: T) -> T { return a; } print foo<int>(1);";
+    std::string source = "func foo<T>(a: T) -> T { return a; } print(foo<int>(1));";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -84,7 +84,7 @@ TEST(TranspilerTest, LetStatementWithReference) {
 }
 
 TEST(TranspilerTest, Struct) {
-    std::string source = "struct Point { mut x: int; mut y: int; } let p: Point; p.x = 1; print p.x;";
+    std::string source = "struct Point { mut x: int; mut y: int; } let p: Point; p.x = 1; print(p.x);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -164,7 +164,7 @@ TEST(TranspilerTest, StringDeclaration) {
 }
 
 TEST(TranspilerTest, LogicalAnd) {
-    std::string source = "print true && false;";
+    std::string source = "print(true && false);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -182,7 +182,7 @@ TEST(TranspilerTest, LogicalAnd) {
 }
 
 TEST(TranspilerTest, LogicalOr) {
-    std::string source = "print true || false;";
+    std::string source = "print(true || false);";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);

@@ -66,9 +66,15 @@ std::unique_ptr<Stmt> Parser::implDeclaration() {
 }
 
 std::unique_ptr<Stmt> Parser::importDeclaration() {
-    Token path = consume(TokenType::STRING, "Expect module path.");
-    consume(TokenType::SEMICOLON, "Expect ';' after module path.");
-    return std::make_unique<ImportStmt>(path);
+    if (match({TokenType::STRING})) {
+        Token path = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after module path.");
+        return std::make_unique<ImportStmt>(path, false);
+    } else {
+        Token name = consume(TokenType::IDENTIFIER, "Expect module name.");
+        consume(TokenType::SEMICOLON, "Expect ';' after module name.");
+        return std::make_unique<ImportStmt>(name, true);
+    }
 }
 
 std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_required) {
@@ -129,7 +135,6 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::IF})) return ifStatement();
     if (match({TokenType::WHILE})) return whileStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
-    if (match({TokenType::PRINT})) return printStatement();
     if (match({TokenType::RETURN})) return returnStatement();
     return expressionStatement();
 }
@@ -176,12 +181,6 @@ std::vector<std::unique_ptr<Stmt>> Parser::block() {
 
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
     return statements;
-}
-
-std::unique_ptr<Stmt> Parser::printStatement() {
-    auto value = expression();
-    consume(TokenType::SEMICOLON, "Expect ';' after value.");
-    return std::make_unique<PrintStmt>(std::move(value));
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement() {
@@ -493,7 +492,6 @@ void Parser::synchronize() {
             case TokenType::LET:
             case TokenType::IF:
             case TokenType::WHILE:
-            case TokenType::PRINT:
             case TokenType::RETURN:
                 return;
         }

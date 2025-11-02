@@ -187,7 +187,6 @@ Chtholly使用`function`关键字来表示函数类型，可以用于变量的�
 ```Chtholly
 let my_func: function(int, int) -> int = add;
 ```
-```
 
 #### lambda函数
 Chtholly的lambda函数使用与C++完全一致的语法  
@@ -490,13 +489,19 @@ func main(args: array[string]) -> Result<void, string>
 ```
 
 ### 模块与 `import`
-Chtholly 支持基于文件的模块系统，允许您将代码组织到多个文件中。`import` 关键字用于加载另一个文件中的代码并将其合并到当前作用域。
+Chtholly 支持模块系统，允许您将代码组织到多个文件中或使用标准库功能。`import` 关键字用于加载另一个模块中的代码并将其合并到当前作用域。
 
 #### 语法
-`import` 语句接受一个字符串字面量，表示您想要包含的 Chtholly 文件（`.cns`）的路径。
+`import` 语句接受两种形式：
+1.  **文件路径**: 一个字符串字面量，表示您想要包含的 Chtholly 文件（`.cns`）的路径。
+2.  **标准库模块名**: 一个标识符，表示您想要导入的标准库模块。
 
 ```Chtholly
+// 导入文件模块
 import "path/to/your_module.cns";
+
+// 导入标准库模块
+import iostream;
 ```
 
 #### 行为
@@ -525,15 +530,18 @@ func main() {
 ```
 
 ### iostream
-#### Print
+Chtholly 的标准库 `iostream` 模块提供了基本的输入/输出功能。
+
+#### print 函数
+`print` 是一个内置函数，用于将一个值输出到控制台，并在末尾添加换行符。
+
 ```Chtholly
-import iostream;  // 导入iostream模块
-import filestream.dir;  // 导入filestream的dir结构体
-
+// print 是一个内置函数，无需导入即可使用
 print("HelloWorld");
-
-iostream::print("HelloWorld");
+print(123);
 ```
+
+尽管 `print` 是内置的，但 `import iostream;` 语句用于正式地将 `iostream` 模块的功能引入作用域。在未来的版本中，`iostream` 模块将包含更多功能。
 
 #### inputstream
 #### outputstream

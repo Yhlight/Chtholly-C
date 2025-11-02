@@ -10,6 +10,7 @@ add_executable(
     test_resolver.cpp
     test_traits.cpp
     test_modules.cpp
+    test_std_import.cpp
 )
 
 target_link_libraries(

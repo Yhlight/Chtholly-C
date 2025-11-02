@@ -10,7 +10,6 @@
 class Expr;
 
 struct ExpressionStmt;
-struct PrintStmt;
 struct LetStmt;
 struct BlockStmt;
 struct IfStmt;
@@ -25,7 +24,6 @@ struct ImportStmt;
 class StmtVisitor {
 public:
     virtual std::any visitExpressionStmt(const ExpressionStmt& stmt) = 0;
-    virtual std::any visitPrintStmt(const PrintStmt& stmt) = 0;
     virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
     virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
     virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
@@ -53,17 +51,6 @@ struct ExpressionStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitExpressionStmt(*this);
-    }
-};
-
-struct PrintStmt : Stmt {
-    std::unique_ptr<Expr> expression;
-
-    explicit PrintStmt(std::unique_ptr<Expr> expression)
-        : expression(std::move(expression)) {}
-
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visitPrintStmt(*this);
     }
 };
 
@@ -203,9 +190,10 @@ struct ImplStmt : Stmt {
 
 struct ImportStmt : Stmt {
     Token path;
+    bool is_std;
 
-    explicit ImportStmt(Token path)
-        : path(path) {}
+    explicit ImportStmt(Token path, bool is_std = false)
+        : path(path), is_std(is_std) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitImportStmt(*this);
