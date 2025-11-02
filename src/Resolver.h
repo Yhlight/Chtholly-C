@@ -6,6 +6,13 @@
 #include <map>
 #include <string>
 
+struct VariableState {
+    bool defined = false;
+    bool is_mutable = false;
+    int immutable_borrows = 0;
+    bool moved = false;
+};
+
 class Resolver : public ExprVisitor, public StmtVisitor {
 public:
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
@@ -53,7 +60,7 @@ private:
     void define(const Token& name);
     void resolveLocal(const Expr& expr, const Token& name);
 
-    std::vector<std::map<std::string, bool>> scopes;
+    std::vector<std::map<std::string, VariableState>> scopes;
     FunctionType currentFunction = FunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
 };

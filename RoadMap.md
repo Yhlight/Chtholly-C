@@ -20,7 +20,7 @@
 ## Phase 3: Advanced Language Features
 
 - [x] **Structs**: Implement struct definitions and instantiation.
-- [ ] **Ownership System**: Implement the ownership system with `&` and `&mut` references.
+- [ ] **Ownership System**: Implement the ownership system with `&` and `&mut` references. (In Progress)
 - [ ] **Generics**: Implement generic functions and structs.
 - [ ] **Traits**: Implement traits for defining shared behavior.
 - [ ] **Modules**: Implement the module system with `import`.

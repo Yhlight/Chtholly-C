@@ -28,12 +28,12 @@ void Resolver::declare(const Token& name) {
     if (scopes.back().count(name.lexeme)) {
         ErrorReporter::error(name.line, "Already a variable with this name in this scope.");
     }
-    scopes.back()[name.lexeme] = false;
+    scopes.back()[name.lexeme] = VariableState();
 }
 
 void Resolver::define(const Token& name) {
     if (scopes.empty()) return;
-    scopes.back()[name.lexeme] = true;
+    scopes.back()[name.lexeme].defined = true;
 }
 
 std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
@@ -49,21 +49,43 @@ std::any Resolver::visitLetStmt(const LetStmt& stmt) {
         resolve(*stmt.initializer);
     }
     define(stmt.name);
+    if (!scopes.empty()) {
+        scopes.back()[stmt.name.lexeme].is_mutable = stmt.isMutable;
+    }
     return {};
 }
 
 std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
-    if (!scopes.empty() && scopes.back().count(expr.name.lexeme) && !scopes.back().at(expr.name.lexeme)) {
+    if (!scopes.empty() && scopes.back().count(expr.name.lexeme) && !scopes.back().at(expr.name.lexeme).defined) {
         ErrorReporter::error(expr.name.line, "Can't read local variable in its own initializer.");
     }
 
     resolveLocal(expr, expr.name);
+    for (int i = scopes.size() - 1; i >= 0; i--) {
+        if (scopes[i].count(expr.name.lexeme)) {
+            if (scopes[i].at(expr.name.lexeme).moved) {
+                ErrorReporter::error(expr.name.line, "Use of moved value.");
+            }
+            return {};
+        }
+    }
     return {};
 }
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     resolve(*expr.value);
     resolveLocal(expr, expr.name);
+    for (int i = scopes.size() - 1; i >= 0; i--) {
+        if (scopes[i].count(expr.name.lexeme)) {
+            if (!scopes[i].at(expr.name.lexeme).is_mutable) {
+                ErrorReporter::error(expr.name.line, "Cannot assign to an immutable variable.");
+            }
+            if (scopes[i].at(expr.name.lexeme).immutable_borrows > 0) {
+                ErrorReporter::error(expr.name.line, "Cannot assign to a variable that is currently borrowed.");
+            }
+            return {};
+        }
+    }
     return {};
 }
 
@@ -106,6 +128,24 @@ std::any Resolver::visitSetExpr(const SetExpr& expr) {
 
 std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
     resolve(*expr.expression);
+    if (auto* var = dynamic_cast<const VariableExpr*>(expr.expression.get())) {
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            if (scopes[i].count(var->name.lexeme)) {
+                if (expr.isMutable) {
+                    if (!scopes[i].at(var->name.lexeme).is_mutable) {
+                        ErrorReporter::error(var->name.line, "Cannot mutably borrow an immutable variable.");
+                    }
+                    if (scopes[i].at(var->name.lexeme).immutable_borrows > 0) {
+                        ErrorReporter::error(var->name.line, "Cannot mutably borrow a variable that is currently immutably borrowed.");
+                    }
+                    scopes[i][var->name.lexeme].moved = true;
+                } else {
+                    scopes[i][var->name.lexeme].immutable_borrows++;
+                }
+                return {};
+            }
+        }
+    }
     return {};
 }
 
@@ -116,7 +156,7 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     define(stmt.name);
 
     beginScope();
-    scopes.back()["self"] = true;
+    scopes.back()["self"] = VariableState{true, false, 0, false};
 
     for (const auto& field : stmt.fields) {
         resolve(*field);

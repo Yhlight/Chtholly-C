@@ -26,6 +26,39 @@ TEST_F(ResolverTest, RedeclareVariable) {
     ASSERT_TRUE(ErrorReporter::hadError);
 }
 
+TEST_F(ResolverTest, UseOfMovedValue) {
+    std::string source = "mut x = 1; let y = &mut x; print x;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
+TEST_F(ResolverTest, MutableBorrowOfImmutablyBorrowedVariable) {
+    std::string source = "mut x = 1; let y = &x; let z = &mut x;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
+TEST_F(ResolverTest, MutableBorrowOfImmutableVariable) {
+    std::string source = "let x = 1; let y = &mut x;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
 TEST_F(ResolverTest, ReturnOutsideFunction) {
     std::string source = "return 1;";
     Lexer lexer(source);
