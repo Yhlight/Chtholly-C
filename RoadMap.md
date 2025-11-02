@@ -51,7 +51,7 @@ This document outlines the planned development stages for the Chtholly programmi
 
 - [x] Implement `struct` declarations, including member variables and methods.
 - [x] Implement struct instantiation and field access (`.`).
-- [ ] Implement `self` keyword (`self`, `&self`, `&mut self`).
+- [x] Implement `self` keyword (`self`, `&self`, `&mut self`).
 - [ ] Handle static-like methods (no `self` parameter).
 - [ ] Implement `enum` declarations.
 - [ ] Implement basic array support (declaration and initialization).

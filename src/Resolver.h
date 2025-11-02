@@ -19,6 +19,7 @@ public:
     std::any visitCallExpr(const CallExpr& expr) override;
     std::any visitGetExpr(const GetExpr& expr) override;
     std::any visitSetExpr(const SetExpr& expr) override;
+    std::any visitThisExpr(const ThisExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
@@ -48,4 +49,5 @@ private:
     std::vector<std::map<std::string, bool>> scopes;
     bool inSwitch = false;
     bool inFunction = false;
+    bool inStruct = false;
 };

@@ -115,6 +115,10 @@ std::any Transpiler::visitSetExpr(const SetExpr& expr) {
     return transpile(*expr.object) + "." + expr.name.lexeme + " = " + transpile(*expr.value);
 }
 
+std::any Transpiler::visitThisExpr(const ThisExpr& expr) {
+    return std::string("this");
+}
+
 // Statement visitor methods
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
     std::stringstream block_out;
@@ -226,6 +230,10 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     for (const auto& field : stmt.fields) {
         write_indent();
         struct_out << transpile(*field) << "\n";
+    }
+    for (const auto& method : stmt.methods) {
+        write_indent();
+        struct_out << transpile(*method) << "\n";
     }
     dedent();
     write_indent();

@@ -104,6 +104,8 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
+    if (match({TokenType::SELF})) return std::make_unique<ThisExpr>(previous());
+
     if (match({TokenType::IDENTIFIER})) {
         return std::make_unique<VariableExpr>(previous());
     }
@@ -369,8 +371,11 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<LetStmt>> fields;
+    std::vector<std::unique_ptr<FuncStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        if (match({TokenType::LET, TokenType::MUT})) {
+        if (match({TokenType::FUNC})) {
+            methods.push_back(std::unique_ptr<FuncStmt>(dynamic_cast<FuncStmt*>(function("method").release())));
+        } else if (match({TokenType::LET, TokenType::MUT})) {
             Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
             std::unique_ptr<Expr> initializer = nullptr;
             if (match({TokenType::EQUAL})) {
@@ -379,9 +384,9 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
             consume(TokenType::SEMICOLON, "Expect ';' after field declaration.");
             fields.push_back(std::make_unique<LetStmt>(std::move(fieldName), std::move(initializer)));
         } else {
-            error(peek(), "Expect 'let' or 'mut' in struct body.");
+            error(peek(), "Expect 'let', 'mut', or 'func' in struct body.");
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(std::move(name), std::move(fields));
+    return std::make_unique<StructStmt>(std::move(name), std::move(fields), std::move(methods));
 }

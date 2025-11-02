@@ -59,6 +59,10 @@ std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
     return parenthesize("= ." + expr.name.lexeme, {expr.object.get(), expr.value.get()});
 }
 
+std::any ASTPrinter::visitThisExpr(const ThisExpr& expr) {
+    return "self";
+}
+
 std::any ASTPrinter::visitBlockStmt(const BlockStmt& stmt) {
     std::vector<const Stmt*> stmts;
     for (const auto& s : stmt.statements) {

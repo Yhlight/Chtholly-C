@@ -118,6 +118,21 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);
+
+    bool previousInStruct = inStruct;
+    inStruct = true;
+
+    beginScope();
+    scopes.back()["self"] = true;
+
+    for (const auto& method : stmt.methods) {
+        resolveFunction(*method);
+    }
+
+    endScope();
+
+    inStruct = previousInStruct;
+
     return {};
 }
 
@@ -129,6 +144,13 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
     resolve(*expr.value);
     resolve(*expr.object);
+    return {};
+}
+
+std::any Resolver::visitThisExpr(const ThisExpr& expr) {
+    if (!inStruct) {
+        ErrorReporter::error(expr.keyword.line, "Cannot use 'self' outside of a struct.");
+    }
     return {};
 }
 

@@ -15,6 +15,7 @@ struct VariableExpr;
 struct CallExpr;
 struct GetExpr;
 struct SetExpr;
+struct ThisExpr;
 
 // Visitor interface
 struct ExprVisitor {
@@ -27,6 +28,7 @@ struct ExprVisitor {
     virtual std::any visitCallExpr(const CallExpr& expr) = 0;
     virtual std::any visitGetExpr(const GetExpr& expr) = 0;
     virtual std::any visitSetExpr(const SetExpr& expr) = 0;
+    virtual std::any visitThisExpr(const ThisExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -140,5 +142,15 @@ struct SetExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitSetExpr(*this);
+    }
+};
+
+struct ThisExpr : Expr {
+    Token keyword;
+
+    explicit ThisExpr(Token keyword) : keyword(std::move(keyword)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitThisExpr(*this);
     }
 };

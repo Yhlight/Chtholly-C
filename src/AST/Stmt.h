@@ -185,9 +185,10 @@ struct ReturnStmt : Stmt {
 struct StructStmt : Stmt {
     Token name;
     std::vector<std::unique_ptr<LetStmt>> fields;
+    std::vector<std::unique_ptr<FuncStmt>> methods;
 
-    StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields)
-        : name(std::move(name)), fields(std::move(fields)) {}
+    StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields, std::vector<std::unique_ptr<FuncStmt>> methods)
+        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitStructStmt(*this);
