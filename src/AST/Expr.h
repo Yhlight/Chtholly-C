@@ -12,6 +12,7 @@ struct GroupingExpr;
 struct LiteralExpr;
 struct UnaryExpr;
 struct VariableExpr;
+struct CallExpr;
 
 // Visitor interface
 struct ExprVisitor {
@@ -21,6 +22,7 @@ struct ExprVisitor {
     virtual std::any visitLiteralExpr(const LiteralExpr& expr) = 0;
     virtual std::any visitUnaryExpr(const UnaryExpr& expr) = 0;
     virtual std::any visitVariableExpr(const VariableExpr& expr) = 0;
+    virtual std::any visitCallExpr(const CallExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -96,5 +98,18 @@ struct VariableExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitVariableExpr(*this);
+    }
+};
+
+struct CallExpr : Expr {
+    std::unique_ptr<Expr> callee;
+    Token paren; // For error reporting.
+    std::vector<std::unique_ptr<Expr>> arguments;
+
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitCallExpr(*this);
     }
 };

@@ -41,10 +41,10 @@ This document outlines the planned development stages for the Chtholly programmi
 
 ## Phase 4: Functions
 
-- [ ] Implement `func` statement parsing for function declarations.
-- [ ] Implement function call expressions.
-- [ ] Implement `return` statements.
-- [ ] Update `Resolver` to handle function scopes and parameters.
+- [x] Implement `func` statement parsing for function declarations.
+- [x] Implement function call expressions.
+- [x] Implement `return` statements.
+- [x] Update `Resolver` to handle function scopes and parameters.
 - [ ] (Stretch Goal) Implement Lambda function expressions.
 
 ## Phase 5: Data Structures

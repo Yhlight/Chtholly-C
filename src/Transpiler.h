@@ -18,6 +18,7 @@ public:
     std::any visitLiteralExpr(const LiteralExpr& expr) override;
     std::any visitUnaryExpr(const UnaryExpr& expr) override;
     std::any visitVariableExpr(const VariableExpr& expr) override;
+    std::any visitCallExpr(const CallExpr& expr) override;
 
     // Statement visitor methods
     std::any visitBlockStmt(const BlockStmt& stmt) override;
@@ -30,6 +31,8 @@ public:
     std::any visitCaseStmt(const CaseStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitFuncStmt(const FuncStmt& stmt) override;
+    std::any visitReturnStmt(const ReturnStmt& stmt) override;
 
 private:
     std::string transpile(const Expr& expr);

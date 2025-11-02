@@ -115,6 +115,44 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     return {};
 }
 
+std::any Resolver::visitFuncStmt(const FuncStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+    resolveFunction(stmt);
+    return {};
+}
+
+void Resolver::resolveFunction(const FuncStmt& function) {
+    bool previousInFunction = inFunction;
+    inFunction = true;
+    beginScope();
+    for (const auto& param : function.params) {
+        declare(param);
+        define(param);
+    }
+    resolve(function.body->statements);
+    endScope();
+    inFunction = previousInFunction;
+}
+
+std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
+    if (!inFunction) {
+        ErrorReporter::error(stmt.keyword.line, "Cannot return from top-level code.");
+    }
+    if (stmt.value) {
+        resolve(*stmt.value);
+    }
+    return {};
+}
+
+std::any Resolver::visitCallExpr(const CallExpr& expr) {
+    resolve(*expr.callee);
+    for (const auto& arg : expr.arguments) {
+        resolve(*arg);
+    }
+    return {};
+}
+
 std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
     resolve(*stmt.expression);
     bool previousInSwitch = inSwitch;

@@ -6,6 +6,7 @@ add_executable(chtholly_tests
     TranspilerTests.cpp
         SwitchTests.cpp
     ResolverTests.cpp
+    FunctionTests.cpp
 )
 
 target_link_libraries(chtholly_tests

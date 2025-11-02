@@ -10,11 +10,18 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     out << "#include <iostream>\n";
     out << "#include <string>\n";
     out << "#include <variant>\n\n";
+
+    for (const auto& statement : statements) {
+        if (statement && dynamic_cast<FuncStmt*>(statement.get())) {
+            out << transpile(*statement) << "\n";
+        }
+    }
+
     out << "int main() {\n";
     indent();
 
     for (const auto& statement : statements) {
-        if (statement) {
+        if (statement && !dynamic_cast<FuncStmt*>(statement.get())) {
             write_indent();
             out << transpile(*statement) << "\n";
         }
@@ -85,6 +92,19 @@ std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
 
 std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
     return expr.name.lexeme;
+}
+
+std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    std::stringstream call_out;
+    call_out << transpile(*expr.callee) << "(";
+    for (int i = 0; i < expr.arguments.size(); ++i) {
+        call_out << transpile(*expr.arguments[i]);
+        if (i < expr.arguments.size() - 1) {
+            call_out << ", ";
+        }
+    }
+    call_out << ")";
+    return call_out.str();
 }
 
 // Statement visitor methods
@@ -169,4 +189,24 @@ std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
 
 std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
     return std::string("[[fallthrough]];");
+}
+
+std::any Transpiler::visitFuncStmt(const FuncStmt& stmt) {
+    std::stringstream func_out;
+    func_out << "auto " << stmt.name.lexeme << "(";
+    for (int i = 0; i < stmt.params.size(); ++i) {
+        func_out << "auto " << stmt.params[i].lexeme;
+        if (i < stmt.params.size() - 1) {
+            func_out << ", ";
+        }
+    }
+    func_out << ") " << transpile(*stmt.body);
+    return func_out.str();
+}
+
+std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
+    if (stmt.value) {
+        return "return " + transpile(*stmt.value) + ";";
+    }
+    return std::string("return;");
 }

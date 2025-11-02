@@ -16,6 +16,8 @@ struct SwitchStmt;
 struct CaseStmt;
 struct BreakStmt;
 struct FallthroughStmt;
+struct FuncStmt;
+struct ReturnStmt;
 
 // Visitor interface
 struct StmtVisitor {
@@ -29,6 +31,8 @@ struct StmtVisitor {
     virtual std::any visitCaseStmt(const CaseStmt& stmt) = 0;
     virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
+    virtual std::any visitFuncStmt(const FuncStmt& stmt) = 0;
+    virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -148,5 +152,30 @@ struct FallthroughStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitFallthroughStmt(*this);
+    }
+};
+
+struct FuncStmt : Stmt {
+    Token name;
+    std::vector<Token> params;
+    std::unique_ptr<BlockStmt> body;
+
+    FuncStmt(Token name, std::vector<Token> params, std::unique_ptr<BlockStmt> body)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitFuncStmt(*this);
+    }
+};
+
+struct ReturnStmt : Stmt {
+    Token keyword;
+    std::unique_ptr<Expr> value;
+
+    ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
+        : keyword(std::move(keyword)), value(std::move(value)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitReturnStmt(*this);
     }
 };

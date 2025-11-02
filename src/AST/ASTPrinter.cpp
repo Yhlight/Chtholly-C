@@ -43,6 +43,14 @@ std::any ASTPrinter::visitVariableExpr(const VariableExpr& expr) {
     return expr.name.lexeme;
 }
 
+std::any ASTPrinter::visitCallExpr(const CallExpr& expr) {
+    std::vector<const Expr*> exprs;
+    for (const auto& arg : expr.arguments) {
+        exprs.push_back(arg.get());
+    }
+    return parenthesize("call " + print(*expr.callee), exprs);
+}
+
 std::any ASTPrinter::visitBlockStmt(const BlockStmt& stmt) {
     std::vector<const Stmt*> stmts;
     for (const auto& s : stmt.statements) {
@@ -108,6 +116,23 @@ std::any ASTPrinter::visitBreakStmt(const BreakStmt& stmt) {
 
 std::any ASTPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) {
     return std::string("fallthrough");
+}
+
+std::any ASTPrinter::visitFuncStmt(const FuncStmt& stmt) {
+    std::stringstream builder;
+    builder << "(func " << stmt.name.lexeme << "(";
+    for (const auto& param : stmt.params) {
+        builder << " " << param.lexeme;
+    }
+    builder << ") " << print(*stmt.body) << ")";
+    return builder.str();
+}
+
+std::any ASTPrinter::visitReturnStmt(const ReturnStmt& stmt) {
+    if (stmt.value) {
+        return parenthesize("return", {stmt.value.get()});
+    }
+    return std::string("(return)");
 }
 
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
