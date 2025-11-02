@@ -7,7 +7,7 @@
 - [x] **Lexer**: Implement a lexer to tokenize the Chtholly source code.
 - [x] **Parser**: Implement a recursive descent parser to build an Abstract Syntax Tree (AST).
 - [x] **AST**: Define the data structures for the AST.
-- [ ] **Basic Transpiler**: Implement a basic transpiler that can generate C++ code from a simple AST.
+- [x] **Basic Transpiler**: Implement a basic transpiler that can generate C++ code from a simple AST.
 
 ## Phase 2: Core Language Features
 
