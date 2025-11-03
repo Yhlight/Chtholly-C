@@ -13,7 +13,10 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-add_executable(chtholly_tests LexerTest.cpp)
+add_executable(chtholly_tests
+  LexerTest.cpp
+  ParserTest.cpp
+)
 
 target_link_libraries(chtholly_tests
   PRIVATE
