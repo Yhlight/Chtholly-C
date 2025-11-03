@@ -142,34 +142,36 @@ std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
 }
 
 std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
-    if (stmt.traitName) {
-        if (traits.find(stmt.traitName->lexeme) == traits.end()) {
-            ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
-            return {};
-        }
-        if (!structs.count(stmt.structName.lexeme)) {
-            ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
-            return {};
-        }
-
-        const auto* trait = traits.at(stmt.traitName->lexeme);
-        if (trait->methods.size() != stmt.methods.size()) {
-            ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
-            return {};
-        }
-
-        for (size_t i = 0; i < trait->methods.size(); ++i) {
-            const auto& traitMethod = trait->methods[i];
-            const auto& implMethod = stmt.methods[i];
-            if (traitMethod->name.lexeme != implMethod->name.lexeme) {
-                ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+    if (!stmt.traitNames.empty()) {
+        for (const auto& traitName : stmt.traitNames) {
+            if (traits.find(traitName.lexeme) == traits.end()) {
+                ErrorReporter::error(traitName.line, "Trait '" + traitName.lexeme + "' not found.");
+                return {};
             }
-            if (traitMethod->params.size() != implMethod->params.size()) {
-                ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+            if (!structs.count(stmt.structName.lexeme)) {
+                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+                return {};
             }
-            for (size_t j = 0; j < traitMethod->params.size(); ++j) {
-                if (traitMethod->params[j].second.baseType.lexeme != implMethod->params[j].second.baseType.lexeme) {
-                    ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+
+            const auto* trait = traits.at(traitName.lexeme);
+            if (trait->methods.size() != stmt.methods.size()) {
+                ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
+                return {};
+            }
+
+            for (size_t i = 0; i < trait->methods.size(); ++i) {
+                const auto& traitMethod = trait->methods[i];
+                const auto& implMethod = stmt.methods[i];
+                if (traitMethod->name.lexeme != implMethod->name.lexeme) {
+                    ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+                }
+                if (traitMethod->params.size() != implMethod->params.size()) {
+                    ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+                }
+                for (size_t j = 0; j < traitMethod->params.size(); ++j) {
+                    if (traitMethod->params[j].second.baseType.lexeme != implMethod->params[j].second.baseType.lexeme) {
+                        ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+                    }
                 }
             }
         }

@@ -12,6 +12,7 @@ add_executable(
     test_modules.cpp
     test_std_import.cpp
     test_filesystem.cpp
+    test_operator_overload.cpp
 )
 
 target_link_libraries(

@@ -30,7 +30,7 @@
 
 - [x] **iostream**: Implement the `iostream` module for input and output.
 - [ ] **filesystem**: Implement the `filesystem` module for file system operations. (In Progress)
-- [ ] **operator**: Implement the `operator` module for operator overloading.
+- [x] **operator**: Implement the `operator` module for operator overloading.
 - [ ] **reflect**: Implement the `reflect` module for static reflection.
 - [ ] **meta**: Implement the `meta` module for metaprogramming.
 

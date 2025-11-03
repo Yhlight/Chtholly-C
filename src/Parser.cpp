@@ -53,16 +53,22 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
 }
 
 std::unique_ptr<Stmt> Parser::implDeclaration() {
-    Token traitName = consume(TokenType::IDENTIFIER, "Expect trait name.");
-    consume(TokenType::FOR, "Expect 'for' after trait name.");
     Token structName = consume(TokenType::IDENTIFIER, "Expect struct name.");
+
+    std::vector<Token> traitNames;
+    if (match({TokenType::IMPL})) {
+        do {
+            traitNames.push_back(consume(TokenType::IDENTIFIER, "Expect trait name."));
+        } while (match({TokenType::COMMA}));
+    }
+
     consume(TokenType::LEFT_BRACE, "Expect '{' before impl body.");
     std::vector<std::unique_ptr<Stmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         methods.push_back(function("method", true));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
-    return std::make_unique<ImplStmt>(structName, traitName, std::move(methods));
+    return std::make_unique<ImplStmt>(structName, std::move(traitNames), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::importDeclaration() {

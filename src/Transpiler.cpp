@@ -5,6 +5,7 @@
 #include "Error.h"
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module) {
+    symbol_table.emplace_back();
     // Pre-scan for ImplStmts to populate the map
     for (const auto& stmt : statements) {
         if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
@@ -121,6 +122,19 @@ std::string Transpiler::evaluate(const Expr& expr) {
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+    TypeInfo left_type = get_type(*expr.left);
+    TypeInfo right_type = get_type(*expr.right);
+
+    if (impls.count(left_type.baseType.lexeme)) {
+        std::string trait_name = "operator::" + op_to_trait(expr.op.lexeme);
+        const auto* impl = impls.at(left_type.baseType.lexeme);
+        for (const auto& name : impl->traitNames) {
+            if (name.lexeme == trait_name) {
+                return evaluate(*expr.left) + "." + op_to_trait(expr.op.lexeme) + "(" + evaluate(*expr.right) + ")";
+            }
+        }
+    }
+
     return "(" + evaluate(*expr.left) + " " + expr.op.lexeme + " " + evaluate(*expr.right) + ")";
 }
 
@@ -189,11 +203,17 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     if (!stmt.isMutable && !is_struct && !(stmt.type && stmt.type->isReference) && !(stmt.type && stmt.type->baseType.type == TokenType::FUNCTION)) {
         out << "const ";
     }
+
+    TypeInfo type;
     if (stmt.type) {
-        out << to_cpp_type(*stmt.type) << " " << stmt.name.lexeme;
+        type = *stmt.type;
+        out << to_cpp_type(type) << " " << stmt.name.lexeme;
     } else {
+        type = get_type(*stmt.initializer);
         out << "auto " << stmt.name.lexeme;
     }
+    symbol_table.back()[stmt.name.lexeme] = type;
+
     if (stmt.initializer) {
         out << " = " << evaluate(*stmt.initializer);
     }
@@ -312,8 +332,14 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme;
     if (impls.count(stmt.name.lexeme)) {
         const auto* impl = impls.at(stmt.name.lexeme);
-        if (impl->traitName) {
-            out << " : public " << impl->traitName->lexeme;
+        if (!impl->traitNames.empty()) {
+            out << " : ";
+            for (size_t i = 0; i < impl->traitNames.size(); ++i) {
+                out << "public " << impl->traitNames[i].lexeme;
+                if (i < impl->traitNames.size() - 1) {
+                    out << ", ";
+                }
+            }
         }
     }
     out << " {\n";
@@ -350,11 +376,13 @@ std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
 }
 
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
+    symbol_table.emplace_back();
     out << "    {\n";
     for (const auto& statement : stmt.statements) {
         execute(*statement);
     }
     out << "    }\n";
+    symbol_table.pop_back();
     return {};
 }
 
@@ -471,4 +499,50 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     }
     out << ";\n";
     return {};
+}
+
+TypeInfo Transpiler::get_type(const Expr& expr) {
+    if (auto* literal = dynamic_cast<const LiteralExpr*>(&expr)) {
+        if (std::holds_alternative<std::string>(literal->value)) {
+            return TypeInfo{Token{TokenType::STRING, "string", "string", 0}};
+        } else if (std::holds_alternative<double>(literal->value)) {
+            return TypeInfo{Token{TokenType::NUMBER, "double", 0.0, 0}};
+        } else if (std::holds_alternative<bool>(literal->value)) {
+            return TypeInfo{Token{TokenType::TRUE, "bool", true, 0}};
+        }
+    } else if (auto* var = dynamic_cast<const VariableExpr*>(&expr)) {
+        for (auto it = symbol_table.rbegin(); it != symbol_table.rend(); ++it) {
+            if (it->count(var->name.lexeme)) {
+                return (*it)[var->name.lexeme];
+            }
+        }
+        ErrorReporter::error(var->name.line, "Undefined variable '" + var->name.lexeme + "'.");
+    } else if (auto* binary = dynamic_cast<const BinaryExpr*>(&expr)) {
+        TypeInfo left_type = get_type(*binary->left);
+        if (impls.count(left_type.baseType.lexeme)) {
+            const auto* impl = impls.at(left_type.baseType.lexeme);
+            std::string method_name = op_to_trait(binary->op.lexeme);
+            for (const auto& method : impl->methods) {
+                if (method->name.lexeme == method_name) {
+                    return *method->returnType;
+                }
+            }
+        }
+    } else if (auto* group = dynamic_cast<const GroupingExpr*>(&expr)) {
+        return get_type(*group->expression);
+    } else if (auto* call = dynamic_cast<const CallExpr*>(&expr)) {
+        // This is a simplified implementation. A real implementation would need to
+        // look up the function signature and return its return type.
+        if (auto* callee = dynamic_cast<const VariableExpr*>(call->callee.get())) {
+            for (auto it = symbol_table.rbegin(); it != symbol_table.rend(); ++it) {
+                if (it->count(callee->name.lexeme)) {
+                    TypeInfo type = (*it)[callee->name.lexeme];
+                    if (type.returnType) {
+                        return *type.returnType;
+                    }
+                }
+            }
+        }
+    }
+    return TypeInfo{Token{TokenType::END_OF_FILE, "void", std::monostate{}, 0}};
 }

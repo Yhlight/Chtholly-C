@@ -167,11 +167,11 @@ struct TraitStmt : Stmt {
 
 struct ImplStmt : Stmt {
     Token structName;
-    std::optional<Token> traitName;
+    std::vector<Token> traitNames;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    ImplStmt(Token structName, std::optional<Token> traitName, std::vector<std::unique_ptr<Stmt>> raw_methods)
-        : structName(structName), traitName(traitName) {
+    ImplStmt(Token structName, std::vector<Token> traitNames, std::vector<std::unique_ptr<Stmt>> raw_methods)
+        : structName(structName), traitNames(std::move(traitNames)) {
         for (auto& stmt : raw_methods) {
             auto func_stmt = dynamic_cast<FunctionStmt*>(stmt.get());
             if (func_stmt) {

@@ -9,6 +9,28 @@
 #include <map>
 #include <set>
 
+#include "TypeInfo.h"
+
+// Forward declaration
+class Transpiler;
+
+inline std::string op_to_trait(const std::string& op) {
+    if (op == "+") return "add";
+    if (op == "-") return "sub";
+    if (op == "*") return "mul";
+    if (op == "/") return "div";
+    if (op == "%") return "mod";
+    if (op == "==") return "equal";
+    if (op == "!=") return "not_equal";
+    if (op == "<") return "less";
+    if (op == "<=") return "less_equal";
+    if (op == ">") return "greater";
+    if (op == ">=") return "greater_equal";
+    if (op == "&&") return "and";
+    if (op == "||") return "or";
+    return "";
+}
+
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module = false);
@@ -16,10 +38,12 @@ public:
 private:
     std::string evaluate(const Expr& expr);
     void execute(const Stmt& stmt);
+    TypeInfo get_type(const Expr& expr);
 
     std::stringstream out;
     std::map<std::string, const ImplStmt*> impls;
     std::set<std::string> transpiled_files;
+    std::vector<std::map<std::string, TypeInfo>> symbol_table;
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
