@@ -19,7 +19,9 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
 
     // Phase 1: Header generation for the main file
     if (!is_module) {
-        out << "#include <iostream>\n";
+        if (imported_std_modules.count("iostream") || imported_std_modules.count("filesystem")) {
+            out << "#include <iostream>\n";
+        }
         out << "#include <variant>\n";
         out << "#include <string>\n";
         bool has_lambda = false;
@@ -34,37 +36,6 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         }
         if (has_lambda) {
             out << "#include <functional>\n";
-        }
-        if (imported_std_modules.count("reflect")) {
-            out << "#include <any>\n";
-            out << "class chtholly_field {\n"
-                << "public:\n"
-                << "    chtholly_field(std::string name, std::string type, std::any value)\n"
-                << "        : name(std::move(name)), type(std::move(type)), value(std::move(value)) {}\n\n"
-                << "    std::string get_name() const { return name; }\n"
-                << "    std::string get_type() const { return type; }\n"
-                << "    std::any get_value() const { return value; }\n\n"
-                << "private:\n"
-                << "    std::string name;\n"
-                << "    std::string type;\n"
-                << "    std::any value;\n"
-                << "};\n\n";
-            out << "struct chtholly_parameter {\n"
-                << "    std::string name;\n"
-                << "    std::string type;\n"
-                << "};\n\n";
-            out << "class chtholly_method {\n"
-                << "public:\n"
-                << "    chtholly_method(std::string name, std::string return_type, std::vector<chtholly_parameter> parameters)\n"
-                << "        : name(std::move(name)), return_type(std::move(return_type)), parameters(std::move(parameters)) {}\n\n"
-                << "    std::string get_name() const { return name; }\n"
-                << "    std::string get_return_type() const { return return_type; }\n"
-                << "    std::vector<chtholly_parameter> get_parameters() const { return parameters; }\n\n"
-                << "private:\n"
-                << "    std::string name;\n"
-                << "    std::string return_type;\n"
-                << "    std::vector<chtholly_parameter> parameters;\n"
-                << "};\n\n";
         }
         if (imported_std_modules.count("iostream")) {
             out << "\n";
@@ -459,101 +430,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 }
             }
             return std::make_any<std::string>("chtholly_fs_write(" + args + ")");
-        }
-    } else if (auto* get = dynamic_cast<const GetExpr*>(expr.callee.get())) {
-        if (auto* get2 = dynamic_cast<const GetExpr*>(get->object.get())) {
-            if (auto* var = dynamic_cast<const VariableExpr*>(get2->object.get())) {
-                if (var->name.lexeme == "reflect" && get2->name.lexeme == "field" && get->name.lexeme == "get_fields") {
-                    if (expr.arguments.size() != 1) {
-                        ErrorReporter::error(expr.paren.line, "get_fields() expects 1 argument.");
-                        return std::make_any<std::string>("");
-                    }
-                    TypeInfo type = get_type(*expr.arguments[0]);
-                    if (structs.find(type.baseType.lexeme) == structs.end()) {
-                        ErrorReporter::error(expr.paren.line, "get_fields() can only be used on structs.");
-                        return std::make_any<std::string>("");
-                    }
-                    const auto* s = structs.at(type.baseType.lexeme);
-                    std::string result = "std::vector<chtholly_field>{\n";
-                    for (const auto& field : s->fields) {
-                        result += "        chtholly_field(\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + "),\n";
-                    }
-                    result += "    }";
-                    return std::make_any<std::string>(result);
-                } else if (var->name.lexeme == "reflect" && get2->name.lexeme == "field" && get->name.lexeme == "get_field") {
-                    if (expr.arguments.size() != 2) {
-                        ErrorReporter::error(expr.paren.line, "get_field() expects 2 arguments.");
-                        return std::make_any<std::string>("");
-                    }
-                    TypeInfo type = get_type(*expr.arguments[0]);
-                    if (structs.find(type.baseType.lexeme) == structs.end()) {
-                        ErrorReporter::error(expr.paren.line, "get_field() can only be used on structs.");
-                        return std::make_any<std::string>("");
-                    }
-                    const auto* s = structs.at(type.baseType.lexeme);
-                    std::string field_name = evaluate(*expr.arguments[1]);
-                    // remove quotes
-                    field_name = field_name.substr(1, field_name.length() - 2);
-                    for (const auto& field : s->fields) {
-                        if (field->name.lexeme == field_name) {
-                            return std::make_any<std::string>("chtholly_field(\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + ")");
-                        }
-                    }
-                    ErrorReporter::error(expr.paren.line, "Struct '" + type.baseType.lexeme + "' does not have a field named '" + field_name + "'.");
-                    return std::make_any<std::string>("");
-                }
-            } else if (var->name.lexeme == "reflect" && get2->name.lexeme == "method" && get->name.lexeme == "get_methods") {
-                if (expr.arguments.size() != 1) {
-                    ErrorReporter::error(expr.paren.line, "get_methods() expects 1 argument.");
-                    return std::make_any<std::string>("");
-                }
-                TypeInfo type = get_type(*expr.arguments[0]);
-                if (structs.find(type.baseType.lexeme) == structs.end()) {
-                    ErrorReporter::error(expr.paren.line, "get_methods() can only be used on structs.");
-                    return std::make_any<std::string>("");
-                }
-                const auto* s = structs.at(type.baseType.lexeme);
-                std::string result = "std::vector<chtholly_method>{\n";
-                for (const auto& method : s->methods) {
-                    result += "        chtholly_method(\"" + method->name.lexeme + "\", \"" + (method->returnType ? method->returnType->baseType.lexeme : "void") + "\", {}),\n";
-                }
-                result += "    }";
-                return std::make_any<std::string>(result);
-            } else if (var->name.lexeme == "reflect" && get2->name.lexeme == "method" && get->name.lexeme == "get_method") {
-                if (expr.arguments.size() != 2) {
-                    ErrorReporter::error(expr.paren.line, "get_method() expects 2 arguments.");
-                    return std::make_any<std::string>("");
-                }
-                TypeInfo type = get_type(*expr.arguments[0]);
-                if (structs.find(type.baseType.lexeme) == structs.end()) {
-                    ErrorReporter::error(expr.paren.line, "get_method() can only be used on structs.");
-                    return std::make_any<std::string>("");
-                }
-                const auto* s = structs.at(type.baseType.lexeme);
-                std::string method_name = evaluate(*expr.arguments[1]);
-                // remove quotes
-                method_name = method_name.substr(1, method_name.length() - 2);
-                for (const auto& method : s->methods) {
-                    if (method->name.lexeme == method_name) {
-                        return std::make_any<std::string>("chtholly_method(\"" + method->name.lexeme + "\", \"" + (method->returnType ? method->returnType->baseType.lexeme : "void") + "\", {})");
-                    }
-                }
-                ErrorReporter::error(expr.paren.line, "Struct '" + type.baseType.lexeme + "' does not have a method named '" + method_name + "'.");
-                return std::make_any<std::string>("");
-            } else if (var->name.lexeme == "meta") {
-                if (expr.arguments.size() != 1) {
-                    ErrorReporter::error(expr.paren.line, "meta functions expect 1 argument.");
-                    return std::make_any<std::string>("");
-                }
-                TypeInfo type = get_type(*expr.arguments[0]);
-                if (get2->name.lexeme == "is_int") {
-                    return std::make_any<std::string>(type.baseType.lexeme == "int" ? "true" : "false");
-                } else if (get2->name.lexeme == "is_string") {
-                    return std::make_any<std::string>(type.baseType.lexeme == "string" ? "true" : "false");
-                } else if (get2->name.lexeme == "is_struct") {
-                    return std::make_any<std::string>(structs.count(type.baseType.lexeme) ? "true" : "false");
-                }
-            }
         }
     }
 

@@ -6,7 +6,7 @@
 
 TEST(OperatorOverloadTest, SimpleAddition) {
     std::string source = R"(
-        struct Point impl operator::add, operator::sub {
+        struct Point impl add, sub {
             let x: int;
             let y: int;
 

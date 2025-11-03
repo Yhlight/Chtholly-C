@@ -92,14 +92,8 @@ TEST(TranspilerTest, LetStatementWithReference) {
     Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
-        "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "int main() {\n"
         "    const int& x = &y;\n"
         "    return 0;\n"
@@ -146,14 +140,8 @@ TEST(TranspilerTest, Function) {
     Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
-        "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "int add(const int& a, const int& b) {\n"
         "    return a + b;\n"
         "}\n\n"
@@ -172,14 +160,8 @@ TEST(TranspilerTest, LetStatementWithType) {
     Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
-        "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "int main() {\n"
         "    const int x = 10;\n"
         "    return 0;\n"
@@ -196,14 +178,8 @@ TEST(TranspilerTest, StringDeclaration) {
     Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
-        "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "int main() {\n"
         "    const std::string s = \"hello\";\n"
         "    return 0;\n"
@@ -268,14 +244,8 @@ TEST(TranspilerTest, LetStatement) {
     Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
-        "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "int main() {\n"
         "    const auto x = 10;\n"
         "    return 0;\n"
