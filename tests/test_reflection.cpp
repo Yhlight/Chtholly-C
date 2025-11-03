@@ -47,6 +47,72 @@ TEST(ReflectionTest, GetFields) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(ReflectionTest, GetMethods) {
+    std::string source =
+        "import reflect;\n"
+        "struct Point { func foo() -> void {} }\n"
+        "let p = Point {};\n"
+        "let methods = reflect::method::get_methods(p);\n";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n"
+        "#include <string>\n"
+        "#include <any>\n"
+        "class chtholly_field { /* ... */ };\n"
+        "struct chtholly_parameter { /* ... */ };\n"
+        "class chtholly_method { /* ... */ };\n"
+        "struct Point {\n"
+        "    void foo() {}\n"
+        "};\n\n"
+        "int main() {\n"
+        "    const Point p = {};\n"
+        "    const auto methods = std::vector<chtholly_method>{\n"
+        "        chtholly_method(\"foo\", \"void\", {}),\n"
+        "    };\n"
+        "    return 0;\n"
+        "}\n";
+    // Can't do a direct comparison because of the omitted helper class definitions
+    ASSERT_NE(result.find("chtholly_method(\"foo\", \"void\", {})"), std::string::npos);
+}
+
+TEST(ReflectionTest, GetMethod) {
+    std::string source =
+        "import reflect;\n"
+        "struct Point { func foo() -> void {} }\n"
+        "let p = Point {};\n"
+        "let method = reflect::method::get_method(p, \"foo\");\n";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "#include <iostream>\n"
+        "#include <variant>\n"
+        "#include <string>\n"
+        "#include <any>\n"
+        "class chtholly_field { /* ... */ };\n"
+        "struct chtholly_parameter { /* ... */ };\n"
+        "class chtholly_method { /* ... */ };\n"
+        "struct Point {\n"
+        "    void foo() {}\n"
+        "};\n\n"
+        "int main() {\n"
+        "    const Point p = {};\n"
+        "    const auto method = chtholly_method(\"foo\", \"void\", {});\n"
+        "    return 0;\n"
+        "}\n";
+    // Can't do a direct comparison because of the omitted helper class definitions
+    ASSERT_NE(result.find("chtholly_method(\"foo\", \"void\", {})"), std::string::npos);
+}
+
 TEST(ReflectionTest, GetField) {
     std::string source =
         "import reflect;\n"
