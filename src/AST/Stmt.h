@@ -59,9 +59,10 @@ struct LetStmt : Stmt {
     std::optional<TypeInfo> type;
     std::unique_ptr<Expr> initializer;
     bool isMutable;
+    bool is_public = true;
 
-    LetStmt(Token name, std::optional<TypeInfo> type, std::unique_ptr<Expr> initializer, bool isMutable)
-        : name(name), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable) {}
+    LetStmt(Token name, std::optional<TypeInfo> type, std::unique_ptr<Expr> initializer, bool isMutable, bool is_public = true)
+        : name(name), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable), is_public(is_public) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitLetStmt(*this);

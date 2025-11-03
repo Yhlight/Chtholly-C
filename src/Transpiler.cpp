@@ -355,7 +355,23 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     }
     out << " {\n";
 
+    if (!stmt.fields.empty()) {
+        if (stmt.fields[0]->is_public) {
+            out << "public:\n";
+        } else {
+            out << "private:\n";
+        }
+    }
+
+    bool in_public = true;
     for (const auto& field : stmt.fields) {
+        if (field->is_public && !in_public) {
+            out << "public:\n";
+            in_public = true;
+        } else if (!field->is_public && in_public) {
+            out << "private:\n";
+            in_public = false;
+        }
         out << "    ";
         if (field->type) {
             out << to_cpp_type(*field->type) << " " << field->name.lexeme;

@@ -333,3 +333,17 @@ TEST(ParserTest, FunctionType) {
     ASSERT_TRUE(letStmt->type->returnType);
     EXPECT_EQ(letStmt->type->returnType->baseType.lexeme, "bool");
 }
+
+TEST(ParserTest, StructWithAccessModifiers) {
+    std::string source = "struct Point { public let x: int; private let y: int; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_EQ(stmts.size(), 1);
+    auto* structStmt = dynamic_cast<StructStmt*>(stmts[0].get());
+    ASSERT_NE(structStmt, nullptr);
+    ASSERT_EQ(structStmt->fields.size(), 2);
+    ASSERT_TRUE(structStmt->fields[0]->is_public);
+    ASSERT_FALSE(structStmt->fields[1]->is_public);
+}

@@ -220,6 +220,8 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
 
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
+    std::string enclosingStructName = currentStructName;
+    currentStructName = stmt.structName.lexeme;
     beginScope();
     scopes.back()["self"] = VariableState{true, true, 0, false, TypeInfo{stmt.structName}};
     for (const auto& method : stmt.methods) {
@@ -227,6 +229,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     }
     endScope();
     currentClass = enclosingClass;
+    currentStructName = enclosingStructName;
     return {};
 }
 
@@ -291,6 +294,9 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
             auto s = structs.at(expr.object->resolved_type->baseType.lexeme);
             for (const auto& field : s->fields) {
                 if (field->name.lexeme == expr.name.lexeme) {
+                    if (!field->is_public && (currentClass == ClassType::NONE || currentStructName != s->name.lexeme)) {
+                        ErrorReporter::error(expr.name.line, "Cannot access private field '" + expr.name.lexeme + "' of struct '" + s->name.lexeme + "'.");
+                    }
                     expr.resolved_type = field->type;
                 }
             }
@@ -344,6 +350,8 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     define(stmt.name);
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
+    std::string enclosingStructName = currentStructName;
+    currentStructName = stmt.name.lexeme;
 
     beginScope();
     scopes.back()["self"] = VariableState{true, false, 0, false};
@@ -353,6 +361,7 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     }
     endScope();
     currentClass = enclosingClass;
+    currentStructName = enclosingStructName;
     return {};
 }
 

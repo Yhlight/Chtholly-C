@@ -26,6 +26,17 @@ TEST_F(ResolverTest, RedeclareVariable) {
     ASSERT_TRUE(ErrorReporter::hadError);
 }
 
+TEST_F(ResolverTest, PrivateFieldAccess) {
+    std::string source = "struct Point { private let x: int; } let p = Point{x: 1}; print(p.x);";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
+}
+
 TEST_F(ResolverTest, TypeInference) {
     std::string source = "let a = 1.0 + 2.0;";
     Lexer lexer(source);

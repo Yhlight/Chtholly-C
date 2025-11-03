@@ -78,4 +78,5 @@ private:
     std::vector<std::map<std::string, VariableState>> scopes;
     FunctionType currentFunction = FunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
+    std::string currentStructName;
 };

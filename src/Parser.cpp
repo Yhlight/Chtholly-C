@@ -32,8 +32,17 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<LetStmt>> fields;
     while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
+        bool is_public = true;
+        if (match({TokenType::PUBLIC})) {
+            // public is default, so we just consume the token
+        } else if (match({TokenType::PRIVATE})) {
+            is_public = false;
+        }
+
         if (match({TokenType::LET, TokenType::MUT})) {
-            fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release())));
+            auto let_stmt = std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release()));
+            let_stmt->is_public = is_public;
+            fields.push_back(std::move(let_stmt));
         } else {
             ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
             synchronize();
@@ -138,7 +147,7 @@ std::unique_ptr<Stmt> Parser::letDeclaration() {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer), isMutable);
+    return std::make_unique<LetStmt>(name, std::move(type), std::move(initializer), isMutable, true);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {

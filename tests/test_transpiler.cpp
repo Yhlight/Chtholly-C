@@ -30,6 +30,26 @@ TEST(TranspilerTest, SimplePrint) {
     ASSERT_EQ(result, expected);
 }
 
+TEST(TranspilerTest, StructWithAccessModifiers) {
+    std::string source = "struct Point { public let x: int; private let y: int; }";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
+    std::string result = transpiler.transpile(stmts);
+    std::string expected =
+        "struct Point {\n"
+        "public:\n"
+        "    int x;\n"
+        "private:\n"
+        "    int y;\n"
+        "};\n\n";
+    ASSERT_TRUE(result.find(expected) != std::string::npos);
+}
+
 TEST(TranspilerTest, Lambda) {
     std::string source = "let x: function(int) -> int = [](a: int) -> int { return a; }; print(x(1));";
     Lexer lexer(source);
@@ -136,6 +156,7 @@ TEST(TranspilerTest, Struct) {
         "    return line;\n"
         "}\n\n"
         "struct Point {\n"
+        "public:\n"
         "    int x;\n"
         "    int y;\n"
         "};\n\n"
