@@ -8,9 +8,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     symbol_table.emplace_back();
     // Pre-scan for ImplStmts to populate the map
     for (const auto& stmt : statements) {
-        if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
-            impls[impl->structName.lexeme] = impl;
-        } else if (auto* imp = dynamic_cast<ImportStmt*>(stmt.get())) {
+        if (auto* imp = dynamic_cast<ImportStmt*>(stmt.get())) {
             if (imp->is_std) {
                 imported_std_modules.insert(imp->path.lexeme);
             }
@@ -93,7 +91,6 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
             if (!dynamic_cast<StructStmt*>(stmt.get()) &&
                 !dynamic_cast<TraitStmt*>(stmt.get()) &&
                 !dynamic_cast<FunctionStmt*>(stmt.get()) &&
-                !dynamic_cast<ImplStmt*>(stmt.get()) &&
                 !dynamic_cast<ImportStmt*>(stmt.get())) {
                 execute(*stmt);
             }
@@ -117,13 +114,21 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
     TypeInfo left_type = get_type(*expr.left);
     TypeInfo right_type = get_type(*expr.right);
 
-    if (impls.count(left_type.baseType.lexeme)) {
+    if (structs.count(left_type.baseType.lexeme)) {
+        const auto* s = structs.at(left_type.baseType.lexeme);
         std::string trait_name = "operator::" + op_to_trait(expr.op.lexeme);
-        const auto* impl = impls.at(left_type.baseType.lexeme);
-        for (const auto& name : impl->traitNames) {
+        bool found = false;
+        for (const auto& name : s->traitNames) {
             if (name.lexeme == trait_name) {
-                return evaluate(*expr.left) + "." + op_to_trait(expr.op.lexeme) + "(" + evaluate(*expr.right) + ")";
+                found = true;
+                break;
             }
+        }
+        if (found) {
+            return evaluate(*expr.left) + "." + op_to_trait(expr.op.lexeme) + "(" + evaluate(*expr.right) + ")";
+        } else {
+            ErrorReporter::error(expr.op.line, "Binary operator '" + expr.op.lexeme + "' is not overloaded for type '" + left_type.baseType.lexeme + "'.");
+            return "nullptr";
         }
     }
 
@@ -237,11 +242,6 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
 
 #include "Chtholly.h"
 #include <fstream>
-std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
-    impls[stmt.structName.lexeme] = &stmt;
-    return {};
-}
-
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
         imported_std_modules.insert(stmt.path.lexeme);
@@ -323,15 +323,12 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
 
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme;
-    if (impls.count(stmt.name.lexeme)) {
-        const auto* impl = impls.at(stmt.name.lexeme);
-        if (!impl->traitNames.empty()) {
-            out << " : ";
-            for (size_t i = 0; i < impl->traitNames.size(); ++i) {
-                out << "public " << impl->traitNames[i].lexeme;
-                if (i < impl->traitNames.size() - 1) {
-                    out << ", ";
-                }
+    if (!stmt.traitNames.empty()) {
+        out << " : ";
+        for (size_t i = 0; i < stmt.traitNames.size(); ++i) {
+            out << "public " << stmt.traitNames[i].lexeme;
+            if (i < stmt.traitNames.size() - 1) {
+                out << ", ";
             }
         }
     }
@@ -350,12 +347,9 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         out << ";\n";
     }
 
-    if (impls.count(stmt.name.lexeme)) {
-        const auto* impl = impls.at(stmt.name.lexeme);
-        for (const auto& method : impl->methods) {
-            out << "    ";
-            visitFunctionStmt(*method);
-        }
+    for (const auto& method : stmt.methods) {
+        out << "    ";
+        visitFunctionStmt(*method);
     }
     out << "};\n\n";
     return {};
@@ -567,15 +561,20 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         ErrorReporter::error(var->name.line, "Undefined variable '" + var->name.lexeme + "'.");
     } else if (auto* binary = dynamic_cast<const BinaryExpr*>(&expr)) {
         TypeInfo left_type = get_type(*binary->left);
-        if (impls.count(left_type.baseType.lexeme)) {
-            const auto* impl = impls.at(left_type.baseType.lexeme);
+        if (structs.count(left_type.baseType.lexeme)) {
+            const auto* s = structs.at(left_type.baseType.lexeme);
             std::string method_name = op_to_trait(binary->op.lexeme);
-            for (const auto& method : impl->methods) {
+            for (const auto& method : s->methods) {
                 if (method->name.lexeme == method_name) {
                     return *method->returnType;
                 }
             }
+            // If we're here, it means the operator is not overloaded for the struct.
+            // The error is reported in visitBinaryExpr, so we just return a void type.
+            return TypeInfo{Token{TokenType::END_OF_FILE, "void", std::monostate{}, 0}};
         }
+        // For non-struct types, we assume the result type is the same as the left operand.
+        return left_type;
     } else if (auto* group = dynamic_cast<const GroupingExpr*>(&expr)) {
         return get_type(*group->expression);
     } else if (auto* call = dynamic_cast<const CallExpr*>(&expr)) {
@@ -583,9 +582,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         // look up the function signature and return its return type.
         if (auto* get = dynamic_cast<const GetExpr*>(call->callee.get())) {
             TypeInfo object_type = get_type(*get->object);
-            if (impls.count(object_type.baseType.lexeme)) {
-                const auto* impl = impls.at(object_type.baseType.lexeme);
-                for (const auto& method : impl->methods) {
+            if (structs.count(object_type.baseType.lexeme)) {
+                const auto* s = structs.at(object_type.baseType.lexeme);
+                for (const auto& method : s->methods) {
                     if (method->name.lexeme == get->name.lexeme) {
                         return *method->returnType;
                     }

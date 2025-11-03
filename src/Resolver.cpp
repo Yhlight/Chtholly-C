@@ -141,50 +141,6 @@ std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
     return {};
 }
 
-std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
-    if (!stmt.traitNames.empty()) {
-        for (const auto& traitName : stmt.traitNames) {
-            if (traits.find(traitName.lexeme) == traits.end()) {
-                ErrorReporter::error(traitName.line, "Trait '" + traitName.lexeme + "' not found.");
-                continue;
-            }
-            if (!structs.count(stmt.structName.lexeme)) {
-                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
-                continue;
-            }
-
-            const auto* trait = traits.at(traitName.lexeme);
-            for (const auto& traitMethod : trait->methods) {
-                bool found = false;
-                for (const auto& implMethod : stmt.methods) {
-                    if (traitMethod->name.lexeme == implMethod->name.lexeme) {
-                        found = true;
-                        if (traitMethod->params.size() != implMethod->params.size()) {
-                            ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
-                        }
-                        // A more thorough check would compare parameter types here
-                        break;
-                    }
-                }
-                if (!found) {
-                    ErrorReporter::error(stmt.structName.line, "Impl does not implement method '" + traitMethod->name.lexeme + "' of the trait '" + traitName.lexeme + "'.");
-                }
-            }
-        }
-    }
-
-    ClassType enclosingClass = currentClass;
-    currentClass = ClassType::CLASS;
-    beginScope();
-    scopes.back()["self"] = VariableState{true, false, 0, false};
-    for (const auto& method : stmt.methods) {
-        resolveFunction(*method, FunctionType::FUNCTION);
-    }
-    endScope();
-    currentClass = enclosingClass;
-    return {};
-}
-
 #include <fstream>
 #include <sstream>
 #include "Chtholly.h"
@@ -260,11 +216,42 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
 
+    if (!stmt.traitNames.empty()) {
+        for (const auto& traitName : stmt.traitNames) {
+            if (traits.find(traitName.lexeme) == traits.end()) {
+                ErrorReporter::error(traitName.line, "Trait '" + traitName.lexeme + "' not found.");
+                continue;
+            }
+
+            const auto* trait = traits.at(traitName.lexeme);
+            for (const auto& traitMethod : trait->methods) {
+                bool found = false;
+                for (const auto& implMethod : stmt.methods) {
+                    if (traitMethod->name.lexeme == implMethod->name.lexeme) {
+                        found = true;
+                        if (traitMethod->params.size() != implMethod->params.size()) {
+                            ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+                        }
+                        // A more thorough check would compare parameter types here
+                        break;
+                    }
+                }
+                if (!found) {
+                    ErrorReporter::error(stmt.name.line, "Struct '" + stmt.name.lexeme + "' does not implement method '" + traitMethod->name.lexeme + "' of the trait '" + traitName.lexeme + "'.");
+                }
+            }
+        }
+    }
+
     beginScope();
     scopes.back()["self"] = VariableState{true, false, 0, false};
 
     for (const auto& field : stmt.fields) {
         resolve(*field);
+    }
+
+    for (const auto& method : stmt.methods) {
+        resolveFunction(*method, FunctionType::FUNCTION);
     }
     endScope();
     currentClass = enclosingClass;

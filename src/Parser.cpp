@@ -16,7 +16,6 @@ std::unique_ptr<Stmt> Parser::declaration() {
         if (match({TokenType::IMPORT})) return importDeclaration();
         if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::TRAIT})) return traitDeclaration();
-        if (match({TokenType::IMPL})) return implDeclaration();
         if (match({TokenType::FUNC})) return function("function", true);
         if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
@@ -28,17 +27,29 @@ std::unique_ptr<Stmt> Parser::declaration() {
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+
+    std::vector<Token> traitNames;
+    if (match({TokenType::IMPL})) {
+        do {
+            traitNames.push_back(consume(TokenType::IDENTIFIER, "Expect trait name."));
+        } while (match({TokenType::COMMA}));
+    }
+
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<LetStmt>> fields;
-    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         if (match({TokenType::LET, TokenType::MUT})) {
             fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release())));
+        } else if (match({TokenType::FUNC})) {
+            methods.push_back(std::unique_ptr<FunctionStmt>(static_cast<FunctionStmt*>(function("method", true).release())));
         } else {
-            ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
+            ErrorReporter::error(peek().line, "Expect 'let', 'mut', or 'func' in struct body.");
             synchronize();
         }
     }
-    return std::make_unique<StructStmt>(name, std::move(fields));
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_unique<StructStmt>(name, std::move(traitNames), std::move(fields), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::traitDeclaration() {
@@ -50,25 +61,6 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
     return std::make_unique<TraitStmt>(name, std::move(methods));
-}
-
-std::unique_ptr<Stmt> Parser::implDeclaration() {
-    Token structName = consume(TokenType::IDENTIFIER, "Expect struct name.");
-
-    std::vector<Token> traitNames;
-    if (match({TokenType::IMPL})) {
-        do {
-            traitNames.push_back(consume(TokenType::IDENTIFIER, "Expect trait name."));
-        } while (match({TokenType::COMMA}));
-    }
-
-    consume(TokenType::LEFT_BRACE, "Expect '{' before impl body.");
-    std::vector<std::unique_ptr<Stmt>> methods;
-    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        methods.push_back(function("method", true));
-    }
-    consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
-    return std::make_unique<ImplStmt>(structName, std::move(traitNames), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::importDeclaration() {

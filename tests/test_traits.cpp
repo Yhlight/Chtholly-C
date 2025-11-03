@@ -24,14 +24,13 @@ TEST_F(TraitTest, TraitDeclaration) {
 }
 
 TEST_F(TraitTest, ImplDeclaration) {
-    std::string source = "struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "struct MyStruct impl MyTrait { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    ASSERT_EQ(stmts.size(), 2);
+    ASSERT_EQ(stmts.size(), 1);
     ASSERT_NE(dynamic_cast<StructStmt*>(stmts[0].get()), nullptr);
-    ASSERT_NE(dynamic_cast<ImplStmt*>(stmts[1].get()), nullptr);
 }
 
 TEST_F(TraitTest, TranspileTrait) {
@@ -47,7 +46,7 @@ TEST_F(TraitTest, TranspileTrait) {
 }
 
 TEST_F(TraitTest, TranspileImpl) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "trait MyTrait { func my_func(a: int) -> void; } struct MyStruct impl MyTrait { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -59,7 +58,7 @@ TEST_F(TraitTest, TranspileImpl) {
 }
 
 TEST_F(TraitTest, ResolveImpl) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "trait MyTrait { func my_func(a: int) -> void; } struct MyStruct impl MyTrait { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -70,7 +69,7 @@ TEST_F(TraitTest, ResolveImpl) {
 }
 
 TEST_F(TraitTest, ResolveImplMissingMethod) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct {}";
+    std::string source = "trait MyTrait { func my_func(a: int) -> void; } struct MyStruct impl MyTrait {}";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -81,7 +80,7 @@ TEST_F(TraitTest, ResolveImplMissingMethod) {
 }
 
 TEST_F(TraitTest, ResolveImplWrongSignature) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: string) -> void {} }";
+    std::string source = "trait MyTrait { func my_func(a: int) -> void; } struct MyStruct impl MyTrait { func my_func(a: string) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -92,7 +91,7 @@ TEST_F(TraitTest, ResolveImplWrongSignature) {
 }
 
 TEST_F(TraitTest, ResolveImplNonExistentTrait) {
-    std::string source = "struct MyStruct {} impl MyTrait for MyStruct {}";
+    std::string source = "struct MyStruct impl MyTrait {}";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);

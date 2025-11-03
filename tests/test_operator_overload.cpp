@@ -2,15 +2,14 @@
 #include "../src/Chtholly.h"
 #include "../src/Transpiler.h"
 #include <string>
+#include "../src/Error.h"
 
 TEST(OperatorOverloadTest, SimpleAddition) {
     std::string source = R"(
-        struct Point {
+        struct Point impl operator::add, operator::sub {
             let x: int;
             let y: int;
-        }
 
-        impl Point impl operator::add, operator::sub {
             func add(other: Point) -> Point {
                 return Point {
                     x: self.x + other.x,
@@ -62,4 +61,24 @@ int main() {
 )";
 
     ASSERT_EQ(result, expected);
+}
+
+TEST(OperatorOverloadTest, MissingOverload) {
+    std::string source = R"(
+        struct Point {
+            let x: int;
+            let y: int;
+        }
+
+        let p1 = Point { x: 1, y: 2 };
+        let p2 = Point { x: 3, y: 4 };
+        let p3 = p1 * p2;
+    )";
+
+    Chtholly chtholly;
+    ErrorReporter::hadError = false;
+    auto statements = chtholly.run(source, true);
+    Transpiler transpiler;
+    transpiler.transpile(statements);
+    ASSERT_TRUE(ErrorReporter::hadError);
 }

@@ -42,7 +42,6 @@ public:
 #include <map>
 
     std::any visitTraitStmt(const TraitStmt& stmt) override;
-    std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
 
 private:

@@ -18,7 +18,6 @@ struct FunctionStmt;
 struct ReturnStmt;
 struct StructStmt;
 struct TraitStmt;
-struct ImplStmt;
 struct ImportStmt;
 
 class StmtVisitor {
@@ -32,7 +31,6 @@ public:
     virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
     virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
     virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
-    virtual std::any visitImplStmt(const ImplStmt& stmt) = 0;
     virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
@@ -133,10 +131,12 @@ struct ReturnStmt : Stmt {
 
 struct StructStmt : Stmt {
     Token name;
+    std::vector<Token> traitNames;
     std::vector<std::unique_ptr<LetStmt>> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields)
-        : name(name), fields(std::move(fields)) {}
+    StructStmt(Token name, std::vector<Token> traitNames, std::vector<std::unique_ptr<LetStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(name), traitNames(std::move(traitNames)), fields(std::move(fields)), methods(std::move(methods)) {}
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitStructStmt(*this);
@@ -162,29 +162,6 @@ struct TraitStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitTraitStmt(*this);
-    }
-};
-
-struct ImplStmt : Stmt {
-    Token structName;
-    std::vector<Token> traitNames;
-    std::vector<std::unique_ptr<FunctionStmt>> methods;
-
-    ImplStmt(Token structName, std::vector<Token> traitNames, std::vector<std::unique_ptr<Stmt>> raw_methods)
-        : structName(structName), traitNames(std::move(traitNames)) {
-        for (auto& stmt : raw_methods) {
-            auto func_stmt = dynamic_cast<FunctionStmt*>(stmt.get());
-            if (func_stmt) {
-                stmt.release();
-                methods.emplace_back(func_stmt);
-            } else {
-                throw std::runtime_error("Impl method is not a FunctionStmt");
-            }
-        }
-    }
-
-    std::any accept(StmtVisitor& visitor) const override {
-        return visitor.visitImplStmt(*this);
     }
 };
 

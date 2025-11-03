@@ -41,7 +41,6 @@ private:
     TypeInfo get_type(const Expr& expr);
 
     std::stringstream out;
-    std::map<std::string, const ImplStmt*> impls;
     std::map<std::string, const StructStmt*> structs;
     std::set<std::string> transpiled_files;
     std::vector<std::map<std::string, TypeInfo>> symbol_table;
@@ -69,6 +68,5 @@ private:
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
     std::any visitTraitStmt(const TraitStmt& stmt) override;
-    std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
 };
