@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "Lexer.h"
 
 void Chtholly::runFile(const std::string& path) {
     std::ifstream file(path);
@@ -27,18 +28,9 @@ void Chtholly::runPrompt() {
 }
 
 void Chtholly::run(const std::string& source) {
-    // For now, just print the source code.
-    std::cout << "Executing: " << source << std::endl;
-}
-
-int main(int argc, char* argv[]) {
-    if (argc > 2) {
-        std::cout << "Usage: Chtholly [script]" << std::endl;
-        return 64;
-    } else if (argc == 2) {
-        Chtholly::runFile(argv[1]);
-    } else {
-        Chtholly::runPrompt();
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    for (const auto& token : tokens) {
+        std::cout << token.toString() << std::endl;
     }
-    return 0;
 }

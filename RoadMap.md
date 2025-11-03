@@ -3,7 +3,7 @@
 This document outlines the planned development phases for the Chtholly programming language.
 
 ## Phase 1: Core Compiler Infrastructure
-- [ ] **Project Setup**: Establish the basic directory structure, build system (CMake), and helper scripts.
+- [x] **Project Setup**: Establish the basic directory structure, build system (CMake), and helper scripts.
 - [ ] **Lexer (Tokenizer)**: Implement the lexical analyzer to convert source code into a stream of tokens.
 - [ ] **Parser & AST**: Implement a parser to consume tokens and produce an Abstract Syntax Tree (AST). Define the initial set of AST nodes for expressions and statements.
 - [ ] **Error Reporting**: Implement a basic error reporting mechanism to handle syntax errors.

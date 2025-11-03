@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
 
-add_executable(ChthollyTests main.cpp)
+# Add the Google Test subdirectory
+add_subdirectory(lib/googletest)
 
-# Since this is a placeholder, we don't need to link against anything yet.
-# In the future, we would link against a testing framework like GTest
-# and the Chtholly library itself.
+add_executable(ChthollyTests
+    LexerTests.cpp
+)
+
+target_link_libraries(ChthollyTests
+    PRIVATE
+    ChthollyLib
+    gtest_main
+)
+
+# Include the Google Test directory so we can find gtest/gtest.h
+include_directories(lib/googletest/googletest/include)
