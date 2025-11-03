@@ -14,6 +14,8 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
             if (imp->is_std) {
                 imported_std_modules.insert(imp->path.lexeme);
             }
+        } else if (auto* s = dynamic_cast<StructStmt*>(stmt.get())) {
+            structs[s->name.lexeme] = s;
         }
     }
 
@@ -34,6 +36,14 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         }
         if (has_lambda) {
             out << "#include <functional>\n";
+        }
+        if (imported_std_modules.count("reflect")) {
+            out << "#include <any>\n";
+            out << "struct chtholly_field {\n"
+                << "    std::string name;\n"
+                << "    std::string type;\n"
+                << "    std::any value;\n"
+                << "};\n\n";
         }
         if (imported_std_modules.count("iostream")) {
             out << "\n";
@@ -432,6 +442,29 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 }
             }
             return std::make_any<std::string>("chtholly_fs_write(" + args + ")");
+        }
+    } else if (auto* get = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (auto* get2 = dynamic_cast<const GetExpr*>(get->object.get())) {
+            if (auto* var = dynamic_cast<const VariableExpr*>(get2->object.get())) {
+                if (var->name.lexeme == "reflect" && get2->name.lexeme == "field" && get->name.lexeme == "get_fields") {
+                    if (expr.arguments.size() != 1) {
+                        ErrorReporter::error(expr.paren.line, "get_fields() expects 1 argument.");
+                        return std::make_any<std::string>("");
+                    }
+                    TypeInfo type = get_type(*expr.arguments[0]);
+                    if (structs.find(type.baseType.lexeme) == structs.end()) {
+                        ErrorReporter::error(expr.paren.line, "get_fields() can only be used on structs.");
+                        return std::make_any<std::string>("");
+                    }
+                    const auto* s = structs.at(type.baseType.lexeme);
+                    std::string result = "std::vector<chtholly_field>{\n";
+                    for (const auto& field : s->fields) {
+                        result += "        chtholly_field{\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + "},\n";
+                    }
+                    result += "    }";
+                    return std::make_any<std::string>(result);
+                }
+            }
         }
     }
 

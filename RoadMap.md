@@ -31,7 +31,7 @@
 - [x] **iostream**: Implement the `iostream` module for input and output.
 - [x] **filesystem**: Implement the `filesystem` module for file system operations.
 - [x] **operator**: Implement the `operator` module for operator overloading.
-- [ ] **reflect**: Implement the `reflect` module for static reflection.
+- [ ] **reflect**: Implement the `reflect` module for static reflection. (In Progress)
 - [ ] **meta**: Implement the `meta` module for metaprogramming.
 
 ## Phase 5: Self-Hosting

@@ -42,6 +42,7 @@ private:
 
     std::stringstream out;
     std::map<std::string, const ImplStmt*> impls;
+    std::map<std::string, const StructStmt*> structs;
     std::set<std::string> transpiled_files;
     std::vector<std::map<std::string, TypeInfo>> symbol_table;
     std::set<std::string> imported_std_modules;
