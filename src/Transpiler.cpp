@@ -125,10 +125,11 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
         auto type = expr.left->resolved_type;
         if (impls.count(type->baseType.lexeme)) {
             const auto& impl_list = impls.at(type->baseType.lexeme);
-            if (op_to_method.count(expr.op.type)) {
+            if (op_to_trait.count(expr.op.type)) {
+                std::string trait_name = op_to_trait.at(expr.op.type);
                 std::string method_name = op_to_method.at(expr.op.type);
                 for (const auto& impl : impl_list) {
-                    if (impl->traitName && impl->traitName->lexeme == "Add") { // FIXME: This should be more generic
+                    if (impl->traitName && impl->traitName->lexeme == trait_name) {
                         return evaluate(*expr.left) + "." + method_name + "(" + evaluate(*expr.right) + ")";
                     }
                 }

@@ -30,6 +30,13 @@ private:
         {TokenType::SLASH, "div"}
     };
 
+    std::map<TokenType, std::string> op_to_trait = {
+        {TokenType::PLUS, "Add"},
+        {TokenType::MINUS, "Sub"},
+        {TokenType::STAR, "Mul"},
+        {TokenType::SLASH, "Div"}
+    };
+
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
     std::any visitLiteralExpr(const LiteralExpr& expr) override;
