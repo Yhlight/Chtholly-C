@@ -37,7 +37,14 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         }
         if (imported_std_modules.count("reflect")) {
             out << "#include <any>\n";
-            out << "struct chtholly_field {\n"
+            out << "class chtholly_field {\n"
+                << "public:\n"
+                << "    chtholly_field(std::string name, std::string type, std::any value)\n"
+                << "        : name(std::move(name)), type(std::move(type)), value(std::move(value)) {}\n\n"
+                << "    std::string get_name() const { return name; }\n"
+                << "    std::string get_type() const { return type; }\n"
+                << "    std::any get_value() const { return value; }\n\n"
+                << "private:\n"
                 << "    std::string name;\n"
                 << "    std::string type;\n"
                 << "    std::any value;\n"
@@ -453,10 +460,32 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     const auto* s = structs.at(type.baseType.lexeme);
                     std::string result = "std::vector<chtholly_field>{\n";
                     for (const auto& field : s->fields) {
-                        result += "        chtholly_field{\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + "},\n";
+                        result += "        chtholly_field(\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + "),\n";
                     }
                     result += "    }";
                     return std::make_any<std::string>(result);
+                } else if (var->name.lexeme == "reflect" && get2->name.lexeme == "field" && get->name.lexeme == "get_field") {
+                    if (expr.arguments.size() != 2) {
+                        ErrorReporter::error(expr.paren.line, "get_field() expects 2 arguments.");
+                        return std::make_any<std::string>("");
+                    }
+                    TypeInfo type = get_type(*expr.arguments[0]);
+                    if (structs.find(type.baseType.lexeme) == structs.end()) {
+                        ErrorReporter::error(expr.paren.line, "get_field() can only be used on structs.");
+                        return std::make_any<std::string>("");
+                    }
+                    const auto* s = structs.at(type.baseType.lexeme);
+                    std::string field_name = evaluate(*expr.arguments[1]);
+                    // remove quotes
+                    field_name = field_name.substr(1, field_name.length() - 2);
+                    for (const auto& field : s->fields) {
+                        if (field->name.lexeme == field_name) {
+                            return std::make_any<std::string>("chtholly_field(\"" + field->name.lexeme + "\", \"" + field->type->baseType.lexeme + "\", " + evaluate(*expr.arguments[0]) + "." + field->name.lexeme + ")");
+                        }
+                    }
+                    ErrorReporter::error(expr.paren.line, "Struct '" + type.baseType.lexeme + "' does not have a field named '" + field_name + "'.");
+                    return std::make_any<std::string>("");
+                }
             } else if (var->name.lexeme == "meta") {
                 if (expr.arguments.size() != 1) {
                     ErrorReporter::error(expr.paren.line, "meta functions expect 1 argument.");
@@ -469,7 +498,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     return std::make_any<std::string>(type.baseType.lexeme == "string" ? "true" : "false");
                 } else if (get2->name.lexeme == "is_struct") {
                     return std::make_any<std::string>(structs.count(type.baseType.lexeme) ? "true" : "false");
-                }
                 }
             }
         }
