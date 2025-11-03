@@ -39,6 +39,7 @@ public:
     std::any visitFunctionStmt(const FunctionStmt& stmt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
+#include <map>
 
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
@@ -50,8 +51,7 @@ private:
 
     enum class FunctionType {
         NONE,
-        FUNCTION,
-        METHOD
+        FUNCTION
     };
 
     enum class ClassType {

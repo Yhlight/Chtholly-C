@@ -5,7 +5,6 @@
 #include "AST/Stmt.h"
 #include <vector>
 #include <stdexcept>
-#include <functional>
 
 class PrattParser;
 
@@ -39,12 +38,12 @@ private:
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::vector<std::unique_ptr<Stmt>> block();
-    template<typename T>
-    std::vector<std::unique_ptr<T>> parseBlock(std::function<std::unique_ptr<T>()> parseFn);
 
     std::unique_ptr<Expr> expression();
+    std::unique_ptr<Expr> assignment();
 
     TypeInfo parseType();
+    bool LA_is_generic_call();
     bool match(const std::vector<TokenType>& types);
     Token advance();
     bool isAtEnd();

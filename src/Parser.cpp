@@ -6,8 +6,6 @@ Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {
     prattParser = std::make_unique<PrattParser>(*this);
 }
 
-Parser::~Parser() = default;
-
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!isAtEnd()) {
@@ -31,36 +29,29 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-template<typename T>
-std::vector<std::unique_ptr<T>> Parser::parseBlock(std::function<std::unique_ptr<T>()> parseFn) {
-    std::vector<std::unique_ptr<T>> items;
-    if (match({TokenType::LEFT_BRACE})) {
-        while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-            items.push_back(parseFn());
-        }
-        consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
-    }
-    return items;
-}
-
 std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
-    auto fields = parseBlock<LetStmt>([&]() -> std::unique_ptr<LetStmt> {
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+    std::vector<std::unique_ptr<LetStmt>> fields;
+    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
         if (match({TokenType::LET, TokenType::MUT})) {
-            return std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release()));
+            fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release())));
+        } else {
+            ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
+            synchronize();
         }
-        ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
-        synchronize();
-        return nullptr;
-    });
+    }
     return std::make_unique<StructStmt>(name, std::move(fields));
 }
 
 std::unique_ptr<Stmt> Parser::traitDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
-    auto methods = parseBlock<Stmt>([&]() {
-        return function("method", false);
-    });
+    consume(TokenType::LEFT_BRACE, "Expect '{' before trait body.");
+    std::vector<std::unique_ptr<Stmt>> methods;
+    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+        methods.push_back(function("method", false));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
     return std::make_unique<TraitStmt>(name, std::move(methods));
 }
 
@@ -68,9 +59,12 @@ std::unique_ptr<Stmt> Parser::implDeclaration() {
     Token traitName = consume(TokenType::IDENTIFIER, "Expect trait name.");
     consume(TokenType::FOR, "Expect 'for' after trait name.");
     Token structName = consume(TokenType::IDENTIFIER, "Expect struct name.");
-    auto methods = parseBlock<Stmt>([&]() {
-        return function("method", true);
-    });
+    consume(TokenType::LEFT_BRACE, "Expect '{' before impl body.");
+    std::vector<std::unique_ptr<Stmt>> methods;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        methods.push_back(function("method", true));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
     return std::make_unique<ImplStmt>(structName, traitName, std::move(methods));
 }
 
@@ -117,6 +111,7 @@ std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_requir
 
     std::vector<std::unique_ptr<Stmt>> body;
     if (body_required) {
+        consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
         body = block();
     } else {
         consume(TokenType::SEMICOLON, "Expect ';' after " + kind + " declaration.");
@@ -181,9 +176,14 @@ std::unique_ptr<Stmt> Parser::whileStatement() {
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
-    return parseBlock<Stmt>([&]() {
-        return declaration();
-    });
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!isAtEnd() && peek().type != TokenType::RIGHT_BRACE) {
+        statements.push_back(declaration());
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
 }
 
 std::unique_ptr<Stmt> Parser::expressionStatement() {
@@ -192,8 +192,29 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
     return std::make_unique<ExpressionStmt>(std::move(expr));
 }
 
+Parser::~Parser() = default;
+
 std::unique_ptr<Expr> Parser::expression() {
     return prattParser->parse();
+}
+
+std::unique_ptr<Expr> Parser::assignment() {
+    auto expr = prattParser->parse();
+
+    if (match({TokenType::EQUAL})) {
+        Token equals = previous();
+        auto value = assignment();
+
+        if (auto* var = dynamic_cast<VariableExpr*>(expr.get())) {
+            return std::make_unique<AssignExpr>(var->name, std::move(value));
+        } else if (auto* get = dynamic_cast<GetExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(get->object), get->name, std::move(value));
+        }
+
+        ErrorReporter::error(equals.line, "Invalid assignment target.");
+    }
+
+    return expr;
 }
 
 TypeInfo Parser::parseType() {
@@ -221,6 +242,27 @@ TypeInfo Parser::parseType() {
         type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
     }
     return type;
+}
+
+bool Parser::LA_is_generic_call() {
+    int saved = current;
+    try {
+        if (!match({TokenType::LESS})) {
+            current = saved;
+            return false;
+        }
+        do {
+            parseType();
+        } while (match({TokenType::COMMA}));
+        if (match({TokenType::GREATER})) {
+            current = saved;
+            return true;
+        }
+    } catch (ParseError& error) {
+        // fall through
+    }
+    current = saved;
+    return false;
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

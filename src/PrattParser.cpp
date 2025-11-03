@@ -73,18 +73,23 @@ const PrattParser::ParseRule& PrattParser::getRule(TokenType type) {
 
 bool PrattParser::LA_is_generic_call() {
     int saved = parser.current;
-    if (parser.peek().type != TokenType::LESS) {
-        return false;
+    try {
+        if (!parser.match({TokenType::LESS})) {
+            parser.current = saved;
+            return false;
+        }
+        do {
+            parser.parseType();
+        } while (parser.match({TokenType::COMMA}));
+        if (parser.match({TokenType::GREATER})) {
+            parser.current = saved;
+            return true;
+        }
+    } catch (Parser::ParseError& error) {
+        // fall through
     }
-    parser.advance();
-
-    while (parser.peek().type != TokenType::GREATER && parser.peek().type != TokenType::END_OF_FILE) {
-        parser.advance();
-    }
-
-    bool result = parser.peek().type == TokenType::GREATER;
     parser.current = saved;
-    return result;
+    return false;
 }
 
 std::unique_ptr<Expr> PrattParser::unary() {
@@ -191,6 +196,7 @@ std::unique_ptr<Expr> PrattParser::lambda() {
         returnType = parser.parseType();
     }
 
+    parser.consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
     auto body = parser.block();
     return std::make_unique<LambdaExpr>(std::move(parameters), std::move(body), std::move(returnType));
 }

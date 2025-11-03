@@ -19,9 +19,7 @@ void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     }
 
     for (const auto& statement : statements) {
-        if (statement) {
-            resolve(*statement);
-        }
+        resolve(*statement);
     }
 }
 
@@ -60,9 +58,7 @@ void Resolver::define(const Token& name) {
 
 std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
     beginScope();
-    for (const auto& statement : stmt.statements) {
-        resolve(*statement);
-    }
+    resolve(stmt.statements);
     endScope();
     return {};
 }
@@ -70,11 +66,7 @@ std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
 std::any Resolver::visitLetStmt(const LetStmt& stmt) {
     declare(stmt.name);
     if (stmt.initializer) {
-        if (auto* lambda = dynamic_cast<const LambdaExpr*>(stmt.initializer.get())) {
-            resolveLambda(*lambda, FunctionType::FUNCTION);
-        } else {
-            resolve(*stmt.initializer);
-        }
+        resolve(*stmt.initializer);
     }
     define(stmt.name);
     if (!scopes.empty()) {
@@ -141,9 +133,11 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
 std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);
+    beginScope();
     for (const auto& method : stmt.methods) {
         resolveFunction(*method, FunctionType::FUNCTION);
     }
+    endScope();
     return {};
 }
 
@@ -186,7 +180,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     beginScope();
     scopes.back()["self"] = VariableState{true, false, 0, false};
     for (const auto& method : stmt.methods) {
-        resolveFunction(*method, FunctionType::METHOD);
+        resolveFunction(*method, FunctionType::FUNCTION);
     }
     endScope();
     currentClass = enclosingClass;
@@ -268,9 +262,13 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
 
+    beginScope();
+    scopes.back()["self"] = VariableState{true, false, 0, false};
+
     for (const auto& field : stmt.fields) {
         resolve(*field);
     }
+    endScope();
     currentClass = enclosingClass;
     return {};
 }
@@ -290,9 +288,6 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
     currentFunction = type;
 
     beginScope();
-    if (type == FunctionType::METHOD) {
-        scopes.back()["self"] = VariableState{true, false, 0, false};
-    }
     for (const auto& generic : function.generics) {
         declare(generic);
         define(generic);
@@ -301,9 +296,7 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
         declare(param.first);
         define(param.first);
     }
-    for (const auto& statement : function.body) {
-        resolve(*statement);
-    }
+    resolve(function.body);
     endScope();
     currentFunction = enclosingFunction;
 }
@@ -317,18 +310,14 @@ void Resolver::resolveLambda(const LambdaExpr& lambda, FunctionType type) {
         declare(param.first);
         define(param.first);
     }
-    for (const auto& statement : lambda.body) {
-        resolve(*statement);
-    }
+    resolve(lambda.body);
     endScope();
     currentFunction = enclosingFunction;
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
-    if (currentClass == ClassType::NONE) {
-        declare(stmt.name);
-        define(stmt.name);
-    }
+    declare(stmt.name);
+    define(stmt.name);
     resolveFunction(stmt, FunctionType::FUNCTION);
     return {};
 }
