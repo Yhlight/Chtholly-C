@@ -4,9 +4,9 @@ This document outlines the planned development stages for the Chtholly compiler.
 
 ## Stage 1: Lexical Analysis
 - [x] Project Bootstrap (Initial Setup)
-- [ ] Token Definition
-- [ ] Lexer Implementation
-- [ ] Testing the Lexer
+- [x] Token Definition
+- [x] Lexer Implementation
+- [x] Testing the Lexer
 
 ## Stage 2: Parsing (Syntax Analysis)
 - [ ] Abstract Syntax Tree (AST) Definition
