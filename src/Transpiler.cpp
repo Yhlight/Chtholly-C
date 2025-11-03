@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include <vector>
 #include "Error.h"
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module) {
@@ -29,6 +30,37 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         }
         if (has_lambda) {
             out << "#include <functional>\n";
+        }
+        bool has_reflect = false;
+        for (const auto& statement : statements) {
+            if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
+                if (auto* callExpr = dynamic_cast<const CallExpr*>(exprStmt->expression.get())) {
+                    if (auto* getExpr = dynamic_cast<const GetExpr*>(callExpr->callee.get())) {
+                        if (auto* varExpr = dynamic_cast<const VariableExpr*>(getExpr->object.get())) {
+                            if (varExpr->name.lexeme == "reflect" && getExpr->name.lexeme == "get_field_names") {
+                                has_reflect = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
+                if (letStmt->initializer) {
+                    if (auto* callExpr = dynamic_cast<const CallExpr*>(letStmt->initializer.get())) {
+                        if (auto* getExpr = dynamic_cast<const GetExpr*>(callExpr->callee.get())) {
+                            if (auto* varExpr = dynamic_cast<const VariableExpr*>(getExpr->object.get())) {
+                                if (varExpr->name.lexeme == "reflect" && getExpr->name.lexeme == "get_field_names") {
+                                    has_reflect = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (has_reflect) {
+            out << "#include <vector>\n";
         }
         out << "\n";
         out << "std::string chtholly_input() {\n"
@@ -491,6 +523,28 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 }
             }
             return std::make_any<std::string>("chtholly_fs_write(" + args + ")");
+        }
+    }
+
+    if (auto* get = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (auto* var = dynamic_cast<const VariableExpr*>(get->object.get())) {
+            if (var->name.lexeme == "reflect" && get->name.lexeme == "get_field_names") {
+                if (expr.generic_args.size() == 1) {
+                    const auto& type = expr.generic_args[0];
+                    if (resolver.structs.count(type.baseType.lexeme)) {
+                        const auto* struct_decl = resolver.structs.at(type.baseType.lexeme);
+                        std::string result = "std::vector<std::string>{";
+                        for (size_t i = 0; i < struct_decl->fields.size(); ++i) {
+                            result += "\"" + struct_decl->fields[i]->name.lexeme + "\"";
+                            if (i < struct_decl->fields.size() - 1) {
+                                result += ", ";
+                            }
+                        }
+                        result += "}";
+                        return result;
+                    }
+                }
+            }
         }
     }
 

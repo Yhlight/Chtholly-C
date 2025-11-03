@@ -5,6 +5,7 @@ Resolver::Resolver() {
     scopes.emplace_back();
     scopes.back()["print"] = VariableState{true, false, 0, false};
     scopes.back()["input"] = VariableState{true, false, 0, false};
+    scopes.back()["reflect"] = VariableState{true, false, 0, false};
 
     std_modules["filesystem"]["fs_read"] = VariableState{true, false, 0, false};
     std_modules["filesystem"]["fs_write"] = VariableState{true, false, 0, false};
@@ -374,6 +375,26 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
 
     if (expr.callee->resolved_type && expr.callee->resolved_type->returnType) {
         expr.resolved_type = *expr.callee->resolved_type->returnType;
+    }
+
+    if (auto* get = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (auto* var = dynamic_cast<const VariableExpr*>(get->object.get())) {
+            if (var->name.lexeme == "reflect" && get->name.lexeme == "get_field_names") {
+                if (expr.generic_args.size() != 1) {
+                    ErrorReporter::error(expr.paren.line, "get_field_names requires exactly one generic argument.");
+                } else {
+                    const auto& type = expr.generic_args[0];
+                    if (structs.find(type.baseType.lexeme) == structs.end()) {
+                        ErrorReporter::error(expr.paren.line, "Generic argument to get_field_names must be a struct type.");
+                    } else {
+                        TypeInfo array_type;
+                        array_type.baseType = Token{TokenType::IDENTIFIER, "array", std::monostate{}, -1};
+                        array_type.params.push_back(TypeInfo{Token{TokenType::IDENTIFIER, "string", std::monostate{}, -1}});
+                        expr.resolved_type = array_type;
+                    }
+                }
+            }
+        }
     }
 
     return {};

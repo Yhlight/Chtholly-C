@@ -49,9 +49,9 @@ public:
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 
+    std::map<std::string, const StructStmt*> structs;
 private:
     std::map<std::string, const TraitStmt*> traits;
-    std::map<std::string, const StructStmt*> structs;
     std::map<std::string, std::map<std::string, VariableState>> std_modules;
 
     enum class FunctionType {
