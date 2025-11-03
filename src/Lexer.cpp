@@ -22,6 +22,11 @@ std::map<std::string, TokenType> keywords = {
     {"operator", TokenType::OPERATOR},
     {"public", TokenType::PUBLIC},
     {"private", TokenType::PRIVATE},
+    {"switch", TokenType::SWITCH},
+    {"case",   TokenType::CASE},
+    {"break",  TokenType::BREAK},
+    {"fallthrough", TokenType::FALLTHROUGH},
+    {"default", TokenType::DEFAULT},
 };
 
 Lexer::Lexer(const std::string& source) : source(source) {}

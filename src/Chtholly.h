@@ -10,7 +10,8 @@
 class Chtholly {
 public:
     Chtholly() = default;
-    std::vector<std::unique_ptr<Stmt>> run(const std::string& source, bool is_module = false);
+    std::string run(const std::string& source);
+    std::vector<std::unique_ptr<Stmt>> run(const std::string& source, bool is_module);
 
     static void runFile(const std::string& path);
     static void runPrompt();

@@ -216,6 +216,38 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     return {};
 }
 
+std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
+    std::string switch_var = "switch_val";
+    out << "    {\n";
+    out << "        auto " << switch_var << " = " << evaluate(*stmt.expression) << ";\n";
+    out << "        bool matched = false;\n";
+
+    for (const auto& case_stmt : stmt.cases) {
+        out << "        if (!matched && (" << switch_var << " == " << evaluate(*case_stmt.condition) << ")) {\n";
+        out << "            matched = true;\n";
+        out << "        }\n";
+        out << "        if (matched) ";
+        execute(*case_stmt.body);
+    }
+
+    if (stmt.defaultCase) {
+        out << "        if (!matched) ";
+        execute(*stmt.defaultCase->body);
+    }
+    out << "    }\n";
+    return {};
+}
+
+std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
+    out << "    break;\n";
+    return {};
+}
+
+std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    // For if-else if, fallthrough is the default behavior.
+    return {};
+}
+
 std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
     std::stringstream ss;
     ss << expr.name.lexeme << "{";

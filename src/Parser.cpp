@@ -155,7 +155,45 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::WHILE})) return whileStatement();
     if (match({TokenType::LEFT_BRACE})) return std::make_unique<BlockStmt>(block());
     if (match({TokenType::RETURN})) return returnStatement();
+    if (match({TokenType::SWITCH})) return switchStatement();
+    if (match({TokenType::BREAK})) {
+        Token keyword = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+        return std::make_unique<BreakStmt>(keyword);
+    }
+    if (match({TokenType::FALLTHROUGH})) {
+        Token keyword = previous();
+        consume(TokenType::SEMICOLON, "Expect ';' after 'fallthrough'.");
+        return std::make_unique<FallthroughStmt>(keyword);
+    }
     return expressionStatement();
+}
+
+std::unique_ptr<Stmt> Parser::switchStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'switch'.");
+    auto expression = this->expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after switch expression.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' after switch expression.");
+
+    std::vector<CaseStmt> cases;
+    std::optional<CaseStmt> defaultCase;
+
+    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
+        if (match({TokenType::CASE})) {
+            auto condition = this->expression();
+            consume(TokenType::COLON, "Expect ':' after case value.");
+            auto body = statement();
+            cases.push_back({std::move(condition), std::move(body)});
+        } else if (match({TokenType::DEFAULT})) {
+            consume(TokenType::COLON, "Expect ':' after 'default'.");
+            defaultCase = CaseStmt{nullptr, statement()};
+        } else {
+            ErrorReporter::error(peek().line, "Expect 'case' or 'default' in switch statement.");
+            synchronize();
+        }
+    }
+
+    return std::make_unique<SwitchStmt>(std::move(expression), std::move(cases), std::move(defaultCase));
 }
 
 std::unique_ptr<Stmt> Parser::returnStatement() {

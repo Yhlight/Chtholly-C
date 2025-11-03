@@ -42,11 +42,12 @@ public:
     std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
-#include <map>
-
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override;
+    std::any visitBreakStmt(const BreakStmt& stmt) override;
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 
 private:
     std::map<std::string, const TraitStmt*> traits;
@@ -61,6 +62,12 @@ private:
     enum class ClassType {
         NONE,
         CLASS
+    };
+
+    enum class LoopType {
+        NONE,
+        LOOP,
+        SWITCH
     };
 
     void resolve(const Stmt& stmt);
@@ -78,5 +85,6 @@ private:
     std::vector<std::map<std::string, VariableState>> scopes;
     FunctionType currentFunction = FunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
+    LoopType currentLoop = LoopType::NONE;
     std::string currentStructName;
 };

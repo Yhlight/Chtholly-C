@@ -6,8 +6,12 @@ std::string ASTPrinter::print(const Expr& expr) {
     return std::any_cast<std::string>(expr.accept(*this));
 }
 
+std::string ASTPrinter::print(const Stmt& stmt) {
+    return std::any_cast<std::string>(stmt.accept(*this));
+}
+
 std::any ASTPrinter::visitBinaryExpr(const BinaryExpr& expr) {
-    return parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
+    return parenthesize(expr.op.lexeme, std::vector<const Expr*>{expr.left.get(), expr.right.get()});
 }
 
 std::any ASTPrinter::visitGroupingExpr(const GroupingExpr& expr) {
@@ -48,7 +52,7 @@ std::any ASTPrinter::visitGetExpr(const GetExpr& expr) {
 }
 
 std::any ASTPrinter::visitSetExpr(const SetExpr& expr) {
-    return parenthesize("= ." + expr.name.lexeme, {expr.object.get(), expr.value.get()});
+    return parenthesize("= ." + expr.name.lexeme, std::vector<const Expr*>{expr.object.get(), expr.value.get()});
 }
 
 std::any ASTPrinter::visitBorrowExpr(const BorrowExpr& expr) {
@@ -76,4 +80,75 @@ std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<
     }
     builder << ")";
     return builder.str();
+}
+
+std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Stmt*>& stmts) {
+    std::stringstream builder;
+    builder << "(" << name;
+    for (const auto& stmt : stmts) {
+        builder << " ";
+        builder << std::any_cast<std::string>(stmt->accept(*this));
+    }
+    builder << ")";
+    return builder.str();
+}
+
+std::any ASTPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
+    return parenthesize("expr_stmt", {stmt.expression.get()});
+}
+
+std::any ASTPrinter::visitLetStmt(const LetStmt& stmt) {
+    return parenthesize("let " + stmt.name.lexeme, {stmt.initializer.get()});
+}
+
+std::any ASTPrinter::visitBlockStmt(const BlockStmt& stmt) {
+    std::vector<const Stmt*> stmts;
+    for (const auto& s : stmt.statements) {
+        stmts.push_back(s.get());
+    }
+    return parenthesize("block", stmts);
+}
+
+std::any ASTPrinter::visitIfStmt(const IfStmt& stmt) {
+    return parenthesize("if", std::vector<const Stmt*>{stmt.thenBranch.get(), stmt.elseBranch.get()});
+}
+
+std::any ASTPrinter::visitWhileStmt(const WhileStmt& stmt) {
+    return parenthesize("while", {stmt.body.get()});
+}
+
+std::any ASTPrinter::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
+    return "func " + stmt.name.lexeme;
+}
+
+std::any ASTPrinter::visitReturnStmt(const ReturnStmt& stmt) {
+    return parenthesize("return", {stmt.value.get()});
+}
+
+std::any ASTPrinter::visitStructStmt(const StructStmt& stmt) {
+    return "struct " + stmt.name.lexeme;
+}
+
+std::any ASTPrinter::visitTraitStmt(const TraitStmt& stmt) {
+    return "trait " + stmt.name.lexeme;
+}
+
+std::any ASTPrinter::visitImplStmt(const ImplStmt& stmt) {
+    return "impl " + stmt.structName.lexeme;
+}
+
+std::any ASTPrinter::visitImportStmt(const ImportStmt& stmt) {
+    return "import " + stmt.path.lexeme;
+}
+
+std::any ASTPrinter::visitSwitchStmt(const SwitchStmt& stmt) {
+    return "switch";
+}
+
+std::any ASTPrinter::visitBreakStmt(const BreakStmt& stmt) {
+    return "break";
+}
+
+std::any ASTPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    return "fallthrough";
 }

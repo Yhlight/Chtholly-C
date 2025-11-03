@@ -61,4 +61,7 @@ private:
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override;
+    std::any visitBreakStmt(const BreakStmt& stmt) override;
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 };

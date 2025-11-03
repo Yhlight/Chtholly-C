@@ -14,6 +14,7 @@ add_executable(
     test_modules.cpp
     test_std_import.cpp
     test_filesystem.cpp
+    test_switch.cpp
 )
 
 target_link_libraries(

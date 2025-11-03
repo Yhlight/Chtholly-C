@@ -14,7 +14,7 @@
 - [x] **Variables**: Implement `let` and `mut` variable declarations.
 - [x] **Data Types**: Implement basic data types (int, double, bool, string).
 - [x] **Operators**: Implement basic arithmetic and logical operators.
-- [x] **Control Flow**: Implement `if`, `else`, and `while` statements.
+- [x] **Control Flow**: Implement `if`, `else`, `while`, and `switch` statements.
 - [x] **Functions**: Implement function definitions and calls.
 
 ## Phase 3: Advanced Language Features

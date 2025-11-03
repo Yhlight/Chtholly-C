@@ -20,6 +20,9 @@ struct StructStmt;
 struct TraitStmt;
 struct ImplStmt;
 struct ImportStmt;
+struct SwitchStmt;
+struct BreakStmt;
+struct FallthroughStmt;
 
 class StmtVisitor {
 public:
@@ -34,6 +37,9 @@ public:
     virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
     virtual std::any visitImplStmt(const ImplStmt& stmt) = 0;
     virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
+    virtual std::any visitSwitchStmt(const SwitchStmt& stmt) = 0;
+    virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
+    virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -200,5 +206,43 @@ struct ImportStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitImportStmt(*this);
+    }
+};
+
+struct BreakStmt : Stmt {
+    Token keyword;
+
+    explicit BreakStmt(Token keyword) : keyword(keyword) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitBreakStmt(*this);
+    }
+};
+
+struct FallthroughStmt : Stmt {
+    Token keyword;
+
+    explicit FallthroughStmt(Token keyword) : keyword(keyword) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitFallthroughStmt(*this);
+    }
+};
+
+struct CaseStmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> body;
+};
+
+struct SwitchStmt : Stmt {
+    std::unique_ptr<Expr> expression;
+    std::vector<CaseStmt> cases;
+    std::optional<CaseStmt> defaultCase;
+
+    SwitchStmt(std::unique_ptr<Expr> expression, std::vector<CaseStmt> cases, std::optional<CaseStmt> defaultCase)
+        : expression(std::move(expression)), cases(std::move(cases)), defaultCase(std::move(defaultCase)) {}
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitSwitchStmt(*this);
     }
 };

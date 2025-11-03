@@ -438,8 +438,13 @@ std::any Resolver::visitIfStmt(const IfStmt& stmt) {
 }
 
 std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
+    LoopType enclosingLoop = currentLoop;
+    currentLoop = LoopType::LOOP;
+
     resolve(*stmt.condition);
     resolve(*stmt.body);
+
+    currentLoop = enclosingLoop;
     return {};
 }
 
@@ -495,5 +500,40 @@ std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr)
     }
 
     expr.resolved_type = TypeInfo{expr.name};
+    return {};
+}
+
+std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
+    resolve(*stmt.expression);
+
+    LoopType enclosingLoop = currentLoop;
+    currentLoop = LoopType::SWITCH;
+
+    for (const auto& case_stmt : stmt.cases) {
+        if (case_stmt.condition) {
+            resolve(*case_stmt.condition);
+        }
+        resolve(*case_stmt.body);
+    }
+
+    if (stmt.defaultCase) {
+        resolve(*stmt.defaultCase->body);
+    }
+
+    currentLoop = enclosingLoop;
+    return {};
+}
+
+std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
+    if (currentLoop == LoopType::NONE) {
+        ErrorReporter::error(stmt.keyword.line, "Can't use 'break' outside of a loop or switch statement.");
+    }
+    return {};
+}
+
+std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    if (currentLoop != LoopType::SWITCH) {
+        ErrorReporter::error(stmt.keyword.line, "Can't use 'fallthrough' outside of a switch statement.");
+    }
     return {};
 }

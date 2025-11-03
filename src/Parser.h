@@ -30,8 +30,8 @@ private:
     std::unique_ptr<Stmt> function(const std::string& kind, bool body_required);
     std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();
-    std::unique_ptr<Stmt> printStatement();
     std::unique_ptr<Stmt> returnStatement();
+    std::unique_ptr<Stmt> switchStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
