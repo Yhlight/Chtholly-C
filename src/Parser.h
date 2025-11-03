@@ -5,10 +5,14 @@
 #include "AST/Stmt.h"
 #include <vector>
 #include <stdexcept>
+#include <functional>
+
+class PrattParser;
 
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
+    ~Parser();
     std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
@@ -16,8 +20,10 @@ private:
         using std::runtime_error::runtime_error;
     };
 
+    friend class PrattParser;
     std::vector<Token> tokens;
     int current = 0;
+    std::unique_ptr<PrattParser> prattParser;
 
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> structDeclaration();
@@ -33,22 +39,12 @@ private:
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::vector<std::unique_ptr<Stmt>> block();
+    template<typename T>
+    std::vector<std::unique_ptr<T>> parseBlock(std::function<std::unique_ptr<T>()> parseFn);
 
     std::unique_ptr<Expr> expression();
-    std::unique_ptr<Expr> assignment();
-    std::unique_ptr<Expr> logic_or();
-    std::unique_ptr<Expr> logic_and();
-    std::unique_ptr<Expr> equality();
-    std::unique_ptr<Expr> comparison();
-    std::unique_ptr<Expr> term();
-    std::unique_ptr<Expr> factor();
-    std::unique_ptr<Expr> unary();
-    std::unique_ptr<Expr> call();
-    std::unique_ptr<Expr> primary();
-    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
 
     TypeInfo parseType();
-    bool LA_is_generic_call();
     bool match(const std::vector<TokenType>& types);
     Token advance();
     bool isAtEnd();

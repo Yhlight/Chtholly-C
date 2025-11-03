@@ -4,6 +4,7 @@ add_library(chtholly_lib
     Error.cpp
     AST/ASTPrinter.cpp
     Parser.cpp
+    PrattParser.cpp
     Transpiler.cpp
     Chtholly.cpp
     Resolver.cpp
