@@ -1,10 +1,12 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include "Lexer.h"
 #include "Parser.h"
 #include "SemanticAnalyzer.h"
+#include "CodeGen.h"
 
-void run(const std::string& source) {
+void run(const std::string& source, const std::string& outputFile) {
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -16,33 +18,34 @@ void run(const std::string& source) {
     const auto& errors = analyzer.getErrors();
     if (!errors.empty()) {
         for (const auto& error : errors) {
-            std::cout << error << std::endl;
+            std::cerr << error << std::endl;
         }
-    } else {
-        std::cout << "No semantic errors found." << std::endl;
+        return;
     }
-    std::cout << "--------------------" << std::endl;
+
+    CodeGen generator;
+    std::string cpp_code = generator.generate(statements);
+
+    std::ofstream out(outputFile);
+    out << cpp_code;
+    out.close();
 }
 
-int main() {
-    // Test 1: Valid code
-    run(R"(
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <output_file>" << std::endl;
+        return 1;
+    }
+
+    std::string source = R"(
         let a = 1;
-        mut b = 2;
+        mut b = 2.5;
         b = a + b;
         print b;
-    )");
+        print "Hello, Chtholly!";
+    )";
 
-    // Test 2: Assign to immutable variable
-    run(R"(
-        let a = 1;
-        a = 2;
-    )");
-
-    // Test 3: Use of undeclared variable
-    run(R"(
-        let a = b;
-    )");
+    run(source, argv[1]);
 
     return 0;
 }

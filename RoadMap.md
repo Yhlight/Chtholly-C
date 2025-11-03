@@ -14,8 +14,8 @@ This document outlines the planned development stages for the Chtholly compiler.
 - [x] Initial AST Printer/Visitor
 
 ## Stage 3: Semantic Analysis
+- [x] Scope and Symbol Table Management
 - [ ] Type System Implementation
-- [ ] Scope and Symbol Table Management
 - [ ] Type Checking
 - [ ] Ownership and Borrow Checking
 
