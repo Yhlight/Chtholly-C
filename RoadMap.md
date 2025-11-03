@@ -9,9 +9,9 @@ This document outlines the planned development stages for the Chtholly compiler.
 - [x] Testing the Lexer
 
 ## Stage 2: Parsing (Syntax Analysis)
-- [ ] Abstract Syntax Tree (AST) Definition
-- [ ] Parser Implementation (Recursive Descent)
-- [ ] Initial AST Printer/Visitor
+- [x] Abstract Syntax Tree (AST) Definition
+- [x] Parser Implementation (Recursive Descent)
+- [x] Initial AST Printer/Visitor
 
 ## Stage 3: Semantic Analysis
 - [ ] Type System Implementation

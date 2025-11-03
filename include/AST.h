@@ -139,13 +139,14 @@ struct PrintStmt : Stmt, public std::enable_shared_from_this<PrintStmt> {
 };
 
 struct VarStmt : Stmt, public std::enable_shared_from_this<VarStmt> {
-    VarStmt(Token name, std::shared_ptr<Expr> initializer)
-        : name(std::move(name)), initializer(std::move(initializer)) {}
+    VarStmt(Token keyword, Token name, std::shared_ptr<Expr> initializer)
+        : keyword(std::move(keyword)), name(std::move(name)), initializer(std::move(initializer)) {}
 
     void accept(StmtVisitor& visitor) override {
         visitor.visitVarStmt(shared_from_this());
     }
 
+    const Token keyword;
     const Token name;
     const std::shared_ptr<Expr> initializer;
 };

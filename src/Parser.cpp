@@ -125,7 +125,7 @@ std::shared_ptr<Stmt> Parser::expressionStatement() {
 
 std::shared_ptr<Stmt> Parser::declaration() {
     try {
-        if (match({TokenType::LET})) return varDeclaration();
+        if (match({TokenType::LET, TokenType::MUT})) return varDeclaration();
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -135,13 +135,14 @@ std::shared_ptr<Stmt> Parser::declaration() {
 
 
 std::shared_ptr<Stmt> Parser::varDeclaration() {
+    Token keyword = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::shared_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_shared<VarStmt>(name, initializer);
+    return std::make_shared<VarStmt>(keyword, name, initializer);
 }
 
 
