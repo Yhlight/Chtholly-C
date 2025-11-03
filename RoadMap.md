@@ -33,7 +33,7 @@
 - [x] **filesystem**: Implement the `filesystem` module for file system operations.
 - [x] **operator**: Implement the `operator` module for operator overloading.
 - [~] **reflect**: Implement the `reflect` module for static reflection. (Note: Static field name reflection has been implemented.)
-- [~] **meta**: Implement the `meta` module for metaprogramming. (Note: Initial type traits `is_struct` and `is_int` have been implemented.)
+- [~] **meta**: Implement the `meta` module for metaprogramming. (Note: Type-checking functions like `is_int`, `is_struct`, etc., have been implemented.)
 
 ## Phase 5: Self-Hosting
 

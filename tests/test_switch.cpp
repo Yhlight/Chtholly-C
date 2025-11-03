@@ -95,7 +95,7 @@ std::string chtholly_input() {
 
 int main() {
     const double x = 1;
-    {
+    do {
         auto switch_val = x;
         bool matched = false;
         if (!matched && (switch_val == 1)) {
@@ -108,7 +108,7 @@ int main() {
         if (!matched)     {
     std::cout << "other" << std::endl;
     }
-    }
+    } while(false);
     return 0;
 }
 )";
@@ -143,7 +143,7 @@ std::string chtholly_input() {
 
 int main() {
     const double x = 1;
-    {
+    do {
         auto switch_val = x;
         bool matched = false;
         if (!matched && (switch_val == 1)) {
@@ -159,7 +159,7 @@ int main() {
     std::cout << "two" << std::endl;
     break;
     }
-    }
+    } while(false);
     return 0;
 }
 )";

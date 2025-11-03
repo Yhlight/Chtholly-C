@@ -254,7 +254,7 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
 
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
     std::string switch_var = "switch_val";
-    out << "    {\n";
+    out << "    do {\n";
     out << "        auto " << switch_var << " = " << evaluate(*stmt.expression) << ";\n";
     out << "        bool matched = false;\n";
 
@@ -270,7 +270,7 @@ std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
         out << "        if (!matched) ";
         execute(*stmt.defaultCase->body);
     }
-    out << "    }\n";
+    out << "    } while(false);\n";
     return {};
 }
 
@@ -555,6 +555,18 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                         return std::make_any<std::string>(resolver.structs.count(type.baseType.lexeme) ? "true" : "false");
                     } else if (get->name.lexeme == "is_int") {
                         return std::make_any<std::string>(type.baseType.lexeme == "int" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_uint") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "uint" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_double") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "double" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_char") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "char" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_bool") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "bool" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_string") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "string" ? "true" : "false");
+                    } else if (get->name.lexeme == "is_array") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "array" ? "true" : "false");
                     }
                 }
             }

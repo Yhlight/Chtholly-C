@@ -395,7 +395,7 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                     }
                 }
             } else if (var->name.lexeme == "meta") {
-                if (get->name.lexeme == "is_struct" || get->name.lexeme == "is_int") {
+                if (get->name.lexeme == "is_struct" || get->name.lexeme == "is_int" || get->name.lexeme == "is_uint" || get->name.lexeme == "is_double" || get->name.lexeme == "is_char" || get->name.lexeme == "is_bool" || get->name.lexeme == "is_string" || get->name.lexeme == "is_array") {
                     if (expr.generic_args.size() != 1) {
                         ErrorReporter::error(expr.paren.line, get->name.lexeme + " requires exactly one generic argument.");
                     } else {
