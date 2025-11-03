@@ -8,7 +8,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     // Pre-scan for ImplStmts to populate the map
     for (const auto& stmt : statements) {
         if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
-            impls[impl->structName.lexeme] = impl;
+            impls[impl->structName.lexeme].push_back(impl);
         }
     }
 
@@ -121,6 +121,20 @@ std::string Transpiler::evaluate(const Expr& expr) {
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+    if (expr.left->resolved_type) {
+        auto type = expr.left->resolved_type;
+        if (impls.count(type->baseType.lexeme)) {
+            const auto& impl_list = impls.at(type->baseType.lexeme);
+            if (op_to_method.count(expr.op.type)) {
+                std::string method_name = op_to_method.at(expr.op.type);
+                for (const auto& impl : impl_list) {
+                    if (impl->traitName && impl->traitName->lexeme == "Add") { // FIXME: This should be more generic
+                        return evaluate(*expr.left) + "." + method_name + "(" + evaluate(*expr.right) + ")";
+                    }
+                }
+            }
+        }
+    }
     return "(" + evaluate(*expr.left) + " " + expr.op.lexeme + " " + evaluate(*expr.right) + ")";
 }
 
@@ -201,6 +215,21 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     return {};
 }
 
+std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+    std::stringstream ss;
+    ss << expr.name.lexeme << "{";
+    bool first = true;
+    for (const auto& [name, value] : expr.initializers) {
+        if (!first) {
+            ss << ", ";
+        }
+        ss << "." << name.lexeme << " = " << evaluate(*value);
+        first = false;
+    }
+    ss << "}";
+    return ss.str();
+}
+
 std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
     out << "struct " << stmt.name.lexeme << " {\n";
     for (const auto& method : stmt.methods) {
@@ -226,7 +255,7 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
 #include "Chtholly.h"
 #include <fstream>
 std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
-    impls[stmt.structName.lexeme] = &stmt;
+    // This is handled in the pre-scan
     return {};
 }
 
@@ -256,7 +285,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
         return {};
     }
 
-    Transpiler transpiler;
+    Transpiler transpiler(resolver);
     // Share the set of already transpiled files to prevent infinite loops
     transpiler.transpiled_files = this->transpiled_files;
 
@@ -311,9 +340,16 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme;
     if (impls.count(stmt.name.lexeme)) {
-        const auto* impl = impls.at(stmt.name.lexeme);
-        if (impl->traitName) {
-            out << " : public " << impl->traitName->lexeme;
+        out << " : ";
+        bool first = true;
+        for (const auto* impl : impls.at(stmt.name.lexeme)) {
+            if (impl->traitName) {
+                if (!first) {
+                    out << ", ";
+                }
+                out << "public " << impl->traitName->lexeme;
+                first = false;
+            }
         }
     }
     out << " {\n";
@@ -332,9 +368,10 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     }
 
     if (impls.count(stmt.name.lexeme)) {
-        const auto* impl = impls.at(stmt.name.lexeme);
-        for (const auto& method : impl->methods) {
-            visitFunctionStmt(*method);
+        for (const auto* impl : impls.at(stmt.name.lexeme)) {
+            for (const auto& method : impl->methods) {
+                visitFunctionStmt(*method, stmt.name);
+            }
         }
     }
     out << "};\n\n";
@@ -429,7 +466,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     return std::make_any<std::string>(callee + "(" + args + ")");
 }
 
-std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
     if (!stmt.generics.empty()) {
         out << "template<";
         for (size_t i = 0; i < stmt.generics.size(); ++i) {
@@ -443,16 +480,23 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     if (stmt.returnType) {
         out << to_cpp_type(*stmt.returnType);
     } else {
-        out << "auto";
+        out << "void";
     }
     out << " " << stmt.name.lexeme << "(";
-    for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << to_cpp_type(stmt.params[i].second) << " " << stmt.params[i].first.lexeme;
-        if (i < stmt.params.size() - 1) {
+    bool first = true;
+    for (const auto& param : stmt.params) {
+        if (param.first.lexeme == "self") continue;
+        if (!first) {
             out << ", ";
         }
+        out << to_cpp_type(param.second) << " " << param.first.lexeme;
+        first = false;
     }
-    out << ") {\n";
+    out << ")";
+    if (structName) {
+        out << " override";
+    }
+    out << " {\n";
     for (const auto& statement : stmt.body) {
         execute(*statement);
     }

@@ -32,13 +32,14 @@ public:
     std::any visitSetExpr(const SetExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
+    std::any visitStructInitializerExpr(const StructInitializerExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitIfStmt(const IfStmt& stmt) override;
     std::any visitWhileStmt(const WhileStmt& stmt) override;
-    std::any visitFunctionStmt(const FunctionStmt& stmt) override;
+    std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
 #include <map>

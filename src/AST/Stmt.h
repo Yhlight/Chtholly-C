@@ -28,7 +28,7 @@ public:
     virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
     virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
     virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
-    virtual std::any visitFunctionStmt(const FunctionStmt& stmt) = 0;
+    virtual std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) = 0;
     virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
     virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
     virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
@@ -145,10 +145,11 @@ struct StructStmt : Stmt {
 
 struct TraitStmt : Stmt {
     Token name;
+    std::vector<Token> generics;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    TraitStmt(Token name, std::vector<std::unique_ptr<Stmt>> raw_methods)
-        : name(name) {
+    TraitStmt(Token name, std::vector<Token> generics, std::vector<std::unique_ptr<Stmt>> raw_methods)
+        : name(name), generics(std::move(generics)) {
         for (auto& stmt : raw_methods) {
             auto func_stmt = dynamic_cast<FunctionStmt*>(stmt.get());
             if (func_stmt) {
@@ -168,10 +169,11 @@ struct TraitStmt : Stmt {
 struct ImplStmt : Stmt {
     Token structName;
     std::optional<Token> traitName;
+    std::vector<TypeInfo> generics;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    ImplStmt(Token structName, std::optional<Token> traitName, std::vector<std::unique_ptr<Stmt>> raw_methods)
-        : structName(structName), traitName(traitName) {
+    ImplStmt(Token structName, std::optional<Token> traitName, std::vector<TypeInfo> generics, std::vector<std::unique_ptr<Stmt>> raw_methods)
+        : structName(structName), traitName(traitName), generics(std::move(generics)) {
         for (auto& stmt : raw_methods) {
             auto func_stmt = dynamic_cast<FunctionStmt*>(stmt.get());
             if (func_stmt) {

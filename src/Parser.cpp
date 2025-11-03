@@ -2,9 +2,7 @@
 #include "PrattParser.h"
 #include "Error.h"
 
-Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {
-    prattParser = std::make_unique<PrattParser>(*this);
-}
+Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
@@ -21,7 +19,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
         if (match({TokenType::TRAIT})) return traitDeclaration();
         if (match({TokenType::IMPL})) return implDeclaration();
         if (match({TokenType::FUNC})) return function("function", true);
-        if (match({TokenType::LET, TokenType::MUT})) return variableDeclaration();
+        if (match({TokenType::LET, TokenType::MUT})) return letDeclaration();
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -33,31 +31,46 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<LetStmt>> fields;
-    while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
+    while (!match({TokenType::RIGHT_BRACE}) && !isAtEnd()) {
         if (match({TokenType::LET, TokenType::MUT})) {
-            fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(variableDeclaration().release())));
+            fields.push_back(std::unique_ptr<LetStmt>(static_cast<LetStmt*>(letDeclaration().release())));
         } else {
             ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
-            synchronize(); // Skip the invalid token and attempt to continue parsing
+            synchronize();
         }
     }
-    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
     return std::make_unique<StructStmt>(name, std::move(fields));
 }
 
 std::unique_ptr<Stmt> Parser::traitDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    std::vector<Token> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
     consume(TokenType::LEFT_BRACE, "Expect '{' before trait body.");
     std::vector<std::unique_ptr<Stmt>> methods;
     while (peek().type != TokenType::RIGHT_BRACE && !isAtEnd()) {
         methods.push_back(function("method", false));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
-    return std::make_unique<TraitStmt>(name, std::move(methods));
+    return std::make_unique<TraitStmt>(name, std::move(generics), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::implDeclaration() {
-    Token traitName = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    Token name1 = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    std::optional<Token> traitName = name1;
+    std::vector<TypeInfo> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(parseType());
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
+
     consume(TokenType::FOR, "Expect 'for' after trait name.");
     Token structName = consume(TokenType::IDENTIFIER, "Expect struct name.");
     consume(TokenType::LEFT_BRACE, "Expect '{' before impl body.");
@@ -66,7 +79,7 @@ std::unique_ptr<Stmt> Parser::implDeclaration() {
         methods.push_back(function("method", true));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after impl body.");
-    return std::make_unique<ImplStmt>(structName, traitName, std::move(methods));
+    return std::make_unique<ImplStmt>(structName, traitName, std::move(generics), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::importDeclaration() {
@@ -82,11 +95,25 @@ std::unique_ptr<Stmt> Parser::importDeclaration() {
 }
 
 std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_required) {
-    Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
-    auto generics = parseGenerics();
+    Token name;
+    if (match({TokenType::OPERATOR})) {
+        consume(TokenType::COLON_COLON, "Expect '::' after 'operator'.");
+        Token op_name = consume(TokenType::IDENTIFIER, "Expect operator name after '::'.");
+        name = Token{TokenType::IDENTIFIER, "operator::" + op_name.lexeme, std::monostate{}, op_name.line};
+    } else {
+        name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    }
+    std::vector<Token> generics;
+    if (match({TokenType::LESS})) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type list.");
+    }
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     auto parameters = parseParameters();
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
     auto returnType = parseReturnType();
 
     std::vector<std::unique_ptr<Stmt>> body;
@@ -99,41 +126,7 @@ std::unique_ptr<Stmt> Parser::function(const std::string& kind, bool body_requir
     return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), std::move(returnType));
 }
 
-std::vector<std::pair<Token, TypeInfo>> Parser::parseParameters() {
-    std::vector<std::pair<Token, TypeInfo>> parameters;
-    if (peek().type != TokenType::RIGHT_PAREN) {
-        do {
-            if (parameters.size() >= 255) {
-                ErrorReporter::error(peek().line, "Can't have more than 255 parameters.");
-            }
-            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
-            consume(TokenType::COLON, "Expect ':' after parameter name.");
-            parameters.emplace_back(paramName, parseType());
-        } while (match({TokenType::COMMA}));
-    }
-    return parameters;
-}
-
-std::vector<Token> Parser::parseGenerics() {
-    std::vector<Token> generics;
-    if (match({TokenType::LESS})) {
-        do {
-            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
-        } while (match({TokenType::COMMA}));
-        consume(TokenType::GREATER, "Expect '>' after generic type list.");
-    }
-    return generics;
-}
-
-std::optional<TypeInfo> Parser::parseReturnType() {
-    if (match({TokenType::MINUS})) {
-        consume(TokenType::GREATER, "Expect '>' after '-' for return type arrow.");
-        return parseType();
-    }
-    return std::nullopt;
-}
-
-std::unique_ptr<Stmt> Parser::variableDeclaration() {
+std::unique_ptr<Stmt> Parser::letDeclaration() {
     bool isMutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::optional<TypeInfo> type;
@@ -206,10 +199,48 @@ std::unique_ptr<Stmt> Parser::expressionStatement() {
     return std::make_unique<ExpressionStmt>(std::move(expr));
 }
 
-Parser::~Parser() = default;
-
 std::unique_ptr<Expr> Parser::expression() {
-    return prattParser->parse();
+    PrattParser prattParser(*this);
+    return prattParser.parse();
+}
+
+std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args) {
+    std::vector<std::unique_ptr<Expr>> arguments;
+    if (peek().type != TokenType::RIGHT_PAREN) {
+        do {
+            if (arguments.size() >= 255) {
+                ErrorReporter::error(peek().line, "Can't have more than 255 arguments.");
+            }
+            arguments.push_back(expression());
+        } while (match({TokenType::COMMA}));
+    }
+
+    Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return std::make_unique<CallExpr>(std::move(callee), paren, std::move(arguments), std::move(generic_args));
+}
+
+std::vector<std::pair<Token, TypeInfo>> Parser::parseParameters() {
+    std::vector<std::pair<Token, TypeInfo>> parameters;
+    if (peek().type != TokenType::RIGHT_PAREN) {
+        do {
+            if (parameters.size() >= 255) {
+                ErrorReporter::error(peek().line, "Can't have more than 255 parameters.");
+            }
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            parameters.emplace_back(paramName, parseType());
+        } while (match({TokenType::COMMA}));
+    }
+    return parameters;
+}
+
+std::optional<TypeInfo> Parser::parseReturnType() {
+    if (match({TokenType::MINUS})) {
+        consume(TokenType::GREATER, "Expect '>' after '-' for return type arrow.");
+        return parseType();
+    }
+    return std::nullopt;
 }
 
 TypeInfo Parser::parseType() {
@@ -231,7 +262,7 @@ TypeInfo Parser::parseType() {
         }
         if (match({TokenType::MINUS})) {
             consume(TokenType::GREATER, "Expect '>' after '-' for function type return arrow.");
-            type.returnType = std::make_shared<TypeInfo>(parseType());
+            type.returnType = std::make_unique<TypeInfo>(parseType());
         }
     } else {
         type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");
@@ -314,6 +345,7 @@ void Parser::synchronize() {
             case TokenType::IF:
             case TokenType::WHILE:
             case TokenType::RETURN:
+            case TokenType::IMPL:
                 return;
         }
 

@@ -151,33 +151,67 @@ std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
 
 std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     if (stmt.traitName) {
-        if (traits.find(stmt.traitName->lexeme) == traits.end()) {
-            ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
-            return {};
-        }
-        if (!structs.count(stmt.structName.lexeme)) {
-            ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
-            return {};
-        }
-
-        const auto* trait = traits.at(stmt.traitName->lexeme);
-        if (trait->methods.size() != stmt.methods.size()) {
-            ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
-            return {};
-        }
-
-        for (size_t i = 0; i < trait->methods.size(); ++i) {
-            const auto& traitMethod = trait->methods[i];
-            const auto& implMethod = stmt.methods[i];
-            if (traitMethod->name.lexeme != implMethod->name.lexeme) {
-                ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+        if (stmt.traitName->lexeme.rfind("operator::", 0) == 0) {
+            if (!structs.count(stmt.structName.lexeme)) {
+                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+                return {};
             }
-            if (traitMethod->params.size() != implMethod->params.size()) {
-                ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+            std::string op = stmt.traitName->lexeme.substr(10);
+            bool found = false;
+            for(const auto& method : stmt.methods) {
+                if (method->name.lexeme == op) {
+                    found = true;
+                    break;
+                }
             }
-            for (size_t j = 0; j < traitMethod->params.size(); ++j) {
-                if (traitMethod->params[j].second.baseType.lexeme != implMethod->params[j].second.baseType.lexeme) {
-                    ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+            if (!found) {
+                ErrorReporter::error(stmt.structName.line, "Impl for operator '" + op + "' must contain a method named '" + op + "'.");
+            }
+
+        } else {
+            if (traits.find(stmt.traitName->lexeme) == traits.end()) {
+                ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
+                return {};
+            }
+            if (!structs.count(stmt.structName.lexeme)) {
+                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+                return {};
+            }
+
+            const auto* trait = traits.at(stmt.traitName->lexeme);
+            if (trait->methods.size() != stmt.methods.size()) {
+                ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
+                return {};
+            }
+
+            std::map<std::string, TypeInfo> generic_map;
+            if (trait->generics.size() == stmt.generics.size()) {
+                for (size_t i = 0; i < trait->generics.size(); ++i) {
+                    generic_map[trait->generics[i].lexeme] = stmt.generics[i];
+                }
+            } else {
+                ErrorReporter::error(stmt.structName.line, "Number of generic arguments does not match trait.");
+                return {};
+            }
+
+            for (size_t i = 0; i < trait->methods.size(); ++i) {
+                const auto& traitMethod = trait->methods[i];
+                const auto& implMethod = stmt.methods[i];
+                if (traitMethod->name.lexeme != implMethod->name.lexeme) {
+                    ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+                }
+                if (traitMethod->params.size() != implMethod->params.size()) {
+                    ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+                }
+                for (size_t j = 0; j < traitMethod->params.size(); ++j) {
+                    auto trait_param_type = traitMethod->params[j].second;
+                    auto impl_param_type = implMethod->params[j].second;
+                    if (generic_map.count(trait_param_type.baseType.lexeme)) {
+                        trait_param_type = generic_map.at(trait_param_type.baseType.lexeme);
+                    }
+                    if (trait_param_type.baseType.lexeme != impl_param_type.baseType.lexeme) {
+                        ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+                    }
                 }
             }
         }
@@ -186,7 +220,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
     beginScope();
-    scopes.back()["self"] = VariableState{true, false, 0, false};
+    scopes.back()["self"] = VariableState{true, true, 0, false, TypeInfo{stmt.structName}};
     for (const auto& method : stmt.methods) {
         resolveFunction(*method, FunctionType::FUNCTION);
     }
@@ -216,10 +250,21 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
     buffer << file.rdbuf();
 
     Chtholly chtholly;
-    chtholly.run(buffer.str(), true);
+    auto statements = chtholly.run(buffer.str(), true);
 
     if (ErrorReporter::hadError) {
         return {};
+    }
+
+    for (const auto& statement : statements) {
+        if (auto* func = dynamic_cast<FunctionStmt*>(statement.get())) {
+            declare(func->name);
+            define(func->name);
+        } else if (auto* s = dynamic_cast<StructStmt*>(statement.get())) {
+            structs[s->name.lexeme] = s;
+        } else if (auto* trait = dynamic_cast<TraitStmt*>(statement.get())) {
+            traits[trait->name.lexeme] = trait;
+        }
     }
 
     return {};
@@ -227,6 +272,15 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
 
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
     resolve(*expr.object);
+    if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        if (var->name.lexeme == "self") {
+            if (currentClass == ClassType::NONE) {
+                ErrorReporter::error(var->name.line, "Can't use 'self' outside of a class.");
+                return {};
+            }
+        }
+    }
+
     if (expr.object->resolved_type) {
         if (structs.count(expr.object->resolved_type->baseType.lexeme)) {
             auto s = structs.at(expr.object->resolved_type->baseType.lexeme);
@@ -343,7 +397,7 @@ void Resolver::resolveLambda(const LambdaExpr& lambda, FunctionType type) {
     currentFunction = enclosingFunction;
 }
 
-std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
+std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
     declare(stmt.name);
     define(stmt.name);
     resolveFunction(stmt, FunctionType::FUNCTION);
@@ -395,5 +449,37 @@ std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
 std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
     resolve(*expr.right);
     expr.resolved_type = expr.right->resolved_type;
+    return {};
+}
+
+std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+    if (structs.find(expr.name.lexeme) == structs.end()) {
+        ErrorReporter::error(expr.name.line, "Struct '" + expr.name.lexeme + "' not found.");
+        return {};
+    }
+
+    const auto* struct_decl = structs.at(expr.name.lexeme);
+    if (struct_decl->fields.size() != expr.initializers.size()) {
+        ErrorReporter::error(expr.name.line, "Incorrect number of fields in initializer for struct '" + expr.name.lexeme + "'.");
+    }
+
+    for (const auto& [name, value] : expr.initializers) {
+        bool found = false;
+        for (const auto& field : struct_decl->fields) {
+            if (field->name.lexeme == name.lexeme) {
+                found = true;
+                resolve(*value);
+                if (field->type && value->resolved_type && field->type->baseType.lexeme != value->resolved_type->baseType.lexeme) {
+                    ErrorReporter::error(name.line, "Type mismatch for field '" + name.lexeme + "'.");
+                }
+                break;
+            }
+        }
+        if (!found) {
+            ErrorReporter::error(name.line, "Struct '" + expr.name.lexeme + "' does not have a field named '" + name.lexeme + "'.");
+        }
+    }
+
+    expr.resolved_type = TypeInfo{expr.name};
     return {};
 }

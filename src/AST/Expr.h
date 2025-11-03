@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <map>
 
 #include "../TypeInfo.h"
 class Stmt;
@@ -20,6 +21,7 @@ struct GetExpr;
 struct SetExpr;
 struct BorrowExpr;
 struct LambdaExpr;
+struct StructInitializerExpr;
 
 class ExprVisitor {
 public:
@@ -34,6 +36,7 @@ public:
     virtual std::any visitSetExpr(const SetExpr& expr) = 0;
     virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
     virtual std::any visitLambdaExpr(const LambdaExpr& expr) = 0;
+    virtual std::any visitStructInitializerExpr(const StructInitializerExpr& expr) = 0;
     virtual ~ExprVisitor() = default;
 };
 
@@ -174,5 +177,17 @@ struct LambdaExpr : Expr {
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitLambdaExpr(*this);
+    }
+};
+
+struct StructInitializerExpr : Expr {
+    Token name;
+    std::map<Token, std::unique_ptr<Expr>> initializers;
+
+    StructInitializerExpr(Token name, std::map<Token, std::unique_ptr<Expr>> initializers)
+        : name(name), initializers(std::move(initializers)) {}
+
+    std::any accept(ExprVisitor& visitor) const override {
+        return visitor.visitStructInitializerExpr(*this);
     }
 };

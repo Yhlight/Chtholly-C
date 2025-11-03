@@ -2,6 +2,7 @@
 #include "../src/Transpiler.h"
 #include "../src/Lexer.h"
 #include "../src/Parser.h"
+#include "../src/Resolver.h"
 
 TEST(FileSystemTest, ReadFile) {
     std::string source = "let content = fs_read(\"test.txt\");";
@@ -9,7 +10,9 @@ TEST(FileSystemTest, ReadFile) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -46,7 +49,9 @@ TEST(FileSystemTest, WriteFile) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"

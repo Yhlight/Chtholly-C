@@ -40,7 +40,9 @@ TEST_F(TraitTest, TranspileTrait) {
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string output = transpiler.transpile(stmts);
     std::string expected = "struct MyTrait {\n    virtual void my_func(int a) = 0;\n};\n\n";
     ASSERT_TRUE(output.find(expected) != std::string::npos);
@@ -52,7 +54,9 @@ TEST_F(TraitTest, TranspileImpl) {
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string output = transpiler.transpile(stmts);
     std::string expected = "struct MyStruct : public MyTrait {\n";
     ASSERT_TRUE(output.find(expected) != std::string::npos);

@@ -8,6 +8,8 @@ add_executable(
     test_parser.cpp
     test_transpiler.cpp
     test_resolver.cpp
+    test_operator_overload.cpp
+    test_simple_trait.cpp
     test_traits.cpp
     test_modules.cpp
     test_std_import.cpp

@@ -10,8 +10,8 @@ class PrattParser;
 
 class Parser {
 public:
+    friend class PrattParser;
     Parser(const std::vector<Token>& tokens);
-    ~Parser();
     std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
@@ -19,10 +19,8 @@ private:
         using std::runtime_error::runtime_error;
     };
 
-    friend class PrattParser;
     std::vector<Token> tokens;
     int current = 0;
-    std::unique_ptr<PrattParser> prattParser;
 
     std::unique_ptr<Stmt> declaration();
     std::unique_ptr<Stmt> structDeclaration();
@@ -30,20 +28,20 @@ private:
     std::unique_ptr<Stmt> implDeclaration();
     std::unique_ptr<Stmt> importDeclaration();
     std::unique_ptr<Stmt> function(const std::string& kind, bool body_required);
-    std::unique_ptr<Stmt> variableDeclaration();
+    std::unique_ptr<Stmt> letDeclaration();
     std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> printStatement();
     std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::vector<std::unique_ptr<Stmt>> block();
-    std::vector<std::pair<Token, TypeInfo>> parseParameters();
-    std::vector<Token> parseGenerics();
-    std::optional<TypeInfo> parseReturnType();
 
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
 
+    std::vector<std::pair<Token, TypeInfo>> parseParameters();
+    std::optional<TypeInfo> parseReturnType();
     TypeInfo parseType();
     bool LA_is_generic_call();
     bool match(const std::vector<TokenType>& types);

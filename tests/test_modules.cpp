@@ -48,7 +48,9 @@ TEST_F(ModuleTest, TranspileImport) {
     auto tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string output = transpiler.transpile(stmts);
 
     std::string expected_module = "int my_func() {\n"

@@ -27,6 +27,7 @@ PrattParser::PrattParser(Parser& parser) : parser(parser) {
         {TokenType::NUMBER, {std::bind(&PrattParser::literal, this), nullptr, Precedence::NONE}},
         {TokenType::TRUE, {std::bind(&PrattParser::literal, this), nullptr, Precedence::NONE}},
         {TokenType::FALSE, {std::bind(&PrattParser::literal, this), nullptr, Precedence::NONE}},
+        {TokenType::LEFT_BRACE, {nullptr, std::bind(&PrattParser::structInitializer, this, std::placeholders::_1), Precedence::CALL}},
     };
 }
 
@@ -186,4 +187,21 @@ std::unique_ptr<Expr> PrattParser::lambda() {
     parser.consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
     auto body = parser.block();
     return std::make_unique<LambdaExpr>(std::move(parameters), std::move(body), std::move(returnType));
+}
+
+std::unique_ptr<Expr> PrattParser::structInitializer(std::unique_ptr<Expr> left) {
+    if (auto* var = dynamic_cast<VariableExpr*>(left.get())) {
+        std::map<Token, std::unique_ptr<Expr>> initializers;
+        if (parser.peek().type != TokenType::RIGHT_BRACE) {
+            do {
+                Token name = parser.consume(TokenType::IDENTIFIER, "Expect field name.");
+                parser.consume(TokenType::COLON, "Expect ':' after field name.");
+                initializers[name] = parse();
+            } while (parser.match({TokenType::COMMA}));
+        }
+        parser.consume(TokenType::RIGHT_BRACE, "Expect '}' after struct initializer.");
+        return std::make_unique<StructInitializerExpr>(var->name, std::move(initializers));
+    }
+    ErrorReporter::error(parser.peek().line, "Expect struct name before initializer.");
+    return nullptr;
 }

@@ -17,6 +17,7 @@ public:
     std::any visitSetExpr(const SetExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
+    std::any visitStructInitializerExpr(const StructInitializerExpr& expr) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);

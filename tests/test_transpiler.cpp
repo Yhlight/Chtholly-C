@@ -2,6 +2,7 @@
 #include "../src/Transpiler.h"
 #include "../src/Lexer.h"
 #include "../src/Parser.h"
+#include "../src/Resolver.h"
 
 TEST(TranspilerTest, SimplePrint) {
     std::string source = "print(1 + 2);";
@@ -9,7 +10,9 @@ TEST(TranspilerTest, SimplePrint) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -33,7 +36,9 @@ TEST(TranspilerTest, Lambda) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -61,7 +66,9 @@ TEST(TranspilerTest, GenericFunction) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -89,7 +96,9 @@ TEST(TranspilerTest, LetStatementWithReference) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -113,7 +122,9 @@ TEST(TranspilerTest, Struct) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -143,7 +154,9 @@ TEST(TranspilerTest, Function) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -169,7 +182,9 @@ TEST(TranspilerTest, LetStatementWithType) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -193,7 +208,9 @@ TEST(TranspilerTest, StringDeclaration) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -217,7 +234,9 @@ TEST(TranspilerTest, LogicalAnd) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -241,7 +260,9 @@ TEST(TranspilerTest, LogicalOr) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -265,7 +286,9 @@ TEST(TranspilerTest, LetStatement) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
@@ -289,7 +312,9 @@ TEST(TranspilerTest, Input) {
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
     auto stmts = parser.parse();
-    Transpiler transpiler;
+    Resolver resolver;
+    resolver.resolve(stmts);
+    Transpiler transpiler(resolver);
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"

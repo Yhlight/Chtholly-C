@@ -59,6 +59,14 @@ std::any ASTPrinter::visitLambdaExpr(const LambdaExpr& expr) {
     return "lambda";
 }
 
+std::any ASTPrinter::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+    std::vector<const Expr*> exprs;
+    for (const auto& [name, value] : expr.initializers) {
+        exprs.push_back(value.get());
+    }
+    return parenthesize("struct_init " + expr.name.lexeme, exprs);
+}
+
 std::string ASTPrinter::parenthesize(const std::string& name, const std::vector<const Expr*>& exprs) {
     std::stringstream builder;
     builder << "(" << name;

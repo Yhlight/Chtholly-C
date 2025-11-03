@@ -54,6 +54,7 @@ private:
     std::unique_ptr<Expr> assignment(std::unique_ptr<Expr> left);
     std::unique_ptr<Expr> borrow();
     std::unique_ptr<Expr> lambda();
+    std::unique_ptr<Expr> structInitializer(std::unique_ptr<Expr> left);
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
     bool LA_is_generic_call();
 };

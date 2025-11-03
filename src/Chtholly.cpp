@@ -44,7 +44,7 @@ std::vector<std::unique_ptr<Stmt>> Chtholly::run(const std::string& source, bool
     if (ErrorReporter::hadError) return {};
 
     if (!is_module) {
-        Transpiler transpiler;
+        Transpiler transpiler(resolver);
         std::string cpp_code = transpiler.transpile(statements);
 
         std::ofstream out("out.cpp");
