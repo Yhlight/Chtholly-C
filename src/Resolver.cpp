@@ -5,8 +5,9 @@ Resolver::Resolver() {
     scopes.emplace_back();
     scopes.back()["print"] = VariableState{true, false, 0, false};
     scopes.back()["input"] = VariableState{true, false, 0, false};
-    scopes.back()["fs_read"] = VariableState{true, false, 0, false};
-    scopes.back()["fs_write"] = VariableState{true, false, 0, false};
+
+    std_modules["filesystem"]["fs_read"] = VariableState{true, false, 0, false};
+    std_modules["filesystem"]["fs_write"] = VariableState{true, false, 0, false};
 }
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
@@ -235,7 +236,11 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
 
 std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
-        if (stmt.path.lexeme != "iostream" && stmt.path.lexeme != "filesystem") {
+        if (std_modules.count(stmt.path.lexeme)) {
+            for (const auto& [name, state] : std_modules.at(stmt.path.lexeme)) {
+                scopes.front()[name] = state;
+            }
+        } else if (stmt.path.lexeme != "iostream") {
             ErrorReporter::error(stmt.path.line, "Unknown standard library module.");
         }
         return {};

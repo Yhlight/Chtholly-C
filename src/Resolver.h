@@ -51,6 +51,7 @@ public:
 private:
     std::map<std::string, const TraitStmt*> traits;
     std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, std::map<std::string, VariableState>> std_modules;
 
     enum class FunctionType {
         NONE,

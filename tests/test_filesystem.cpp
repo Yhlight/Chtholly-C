@@ -5,7 +5,7 @@
 #include "../src/Resolver.h"
 
 TEST(FileSystemTest, ReadFile) {
-    std::string source = "let content = fs_read(\"test.txt\");";
+    std::string source = "import filesystem; let content = fs_read(\"test.txt\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -44,7 +44,7 @@ TEST(FileSystemTest, ReadFile) {
 }
 
 TEST(FileSystemTest, WriteFile) {
-    std::string source = "fs_write(\"test.txt\", \"hello\");";
+    std::string source = "import filesystem; fs_write(\"test.txt\", \"hello\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
