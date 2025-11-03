@@ -29,7 +29,7 @@
 ## Phase 4: Standard Library
 
 - [x] **iostream**: Implement the `iostream` module for input and output.
-- [ ] **filesystem**: Implement the `filesystem` module for file system operations. (In Progress)
+- [x] **filesystem**: Implement the `filesystem` module for file system operations.
 - [x] **operator**: Implement the `operator` module for operator overloading.
 - [ ] **reflect**: Implement the `reflect` module for static reflection.
 - [ ] **meta**: Implement the `meta` module for metaprogramming.

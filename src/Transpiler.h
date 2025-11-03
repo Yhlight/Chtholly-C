@@ -44,6 +44,8 @@ private:
     std::map<std::string, const ImplStmt*> impls;
     std::set<std::string> transpiled_files;
     std::vector<std::map<std::string, TypeInfo>> symbol_table;
+    std::set<std::string> imported_std_modules;
+    bool is_in_method = false;
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;

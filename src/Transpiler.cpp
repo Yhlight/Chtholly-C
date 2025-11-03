@@ -10,6 +10,10 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     for (const auto& stmt : statements) {
         if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
             impls[impl->structName.lexeme] = impl;
+        } else if (auto* imp = dynamic_cast<ImportStmt*>(stmt.get())) {
+            if (imp->is_std) {
+                imported_std_modules.insert(imp->path.lexeme);
+            }
         }
     }
 
@@ -31,37 +35,15 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         if (has_lambda) {
             out << "#include <functional>\n";
         }
-        out << "\n";
-        out << "std::string chtholly_input() {\n"
-            << "    std::string line;\n"
-            << "    std::getline(std::cin, line);\n"
-            << "    return line;\n"
-            << "}\n\n";
-        bool has_fs = false;
-        for (const auto& statement : statements) {
-            if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
-                if (auto* callExpr = dynamic_cast<const CallExpr*>(exprStmt->expression.get())) {
-                    if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
-                        if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
-                            has_fs = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
-                if (letStmt->initializer) {
-                    if (auto* callExpr = dynamic_cast<const CallExpr*>(letStmt->initializer.get())) {
-                        if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
-                            if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
-                                has_fs = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+        if (imported_std_modules.count("iostream")) {
+            out << "\n";
+            out << "std::string chtholly_input() {\n"
+                << "    std::string line;\n"
+                << "    std::getline(std::cin, line);\n"
+                << "    return line;\n"
+                << "}\n\n";
         }
-        if (has_fs) {
+        if (imported_std_modules.count("filesystem")) {
             out << "#include <fstream>\n"
                 << "#include <sstream>\n\n"
                 << "std::string chtholly_fs_read(const std::string& path) {\n"
@@ -252,6 +234,7 @@ std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
 
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
+        imported_std_modules.insert(stmt.path.lexeme);
         return {};
     }
     std::string path = std::get<std::string>(stmt.path.literal);
@@ -360,6 +343,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     if (impls.count(stmt.name.lexeme)) {
         const auto* impl = impls.at(stmt.name.lexeme);
         for (const auto& method : impl->methods) {
+            out << "    ";
             visitFunctionStmt(*method);
         }
     }
@@ -368,6 +352,9 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
 }
 
 std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
+    if (expr.name.lexeme == "self" && is_in_method) {
+        return "this";
+    }
     return expr.name.lexeme;
 }
 
@@ -404,6 +391,18 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto* callee_var = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        if (callee_var->name.lexeme == "print" || callee_var->name.lexeme == "input") {
+            if (imported_std_modules.find("iostream") == imported_std_modules.end()) {
+                ErrorReporter::error(callee_var->name.line, "Function '" + callee_var->name.lexeme + "' requires 'iostream' module to be imported.");
+                return std::make_any<std::string>("");
+            }
+        } else if (callee_var->name.lexeme == "fs_read" || callee_var->name.lexeme == "fs_write") {
+            if (imported_std_modules.find("filesystem") == imported_std_modules.end()) {
+                ErrorReporter::error(callee_var->name.line, "Function '" + callee_var->name.lexeme + "' requires 'filesystem' module to be imported.");
+                return std::make_any<std::string>("");
+            }
+        }
+
         if (callee_var->name.lexeme == "print") {
             std::string args;
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
@@ -458,6 +457,8 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    bool previous_is_in_method = is_in_method;
+    is_in_method = true;
     if (!stmt.generics.empty()) {
         out << "template<";
         for (size_t i = 0; i < stmt.generics.size(); ++i) {
@@ -485,6 +486,7 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
         execute(*statement);
     }
     out << "}\n\n";
+    is_in_method = previous_is_in_method;
     return {};
 }
 

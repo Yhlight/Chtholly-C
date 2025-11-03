@@ -2,9 +2,10 @@
 #include "../src/Transpiler.h"
 #include "../src/Lexer.h"
 #include "../src/Parser.h"
+#include "../src/Error.h"
 
 TEST(FileSystemTest, ReadFile) {
-    std::string source = "let content = fs_read(\"test.txt\");";
+    std::string source = "import filesystem; let content = fs_read(\"test.txt\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -14,12 +15,7 @@ TEST(FileSystemTest, ReadFile) {
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "#include <fstream>\n"
         "#include <sstream>\n\n"
         "std::string chtholly_fs_read(const std::string& path) {\n"
@@ -41,7 +37,7 @@ TEST(FileSystemTest, ReadFile) {
 }
 
 TEST(FileSystemTest, WriteFile) {
-    std::string source = "fs_write(\"test.txt\", \"hello\");";
+    std::string source = "import filesystem; fs_write(\"test.txt\", \"hello\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     Parser parser(tokens);
@@ -51,12 +47,7 @@ TEST(FileSystemTest, WriteFile) {
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n"
-        "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
+        "#include <string>\n"
         "#include <fstream>\n"
         "#include <sstream>\n\n"
         "std::string chtholly_fs_read(const std::string& path) {\n"
@@ -75,4 +66,16 @@ TEST(FileSystemTest, WriteFile) {
         "    return 0;\n"
         "}\n";
     ASSERT_EQ(result, expected);
+}
+
+TEST(FileSystemTest, MissingImport) {
+    std::string source = "let content = fs_read(\"test.txt\");";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Transpiler transpiler;
+    ErrorReporter::hadError = false;
+    transpiler.transpile(stmts);
+    ASSERT_TRUE(ErrorReporter::hadError);
 }

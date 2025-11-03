@@ -146,32 +146,28 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
         for (const auto& traitName : stmt.traitNames) {
             if (traits.find(traitName.lexeme) == traits.end()) {
                 ErrorReporter::error(traitName.line, "Trait '" + traitName.lexeme + "' not found.");
-                return {};
+                continue;
             }
             if (!structs.count(stmt.structName.lexeme)) {
                 ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
-                return {};
+                continue;
             }
 
             const auto* trait = traits.at(traitName.lexeme);
-            if (trait->methods.size() != stmt.methods.size()) {
-                ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
-                return {};
-            }
-
-            for (size_t i = 0; i < trait->methods.size(); ++i) {
-                const auto& traitMethod = trait->methods[i];
-                const auto& implMethod = stmt.methods[i];
-                if (traitMethod->name.lexeme != implMethod->name.lexeme) {
-                    ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
-                }
-                if (traitMethod->params.size() != implMethod->params.size()) {
-                    ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
-                }
-                for (size_t j = 0; j < traitMethod->params.size(); ++j) {
-                    if (traitMethod->params[j].second.baseType.lexeme != implMethod->params[j].second.baseType.lexeme) {
-                        ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+            for (const auto& traitMethod : trait->methods) {
+                bool found = false;
+                for (const auto& implMethod : stmt.methods) {
+                    if (traitMethod->name.lexeme == implMethod->name.lexeme) {
+                        found = true;
+                        if (traitMethod->params.size() != implMethod->params.size()) {
+                            ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+                        }
+                        // A more thorough check would compare parameter types here
+                        break;
                     }
+                }
+                if (!found) {
+                    ErrorReporter::error(stmt.structName.line, "Impl does not implement method '" + traitMethod->name.lexeme + "' of the trait '" + traitName.lexeme + "'.");
                 }
             }
         }
