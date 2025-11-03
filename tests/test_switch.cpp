@@ -94,7 +94,7 @@ std::string chtholly_input() {
 }
 
 int main() {
-    const auto x = 1;
+    const double x = 1;
     {
         auto switch_val = x;
         bool matched = false;
@@ -142,7 +142,7 @@ std::string chtholly_input() {
 }
 
 int main() {
-    const auto x = 1;
+    const double x = 1;
     {
         auto switch_val = x;
         bool matched = false;

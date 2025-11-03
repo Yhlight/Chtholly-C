@@ -6,6 +6,7 @@ Resolver::Resolver() {
     scopes.back()["print"] = VariableState{true, false, 0, false};
     scopes.back()["input"] = VariableState{true, false, 0, false};
     scopes.back()["reflect"] = VariableState{true, false, 0, false};
+    scopes.back()["meta"] = VariableState{true, false, 0, false};
 
     std_modules["filesystem"]["fs_read"] = VariableState{true, false, 0, false};
     std_modules["filesystem"]["fs_write"] = VariableState{true, false, 0, false};
@@ -391,6 +392,14 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                         array_type.baseType = Token{TokenType::IDENTIFIER, "array", std::monostate{}, -1};
                         array_type.params.push_back(TypeInfo{Token{TokenType::IDENTIFIER, "string", std::monostate{}, -1}});
                         expr.resolved_type = array_type;
+                    }
+                }
+            } else if (var->name.lexeme == "meta") {
+                if (get->name.lexeme == "is_struct" || get->name.lexeme == "is_int") {
+                    if (expr.generic_args.size() != 1) {
+                        ErrorReporter::error(expr.paren.line, get->name.lexeme + " requires exactly one generic argument.");
+                    } else {
+                        expr.resolved_type = TypeInfo{Token{TokenType::IDENTIFIER, "bool", std::monostate{}, -1}};
                     }
                 }
             }

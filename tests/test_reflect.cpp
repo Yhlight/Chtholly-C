@@ -92,7 +92,7 @@ public:
 };
 
 int main() {
-    const auto names = std::vector<std::string>{"a", "b"};
+    const array names = std::vector<std::string>{"a", "b"};
     return 0;
 }
 )";

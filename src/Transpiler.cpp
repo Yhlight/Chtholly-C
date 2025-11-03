@@ -201,6 +201,8 @@ std::string to_cpp_type(const TypeInfo& type) {
     std::string cpp_type;
     if (type.baseType.lexeme == "string") {
         cpp_type = "std::string";
+    } else if (type.baseType.lexeme == "int") {
+        cpp_type = "int";
     } else if (type.baseType.type == TokenType::FUNCTION) {
         cpp_type = "std::function<";
         if (type.returnType) {
@@ -238,6 +240,8 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     }
     if (stmt.type) {
         out << to_cpp_type(*stmt.type) << " " << stmt.name.lexeme;
+    } else if (stmt.initializer && stmt.initializer->resolved_type) {
+        out << to_cpp_type(*stmt.initializer->resolved_type) << " " << stmt.name.lexeme;
     } else {
         out << "auto " << stmt.name.lexeme;
     }
@@ -542,6 +546,15 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                         }
                         result += "}";
                         return result;
+                    }
+                }
+            } else if (var->name.lexeme == "meta") {
+                if (expr.generic_args.size() == 1) {
+                    const auto& type = expr.generic_args[0];
+                    if (get->name.lexeme == "is_struct") {
+                        return std::make_any<std::string>(resolver.structs.count(type.baseType.lexeme) ? "true" : "false");
+                    } else if (get->name.lexeme == "is_int") {
+                        return std::make_any<std::string>(type.baseType.lexeme == "int" ? "true" : "false");
                     }
                 }
             }

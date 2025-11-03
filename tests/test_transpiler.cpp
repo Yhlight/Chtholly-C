@@ -321,7 +321,7 @@ TEST(TranspilerTest, LetStatement) {
         "    return line;\n"
         "}\n\n"
         "int main() {\n"
-        "    const auto x = 10;\n"
+        "    const double x = 10;\n"
         "    return 0;\n"
         "}\n";
     ASSERT_EQ(result, expected);
