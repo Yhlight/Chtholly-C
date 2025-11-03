@@ -172,6 +172,20 @@ func add(x: int, y: int) -> int
 {
     return x + y;
 }
+
+#### lambda函数
+Chtholly的lambda函数使用与C++完全一致的语法
+默认情况下，捕获属于不可变引用
+
+```Chtholly
+let add = [](a: int, b: int) -> int { return a + b; };
+```
+
+#### function类型
+Chtholly使用`function`关键字来表示函数类型，可以用于变量的类型注解。
+
+```Chtholly
+let my_func: function(int, int) -> int = add;
 ```
 
 #### lambda函数
@@ -179,7 +193,7 @@ Chtholly的lambda函数使用与C++完全一致的语法
 默认情况下，捕获属于不可变引用  
 
 ```Chtholly
-let add = (形参列表)[捕获参数] -> <返回值类型> {函数体}  // 如果语法错误请自行修正
+let add = [](a: int, b: int) -> int { return a + b; };
 ```
 
 #### 参数所有权
@@ -467,34 +481,86 @@ func main(args: array[string]) -> Result<void, string>
 }
 ```
 
-### import
-Chtholly支持导入模块，使用import关键字导入模块
+### 模块与 `import`
+Chtholly 支持模块系统，允许您将代码组织到多个文件中或使用标准库功能。`import` 关键字用于加载另一个模块中的代码并将其合并到当前作用域。
 
-顾名思义，语法为import 模块名; 或 import "文件路径";
-导入文件后，全局变量，函数，结构体都能够被调用
+#### 语法
+`import` 语句接受两种形式：
+1.  **文件路径**: 一个字符串字面量，表示您想要包含的 Chtholly 文件（`.cns`）的路径。
+2.  **标准库模块名**: 一个标识符，表示您想要导入的标准库模块。
 
-你可以使用模块名称::模块内的方法限定模块  
-
-导入能够将模块内定义的变量，函数，结构体，trait等导入到当前作用域，你可以使用'.'进行具体的导入  
-
-### iostream
-#### Print
 ```Chtholly
-import iostream;  // 导入iostream模块
-import filestream.dir;  // 导入filestream的dir结构体
+// 导入文件模块
+import "path/to/your_module.cns";
 
-print("HelloWorld");
-
-iostream::print("HelloWorld");
+// 导入标准库模块
+import iostream;
 ```
 
-#### inputstream
-#### outputstream
+#### 行为
+当您导入一个文件时，其所有的顶级定义（例如函数、结构体和 trait）在包含 `import` 语句的文件中都将变为可直接访问。这有助于代码重用和项目组织。
+
+#### 示例
+假设您有一个名为 `math.cns` 的文件：
+
+```Chtholly
+// math.cns
+func add(a: int, b: int) -> int {
+    return a + b;
+}
+```
+
+您可以在另一个文件 `main.cns` 中通过导入 `math.cns` 来使用 `add` 函数：
+
+```Chtholly
+// main.cns
+import "math.cns";
+
+func main() {
+    let result = add(5, 10);
+    print(result); // 将输出 15
+}
+```
+
+### iostream
+Chtholly 的标准库 `iostream` 模块提供了基本的输入/输出功能。
+
+#### print 函数
+`print` 是一个内置函数，用于将一个值输出到控制台，并在末尾添加换行符。
+
+```Chtholly
+// print 是一个内置函数，无需导入即可使用
+print("HelloWorld");
+print(123);
+```
+
+尽管 `print` 是内置的，但 `import iostream;` 语句用于正式地将 `iostream` 模块的功能引入作用域。在未来的版本中，`iostream` 模块将包含更多功能。
+
+#### input 函数
+`input` 是一个内置函数，用于从控制台读取一行文本，并将其作为字符串返回。
+
+```Chtholly
+let name = input();
+print("Hello, " + name);
+```
 
 ### filesystem
-#### file
-#### dir
-#### path
+Chtholly 的标准库 `filesystem` 模块提供了基本的文件系统功能。
+
+#### fs_read 函数
+`fs_read` 是一个内置函数，用于读取文件的全部内容，并将其作为字符串返回。
+
+```Chtholly
+let content = fs_read("my_file.txt");
+print(content);
+```
+
+#### fs_write 函数
+`fs_write` 是一个内置函数，用于将字符串内容写入文件。
+
+```Chtholly
+fs_write("my_file.txt", "Hello, Chtholly!");
+```
 
 ### operator
 #### 操作符自定义
@@ -504,8 +570,7 @@ Chtholly支持操作符自定义，此功能由模块operator提供
 ```Chtholly
 import operator;
 
-struct Point
-impl operator::add  // +
+struct Point impl operator::add  // +
 , operator::sub  // -
 , operator::mul  // *
 , operator::div  // /
