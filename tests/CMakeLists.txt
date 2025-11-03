@@ -14,6 +14,7 @@ add_executable(
     test_filesystem.cpp
     test_operator_overload.cpp
     test_reflection.cpp
+    test_meta.cpp
 )
 
 target_link_libraries(

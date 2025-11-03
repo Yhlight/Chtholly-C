@@ -32,7 +32,7 @@
 - [x] **filesystem**: Implement the `filesystem` module for file system operations.
 - [x] **operator**: Implement the `operator` module for operator overloading.
 - [ ] **reflect**: Implement the `reflect` module for static reflection. (In Progress)
-- [ ] **meta**: Implement the `meta` module for metaprogramming.
+- [ ] **meta**: Implement the `meta` module for metaprogramming. (In Progress)
 
 ## Phase 5: Self-Hosting
 

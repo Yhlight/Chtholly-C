@@ -463,6 +463,19 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     }
                     result += "    }";
                     return std::make_any<std::string>(result);
+            } else if (var->name.lexeme == "meta") {
+                if (expr.arguments.size() != 1) {
+                    ErrorReporter::error(expr.paren.line, "meta functions expect 1 argument.");
+                    return std::make_any<std::string>("");
+                }
+                TypeInfo type = get_type(*expr.arguments[0]);
+                if (get2->name.lexeme == "is_int") {
+                    return std::make_any<std::string>(type.baseType.lexeme == "int" ? "true" : "false");
+                } else if (get2->name.lexeme == "is_string") {
+                    return std::make_any<std::string>(type.baseType.lexeme == "string" ? "true" : "false");
+                } else if (get2->name.lexeme == "is_struct") {
+                    return std::make_any<std::string>(structs.count(type.baseType.lexeme) ? "true" : "false");
+                }
                 }
             }
         }
@@ -568,13 +581,33 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     } else if (auto* call = dynamic_cast<const CallExpr*>(&expr)) {
         // This is a simplified implementation. A real implementation would need to
         // look up the function signature and return its return type.
-        if (auto* callee = dynamic_cast<const VariableExpr*>(call->callee.get())) {
+        if (auto* get = dynamic_cast<const GetExpr*>(call->callee.get())) {
+            TypeInfo object_type = get_type(*get->object);
+            if (impls.count(object_type.baseType.lexeme)) {
+                const auto* impl = impls.at(object_type.baseType.lexeme);
+                for (const auto& method : impl->methods) {
+                    if (method->name.lexeme == get->name.lexeme) {
+                        return *method->returnType;
+                    }
+                }
+            }
+        } else if (auto* callee = dynamic_cast<const VariableExpr*>(call->callee.get())) {
             for (auto it = symbol_table.rbegin(); it != symbol_table.rend(); ++it) {
                 if (it->count(callee->name.lexeme)) {
                     TypeInfo type = (*it)[callee->name.lexeme];
                     if (type.returnType) {
                         return *type.returnType;
                     }
+                }
+            }
+        }
+    } else if (auto* get = dynamic_cast<const GetExpr*>(&expr)) {
+        TypeInfo object_type = get_type(*get->object);
+        if (structs.count(object_type.baseType.lexeme)) {
+            const auto* s = structs.at(object_type.baseType.lexeme);
+            for (const auto& field : s->fields) {
+                if (field->name.lexeme == get->name.lexeme) {
+                    return *field->type;
                 }
             }
         }
