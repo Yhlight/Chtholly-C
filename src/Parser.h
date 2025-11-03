@@ -30,17 +30,19 @@ private:
     std::unique_ptr<Stmt> implDeclaration();
     std::unique_ptr<Stmt> importDeclaration();
     std::unique_ptr<Stmt> function(const std::string& kind, bool body_required);
-    std::unique_ptr<Stmt> letDeclaration();
+    std::unique_ptr<Stmt> variableDeclaration();
     std::unique_ptr<Stmt> statement();
-    std::unique_ptr<Stmt> printStatement();
     std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> whileStatement();
     std::vector<std::unique_ptr<Stmt>> block();
+    std::vector<std::pair<Token, TypeInfo>> parseParameters();
+    std::vector<Token> parseGenerics();
+    std::optional<TypeInfo> parseReturnType();
 
     std::unique_ptr<Expr> expression();
-    std::unique_ptr<Expr> assignment();
+    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
 
     TypeInfo parseType();
     bool LA_is_generic_call();

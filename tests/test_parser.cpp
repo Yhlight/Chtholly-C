@@ -59,6 +59,22 @@ TEST(ParserTest, MutLetStatement) {
     EXPECT_TRUE(letStmt->isMutable);
 }
 
+TEST(ParserTest, MutStatementWithType) {
+    std::string source = "mut x: int = 10;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+    ASSERT_EQ(statements.size(), 1);
+    LetStmt* letStmt = dynamic_cast<LetStmt*>(statements[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    EXPECT_EQ(letStmt->name.lexeme, "x");
+    ASSERT_TRUE(letStmt->type.has_value());
+    EXPECT_EQ(letStmt->type->baseType.lexeme, "int");
+    EXPECT_TRUE(letStmt->isMutable);
+}
+
 TEST(ParserTest, AssignmentExpression) {
     std::string source = "x = 10;";
     Lexer lexer(source);

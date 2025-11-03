@@ -180,22 +180,9 @@ std::unique_ptr<Expr> PrattParser::borrow() {
 std::unique_ptr<Expr> PrattParser::lambda() {
     parser.consume(TokenType::RIGHT_BRACKET, "Expect ']' after lambda capture list.");
     parser.consume(TokenType::LEFT_PAREN, "Expect '(' after lambda capture list.");
-    std::vector<std::pair<Token, TypeInfo>> parameters;
-    if (parser.peek().type != TokenType::RIGHT_PAREN) {
-        do {
-            Token paramName = parser.consume(TokenType::IDENTIFIER, "Expect parameter name.");
-            parser.consume(TokenType::COLON, "Expect ':' after parameter name.");
-            parameters.emplace_back(paramName, parser.parseType());
-        } while (parser.match({TokenType::COMMA}));
-    }
+    auto parameters = parser.parseParameters();
     parser.consume(TokenType::RIGHT_PAREN, "Expect ')' after lambda parameters.");
-
-    std::optional<TypeInfo> returnType;
-    if (parser.match({TokenType::MINUS})) {
-        parser.consume(TokenType::GREATER, "Expect '>' after '-' for return type arrow.");
-        returnType = parser.parseType();
-    }
-
+    auto returnType = parser.parseReturnType();
     parser.consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
     auto body = parser.block();
     return std::make_unique<LambdaExpr>(std::move(parameters), std::move(body), std::move(returnType));
