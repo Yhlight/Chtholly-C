@@ -26,6 +26,21 @@ TEST_F(ResolverTest, RedeclareVariable) {
     ASSERT_TRUE(ErrorReporter::hadError);
 }
 
+TEST_F(ResolverTest, TypeInference) {
+    std::string source = "let a = 1.0 + 2.0;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    Parser parser(tokens);
+    auto stmts = parser.parse();
+    Resolver resolver;
+    resolver.resolve(stmts);
+    ASSERT_FALSE(ErrorReporter::hadError);
+    auto* letStmt = dynamic_cast<LetStmt*>(stmts[0].get());
+    ASSERT_NE(letStmt, nullptr);
+    ASSERT_TRUE(letStmt->initializer->resolved_type.has_value());
+    ASSERT_EQ(letStmt->initializer->resolved_type->baseType.lexeme, "double");
+}
+
 TEST_F(ResolverTest, UseOfMovedValue) {
     std::string source = "mut x = 1; let y = &mut x; print(x);";
     Lexer lexer(source);

@@ -231,7 +231,7 @@ TypeInfo Parser::parseType() {
         }
         if (match({TokenType::MINUS})) {
             consume(TokenType::GREATER, "Expect '>' after '-' for function type return arrow.");
-            type.returnType = std::make_unique<TypeInfo>(parseType());
+            type.returnType = std::make_shared<TypeInfo>(parseType());
         }
     } else {
         type.baseType = consume(TokenType::IDENTIFIER, "Expect type name.");

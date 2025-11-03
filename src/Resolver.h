@@ -5,12 +5,14 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "TypeInfo.h"
 
 struct VariableState {
     bool defined = false;
     bool is_mutable = false;
     int immutable_borrows = 0;
     bool moved = false;
+    std::optional<TypeInfo> type;
 };
 
 class Resolver : public ExprVisitor, public StmtVisitor {

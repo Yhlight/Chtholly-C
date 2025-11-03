@@ -1,12 +1,12 @@
 #pragma once
 
 #include "../Token.h"
-#include "../TypeInfo.h"
 #include <any>
 #include <memory>
 #include <vector>
 #include <optional>
 
+#include "../TypeInfo.h"
 class Stmt;
 
 struct BinaryExpr;
@@ -41,6 +41,7 @@ class Expr {
 public:
     virtual std::any accept(ExprVisitor& visitor) const = 0;
     virtual ~Expr() = default;
+    mutable std::optional<TypeInfo> resolved_type;
 };
 
 struct BinaryExpr : Expr {

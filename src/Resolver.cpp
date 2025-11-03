@@ -71,6 +71,11 @@ std::any Resolver::visitLetStmt(const LetStmt& stmt) {
     define(stmt.name);
     if (!scopes.empty()) {
         scopes.back()[stmt.name.lexeme].is_mutable = stmt.isMutable;
+        if (stmt.type) {
+            scopes.back()[stmt.name.lexeme].type = *stmt.type;
+        } else if (stmt.initializer) {
+            scopes.back()[stmt.name.lexeme].type = stmt.initializer->resolved_type;
+        }
     }
     return {};
 }
@@ -86,6 +91,7 @@ std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
             if (scopes[i].at(expr.name.lexeme).moved) {
                 ErrorReporter::error(expr.name.line, "Use of moved value.");
             }
+            expr.resolved_type = scopes[i].at(expr.name.lexeme).type;
             return {};
         }
     }
@@ -103,6 +109,7 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
             if (scopes[i].at(expr.name.lexeme).immutable_borrows > 0) {
                 ErrorReporter::error(expr.name.line, "Cannot assign to a variable that is currently borrowed.");
             }
+            expr.resolved_type = expr.value->resolved_type;
             return {};
         }
     }
@@ -127,6 +134,7 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
 std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     resolve(*expr.left);
     resolve(*expr.right);
+    expr.resolved_type = expr.left->resolved_type;
     return {};
 }
 
@@ -219,12 +227,23 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
 
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
     resolve(*expr.object);
+    if (expr.object->resolved_type) {
+        if (structs.count(expr.object->resolved_type->baseType.lexeme)) {
+            auto s = structs.at(expr.object->resolved_type->baseType.lexeme);
+            for (const auto& field : s->fields) {
+                if (field->name.lexeme == expr.name.lexeme) {
+                    expr.resolved_type = field->type;
+                }
+            }
+        }
+    }
     return {};
 }
 
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
     resolve(*expr.value);
     resolve(*expr.object);
+    expr.resolved_type = expr.value->resolved_type;
     return {};
 }
 
@@ -243,6 +262,11 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
                     scopes[i][var->name.lexeme].moved = true;
                 } else {
                     scopes[i][var->name.lexeme].immutable_borrows++;
+                }
+                expr.resolved_type = expr.expression->resolved_type;
+                if (expr.resolved_type) {
+                    expr.resolved_type->isReference = true;
+                    expr.resolved_type->isMutable = expr.isMutable;
                 }
                 return {};
             }
@@ -278,6 +302,10 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
 
     for (const auto& argument : expr.arguments) {
         resolve(*argument);
+    }
+
+    if (expr.callee->resolved_type && expr.callee->resolved_type->returnType) {
+        expr.resolved_type = *expr.callee->resolved_type->returnType;
     }
 
     return {};
@@ -349,14 +377,23 @@ std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
 
 std::any Resolver::visitGroupingExpr(const GroupingExpr& expr) {
     resolve(*expr.expression);
+    expr.resolved_type = expr.expression->resolved_type;
     return {};
 }
 
 std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
+    if (std::holds_alternative<double>(expr.value)) {
+        expr.resolved_type = TypeInfo{Token{TokenType::IDENTIFIER, "double", std::monostate{}, -1}};
+    } else if (std::holds_alternative<bool>(expr.value)) {
+        expr.resolved_type = TypeInfo{Token{TokenType::IDENTIFIER, "bool", std::monostate{}, -1}};
+    } else if (std::holds_alternative<std::string>(expr.value)) {
+        expr.resolved_type = TypeInfo{Token{TokenType::IDENTIFIER, "string", std::monostate{}, -1}};
+    }
     return {};
 }
 
 std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
     resolve(*expr.right);
+    expr.resolved_type = expr.right->resolved_type;
     return {};
 }
