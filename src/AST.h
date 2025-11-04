@@ -11,6 +11,9 @@ namespace chtholly {
 struct ExprVisitor;
 struct StmtVisitor;
 struct VarStmt;
+struct FunctionStmt;
+struct ReturnStmt;
+struct CallExpr;
 struct TypeVisitor;
 struct BaseTypeExpr;
 struct TypeExpr;
@@ -66,6 +69,17 @@ struct VariableExpr : Expr {
     Token name;
 };
 
+struct CallExpr : Expr {
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)) {}
+
+    std::any accept(ExprVisitor& visitor) override;
+
+    std::unique_ptr<Expr> callee;
+    Token paren; // ')' for location
+    std::vector<std::unique_ptr<Expr>> arguments;
+};
+
 // Visitor interface for expressions
 struct ExprVisitor {
     virtual ~ExprVisitor() = default;
@@ -73,6 +87,7 @@ struct ExprVisitor {
     virtual std::any visitUnaryExpr(UnaryExpr& expr) = 0;
     virtual std::any visitLiteralExpr(LiteralExpr& expr) = 0;
     virtual std::any visitVariableExpr(VariableExpr& expr) = 0;
+    virtual std::any visitCallExpr(CallExpr& expr) = 0;
 };
 
 // Statement nodes
@@ -112,6 +127,30 @@ struct StmtVisitor {
     virtual std::any visitExpressionStmt(ExpressionStmt& stmt) = 0;
     virtual std::any visitBlockStmt(BlockStmt& stmt) = 0;
     virtual std::any visitVarStmt(VarStmt& stmt) = 0;
+    virtual std::any visitFunctionStmt(FunctionStmt& stmt) = 0;
+    virtual std::any visitReturnStmt(ReturnStmt& stmt) = 0;
+};
+
+struct FunctionStmt : Stmt {
+    FunctionStmt(Token name, std::vector<Token> params, std::unique_ptr<TypeExpr> returnType, std::unique_ptr<BlockStmt> body)
+        : name(name), params(std::move(params)), returnType(std::move(returnType)), body(std::move(body)) {}
+
+    std::any accept(StmtVisitor& visitor) override;
+
+    Token name;
+    std::vector<Token> params;
+    std::unique_ptr<TypeExpr> returnType;
+    std::unique_ptr<BlockStmt> body;
+};
+
+struct ReturnStmt : Stmt {
+    ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
+        : keyword(keyword), value(std::move(value)) {}
+
+    std::any accept(StmtVisitor& visitor) override;
+
+    Token keyword;
+    std::unique_ptr<Expr> value;
 };
 
 // Type expression nodes
@@ -140,10 +179,13 @@ inline std::any BinaryExpr::accept(ExprVisitor& visitor) { return visitor.visitB
 inline std::any UnaryExpr::accept(ExprVisitor& visitor) { return visitor.visitUnaryExpr(*this); }
 inline std::any LiteralExpr::accept(ExprVisitor& visitor) { return visitor.visitLiteralExpr(*this); }
 inline std::any VariableExpr::accept(ExprVisitor& visitor) { return visitor.visitVariableExpr(*this); }
+inline std::any CallExpr::accept(ExprVisitor& visitor) { return visitor.visitCallExpr(*this); }
 
 inline std::any ExpressionStmt::accept(StmtVisitor& visitor) { return visitor.visitExpressionStmt(*this); }
 inline std::any BlockStmt::accept(StmtVisitor& visitor) { return visitor.visitBlockStmt(*this); }
 inline std::any VarStmt::accept(StmtVisitor& visitor) { return visitor.visitVarStmt(*this); }
+inline std::any FunctionStmt::accept(StmtVisitor& visitor) { return visitor.visitFunctionStmt(*this); }
+inline std::any ReturnStmt::accept(StmtVisitor& visitor) { return visitor.visitReturnStmt(*this); }
 
 inline std::any BaseTypeExpr::accept(TypeVisitor& visitor) { return visitor.visitBaseTypeExpr(*this); }
 

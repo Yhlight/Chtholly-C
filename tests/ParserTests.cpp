@@ -49,3 +49,15 @@ TEST(ParserTest, TypedVariableDeclaration) {
     std::string expected = "(let a : int = 1.000000)\n";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, FunctionDeclaration) {
+    std::string source = "func add(a, b) -> int { return a + b; }";
+    std::string expected = "(func add (a b) -> int (block (return (+ a b))))\n";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
+TEST(ParserTest, CallExpression) {
+    std::string source = "add(1, 2);";
+    std::string expected = "(add 1.000000 2.000000)\n";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}

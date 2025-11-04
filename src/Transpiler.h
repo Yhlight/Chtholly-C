@@ -15,10 +15,13 @@ public:
     std::any visitUnaryExpr(UnaryExpr& expr) override;
     std::any visitLiteralExpr(LiteralExpr& expr) override;
     std::any visitVariableExpr(VariableExpr& expr) override;
+    std::any visitCallExpr(CallExpr& expr) override;
 
     std::any visitExpressionStmt(ExpressionStmt& stmt) override;
     std::any visitBlockStmt(BlockStmt& stmt) override;
     std::any visitVarStmt(VarStmt& stmt) override;
+    std::any visitFunctionStmt(FunctionStmt& stmt) override;
+    std::any visitReturnStmt(ReturnStmt& stmt) override;
 
 private:
     std::string transpile(Expr& expr);

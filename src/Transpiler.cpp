@@ -32,6 +32,17 @@ std::any Transpiler::visitVariableExpr(VariableExpr& expr) {
     return expr.name.lexeme;
 }
 
+std::any Transpiler::visitCallExpr(CallExpr& expr) {
+    std::stringstream out;
+    out << transpile(*expr.callee) << "(";
+    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+        out << transpile(*expr.arguments[i]);
+        if (i < expr.arguments.size() - 1) out << ", ";
+    }
+    out << ")";
+    return out.str();
+}
+
 std::any Transpiler::visitExpressionStmt(ExpressionStmt& stmt) {
     out << transpile(*stmt.expression) << ";" << std::endl;
     return {};
@@ -66,6 +77,31 @@ std::any Transpiler::visitVarStmt(VarStmt& stmt) {
 
 std::any Transpiler::visitBaseTypeExpr(BaseTypeExpr& expr) {
     return expr.name.lexeme;
+}
+
+std::any Transpiler::visitFunctionStmt(FunctionStmt& stmt) {
+    if (stmt.returnType) {
+        out << transpile(*stmt.returnType);
+    } else {
+        out << "void";
+    }
+    out << " " << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out << "auto " << stmt.params[i].lexeme;
+        if (i < stmt.params.size() - 1) out << ", ";
+    }
+    out << ") ";
+    transpile(*stmt.body);
+    return {};
+}
+
+std::any Transpiler::visitReturnStmt(ReturnStmt& stmt) {
+    out << "return";
+    if (stmt.value) {
+        out << " " << transpile(*stmt.value);
+    }
+    out << ";" << std::endl;
+    return {};
 }
 
 std::string Transpiler::transpile(Expr& expr) {

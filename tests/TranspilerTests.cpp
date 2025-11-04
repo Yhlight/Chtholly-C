@@ -49,3 +49,15 @@ TEST(TranspilerTest, TypedVariableDeclaration) {
     std::string expected = "int a = 1.000000;\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, FunctionDeclaration) {
+    std::string source = "func add(a, b) -> int { return a + b; }";
+    std::string expected = "int add(auto a, auto b) {\nreturn (a + b);\n}\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, CallExpression) {
+    std::string source = "add(1, 2);";
+    std::string expected = "add(1.000000, 2.000000);\n";
+    EXPECT_EQ(transpile(source), expected);
+}

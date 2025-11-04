@@ -20,6 +20,29 @@ std::unique_ptr<Expr> Parser::expression() {
     return equality();
 }
 
+std::unique_ptr<Expr> Parser::call() {
+    auto expr = primary();
+    while (true) {
+        if (match({TokenType::LEFT_PAREN})) {
+            expr = finishCall(std::move(expr));
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
+    std::vector<std::unique_ptr<Expr>> arguments;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            arguments.push_back(expression());
+        } while (match({TokenType::COMMA}));
+    }
+    Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+    return std::make_unique<CallExpr>(std::move(callee), paren, std::move(arguments));
+}
+
 std::unique_ptr<Expr> Parser::equality() {
     auto expr = comparison();
     while (match({TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL})) {
@@ -66,7 +89,7 @@ std::unique_ptr<Expr> Parser::unary() {
         auto right = unary();
         return std::make_unique<UnaryExpr>(op, std::move(right));
     }
-    return primary();
+    return call();
 }
 
 std::unique_ptr<Expr> Parser::primary() {
@@ -92,10 +115,42 @@ std::unique_ptr<Expr> Parser::primary() {
 }
 
 std::unique_ptr<Stmt> Parser::declaration() {
+    if (match({TokenType::FUNC})) {
+        return function("function");
+    }
     if (match({TokenType::LET, TokenType::MUT})) {
         return varDeclaration();
     }
     return statement();
+}
+
+std::unique_ptr<Stmt> Parser::function(const std::string& kind) {
+    Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
+    std::vector<Token> parameters;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+    std::unique_ptr<TypeExpr> returnType = nullptr;
+    if (match({TokenType::MINUS})) {
+        consume(TokenType::GREATER, "Expect '>' after '->' for return type.");
+        returnType = type();
+    }
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    auto body = std::make_unique<BlockStmt>(block());
+    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(returnType), std::move(body));
+}
+
+std::unique_ptr<Stmt> Parser::returnStatement() {
+    Token keyword = previous();
+    std::unique_ptr<Expr> value = expression();
+    consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+    return std::make_unique<ReturnStmt>(keyword, std::move(value));
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
@@ -116,6 +171,9 @@ std::unique_ptr<Stmt> Parser::varDeclaration() {
 std::unique_ptr<Stmt> Parser::statement() {
     if (match({TokenType::LEFT_BRACE})) {
         return std::make_unique<BlockStmt>(block());
+    }
+    if (match({TokenType::RETURN})) {
+        return returnStatement();
     }
     return expressionStatement();
 }
