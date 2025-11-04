@@ -136,6 +136,8 @@ array
 
 struct
 
+function
+
 ```Chtholly
 let a : uint8 = 25;
 let b : array = ["1145", "2235", 24];
@@ -449,7 +451,7 @@ struct value<T> impl Comparable
     }
 }
 
-// 特例化操作，可以实现多个约束
+// 泛型特例化操作以及实现多个约束
 struct value<int> impl Comparable, OtherTrait
 {
     value: int,
@@ -478,6 +480,33 @@ func main(args: array[string]) -> Result<void, string>
 {
     let val1 = value{ value: 10 };
     get_greater(&val1, &value{ value: 5 });
+}
+```
+
+### 约束函数
+除了接入约束的形式，还有实现约束的形式  
+
+```Chtholly
+// 接入约束
+struct Point<T> impl Comparable
+{
+
+}
+
+// 实现约束
+struct Point<T>
+{
+    impl Comparable
+    public gt(&self, other: &self) -> bool
+    {
+
+    }
+
+    impl OtherTrait
+    public other_method(&self) -> void
+    {
+
+    }
 }
 ```
 
@@ -697,9 +726,17 @@ util模块是工具模块，主要用于提供一些工具函数
 - util::deserialize(T) 将T反序列化  
 - util::unique_id() 获取一个唯一的id  
 
+```Chtholly
+import util;
+
+func print_any<T ? util::to_string>(T value) -> void
+{
+    print(util::string_cast(value));
+}
+```
+
 ### CLI
 使用阻塞式CLI
 
 ## 自举
-如果能够完成上述所有的内容，那么Chtholly已经是一门完整的编程语言了
-这时候就要考虑通过自举实现自己的编译器，然后逐渐扩展更多的语法特征
+Chtholly的定位是MIT开源的社区项目，不应该进行自举，这会增加维护的难度，而是尽可能维护C++版本的编译器  
