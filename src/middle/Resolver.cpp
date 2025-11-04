@@ -1,5 +1,5 @@
 #include "Resolver.h"
-#include "Error.h"
+#include "../common/Error.h"
 
 Resolver::Resolver() {
     scopes.emplace_back();
@@ -237,7 +237,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
 
 #include <fstream>
 #include <sstream>
-#include "Chtholly.h"
+#include "../driver/Chtholly.h"
 
 std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {

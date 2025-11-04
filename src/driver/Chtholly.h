@@ -4,8 +4,8 @@
 
 #include <vector>
 #include <memory>
-#include "AST/Stmt.h"
-#include "Resolver.h"
+#include "../frontend/AST/Stmt.h"
+#include "../middle/Resolver.h"
 
 class Chtholly {
 public:

@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
-#include "../src/Parser.h"
-#include "../src/Lexer.h"
-#include "../src/AST/ASTPrinter.h"
-#include "../src/AST/Stmt.h"
+#include "../src/frontend/Parser.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/AST/ASTPrinter.h"
+#include "../src/frontend/AST/Stmt.h"
 
 TEST(ParserTest, StdImport) {
     std::string source = "import iostream;";

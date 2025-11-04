@@ -3,7 +3,7 @@
 #include <iostream>
 #include <functional>
 #include <vector>
-#include "Error.h"
+#include "../common/Error.h"
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module) {
     // Pre-scan for ImplStmts to populate the map
@@ -321,7 +321,7 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
     return {};
 }
 
-#include "Chtholly.h"
+#include "../driver/Chtholly.h"
 #include <fstream>
 std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
     // This is handled in the pre-scan

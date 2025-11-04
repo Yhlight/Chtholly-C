@@ -1,5 +1,5 @@
 #include "Lexer.h"
-#include "Error.h"
+#include "../common/Error.h"
 
 #include <map>
 

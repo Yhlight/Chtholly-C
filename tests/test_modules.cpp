@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
-#include "Lexer.h"
-#include "Parser.h"
-#include "Resolver.h"
-#include "Transpiler.h"
-#include "Error.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/Parser.h"
+#include "../src/middle/Resolver.h"
+#include "../src/backend/Transpiler.h"
+#include "../src/common/Error.h"
 #include <fstream>
 
 class ModuleTest : public ::testing::Test {

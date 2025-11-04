@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "../src/Lexer.h"
-#include "../src/Token.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/Token.h"
 
 TEST(LexerTest, BasicTokens) {
     std::string source = "let x = 5;";

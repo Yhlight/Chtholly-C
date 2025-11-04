@@ -1,6 +1,6 @@
 #include "PrattParser.h"
 #include "Parser.h"
-#include "Error.h"
+#include "../common/Error.h"
 
 PrattParser::PrattParser(Parser& parser) : parser(parser) {
     rules = {

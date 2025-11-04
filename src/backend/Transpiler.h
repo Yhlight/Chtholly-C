@@ -1,14 +1,14 @@
 #pragma once
 
-#include "AST/Expr.h"
-#include "AST/Stmt.h"
+#include "../frontend/AST/Expr.h"
+#include "../frontend/AST/Stmt.h"
 #include <string>
 #include <vector>
 #include <memory>
 #include <sstream>
 #include <map>
 #include <set>
-#include "Resolver.h"
+#include "../middle/Resolver.h"
 
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:

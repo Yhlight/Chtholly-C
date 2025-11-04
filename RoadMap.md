@@ -35,12 +35,26 @@
 - [~] **reflect**: Implement the `reflect` module for static reflection. (Note: Static field name reflection has been implemented.)
 - [~] **meta**: Implement the `meta` module for metaprogramming. (Note: Type-checking functions like `is_int`, `is_struct`, etc., have been implemented.)
 
-## Phase 5: C++ Compiler Refactoring and Optimization
+## Phase 5: Compiler Internals Refactoring
 
-- [ ] **Code Cleanup**: Improve code style, consistency, and documentation.
-- [ ] **Performance Analysis**: Profile the compiler to identify and address performance bottlenecks.
-- [ ] **Error Reporting**: Enhance the error reporting mechanism to provide clearer and more informative diagnostics.
-- [ ] **AST Enhancements**: Refine the Abstract Syntax Tree for better representation and easier traversal.
-- [ ] **Test Coverage**: Increase test coverage to ensure compiler stability and correctness.
+- [ ] **Error Reporting**: Refactor the `ErrorReporter` to provide more detailed contextual information, such as line and column numbers, and potentially code snippets. Implement a more robust panic-mode recovery in the parser.
+- [ ] **Resolver Decomposition**: Break down the monolithic `Resolver` class into smaller, more focused components.
+    - [ ] Create a dedicated `ScopeManager` to handle lexical scopes.
+    - [ ] Implement a `TypeChecker` to manage type inference and validation.
+    - [ ] Develop a `BorrowChecker` to handle ownership and borrowing rules explicitly.
+- [ ] **Transpiler Extensibility**: Refactor the `Transpiler` to be more data-driven and extensible, making it easier to add support for new language features and backend targets in the future.
+- [ ] **AST Semantics**: Enhance the AST nodes to store more semantic information post-resolution (e.g., resolved types, symbol references), reducing the `Transpiler`'s dependency on the `Resolver`.
+- [ ] **Performance Profiling**: Profile the compiler to identify and optimize key performance bottlenecks in the lexing, parsing, and transpilation stages.
 
-**Note on Self-Hosting**: The plan to bootstrap the compiler has been removed. As an MIT-licensed open-source community project, Chtholly will focus its efforts on developing and maintaining a single, high-quality C++ compiler rather than dividing resources to maintain two separate versions.
+## Phase 6: Codebase Structure Modernization
+
+- [ ] **Directory Restructuring**: Reorganize the `src` directory to better reflect the compiler's architecture.
+    - [ ] `src/frontend`: For components that process the source language (Lexer, Parser, AST).
+    - [ ] `src/middle`: For semantic analysis (Resolver and its sub-components).
+    - [ ] `src/backend`: For the C++ code generation (Transpiler).
+    - [ ] `src/driver`: For the main compiler orchestration logic (`Chtholly` class) and file handling.
+- [ ] **Build System Update**: Update `CMakeLists.txt` to reflect the new directory structure and create distinct static libraries for each major component (e.g., `chtholly_frontend`, `chtholly_middle`).
+- [ ] **Component Migration**: Gradually migrate existing components into the new structure, starting with the most independent ones (e.g., AST, Lexer).
+- [ ] **Test Suite Expansion**: Expand the test suite to cover each component in isolation, facilitating more targeted and effective testing.
+
+**Note on Project Direction**: The original self-hosting plan has been retired. The project's focus has shifted to creating a single, robust, and maintainable C++ compiler for the Chtholly language. These refactoring phases are the first steps in that direction.

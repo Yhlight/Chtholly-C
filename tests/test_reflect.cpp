@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "Chtholly.h"
-#include "Error.h"
-#include "AST/ASTPrinter.h"
+#include "../src/driver/Chtholly.h"
+#include "../src/common/Error.h"
+#include "../src/frontend/AST/ASTPrinter.h"
 
 // Test fixture for reflection tests
 class ReflectTest : public ::testing::Test {

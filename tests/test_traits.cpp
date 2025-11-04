@@ -1,10 +1,10 @@
 #include "gtest/gtest.h"
-#include "Lexer.h"
-#include "Parser.h"
-#include "AST/ASTPrinter.h"
-#include "Resolver.h"
-#include "Transpiler.h"
-#include "Error.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/Parser.h"
+#include "../src/frontend/AST/ASTPrinter.h"
+#include "../src/middle/Resolver.h"
+#include "../src/backend/Transpiler.h"
+#include "../src/common/Error.h"
 
 class TraitTest : public ::testing::Test {
 protected:

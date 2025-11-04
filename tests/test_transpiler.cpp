@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "../src/Transpiler.h"
-#include "../src/Lexer.h"
-#include "../src/Parser.h"
-#include "../src/Resolver.h"
+#include "../src/backend/Transpiler.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/Parser.h"
+#include "../src/middle/Resolver.h"
 
 TEST(TranspilerTest, SimplePrint) {
     std::string source = "print(1 + 2);";

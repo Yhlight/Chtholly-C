@@ -1,11 +1,11 @@
 #pragma once
 
-#include "AST/Expr.h"
-#include "AST/Stmt.h"
+#include "../frontend/AST/Expr.h"
+#include "../frontend/AST/Stmt.h"
 #include <vector>
 #include <map>
 #include <string>
-#include "TypeInfo.h"
+#include "../frontend/TypeInfo.h"
 
 struct VariableState {
     bool defined = false;

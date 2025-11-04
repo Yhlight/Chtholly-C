@@ -1,8 +1,8 @@
 #include "Chtholly.h"
-#include "Lexer.h"
-#include "Parser.h"
-#include "Transpiler.h"
-#include "Error.h"
+#include "../frontend/Lexer.h"
+#include "../frontend/Parser.h"
+#include "../backend/Transpiler.h"
+#include "../common/Error.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "../src/Transpiler.h"
-#include "../src/Lexer.h"
-#include "../src/Parser.h"
-#include "../src/Resolver.h"
-#include "../src/Error.h"
+#include "../src/backend/Transpiler.h"
+#include "../src/frontend/Lexer.h"
+#include "../src/frontend/Parser.h"
+#include "../src/middle/Resolver.h"
+#include "../src/common/Error.h"
 
 TEST(SimpleTraitTest, PointPrint) {
     std::string source = R"(

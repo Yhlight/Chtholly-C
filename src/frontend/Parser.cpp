@@ -1,6 +1,6 @@
 #include "Parser.h"
 #include "PrattParser.h"
-#include "Error.h"
+#include "../common/Error.h"
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "Chtholly.h"
-#include "Error.h"
+#include "../src/driver/Chtholly.h"
+#include "../src/common/Error.h"
 
 // Test fixture for meta module tests
 class MetaTest : public ::testing::Test {
