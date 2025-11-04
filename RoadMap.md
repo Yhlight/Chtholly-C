@@ -14,12 +14,12 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Implement the lexer to tokenize the Chtholly source code.
 - [x] Integrate and test the lexer.
 
-## Stage 3: Parser (In Progress)
+## Stage 3: Parser
 
-- [ ] Implement the parser to build an Abstract Syntax Tree (AST).
-- [ ] Integrate and test the parser.
+- [x] Implement the parser to build an Abstract Syntax Tree (AST).
+- [x] Integrate and test the parser.
 
-## Stage 4: Semantic Analysis
+## Stage 4: Semantic Analysis (In Progress)
 
 - [ ] Implement the semantic analyzer to perform static analysis.
 - [ ] Integrate and test the semantic analyzer.

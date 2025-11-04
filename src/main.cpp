@@ -4,7 +4,7 @@
 #include <vector>
 #include "Lexer.h"
 #include "Parser.h"
-#include "ASTPrinter.h"
+#include "SemanticAnalyzer.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -28,22 +28,19 @@ int main(int argc, char* argv[]) {
     Parser parser(tokens);
     std::vector<std::shared_ptr<Stmt>> statements = parser.parse();
 
-    ASTPrinter printer;
-    for (const auto& stmt : statements) {
-        if (stmt != nullptr) {
-            if (auto exprStmt = std::dynamic_pointer_cast<Expression>(stmt)) {
-                std::cout << printer.print(exprStmt->expression) << std::endl;
-            } else if (auto printStmt = std::dynamic_pointer_cast<Print>(stmt)) {
-                std::cout << "(print " << printer.print(printStmt->expression) << ")" << std::endl;
-            } else if (auto varStmt = std::dynamic_pointer_cast<Var>(stmt)) {
-                std::cout << "(var " << varStmt->name.lexeme;
-                if (varStmt->initializer != nullptr) {
-                    std::cout << " = " << printer.print(varStmt->initializer);
-                }
-                std::cout << ")" << std::endl;
-            }
+    SemanticAnalyzer analyzer;
+    analyzer.analyze(statements);
+
+    const auto& errors = analyzer.getErrors();
+    if (!errors.empty()) {
+        std::cerr << "Semantic errors found:" << std::endl;
+        for (const auto& error : errors) {
+            std::cerr << error << std::endl;
         }
+        return 1;
     }
+
+    std::cout << "No semantic errors found." << std::endl;
 
     return 0;
 }
