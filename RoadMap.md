@@ -8,7 +8,7 @@
 - [x] Implement basic Lexer
 - [x] Implement basic Parser (LL(K) Recursive Descent)
 - [x] Implement Abstract Syntax Tree (AST)
-- [ ] Implement Semantic Analyzer
+- [x] Implement Semantic Analyzer
 - [ ] Implement Code Generator (C++ transpilation)
 
 ## Phase 2: Core Language Features

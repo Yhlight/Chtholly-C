@@ -5,10 +5,11 @@
 #include <Lexer.h>
 #include <Parser.h>
 #include <ASTPrinter.h>
+#include <SemanticAnalyzer.h>
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <source_file> <output_file>" << std::endl;
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <source_file>" << std::endl;
         return 1;
     }
 
@@ -34,16 +35,14 @@ int main(int argc, char* argv[]) {
     Parser parser(tokens);
     std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
 
+    SemanticAnalyzer analyzer;
+    analyzer.analyze(statements);
+
+    // For now, we'll just print the AST if there are no errors.
+    // In the future, we'll proceed to code generation.
     ASTPrinter printer;
-    std::string result = printer.print(statements);
+    std::cout << printer.print(statements) << std::endl;
 
-    std::ofstream outFile(argv[2]);
-    if (!outFile) {
-        std::cerr << "Error: Could not open file " << argv[2] << std::endl;
-        return 1;
-    }
-
-    outFile << result << std::endl;
 
     return 0;
 }

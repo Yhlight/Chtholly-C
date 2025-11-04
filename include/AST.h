@@ -216,9 +216,10 @@ struct ReturnStmt : Stmt {
 struct VarDeclStmt : Stmt {
     Token name;
     std::unique_ptr<Expr> initializer;
+    bool isMutable;
 
-    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer)
-        : name(name), initializer(std::move(initializer)) {}
+    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer, bool isMutable)
+        : name(name), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visit(*this);

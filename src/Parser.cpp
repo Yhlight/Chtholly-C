@@ -14,7 +14,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
-        if (match({TokenType::LET})) return varDeclaration();
+        if (match({TokenType::LET, TokenType::MUT})) return varDeclaration();
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -23,13 +23,14 @@ std::unique_ptr<Stmt> Parser::declaration() {
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
+    bool isMutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<VarDeclStmt>(name, std::move(initializer));
+    return std::make_unique<VarDeclStmt>(name, std::move(initializer), isMutable);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
