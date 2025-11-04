@@ -10,9 +10,9 @@ This document outlines the development progress and future goals for the Chtholl
 
 ## Phase 2: Lexer
 
-- [ ] Implement the Lexer to tokenize the Chtholly source code.
-- [ ] Add support for all keywords, operators, and literals defined in `Chtholly.md`.
-- [ ] Write comprehensive tests for the Lexer.
+- [x] Implement the Lexer to tokenize the Chtholly source code.
+- [x] Add support for all keywords, operators, and literals defined in `Chtholly.md`.
+- [x] Write comprehensive tests for the Lexer.
 
 ## Phase 3: Parser
 

@@ -1,0 +1,3 @@
+Executing: cmake .. in build
+Executing: cmake --build . in build
+Executing: ctest --output-on-failure in build
