@@ -5,10 +5,11 @@
 
 namespace chtholly {
 
-class AstPrinter : public ExprVisitor, public StmtVisitor {
+class AstPrinter : public ExprVisitor, public StmtVisitor, public TypeVisitor {
 public:
     std::string print(const std::vector<std::unique_ptr<Stmt>>& statements);
 
+    std::any visitBaseTypeExpr(BaseTypeExpr& expr) override;
     std::any visitBinaryExpr(BinaryExpr& expr) override;
     std::any visitUnaryExpr(UnaryExpr& expr) override;
     std::any visitLiteralExpr(LiteralExpr& expr) override;

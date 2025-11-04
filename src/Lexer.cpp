@@ -30,6 +30,7 @@ static void initializeKeywords() {
     keywords["self"] = TokenType::SELF;
     keywords["array"] = TokenType::ARRAY;
     keywords["int"] = TokenType::INT;
+    keywords["uint"] = TokenType::UINT;
     keywords["uint8"] = TokenType::UINT8;
     keywords["uint16"] = TokenType::UINT16;
     keywords["uint32"] = TokenType::UINT32;
@@ -44,6 +45,7 @@ static void initializeKeywords() {
     keywords["long"] = TokenType::LONG_DOUBLE;
     keywords["void"] = TokenType::VOID;
     keywords["bool"] = TokenType::BOOL;
+    keywords["string"] = TokenType::STRING_TYPE;
     keywords["result"] = TokenType::RESULT;
     keywords["option"] = TokenType::OPTION;
     keywords["public"] = TokenType::PUBLIC;

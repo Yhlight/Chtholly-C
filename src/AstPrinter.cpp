@@ -51,11 +51,18 @@ std::any AstPrinter::visitBlockStmt(BlockStmt& stmt) {
 std::any AstPrinter::visitVarStmt(VarStmt& stmt) {
     std::stringstream out;
     out << "(" << stmt.keyword.lexeme << " " << stmt.name.lexeme;
+    if (stmt.type) {
+        out << " : " << std::any_cast<std::string>(stmt.type->accept(*this));
+    }
     if (stmt.initializer) {
         out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
     }
     out << ")";
     return out.str();
+}
+
+std::any AstPrinter::visitBaseTypeExpr(BaseTypeExpr& expr) {
+    return expr.name.lexeme;
 }
 
 std::string AstPrinter::parenthesize(const std::string& name, const std::vector<Expr*>& exprs) {

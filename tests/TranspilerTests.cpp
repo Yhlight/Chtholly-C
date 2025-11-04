@@ -43,3 +43,9 @@ TEST(TranspilerTest, VariableDeclaration) {
     std::string expected = "const auto a = 1.000000;\nauto b = 2.000000;\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, TypedVariableDeclaration) {
+    std::string source = "let a: int = 1;";
+    std::string expected = "int a = 1.000000;\n";
+    EXPECT_EQ(transpile(source), expected);
+}

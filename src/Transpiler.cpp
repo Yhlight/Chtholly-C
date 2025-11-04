@@ -47,10 +47,14 @@ std::any Transpiler::visitBlockStmt(BlockStmt& stmt) {
 }
 
 std::any Transpiler::visitVarStmt(VarStmt& stmt) {
-    if (stmt.keyword.type == TokenType::LET) {
-        out << "const auto " << stmt.name.lexeme;
+    if (stmt.type) {
+        out << transpile(*stmt.type) << " " << stmt.name.lexeme;
     } else {
-        out << "auto " << stmt.name.lexeme;
+        if (stmt.keyword.type == TokenType::LET) {
+            out << "const auto " << stmt.name.lexeme;
+        } else {
+            out << "auto " << stmt.name.lexeme;
+        }
     }
 
     if (stmt.initializer) {
@@ -60,8 +64,16 @@ std::any Transpiler::visitVarStmt(VarStmt& stmt) {
     return {};
 }
 
+std::any Transpiler::visitBaseTypeExpr(BaseTypeExpr& expr) {
+    return expr.name.lexeme;
+}
+
 std::string Transpiler::transpile(Expr& expr) {
     return std::any_cast<std::string>(expr.accept(*this));
+}
+
+std::string Transpiler::transpile(TypeExpr& type) {
+    return std::any_cast<std::string>(type.accept(*this));
 }
 
 void Transpiler::transpile(Stmt& stmt) {

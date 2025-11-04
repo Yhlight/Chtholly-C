@@ -101,12 +101,16 @@ std::unique_ptr<Stmt> Parser::declaration() {
 std::unique_ptr<Stmt> Parser::varDeclaration() {
     Token keyword = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+    std::unique_ptr<TypeExpr> type = nullptr;
+    if (match({TokenType::COLON})) {
+        type = this->type();
+    }
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<VarStmt>(keyword, name, std::move(initializer));
+    return std::make_unique<VarStmt>(keyword, name, std::move(type), std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -129,6 +133,15 @@ std::vector<std::unique_ptr<Stmt>> Parser::block() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
     return statements;
+}
+
+std::unique_ptr<TypeExpr> Parser::type() {
+    if (match({TokenType::INT, TokenType::UINT, TokenType::UINT8, TokenType::UINT16, TokenType::UINT32, TokenType::UINT64,
+                 TokenType::INT8, TokenType::INT16, TokenType::INT32, TokenType::INT64, TokenType::CHAR, TokenType::DOUBLE,
+                 TokenType::FLOAT, TokenType::LONG_DOUBLE, TokenType::VOID, TokenType::BOOL, TokenType::STRING_TYPE})) {
+        return std::make_unique<BaseTypeExpr>(previous());
+    }
+    throw error(peek(), "Expect type.");
 }
 
 bool Parser::match(const std::vector<TokenType>& types) {

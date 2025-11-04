@@ -10,8 +10,8 @@
 
 ## Phase 2: Language Features
 
-- [ ] Variables (let, mut) (In Progress)
-- [ ] Basic types (int, double, char, bool, string)
+- [x] Variables (let, mut)
+- [ ] Basic types (int, double, char, bool, string) (In Progress)
 - [ ] Functions
 - [ ] Control flow (if, while, switch)
 - [ ] Structs

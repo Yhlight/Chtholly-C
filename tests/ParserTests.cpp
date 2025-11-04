@@ -43,3 +43,9 @@ TEST(ParserTest, VariableDeclaration) {
     std::string expected = "(let a = 1.000000)\n";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, TypedVariableDeclaration) {
+    std::string source = "let a: int = 1;";
+    std::string expected = "(let a : int = 1.000000)\n";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}

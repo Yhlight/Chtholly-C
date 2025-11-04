@@ -29,6 +29,7 @@ private:
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> expressionStatement();
+    std::unique_ptr<TypeExpr> type();
     std::vector<std::unique_ptr<Stmt>> block();
 
     bool match(const std::vector<TokenType>& types);
