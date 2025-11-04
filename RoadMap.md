@@ -11,7 +11,7 @@ The self-hosting goal has been cancelled to focus on creating a robust and featu
 
 ## Phase 2: Standard Library Completion
 
-- [ ] **filesystem**: Finalize implementation for file system operations.
+- [x] **filesystem**: Finalize implementation for file system operations.
 - [ ] **operator**: Implement operator overloading via traits (`Add`, `Sub`, etc.).
 - [ ] **reflect**: Complete the static reflection capabilities.
 - [ ] **meta**: Finalize compile-time metaprogramming features.

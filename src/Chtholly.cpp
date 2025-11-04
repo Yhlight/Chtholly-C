@@ -61,7 +61,14 @@ std::vector<std::unique_ptr<Stmt>> Chtholly::run(const std::string& source, bool
     out.close();
 
     system("g++ out.cpp -o out");
-    system("./out");
+    system("./out 2> error.log");
+
+    std::ifstream error_file("error.log");
+    std::stringstream error_buffer;
+    error_buffer << error_file.rdbuf();
+    if (error_buffer.str().length() > 0) {
+        ErrorReporter::runtimeError(-1, error_buffer.str());
+    }
 
     return {};
 }
