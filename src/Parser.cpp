@@ -152,10 +152,14 @@ std::shared_ptr<Expr> Parser::unary() {
 std::shared_ptr<Expr> Parser::primary() {
     if (match({TokenType::FALSE})) return std::make_shared<Literal>(false);
     if (match({TokenType::TRUE})) return std::make_shared<Literal>(true);
-    if (match({TokenType::NUMBER, TokenType::STRING})) {
-        // Here we'd convert the literal from string to the actual type
-        // For now, we'll just store the lexeme
-        return std::make_shared<Literal>(previous().lexeme);
+
+    if (match({TokenType::NUMBER})) {
+        return std::make_shared<Literal>(std::stod(previous().lexeme));
+    }
+    if (match({TokenType::STRING})) {
+        std::string value = previous().lexeme;
+        // The lexer includes the quotes, so we remove them here
+        return std::make_shared<Literal>(value.substr(1, value.length() - 2));
     }
 
     if (match({TokenType::IDENTIFIER})) {

@@ -19,13 +19,13 @@ std::any ASTPrinter::visitGroupingExpr(const std::shared_ptr<Grouping>& expr) {
 std::any ASTPrinter::visitLiteralExpr(const std::shared_ptr<Literal>& expr) {
     if (expr->value.has_value()) {
         if (expr->value.type() == typeid(std::string)) {
-            return std::any_cast<std::string>(expr->value);
-        }
-        if (expr->value.type() == typeid(int)) {
-            return std::to_string(std::any_cast<int>(expr->value));
+            return "\"" + std::any_cast<std::string>(expr->value) + "\"";
         }
         if (expr->value.type() == typeid(double)) {
             return std::to_string(std::any_cast<double>(expr->value));
+        }
+        if (expr->value.type() == typeid(bool)) {
+            return std::any_cast<bool>(expr->value) ? "true" : "false";
         }
     }
     return "nil";

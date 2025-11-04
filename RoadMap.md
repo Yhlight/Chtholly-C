@@ -19,14 +19,14 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Handle comments, keywords, identifiers, literals, and operators.
 - [x] Write unit tests for the lexer.
 
-## Stage 3: Parser (In Progress)
+## Stage 3: Parser
 
-- [ ] Implement the parser to build an Abstract Syntax Tree (AST).
-- [ ] Define the AST node structures.
-- [ ] Implement parsing for variable declarations, expressions, and statements.
-- [ ] Write unit tests for the parser.
+- [x] Implement the parser to build an Abstract Syntax Tree (AST).
+- [x] Define the AST node structures.
+- [x] Implement parsing for variable declarations, expressions, and statements.
+- [x] Write unit tests for the parser.
 
-## Stage 4: Semantic Analysis
+## Stage 4: Semantic Analysis (In Progress)
 
 - [ ] Implement the semantic analyzer to perform type checking and other static analysis.
 - [ ] Implement symbol table management.
