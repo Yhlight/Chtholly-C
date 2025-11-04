@@ -19,6 +19,7 @@ private:
     std::shared_ptr<Stmt> varDeclaration();
     std::shared_ptr<Stmt> statement();
     std::shared_ptr<Stmt> printStatement();
+    std::shared_ptr<Stmt> ifStatement();
     std::shared_ptr<Stmt> expressionStatement();
     std::vector<std::shared_ptr<Stmt>> block();
 

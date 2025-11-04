@@ -26,21 +26,22 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Implement parsing for variable declarations, expressions, and statements.
 - [x] Write unit tests for the parser.
 
-## Stage 4: Semantic Analysis (In Progress)
+## Stage 4: Semantic Analysis
 
-- [ ] Implement the semantic analyzer to perform type checking and other static analysis.
-- [ ] Implement symbol table management.
-- [ ] Handle variable scoping.
-- [ ] Write unit tests for the semantic analyzer.
+- [x] Implement symbol table management.
+- [x] Handle variable scoping.
+- [x] Write unit tests for the semantic analyzer.
+- [ ] Implement type checking.
 
 ## Stage 5: Code Generation
 
-- [ ] Implement the code generator to transpile the AST to C++.
-- [ ] Generate C++ code for all AST nodes.
-- [ ] Write unit tests for the code generator.
+- [x] Implement the code generator to transpile the AST to C++.
+- [x] Generate C++ code for all AST nodes.
+- [x] Write unit tests for the code generator.
 
-## Stage 6: Advanced Features
+## Stage 6: Advanced Features (In Progress)
 
+- [ ] Implement support for `if-else` control flow.
 - [ ] Implement support for functions.
 - [ ] Implement support for structs.
 - [ ] Implement support for generics.
