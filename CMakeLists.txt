@@ -32,3 +32,11 @@ add_test(NAME ControlFlowTest COMMAND test_control_flow)
 add_executable(test_functions tests/test_functions.cpp src/Lexer.cpp src/Parser.cpp src/SemanticAnalyzer.cpp src/CodeGen.cpp src/Environment.cpp)
 target_include_directories(test_functions PUBLIC include)
 add_test(NAME FunctionTest COMMAND test_functions)
+
+add_executable(test_data_types tests/test_data_types.cpp src/Lexer.cpp src/Parser.cpp)
+target_include_directories(test_data_types PUBLIC include)
+add_test(NAME DataTypeTest COMMAND test_data_types)
+
+add_executable(test_logical_operators tests/test_logical_operators.cpp src/Lexer.cpp src/Parser.cpp)
+target_include_directories(test_logical_operators PUBLIC include)
+add_test(NAME LogicalOperatorTest COMMAND test_logical_operators)

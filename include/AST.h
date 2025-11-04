@@ -215,11 +215,12 @@ struct ReturnStmt : Stmt {
 // Variable declaration statements
 struct VarDeclStmt : Stmt {
     Token name;
+    Token type;
     std::unique_ptr<Expr> initializer;
     bool isMutable;
 
-    VarDeclStmt(Token name, std::unique_ptr<Expr> initializer, bool isMutable)
-        : name(name), initializer(std::move(initializer)), isMutable(isMutable) {}
+    VarDeclStmt(Token name, Token type, std::unique_ptr<Expr> initializer, bool isMutable)
+        : name(name), type(type), initializer(std::move(initializer)), isMutable(isMutable) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visit(*this);

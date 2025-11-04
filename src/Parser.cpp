@@ -48,12 +48,20 @@ std::unique_ptr<Stmt> Parser::function() {
 std::unique_ptr<Stmt> Parser::varDeclaration() {
     bool isMutable = previous().type == TokenType::MUT;
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+    Token type = {TokenType::UNKNOWN, "", 0, 0};
+    if (match({TokenType::COLON})) {
+        if (match({TokenType::INT, TokenType::DOUBLE, TokenType::CHAR, TokenType::BOOL, TokenType::STRING, TokenType::VOID, TokenType::ARRAY, TokenType::OPTION, TokenType::RESULT, TokenType::FUNCTION, TokenType::IDENTIFIER})) {
+            type = previous();
+        } else {
+            throw reportError(peek(), "Expect type name after ':'.");
+        }
+    }
     std::unique_ptr<Expr> initializer = nullptr;
     if (match({TokenType::EQUAL})) {
         initializer = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<VarDeclStmt>(name, std::move(initializer), isMutable);
+    return std::make_unique<VarDeclStmt>(name, type, std::move(initializer), isMutable);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -112,7 +120,7 @@ std::unique_ptr<Expr> Parser::expression() {
 }
 
 std::unique_ptr<Expr> Parser::assignment() {
-    std::unique_ptr<Expr> expr = equality();
+    std::unique_ptr<Expr> expr = logicalOr();
     if (match({TokenType::EQUAL})) {
         Token equals = previous();
         std::unique_ptr<Expr> value = assignment();
@@ -121,6 +129,26 @@ std::unique_ptr<Expr> Parser::assignment() {
             return std::make_unique<AssignmentExpr>(name, std::move(value));
         }
         error(equals, "Invalid assignment target.");
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicalOr() {
+    std::unique_ptr<Expr> expr = logicalAnd();
+    while (match({TokenType::OR_OR})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = logicalAnd();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicalAnd() {
+    std::unique_ptr<Expr> expr = equality();
+    while (match({TokenType::AND_AND})) {
+        Token op = previous();
+        std::unique_ptr<Expr> right = equality();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), op, std::move(right));
     }
     return expr;
 }

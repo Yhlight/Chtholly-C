@@ -13,9 +13,9 @@
 
 ## Phase 2: Core Language Features
 
-- [ ] Variables (let, mut)
-- [ ] Data Types (int, double, char, bool, string)
-- [ ] Operators
+- [x] Variables (let, mut)
+- [x] Data Types (int, double, char, bool, string)
+- [x] Operators
 - [x] Control Flow (if, else, switch)
 - [x] Functions
 - [ ] Structs

@@ -98,10 +98,15 @@ void CodeGen::visit(const ReturnStmt& stmt) {
 }
 
 void CodeGen::visit(const VarDeclStmt& stmt) {
+    std::string type = "auto";
+    if (stmt.type.type != TokenType::UNKNOWN) {
+        type = stmt.type.lexeme;
+    }
+
     if (stmt.isMutable) {
-        result += "auto " + stmt.name.lexeme;
+        result += type + " " + stmt.name.lexeme;
     } else {
-        result += "const auto " + stmt.name.lexeme;
+        result += "const " + type + " " + stmt.name.lexeme;
     }
     if (stmt.initializer) {
         result += " = ";
