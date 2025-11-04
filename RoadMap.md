@@ -17,7 +17,7 @@ This document outlines the development progress and future goals for the Chtholl
 ## Phase 3: Parser
 
 - [ ] Implement the Parser to build an Abstract Syntax Tree (AST).
-- [ ] Define the AST node hierarchy in `src/AST.h`.
+- [x] Define the AST node hierarchy in `src/AST.h`.
 - [ ] Implement parsing for all language constructs (variables, functions, control flow, etc.).
 - [ ] Write comprehensive tests for the Parser.
 
