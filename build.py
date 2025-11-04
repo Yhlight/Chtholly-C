@@ -22,7 +22,7 @@ def main():
         os.makedirs("build")
 
     # Configure the project with CMake
-    run_command("cmake -B build")
+    run_command("cmake -S . -B build")
 
     # Build the project
     run_command("cmake --build build")
