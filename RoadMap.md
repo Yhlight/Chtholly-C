@@ -35,6 +35,12 @@
 - [~] **reflect**: Implement the `reflect` module for static reflection. (Note: Static field name reflection has been implemented.)
 - [~] **meta**: Implement the `meta` module for metaprogramming. (Note: Type-checking functions like `is_int`, `is_struct`, etc., have been implemented.)
 
-## Phase 5: Self-Hosting
+## Phase 5: C++ Compiler Refactoring and Optimization
 
-- [ ] **Self-Hosting Compiler**: Rewrite the Chtholly compiler in Chtholly.
+- [ ] **Code Cleanup**: Improve code style, consistency, and documentation.
+- [ ] **Performance Analysis**: Profile the compiler to identify and address performance bottlenecks.
+- [ ] **Error Reporting**: Enhance the error reporting mechanism to provide clearer and more informative diagnostics.
+- [ ] **AST Enhancements**: Refine the Abstract Syntax Tree for better representation and easier traversal.
+- [ ] **Test Coverage**: Increase test coverage to ensure compiler stability and correctness.
+
+**Note on Self-Hosting**: The plan to bootstrap the compiler has been removed. As an MIT-licensed open-source community project, Chtholly will focus its efforts on developing and maintaining a single, high-quality C++ compiler rather than dividing resources to maintain two separate versions.
