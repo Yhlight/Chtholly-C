@@ -43,7 +43,10 @@ def run(args):
 def test(args):
     """Runs the test suite."""
     build(args)
-    run_command(["ctest"], cwd="build")
+    ctest_command = ["ctest"]
+    if args.ctest_args:
+        ctest_command.extend(args.ctest_args)
+    run_command(ctest_command, cwd="build")
 
 
 def main():
@@ -59,6 +62,7 @@ def main():
     run_parser.set_defaults(func=run)
 
     test_parser = subparsers.add_parser("test", help="Run the test suite")
+    test_parser.add_argument("ctest_args", nargs=argparse.REMAINDER, help="Arguments to pass to ctest")
     test_parser.set_defaults(func=test)
 
     args = parser.parse_args()
