@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 
-add_executable(chtholly src/main.cpp src/Lexer.cpp src/Parser.cpp src/ASTPrinter.cpp src/Environment.cpp src/SemanticAnalyzer.cpp)
+add_executable(chtholly src/main.cpp src/Lexer.cpp src/Parser.cpp src/ASTPrinter.cpp src/Environment.cpp src/SemanticAnalyzer.cpp src/CodeGen.cpp)
 target_include_directories(chtholly PUBLIC include)
 
 add_executable(test_lexer tests/test_lexer.cpp src/Lexer.cpp)
@@ -20,3 +20,7 @@ add_test(NAME ParserTest COMMAND test_parser)
 add_executable(test_semantic_analyzer tests/test_semantic_analyzer.cpp src/Lexer.cpp src/Parser.cpp src/Environment.cpp src/SemanticAnalyzer.cpp)
 target_include_directories(test_semantic_analyzer PUBLIC include)
 add_test(NAME SemanticAnalyzerTest COMMAND test_semantic_analyzer)
+
+add_executable(test_codegen tests/test_codegen.cpp src/CodeGen.cpp)
+target_include_directories(test_codegen PUBLIC include)
+add_test(NAME CodeGenTest COMMAND test_codegen)
