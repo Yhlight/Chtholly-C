@@ -100,7 +100,12 @@ void CodeGen::visitBlockStmt(const std::shared_ptr<Block>& stmt) {
 }
 
 void CodeGen::visitIfStmt(const std::shared_ptr<If>& stmt) {
-    // Not implemented yet
+    out << "    if (" << evaluate(stmt->condition) << ") ";
+    execute(stmt->thenBranch);
+    if (stmt->elseBranch != nullptr) {
+        out << "    else ";
+        execute(stmt->elseBranch);
+    }
 }
 
 void CodeGen::visitWhileStmt(const std::shared_ptr<While>& stmt) {

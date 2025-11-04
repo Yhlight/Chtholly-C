@@ -24,12 +24,12 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Implement the semantic analyzer to perform static analysis.
 - [x] Integrate and test the semantic analyzer.
 
-## Stage 5: Code Generation (In Progress)
+## Stage 5: Code Generation
 
-- [ ] Implement the code generator to transpile the AST to C++.
-- [ ] Integrate and test the code generator.
+- [x] Implement the code generator to transpile the AST to C++.
+- [x] Integrate and test the code generator.
 
-## Stage 6: Advanced Features
+## Stage 6: Advanced Features (In Progress)
 
 - [ ] Implement support for `if-else` control flow.
 - [ ] Implement support for functions.
