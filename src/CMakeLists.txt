@@ -3,6 +3,7 @@ add_library(chtholly_lib STATIC
     Lexer.cpp
     AstPrinter.cpp
     Parser.cpp
+    Transpiler.cpp
 )
 
 target_include_directories(chtholly_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

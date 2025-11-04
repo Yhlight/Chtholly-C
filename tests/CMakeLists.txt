@@ -12,6 +12,7 @@ add_executable(chtholly_tests
     LexerTests.cpp
     AstPrinterTests.cpp
     ParserTests.cpp
+    TranspilerTests.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib GTest::gtest_main)
