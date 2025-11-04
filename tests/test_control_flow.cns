@@ -1,0 +1,49 @@
+// --- If-Else Tests ---
+
+// Test case 1: Simple if
+let x = 10;
+if (x == 10) {
+    print("Test 1 Passed"); // expect: Test 1 Passed
+}
+
+// Test case 2: If-else
+let y = 20;
+if (y > 30) {
+    print("Test 2 Failed");
+} else {
+    print("Test 2 Passed"); // expect: Test 2 Passed
+}
+
+// Test case 3: Nested if
+let z = 30;
+if (z > 20) {
+    if (z < 40) {
+        print("Test 3 Passed"); // expect: Test 3 Passed
+    } else {
+        print("Test 3 Failed");
+    }
+} else {
+    print("Test 3 Failed");
+}
+
+// --- Scoping Tests ---
+
+// Test case 4: Variable declared in a block
+{
+    let a = "scoped";
+}
+print("Test 4 Passed"); // expect: Test 4 Passed
+
+// Test case 5: Variable declared in an if statement
+if (true) {
+    let b = "scoped";
+}
+print("Test 5 Passed"); // expect: Test 5 Passed
+
+// Test case 6: Variable declared in an else statement
+if (false) {
+    // nothing
+} else {
+    let c = "scoped";
+}
+print("Test 6 Passed"); // expect: Test 6 Passed

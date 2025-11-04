@@ -31,7 +31,7 @@ This document outlines the development plan for the Chtholly compiler.
 
 ## Stage 6: Advanced Features (In Progress)
 
-- [ ] Implement support for `if-else` control flow.
+- [x] Implement support for `if-else` control flow.
 - [ ] Implement support for functions.
 - [ ] Implement support for structs.
 - [ ] Implement support for generics.
