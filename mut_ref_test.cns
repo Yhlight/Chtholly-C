@@ -1,0 +1,3 @@
+let m = 1;
+let r = &m;
+let r_mut = &mut m;

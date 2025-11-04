@@ -1,0 +1,44 @@
+#ifndef CHTHOLLY_TOKENTYPE_H
+#define CHTHOLLY_TOKENTYPE_H
+
+enum class TokenType {
+    // Single-character tokens
+    LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
+    LEFT_BRACKET, RIGHT_BRACKET, COMMA, DOT, MINUS, PLUS,
+    SEMICOLON, SLASH, STAR,
+
+    // One or two character tokens
+    BANG, BANG_EQUAL,
+    EQUAL, EQUAL_EQUAL,
+    GREATER, GREATER_EQUAL,
+    LESS, LESS_EQUAL,
+    ARROW, COLON, COLON_COLON,
+
+    // Literals
+    IDENTIFIER, STRING, NUMBER, CHAR,
+
+    // Keywords
+    AND, OR, IF, ELSE, TRUE, FALSE, FOR, WHILE,
+    FUNC, PRINT, RETURN, STRUCT, ENUM,
+    LET, MUT, PUBLIC, PRIVATE, SELF,
+    IMPORT, TRAIT, IMPL,
+    SWITCH, CASE, BREAK, FALLTHROUGH,
+    TYPE_CAST,
+
+    // Built-in types
+    INT, INT8, INT16, INT32, INT64,
+    UINT, UINT8, UINT16, UINT32, UINT64,
+    FLOAT, DOUBLE, LONG_DOUBLE,
+    BOOL, VOID, STRING_TYPE, ARRAY, FUNCTION,
+
+    // Ownership and References
+    AMPERSAND, AMPERSAND_MUT,
+
+    // Generics and Traits
+    QUESTION,
+
+    // End of file
+    END_OF_FILE
+};
+
+#endif //CHTHOLLY_TOKENTYPE_H

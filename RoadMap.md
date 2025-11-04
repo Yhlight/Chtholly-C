@@ -6,13 +6,13 @@ This document outlines the development plan for the Chtholly compiler.
 
 - [x] Set up the development environment.
 - [x] Create the basic directory structure (`src/`, `include/`).
-- [ ] Create the `RoadMap.md` file.
-- [ ] Create the `CMakeLists.txt` file.
-- [ ] Create the `build.py` script.
-- [ ] Create a placeholder `main.cpp` file.
-- [ ] Update the `.gitignore` file.
+- [x] Create the `RoadMap.md` file.
+- [x] Create the `CMakeLists.txt` file.
+- [x] Create the `build.py` script.
+- [x] Create a placeholder `main.cpp` file.
+- [x] Update the `.gitignore` file.
 
-## Stage 2: Lexer
+## Stage 2: Lexer (In Progress)
 
 - [ ] Implement the lexer to tokenize the Chtholly source code.
 - [ ] Define all the token types.
