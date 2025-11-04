@@ -37,6 +37,10 @@ add_executable(test_data_types tests/test_data_types.cpp src/Lexer.cpp src/Parse
 target_include_directories(test_data_types PUBLIC include)
 add_test(NAME DataTypeTest COMMAND test_data_types)
 
-add_executable(test_logical_operators tests/test_logical_operators.cpp src/Lexer.cpp src/Parser.cpp)
+add_executable(test_logical_operators tests/test_logical_operators.cpp src/Lexer.cpp src/Parser.cpp src/ASTPrinter.cpp)
 target_include_directories(test_logical_operators PUBLIC include)
 add_test(NAME LogicalOperatorTest COMMAND test_logical_operators)
+
+add_executable(test_structs tests/test_structs.cpp src/Lexer.cpp src/Parser.cpp src/CodeGen.cpp)
+target_include_directories(test_structs PUBLIC include)
+add_test(NAME StructTest COMMAND test_structs)

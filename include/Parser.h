@@ -18,6 +18,8 @@ private:
     bool hadError = false;
 
     std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<FunctionStmt> methodDeclaration();
     std::unique_ptr<Stmt> function();
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> statement();
@@ -40,6 +42,7 @@ private:
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);
     bool check(TokenType type);
+    bool checkNext(TokenType type);
     Token advance();
     bool isAtEnd();
     Token peek();

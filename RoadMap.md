@@ -18,7 +18,7 @@
 - [x] Operators
 - [x] Control Flow (if, else, switch)
 - [x] Functions
-- [ ] Structs
+- [x] Structs
 
 ## Phase 3: Advanced Language Features
 

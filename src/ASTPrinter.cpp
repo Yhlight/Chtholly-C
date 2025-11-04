@@ -58,6 +58,24 @@ void ASTPrinter::visit(const CallExpr& expr) {
     result += ")";
 }
 
+void ASTPrinter::visit(const GetExpr& expr) {
+    result += "(. ";
+    expr.object->accept(*this);
+    result += " " + expr.name.lexeme + ")";
+}
+
+void ASTPrinter::visit(const SetExpr& expr) {
+    result += "(= ";
+    expr.object->accept(*this);
+    result += "." + expr.name.lexeme + " ";
+    expr.value->accept(*this);
+    result += ")";
+}
+
+void ASTPrinter::visit(const SelfExpr& expr) {
+    result += "self";
+}
+
 void ASTPrinter::visit(const BlockStmt& stmt) {
     result += "(block ";
     for (const auto& statement : stmt.statements) {
@@ -78,6 +96,19 @@ void ASTPrinter::visit(const FunctionStmt& stmt) {
     }
     result += ") ";
     stmt.body->accept(*this);
+    result += ")";
+}
+
+void ASTPrinter::visit(const StructStmt& stmt) {
+    result += "(struct " + stmt.name.lexeme;
+    for (const auto& field : stmt.fields) {
+        result += " ";
+        field->accept(*this);
+    }
+    for (const auto& method : stmt.methods) {
+        result += " ";
+        method->accept(*this);
+    }
     result += ")";
 }
 

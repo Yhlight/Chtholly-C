@@ -15,6 +15,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match({TokenType::FUNC})) return function();
+        if (match({TokenType::STRUCT})) return structDeclaration();
         if (match({TokenType::LET, TokenType::MUT})) return varDeclaration();
         return statement();
     } catch (ParseError& error) {
@@ -43,6 +44,54 @@ std::unique_ptr<Stmt> Parser::function() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after function body.");
     return std::make_unique<FunctionStmt>(name, parameters, std::make_unique<BlockStmt>(std::move(body)));
+}
+
+std::unique_ptr<FunctionStmt> Parser::methodDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect method name.");
+    consume(TokenType::LEFT_PAREN, "Expect '(' after method name.");
+    std::vector<Token> parameters;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            if (parameters.size() >= 255) {
+                error(peek(), "Can't have more than 255 parameters.");
+            }
+            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before method body.");
+    std::vector<std::unique_ptr<Stmt>> body;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        body.push_back(declaration());
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after method body.");
+    return std::make_unique<FunctionStmt>(name, parameters, std::make_unique<BlockStmt>(std::move(body)));
+}
+
+std::unique_ptr<Stmt> Parser::structDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
+    std::vector<std::unique_ptr<VarDeclStmt>> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (check(TokenType::IDENTIFIER) && checkNext(TokenType::LEFT_PAREN)) {
+            methods.push_back(methodDeclaration());
+        } else if (check(TokenType::IDENTIFIER) && checkNext(TokenType::COLON)) {
+            Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
+            consume(TokenType::COLON, "Expect ':' after field name.");
+            if (match({TokenType::INT, TokenType::DOUBLE, TokenType::CHAR, TokenType::BOOL, TokenType::STRING, TokenType::VOID, TokenType::ARRAY, TokenType::OPTION, TokenType::RESULT, TokenType::FUNCTION, TokenType::IDENTIFIER})) {
+                Token type = previous();
+                consume(TokenType::COMMA, "Expect ',' after field type.");
+                fields.push_back(std::make_unique<VarDeclStmt>(fieldName, type, nullptr, false));
+            } else {
+                throw reportError(peek(), "Expect type name after ':'.");
+            }
+        } else {
+            throw reportError(peek(), "Expect field or method in struct body.");
+        }
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    return std::make_unique<StructStmt>(name, std::move(fields), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {
@@ -127,6 +176,8 @@ std::unique_ptr<Expr> Parser::assignment() {
         if (auto varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
             Token name = varExpr->name;
             return std::make_unique<AssignmentExpr>(name, std::move(value));
+        } else if (auto getExpr = dynamic_cast<GetExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(getExpr->object), getExpr->name, std::move(value));
         }
         error(equals, "Invalid assignment target.");
     }
@@ -217,6 +268,9 @@ std::unique_ptr<Expr> Parser::call() {
             }
             Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
             expr = std::make_unique<CallExpr>(std::move(expr), paren, std::move(arguments));
+        } else if (match({TokenType::DOT})) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_unique<GetExpr>(std::move(expr), name);
         } else {
             break;
         }
@@ -257,6 +311,11 @@ Token Parser::consume(TokenType type, const std::string& message) {
 bool Parser::check(TokenType type) {
     if (isAtEnd()) return false;
     return peek().type == type;
+}
+
+bool Parser::checkNext(TokenType type) {
+    if (isAtEnd() || tokens[current + 1].type == TokenType::END_OF_FILE) return false;
+    return tokens[current + 1].type == type;
 }
 
 Token Parser::advance() {

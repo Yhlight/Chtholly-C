@@ -51,6 +51,19 @@ void SemanticAnalyzer::visit(const CallExpr& expr) {
     }
 }
 
+void SemanticAnalyzer::visit(const GetExpr& expr) {
+    expr.object->accept(*this);
+}
+
+void SemanticAnalyzer::visit(const SetExpr& expr) {
+    expr.object->accept(*this);
+    expr.value->accept(*this);
+}
+
+void SemanticAnalyzer::visit(const SelfExpr& expr) {
+    // TODO: Semantic analysis for 'self'
+}
+
 void SemanticAnalyzer::visit(const BlockStmt& stmt) {
     auto previous = environment;
     environment = std::make_shared<Environment>(previous);
@@ -109,6 +122,19 @@ void SemanticAnalyzer::visit(const VarDeclStmt& stmt) {
 void SemanticAnalyzer::visit(const WhileStmt& stmt) {
     stmt.condition->accept(*this);
     stmt.body->accept(*this);
+}
+
+void SemanticAnalyzer::visit(const StructStmt& stmt) {
+    if (environment->isDefined(stmt.name.lexeme)) {
+        error(stmt.name, "Struct '" + stmt.name.lexeme + "' already defined.");
+    }
+    environment->define(stmt.name.lexeme, false);
+    for (const auto& field : stmt.fields) {
+        field->accept(*this);
+    }
+    for (const auto& method : stmt.methods) {
+        method->accept(*this);
+    }
 }
 
 void SemanticAnalyzer::error(const Token& token, const std::string& message) {

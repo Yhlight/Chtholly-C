@@ -13,6 +13,9 @@ struct UnaryExpr;
 struct VariableExpr;
 struct AssignmentExpr;
 struct CallExpr;
+struct GetExpr;
+struct SetExpr;
+struct SelfExpr;
 
 // Visitor interface for expressions
 class ExprVisitor {
@@ -25,6 +28,9 @@ public:
     virtual void visit(const VariableExpr& expr) = 0;
     virtual void visit(const AssignmentExpr& expr) = 0;
     virtual void visit(const CallExpr& expr) = 0;
+    virtual void visit(const GetExpr& expr) = 0;
+    virtual void visit(const SetExpr& expr) = 0;
+    virtual void visit(const SelfExpr& expr) = 0;
 };
 
 // Base class for all expression nodes
@@ -41,6 +47,44 @@ struct BinaryExpr : Expr {
 
     BinaryExpr(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
         : left(std::move(left)), op(op), right(std::move(right)) {}
+
+    void accept(ExprVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+};
+
+// Get expressions
+struct GetExpr : Expr {
+    std::unique_ptr<Expr> object;
+    Token name;
+
+    GetExpr(std::unique_ptr<Expr> object, Token name)
+        : object(std::move(object)), name(name) {}
+
+    void accept(ExprVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+};
+
+// Set expressions
+struct SetExpr : Expr {
+    std::unique_ptr<Expr> object;
+    Token name;
+    std::unique_ptr<Expr> value;
+
+    SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value)
+        : object(std::move(object)), name(name), value(std::move(value)) {}
+
+    void accept(ExprVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+};
+
+// Self expressions
+struct SelfExpr : Expr {
+    Token keyword;
+
+    SelfExpr(Token keyword) : keyword(keyword) {}
 
     void accept(ExprVisitor& visitor) const override {
         visitor.visit(*this);
@@ -128,6 +172,7 @@ struct IfStmt;
 struct ReturnStmt;
 struct VarDeclStmt;
 struct WhileStmt;
+struct StructStmt;
 
 // Visitor interface for statements
 class StmtVisitor {
@@ -140,6 +185,7 @@ public:
     virtual void visit(const ReturnStmt& stmt) = 0;
     virtual void visit(const VarDeclStmt& stmt) = 0;
     virtual void visit(const WhileStmt& stmt) = 0;
+    virtual void visit(const StructStmt& stmt) = 0;
 };
 
 
@@ -154,6 +200,20 @@ struct BlockStmt : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
 
     BlockStmt(std::vector<std::unique_ptr<Stmt>> statements) : statements(std::move(statements)) {}
+
+    void accept(StmtVisitor& visitor) const override {
+        visitor.visit(*this);
+    }
+};
+
+// Struct statements
+struct StructStmt : Stmt {
+    Token name;
+    std::vector<std::unique_ptr<VarDeclStmt>> fields;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+
+    StructStmt(Token name, std::vector<std::unique_ptr<VarDeclStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(name), fields(std::move(fields)), methods(std::move(methods)) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visit(*this);

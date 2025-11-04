@@ -21,6 +21,9 @@ enum class TokenType {
     TRAIT,
     IMPL,
     IMPORT,
+    PUBLIC,
+    PRIVATE,
+    SELF,
 
     // Types
     INT,

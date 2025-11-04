@@ -53,6 +53,21 @@ void CodeGen::visit(const CallExpr& expr) {
     result += ")";
 }
 
+void CodeGen::visit(const GetExpr& expr) {
+    expr.object->accept(*this);
+    result += "." + expr.name.lexeme;
+}
+
+void CodeGen::visit(const SetExpr& expr) {
+    expr.object->accept(*this);
+    result += "." + expr.name.lexeme + " = ";
+    expr.value->accept(*this);
+}
+
+void CodeGen::visit(const SelfExpr& expr) {
+    result += "this";
+}
+
 void CodeGen::visit(const BlockStmt& stmt) {
     result += "{\n";
     for (const auto& statement : stmt.statements) {
@@ -76,6 +91,19 @@ void CodeGen::visit(const FunctionStmt& stmt) {
     }
     result += ") ";
     stmt.body->accept(*this);
+}
+
+void CodeGen::visit(const StructStmt& stmt) {
+    isInsideStruct = true;
+    result += "struct " + stmt.name.lexeme + " {\n";
+    for (const auto& field : stmt.fields) {
+        field->accept(*this);
+    }
+    for (const auto& method : stmt.methods) {
+        method->accept(*this);
+    }
+    result += "};\n";
+    isInsideStruct = false;
 }
 
 void CodeGen::visit(const IfStmt& stmt) {
@@ -103,7 +131,7 @@ void CodeGen::visit(const VarDeclStmt& stmt) {
         type = stmt.type.lexeme;
     }
 
-    if (stmt.isMutable) {
+    if (stmt.isMutable || isInsideStruct) {
         result += type + " " + stmt.name.lexeme;
     } else {
         result += "const " + type + " " + stmt.name.lexeme;

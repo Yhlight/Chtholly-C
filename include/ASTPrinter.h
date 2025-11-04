@@ -16,6 +16,9 @@ public:
     void visit(const VariableExpr& expr) override;
     void visit(const AssignmentExpr& expr) override;
     void visit(const CallExpr& expr) override;
+    void visit(const GetExpr& expr) override;
+    void visit(const SetExpr& expr) override;
+    void visit(const SelfExpr& expr) override;
 
     void visit(const BlockStmt& stmt) override;
     void visit(const ExpressionStmt& stmt) override;
@@ -24,6 +27,7 @@ public:
     void visit(const ReturnStmt& stmt) override;
     void visit(const VarDeclStmt& stmt) override;
     void visit(const WhileStmt& stmt) override;
+    void visit(const StructStmt& stmt) override;
 
 private:
     std::string result;
