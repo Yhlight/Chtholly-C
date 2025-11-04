@@ -92,7 +92,14 @@ void ASTPrinter::visit(const ExpressionStmt& stmt) {
 void ASTPrinter::visit(const FunctionStmt& stmt) {
     result += "(fun " + stmt.name.lexeme + " (";
     for (const auto& param : stmt.params) {
-        result += " " + param.lexeme;
+        result += " (";
+        if (param.isRef) {
+            result += "&";
+        }
+        if (param.isMut) {
+            result += "mut ";
+        }
+        result += param.name.lexeme + ": " + param.type.lexeme + ")";
     }
     result += ") ";
     stmt.body->accept(*this);

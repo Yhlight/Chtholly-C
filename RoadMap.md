@@ -19,10 +19,11 @@
 - [x] Control Flow (if, else, switch)
 - [x] Functions
 - [x] Structs
+- [x] Function Parameter Refactoring
 
 ## Phase 3: Advanced Language Features
 
-- [ ] Ownership and Borrowing
+- [x] Ownership and Borrowing
 - [ ] Generics
 - [ ] Traits and Impls
 - [ ] Modules and Imports

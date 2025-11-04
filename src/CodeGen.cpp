@@ -28,8 +28,13 @@ void CodeGen::visit(const LiteralExpr& expr) {
 }
 
 void CodeGen::visit(const UnaryExpr& expr) {
-    result += expr.op.lexeme;
-    expr.right->accept(*this);
+    if (expr.op.type == TokenType::AND) {
+        result += "&";
+        expr.right->accept(*this);
+    } else {
+        result += expr.op.lexeme;
+        expr.right->accept(*this);
+    }
 }
 
 void CodeGen::visit(const VariableExpr& expr) {
@@ -84,7 +89,12 @@ void CodeGen::visit(const ExpressionStmt& stmt) {
 void CodeGen::visit(const FunctionStmt& stmt) {
     result += "auto " + stmt.name.lexeme + "(";
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        result += "auto " + stmt.params[i].lexeme;
+        const auto& param = stmt.params[i];
+        std::string type = param.type.lexeme;
+        if (param.isRef) {
+            type += "&";
+        }
+        result += type + " " + param.name.lexeme;
         if (i < stmt.params.size() - 1) {
             result += ", ";
         }

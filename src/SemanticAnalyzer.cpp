@@ -86,10 +86,10 @@ void SemanticAnalyzer::visit(const FunctionStmt& stmt) {
     auto previous = environment;
     environment = std::make_shared<Environment>(previous);
     for (const auto& param : stmt.params) {
-        if (environment->isDefined(param.lexeme)) {
-            error(param, "Parameter '" + param.lexeme + "' already defined.");
+        if (environment->isDefined(param.name.lexeme)) {
+            error(param.name, "Parameter '" + param.name.lexeme + "' already defined.");
         }
-        environment->define(param.lexeme, false);
+        environment->define(param.name.lexeme, param.isMut);
     }
     stmt.body->accept(*this);
     environment = previous;

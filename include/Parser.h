@@ -21,6 +21,8 @@ private:
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<FunctionStmt> methodDeclaration();
     std::unique_ptr<Stmt> function();
+    std::vector<Param> parseParameters();
+    std::unique_ptr<BlockStmt> parseBody();
     std::unique_ptr<Stmt> varDeclaration();
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> ifStatement();

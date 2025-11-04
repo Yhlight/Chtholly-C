@@ -231,13 +231,21 @@ struct ExpressionStmt : Stmt {
     }
 };
 
+// Parameter struct for functions
+struct Param {
+    Token name;
+    Token type;
+    bool isRef;
+    bool isMut;
+};
+
 // Function statements
 struct FunctionStmt : Stmt {
     Token name;
-    std::vector<Token> params;
+    std::vector<Param> params;
     std::unique_ptr<BlockStmt> body;
 
-    FunctionStmt(Token name, std::vector<Token> params, std::unique_ptr<BlockStmt> body)
+    FunctionStmt(Token name, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
         : name(name), params(std::move(params)), body(std::move(body)) {}
 
     void accept(StmtVisitor& visitor) const override {

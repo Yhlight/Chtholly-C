@@ -44,3 +44,7 @@ add_test(NAME LogicalOperatorTest COMMAND test_logical_operators)
 add_executable(test_structs tests/test_structs.cpp src/Lexer.cpp src/Parser.cpp src/CodeGen.cpp)
 target_include_directories(test_structs PUBLIC include)
 add_test(NAME StructTest COMMAND test_structs)
+
+add_executable(test_ownership tests/test_ownership.cpp src/Lexer.cpp src/Parser.cpp src/CodeGen.cpp)
+target_include_directories(test_ownership PUBLIC include)
+add_test(NAME OwnershipTest COMMAND test_ownership)

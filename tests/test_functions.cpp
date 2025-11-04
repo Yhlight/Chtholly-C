@@ -7,7 +7,7 @@
 #include <cassert>
 
 void test_function_declaration() {
-    std::string source = "func add(a, b) { return a + b; }";
+    std::string source = "func add(a: int, b: int) { return a + b; }";
     Lexer lexer(source);
     std::vector<Token> tokens;
     Token token = lexer.nextToken();
@@ -25,13 +25,13 @@ void test_function_declaration() {
 
     CodeGen codegen;
     std::string result = codegen.generate(statements);
-    std::string expected = "#include <iostream>\n\nauto add(auto a, auto b) {\nreturn (a + b);\n}\n";
+    std::string expected = "#include <iostream>\n\nauto add(int a, int b) {\nreturn (a + b);\n}\n";
     assert(result == expected);
     std::cout << "Function declaration test passed!" << std::endl;
 }
 
 void test_function_call() {
-    std::string source = "func add(a, b) { return a + b; } add(1, 2);";
+    std::string source = "func add(a: int, b: int) { return a + b; } add(1, 2);";
     Lexer lexer(source);
     std::vector<Token> tokens;
     Token token = lexer.nextToken();
@@ -49,7 +49,7 @@ void test_function_call() {
 
     CodeGen codegen;
     std::string result = codegen.generate(statements);
-    std::string expected = "#include <iostream>\n\nauto add(auto a, auto b) {\nreturn (a + b);\n}\nadd(1, 2);\n";
+    std::string expected = "#include <iostream>\n\nauto add(int a, int b) {\nreturn (a + b);\n}\nadd(1, 2);\n";
     assert(result == expected);
     std::cout << "Function call test passed!" << std::endl;
 }

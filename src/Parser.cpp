@@ -26,46 +26,51 @@ std::unique_ptr<Stmt> Parser::declaration() {
 
 std::unique_ptr<Stmt> Parser::function() {
     Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
+    auto parameters = parseParameters();
+    auto body = parseBody();
+    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body));
+}
+
+std::vector<Param> Parser::parseParameters() {
     consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
-    std::vector<Token> parameters;
+    std::vector<Param> parameters;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
             if (parameters.size() >= 255) {
                 error(peek(), "Can't have more than 255 parameters.");
             }
-            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            Param param;
+            param.isRef = match({TokenType::AND});
+            param.isMut = match({TokenType::MUT});
+            param.name = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            if (match({TokenType::INT, TokenType::DOUBLE, TokenType::CHAR, TokenType::BOOL, TokenType::STRING, TokenType::VOID, TokenType::ARRAY, TokenType::OPTION, TokenType::RESULT, TokenType::FUNCTION, TokenType::IDENTIFIER})) {
+                param.type = previous();
+            } else {
+                throw reportError(peek(), "Expect type name after ':'.");
+            }
+            parameters.push_back(param);
         } while (match({TokenType::COMMA}));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+    return parameters;
+}
+
+std::unique_ptr<BlockStmt> Parser::parseBody() {
     consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
     std::vector<std::unique_ptr<Stmt>> body;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         body.push_back(declaration());
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after function body.");
-    return std::make_unique<FunctionStmt>(name, parameters, std::make_unique<BlockStmt>(std::move(body)));
+    return std::make_unique<BlockStmt>(std::move(body));
 }
 
 std::unique_ptr<FunctionStmt> Parser::methodDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect method name.");
-    consume(TokenType::LEFT_PAREN, "Expect '(' after method name.");
-    std::vector<Token> parameters;
-    if (!check(TokenType::RIGHT_PAREN)) {
-        do {
-            if (parameters.size() >= 255) {
-                error(peek(), "Can't have more than 255 parameters.");
-            }
-            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
-        } while (match({TokenType::COMMA}));
-    }
-    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
-    consume(TokenType::LEFT_BRACE, "Expect '{' before method body.");
-    std::vector<std::unique_ptr<Stmt>> body;
-    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        body.push_back(declaration());
-    }
-    consume(TokenType::RIGHT_BRACE, "Expect '}' after method body.");
-    return std::make_unique<FunctionStmt>(name, parameters, std::make_unique<BlockStmt>(std::move(body)));
+    auto parameters = parseParameters();
+    auto body = parseBody();
+    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -245,7 +250,7 @@ std::unique_ptr<Expr> Parser::factor() {
 }
 
 std::unique_ptr<Expr> Parser::unary() {
-    if (match({TokenType::BANG, TokenType::MINUS})) {
+    if (match({TokenType::BANG, TokenType::MINUS, TokenType::AND})) {
         Token op = previous();
         std::unique_ptr<Expr> right = unary();
         return std::make_unique<UnaryExpr>(op, std::move(right));

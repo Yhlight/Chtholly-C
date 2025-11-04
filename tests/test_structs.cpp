@@ -29,7 +29,7 @@ void test_struct_declaration() {
 }
 
 void test_struct_codegen() {
-    std::string source = "struct Point { x: int, y: int, add() {} }";
+    std::string source = "struct Point { x: int, y: int, add(a: int, b: int) {} }";
     Lexer lexer(source);
     std::vector<Token> tokens;
     Token token = lexer.nextToken();
@@ -44,7 +44,7 @@ void test_struct_codegen() {
 
     CodeGen codegen;
     std::string result = codegen.generate(statements);
-    std::string expected = "#include <iostream>\n\nstruct Point {\nint x;\nint y;\nauto add() {\n}\n};\n";
+    std::string expected = "#include <iostream>\n\nstruct Point {\nint x;\nint y;\nauto add(int a, int b) {\n}\n};\n";
     assert(result == expected);
     std::cout << "Struct codegen test passed!" << std::endl;
 }
