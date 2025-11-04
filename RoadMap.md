@@ -12,14 +12,14 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Create a placeholder `main.cpp` file.
 - [x] Update the `.gitignore` file.
 
-## Stage 2: Lexer (In Progress)
+## Stage 2: Lexer
 
-- [ ] Implement the lexer to tokenize the Chtholly source code.
-- [ ] Define all the token types.
-- [ ] Handle comments, keywords, identifiers, literals, and operators.
-- [ ] Write unit tests for the lexer.
+- [x] Implement the lexer to tokenize the Chtholly source code.
+- [x] Define all the token types.
+- [x] Handle comments, keywords, identifiers, literals, and operators.
+- [x] Write unit tests for the lexer.
 
-## Stage 3: Parser
+## Stage 3: Parser (In Progress)
 
 - [ ] Implement the parser to build an Abstract Syntax Tree (AST).
 - [ ] Define the AST node structures.
