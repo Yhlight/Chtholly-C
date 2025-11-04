@@ -5,6 +5,7 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "SemanticAnalyzer.h"
+#include "CodeGen.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -40,7 +41,17 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cout << "No semantic errors found." << std::endl;
+    CodeGen generator;
+    std::string generatedCode = generator.generate(statements);
+
+    std::ofstream outputFile(argv[2]);
+    if (!outputFile.is_open()) {
+        std::cerr << "Error: Could not open output file " << argv[2] << std::endl;
+        return 1;
+    }
+
+    outputFile << generatedCode;
+    std::cout << "Successfully compiled " << argv[1] << " to " << argv[2] << std::endl;
 
     return 0;
 }

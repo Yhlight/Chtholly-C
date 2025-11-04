@@ -19,12 +19,12 @@ This document outlines the development plan for the Chtholly compiler.
 - [x] Implement the parser to build an Abstract Syntax Tree (AST).
 - [x] Integrate and test the parser.
 
-## Stage 4: Semantic Analysis (In Progress)
+## Stage 4: Semantic Analysis
 
-- [ ] Implement the semantic analyzer to perform static analysis.
-- [ ] Integrate and test the semantic analyzer.
+- [x] Implement the semantic analyzer to perform static analysis.
+- [x] Integrate and test the semantic analyzer.
 
-## Stage 5: Code Generation
+## Stage 5: Code Generation (In Progress)
 
 - [ ] Implement the code generator to transpile the AST to C++.
 - [ ] Integrate and test the code generator.
