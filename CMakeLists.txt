@@ -24,3 +24,7 @@ add_test(NAME SemanticAnalyzerTest COMMAND test_semantic_analyzer)
 add_executable(test_codegen tests/test_codegen.cpp src/CodeGen.cpp)
 target_include_directories(test_codegen PUBLIC include)
 add_test(NAME CodeGenTest COMMAND test_codegen)
+
+add_executable(test_control_flow tests/test_control_flow.cpp src/Lexer.cpp src/Parser.cpp src/SemanticAnalyzer.cpp src/CodeGen.cpp src/Environment.cpp)
+target_include_directories(test_control_flow PUBLIC include)
+add_test(NAME ControlFlowTest COMMAND test_control_flow)
