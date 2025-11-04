@@ -39,3 +39,39 @@ TEST(PrattParserTest, UnaryExpression) {
     std::string result = printer.print(stmts[0].get());
     ASSERT_EQ(result, "(- 1)");
 }
+
+TEST(PrattParserTest, ComparisonExpression) {
+    std::string source = "1 < 2;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    PrattParser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_FALSE(stmts.empty());
+    ASTPrinter printer;
+    std::string result = printer.print(stmts[0].get());
+    ASSERT_EQ(result, "(< 1 2)");
+}
+
+TEST(PrattParserTest, LogicalExpression) {
+    std::string source = "true && false;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    PrattParser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_FALSE(stmts.empty());
+    ASTPrinter printer;
+    std::string result = printer.print(stmts[0].get());
+    ASSERT_EQ(result, "(&& true false)");
+}
+
+TEST(PrattParserTest, UnaryBangExpression) {
+    std::string source = "!true;";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    PrattParser parser(tokens);
+    auto stmts = parser.parse();
+    ASSERT_FALSE(stmts.empty());
+    ASTPrinter printer;
+    std::string result = printer.print(stmts[0].get());
+    ASSERT_EQ(result, "(! true)");
+}

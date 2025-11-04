@@ -27,27 +27,27 @@ struct EnumStmt;
 
 class StmtVisitor {
 public:
-    virtual std::any visitExpressionStmt(const ExpressionStmt& stmt) = 0;
-    virtual std::any visitLetStmt(const LetStmt& stmt) = 0;
-    virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
-    virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
-    virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
-    virtual std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) = 0;
-    virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
-    virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
-    virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
-    virtual std::any visitImplStmt(const ImplStmt& stmt) = 0;
-    virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
-    virtual std::any visitSwitchStmt(const SwitchStmt& stmt) = 0;
-    virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
-    virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
-    virtual std::any visitEnumStmt(const EnumStmt& stmt) = 0;
+    virtual std::string visitExpressionStmt(const ExpressionStmt& stmt) = 0;
+    virtual std::string visitLetStmt(const LetStmt& stmt) = 0;
+    virtual std::string visitBlockStmt(const BlockStmt& stmt) = 0;
+    virtual std::string visitIfStmt(const IfStmt& stmt) = 0;
+    virtual std::string visitWhileStmt(const WhileStmt& stmt) = 0;
+    virtual std::string visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) = 0;
+    virtual std::string visitReturnStmt(const ReturnStmt& stmt) = 0;
+    virtual std::string visitStructStmt(const StructStmt& stmt) = 0;
+    virtual std::string visitTraitStmt(const TraitStmt& stmt) = 0;
+    virtual std::string visitImplStmt(const ImplStmt& stmt) = 0;
+    virtual std::string visitImportStmt(const ImportStmt& stmt) = 0;
+    virtual std::string visitSwitchStmt(const SwitchStmt& stmt) = 0;
+    virtual std::string visitBreakStmt(const BreakStmt& stmt) = 0;
+    virtual std::string visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
+    virtual std::string visitEnumStmt(const EnumStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
 class Stmt {
 public:
-    virtual std::any accept(StmtVisitor& visitor) const = 0;
+    virtual std::string accept(StmtVisitor& visitor) const = 0;
     virtual ~Stmt();
 };
 
@@ -57,7 +57,7 @@ struct ExpressionStmt : Stmt {
     explicit ExpressionStmt(std::unique_ptr<Expr> expression);
     ~ExpressionStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitExpressionStmt(*this);
     }
 };
@@ -72,7 +72,7 @@ struct LetStmt : Stmt {
     LetStmt(Token name, std::optional<TypeInfo> type, std::unique_ptr<Expr> initializer, bool isMutable, bool is_public = true);
     ~LetStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitLetStmt(*this);
     }
 };
@@ -83,7 +83,7 @@ struct BlockStmt : Stmt {
     explicit BlockStmt(std::vector<std::unique_ptr<Stmt>> statements);
     ~BlockStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitBlockStmt(*this);
     }
 };
@@ -96,7 +96,7 @@ struct IfStmt : Stmt {
     IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch);
     ~IfStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitIfStmt(*this);
     }
 };
@@ -108,7 +108,7 @@ struct WhileStmt : Stmt {
     WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body);
     ~WhileStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitWhileStmt(*this);
     }
 };
@@ -123,7 +123,7 @@ struct FunctionStmt : Stmt {
     FunctionStmt(Token name, std::vector<Token> generics, std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType);
     ~FunctionStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitFunctionStmt(*this);
     }
 };
@@ -135,7 +135,7 @@ struct ReturnStmt : Stmt {
     ReturnStmt(Token keyword, std::unique_ptr<Expr> value);
     ~ReturnStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitReturnStmt(*this);
     }
 };
@@ -147,7 +147,7 @@ struct StructStmt : Stmt {
     StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields);
     ~StructStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitStructStmt(*this);
     }
 };
@@ -160,7 +160,7 @@ struct TraitStmt : Stmt {
     TraitStmt(Token name, std::vector<Token> generics, std::vector<std::unique_ptr<Stmt>> raw_methods);
     ~TraitStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitTraitStmt(*this);
     }
 };
@@ -174,7 +174,7 @@ struct ImplStmt : Stmt {
     ImplStmt(Token structName, std::optional<Token> traitName, std::vector<TypeInfo> generics, std::vector<std::unique_ptr<Stmt>> raw_methods);
     ~ImplStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitImplStmt(*this);
     }
 };
@@ -186,7 +186,7 @@ struct ImportStmt : Stmt {
     explicit ImportStmt(Token path, bool is_std = false);
     ~ImportStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitImportStmt(*this);
     }
 };
@@ -197,7 +197,7 @@ struct BreakStmt : Stmt {
     explicit BreakStmt(Token keyword);
     ~BreakStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitBreakStmt(*this);
     }
 };
@@ -208,7 +208,7 @@ struct FallthroughStmt : Stmt {
     explicit FallthroughStmt(Token keyword);
     ~FallthroughStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitFallthroughStmt(*this);
     }
 };
@@ -233,7 +233,7 @@ struct SwitchStmt : Stmt {
     SwitchStmt(std::unique_ptr<Expr> expression, std::vector<CaseStmt> cases, std::optional<CaseStmt> defaultCase);
     ~SwitchStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitSwitchStmt(*this);
     }
 };
@@ -245,7 +245,7 @@ struct EnumStmt : Stmt {
     EnumStmt(Token name, std::vector<Token> members);
     ~EnumStmt() override;
 
-    std::any accept(StmtVisitor& visitor) const override {
+    std::string accept(StmtVisitor& visitor) const override {
         return visitor.visitEnumStmt(*this);
     }
 };

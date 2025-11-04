@@ -7,6 +7,8 @@ Resolver::Resolver() {
     scopes.back()["input"] = VariableState{true, false, 0, false};
     scopes.back()["fs_read"] = VariableState{true, false, 0, false};
     scopes.back()["fs_write"] = VariableState{true, false, 0, false};
+    scopes.back()["option"] = VariableState{true, false, 0, false};
+    scopes.back()["none"] = VariableState{true, false, 0, false};
 }
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
@@ -58,14 +60,14 @@ void Resolver::define(const Token& name) {
     scopes.back()[name.lexeme].defined = true;
 }
 
-std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
+std::string Resolver::visitBlockStmt(const BlockStmt& stmt) {
     beginScope();
     resolve(stmt.statements);
     endScope();
-    return {};
+    return "";
 }
 
-std::any Resolver::visitLetStmt(const LetStmt& stmt) {
+std::string Resolver::visitLetStmt(const LetStmt& stmt) {
     declare(stmt.name);
     if (stmt.initializer) {
         resolve(*stmt.initializer);
@@ -74,10 +76,10 @@ std::any Resolver::visitLetStmt(const LetStmt& stmt) {
     if (!scopes.empty()) {
         scopes.back()[stmt.name.lexeme].is_mutable = stmt.isMutable;
     }
-    return {};
+    return "";
 }
 
-std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
+std::string Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
     resolve(*stmt.expression);
 
     LoopType enclosingLoop = currentLoop;
@@ -95,31 +97,31 @@ std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
     }
 
     currentLoop = enclosingLoop;
-    return {};
+    return "";
 }
 
-std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
+std::string Resolver::visitBreakStmt(const BreakStmt& stmt) {
     if (currentLoop == LoopType::NONE) {
         ErrorReporter::error(stmt.keyword.line, "Can't use 'break' outside of a loop or switch statement.");
     }
-    return {};
+    return "";
 }
 
-std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
+std::string Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
     if (currentLoop != LoopType::SWITCH) {
         ErrorReporter::error(stmt.keyword.line, "Can't use 'fallthrough' outside of a switch statement.");
     }
-    return {};
+    return "";
 }
 
 const std::vector<std::unique_ptr<Stmt>>& Resolver::get_statements() const {
     return statements;
 }
 
-std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+std::string Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr) {
     if (structs.find(expr.name.lexeme) == structs.end()) {
         ErrorReporter::error(expr.name.line, "Struct '" + expr.name.lexeme + "' not found.");
-        return {};
+        return "";
     }
 
     const auto* struct_decl = structs.at(expr.name.lexeme);
@@ -145,10 +147,10 @@ std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr)
     }
 
     expr.resolved_type = TypeInfo{expr.name};
-    return {};
+    return "";
 }
 
-std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
+std::string Resolver::visitVariableExpr(const VariableExpr& expr) {
     if (!scopes.empty() && scopes.back().count(expr.name.lexeme) && !scopes.back().at(expr.name.lexeme).defined) {
         ErrorReporter::error(expr.name.line, "Can't read local variable in its own initializer.");
     }
@@ -159,13 +161,13 @@ std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
             if (scopes[i].at(expr.name.lexeme).moved) {
                 ErrorReporter::error(expr.name.line, "Use of moved value.");
             }
-            return {};
+            return "";
         }
     }
-    return {};
+    return "";
 }
 
-std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
+std::string Resolver::visitAssignExpr(const AssignExpr& expr) {
     resolve(*expr.value);
     resolveLocal(expr, expr.name);
     for (int i = scopes.size() - 1; i >= 0; i--) {
@@ -176,10 +178,10 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
             if (scopes[i].at(expr.name.lexeme).immutable_borrows > 0) {
                 ErrorReporter::error(expr.name.line, "Cannot assign to a variable that is currently borrowed.");
             }
-            return {};
+            return "";
         }
     }
-    return {};
+    return "";
 }
 
 void Resolver::resolveLocal(const Expr& expr, const Token& name) {
@@ -192,18 +194,18 @@ void Resolver::resolveLocal(const Expr& expr, const Token& name) {
     ErrorReporter::error(name.line, "Use of unresolved variable '" + name.lexeme + "'.");
 }
 
-std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
+std::string Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
     resolve(*stmt.expression);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
+std::string Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     resolve(*expr.left);
     resolve(*expr.right);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
+std::string Resolver::visitTraitStmt(const TraitStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);
     beginScope();
@@ -211,24 +213,24 @@ std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
         resolveFunction(*method, FunctionType::FUNCTION);
     }
     endScope();
-    return {};
+    return "";
 }
 
-std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
+std::string Resolver::visitImplStmt(const ImplStmt& stmt) {
     if (stmt.traitName) {
         if (traits.find(stmt.traitName->lexeme) == traits.end()) {
             ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
-            return {};
+            return "";
         }
         if (!structs.count(stmt.structName.lexeme)) {
             ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
-            return {};
+            return "";
         }
 
         const auto* trait = traits.at(stmt.traitName->lexeme);
         if (trait->methods.size() != stmt.methods.size()) {
             ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
-            return {};
+            return "";
         }
 
         for (size_t i = 0; i < trait->methods.size(); ++i) {
@@ -257,25 +259,25 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     }
     endScope();
     currentClass = enclosingClass;
-    return {};
+    return "";
 }
 
 #include <fstream>
 #include <sstream>
 #include "Chtholly.h"
 
-std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
+std::string Resolver::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
         if (stmt.path.lexeme != "iostream" && stmt.path.lexeme != "filesystem") {
             ErrorReporter::error(stmt.path.line, "Unknown standard library module.");
         }
-        return {};
+        return "";
     }
     std::string path = std::get<std::string>(stmt.path.literal);
     std::ifstream file(path);
     if (!file.is_open()) {
         ErrorReporter::error(stmt.path.line, "Could not open file: " + path);
-        return {};
+        return "";
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -284,13 +286,13 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
     chtholly.run(buffer.str());
 
     if (ErrorReporter::hadError) {
-        return {};
+        return "";
     }
 
-    return {};
+    return "";
 }
 
-std::any Resolver::visitGetExpr(const GetExpr& expr) {
+std::string Resolver::visitGetExpr(const GetExpr& expr) {
     resolve(*expr.object);
     if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
         if (enums.count(var->name.lexeme)) {
@@ -307,16 +309,16 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
             }
         }
     }
-    return {};
+    return "";
 }
 
-std::any Resolver::visitSetExpr(const SetExpr& expr) {
+std::string Resolver::visitSetExpr(const SetExpr& expr) {
     resolve(*expr.value);
     resolve(*expr.object);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
+std::string Resolver::visitBorrowExpr(const BorrowExpr& expr) {
     resolve(*expr.expression);
     if (auto* var = dynamic_cast<const VariableExpr*>(expr.expression.get())) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
@@ -332,19 +334,19 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
                 } else {
                     scopes[i][var->name.lexeme].immutable_borrows++;
                 }
-                return {};
+                return "";
             }
         }
     }
-    return {};
+    return "";
 }
 
-std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
+std::string Resolver::visitLambdaExpr(const LambdaExpr& expr) {
     resolveLambda(expr, FunctionType::FUNCTION);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitStructStmt(const StructStmt& stmt) {
+std::string Resolver::visitStructStmt(const StructStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);
     ClassType enclosingClass = currentClass;
@@ -358,17 +360,17 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     }
     endScope();
     currentClass = enclosingClass;
-    return {};
+    return "";
 }
 
-std::any Resolver::visitCallExpr(const CallExpr& expr) {
+std::string Resolver::visitCallExpr(const CallExpr& expr) {
     resolve(*expr.callee);
 
     for (const auto& argument : expr.arguments) {
         resolve(*argument);
     }
 
-    return {};
+    return "";
 }
 
 void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) {
@@ -403,14 +405,14 @@ void Resolver::resolveLambda(const LambdaExpr& lambda, FunctionType type) {
     currentFunction = enclosingFunction;
 }
 
-std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
+std::string Resolver::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
     declare(stmt.name);
     define(stmt.name);
     resolveFunction(stmt, FunctionType::FUNCTION);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
+std::string Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     if (currentFunction == FunctionType::NONE) {
         ErrorReporter::error(stmt.keyword.line, "Can't return from top-level code.");
     }
@@ -419,41 +421,41 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
         resolve(*stmt.value);
     }
 
-    return {};
+    return "";
 }
 
-std::any Resolver::visitIfStmt(const IfStmt& stmt) {
+std::string Resolver::visitIfStmt(const IfStmt& stmt) {
     resolve(*stmt.condition);
     resolve(*stmt.thenBranch);
     if (stmt.elseBranch) resolve(*stmt.elseBranch);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
+std::string Resolver::visitWhileStmt(const WhileStmt& stmt) {
     LoopType enclosingLoop = currentLoop;
     currentLoop = LoopType::LOOP;
     resolve(*stmt.condition);
     resolve(*stmt.body);
     currentLoop = enclosingLoop;
-    return {};
+    return "";
 }
 
-std::any Resolver::visitGroupingExpr(const GroupingExpr& expr) {
+std::string Resolver::visitGroupingExpr(const GroupingExpr& expr) {
     resolve(*expr.expression);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
-    return {};
+std::string Resolver::visitLiteralExpr(const LiteralExpr& expr) {
+    return "";
 }
 
-std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
+std::string Resolver::visitUnaryExpr(const UnaryExpr& expr) {
     resolve(*expr.right);
-    return {};
+    return "";
 }
 
-std::any Resolver::visitEnumStmt(const EnumStmt& stmt) {
+std::string Resolver::visitEnumStmt(const EnumStmt& stmt) {
     declare(stmt.name);
     define(stmt.name);
-    return {};
+    return "";
 }

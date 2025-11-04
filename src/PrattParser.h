@@ -32,8 +32,9 @@ private:
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> prefix();
     std::unique_ptr<Expr> infix(std::unique_ptr<Expr> left);
+    std::unique_ptr<Expr> parsePrecedence(int precedence);
 
-    int precedence();
+    int precedence(TokenType type);
     const Token& peek() const;
     const Token& previous() const;
     bool isAtEnd() const;

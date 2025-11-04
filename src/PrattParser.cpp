@@ -109,28 +109,46 @@ std::unique_ptr<Stmt> PrattParser::expressionStatement() {
     return std::make_unique<ExpressionStmt>(std::move(expr));
 }
 
-
-std::unique_ptr<Expr> PrattParser::expression() {
+std::unique_ptr<Expr> PrattParser::parsePrecedence(int min_precedence) {
     std::unique_ptr<Expr> left = prefix();
 
-    while (precedence() > 0) {
+    while (min_precedence < precedence(peek().type)) {
         left = infix(std::move(left));
     }
 
     return left;
 }
 
-int PrattParser::precedence() {
-    switch (peek().type) {
+
+std::unique_ptr<Expr> PrattParser::expression() {
+    return parsePrecedence(0);
+}
+
+
+int PrattParser::precedence(TokenType type) {
+    switch (type) {
+        case TokenType::PIPE_PIPE:
+            return 1;
+        case TokenType::AMPERSAND_AMPERSAND:
+            return 2;
+        case TokenType::EQUAL_EQUAL:
+        case TokenType::BANG_EQUAL:
+            return 3;
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
+            return 4;
         case TokenType::PLUS:
         case TokenType::MINUS:
-            return 1;
+            return 5;
         case TokenType::STAR:
         case TokenType::SLASH:
-            return 2;
+            return 6;
         case TokenType::LEFT_PAREN:
+        case TokenType::DOT:
         case TokenType::COLON_COLON:
-             return 3;
+             return 7;
         default:
             return 0;
     }
@@ -147,6 +165,8 @@ std::unique_ptr<Expr> PrattParser::prefix() {
             return std::make_unique<LiteralExpr>(true);
         case TokenType::FALSE:
             return std::make_unique<LiteralExpr>(false);
+        case TokenType::NONE:
+            return std::make_unique<LiteralExpr>(std::monostate{});
         case TokenType::IDENTIFIER:
             return std::make_unique<VariableExpr>(token);
         case TokenType::LEFT_PAREN: {
@@ -154,7 +174,8 @@ std::unique_ptr<Expr> PrattParser::prefix() {
             consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
             return std::make_unique<GroupingExpr>(std::move(expr));
         }
-        case TokenType::MINUS: {
+        case TokenType::MINUS:
+        case TokenType::BANG: {
             return std::make_unique<UnaryExpr>(token, prefix());
         }
         default:
@@ -177,6 +198,12 @@ std::unique_ptr<Expr> PrattParser::infix(std::unique_ptr<Expr> left) {
         return std::make_unique<CallExpr>(std::move(left), paren, std::move(arguments), std::move(generic_args));
     }
 
+    if (peek().type == TokenType::DOT) {
+        advance();
+        Token name = consume(TokenType::IDENTIFIER, "Expect identifier after '.'.");
+        return std::make_unique<GetExpr>(std::move(left), name);
+    }
+
     if (peek().type == TokenType::COLON_COLON) {
         advance();
         Token name = consume(TokenType::IDENTIFIER, "Expect identifier after '::'.");
@@ -184,7 +211,7 @@ std::unique_ptr<Expr> PrattParser::infix(std::unique_ptr<Expr> left) {
     }
 
     Token op = advance();
-    std::unique_ptr<Expr> right = expression();
+    std::unique_ptr<Expr> right = parsePrecedence(precedence(op.type));
     return std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
 }
 
@@ -252,6 +279,15 @@ TypeInfo PrattParser::parseType() {
     bool isMut = false;
     if (isRef) {
         isMut = match(TokenType::MUT);
+    }
+
+    if (match(TokenType::OPTION)) {
+        consume(TokenType::LESS, "Expect '<' after 'option'.");
+        TypeInfo type = parseType();
+        consume(TokenType::GREATER, "Expect '>' after option type.");
+        TypeInfo optionType(Token{TokenType::OPTION, "option", std::monostate{}, 0});
+        optionType.params.push_back(std::move(type));
+        return optionType;
     }
 
     Token typeToken = consume(TokenType::IDENTIFIER, "Expect type name.");

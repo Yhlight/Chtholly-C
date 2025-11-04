@@ -13,6 +13,7 @@ add_executable(
     test_std_import.cpp
     test_filesystem.cpp
     test_enums.cpp
+    test_option.cpp
 )
 
 target_link_libraries(

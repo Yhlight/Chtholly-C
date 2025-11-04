@@ -25,6 +25,8 @@ std::map<std::string, TokenType> keywords = {
     {"default",TokenType::DEFAULT},
     {"fallthrough", TokenType::FALLTHROUGH},
     {"enum", TokenType::ENUM},
+    {"option", TokenType::OPTION},
+    {"none", TokenType::NONE},
 };
 
 Lexer::Lexer(const std::string& source) : source(source) {}

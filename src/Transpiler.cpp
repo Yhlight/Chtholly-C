@@ -18,17 +18,23 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         out << "#include <variant>\n";
         out << "#include <string>\n";
         bool has_lambda = false;
+        bool has_option = false;
         for (const auto& statement : statements) {
             if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
                 if ((letStmt->type && letStmt->type->baseType.type == TokenType::FUNCTION) ||
                     (letStmt->initializer && dynamic_cast<const LambdaExpr*>(letStmt->initializer.get()))) {
                     has_lambda = true;
-                    break;
+                }
+                if (letStmt->type && letStmt->type->baseType.lexeme == "option") {
+                    has_option = true;
                 }
             }
         }
         if (has_lambda) {
             out << "#include <functional>\n";
+        }
+        if (has_option) {
+            out << "#include <optional>\n";
         }
         out << "\n";
         bool has_input = false;
@@ -106,7 +112,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     // Phase 2: Process imports first
     for (const auto& stmt : statements) {
         if (dynamic_cast<ImportStmt*>(stmt.get())) {
-            execute(*stmt);
+            stmt->accept(*this);
         }
     }
 
@@ -116,7 +122,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
             dynamic_cast<TraitStmt*>(stmt.get()) ||
             dynamic_cast<FunctionStmt*>(stmt.get()) ||
             dynamic_cast<EnumStmt*>(stmt.get())) {
-            execute(*stmt);
+            stmt->accept(*this);
         }
     }
 
@@ -130,7 +136,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
                 !dynamic_cast<ImplStmt*>(stmt.get()) &&
                 !dynamic_cast<ImportStmt*>(stmt.get()) &&
                 !dynamic_cast<EnumStmt*>(stmt.get())) {
-                execute(*stmt);
+                stmt->accept(*this);
             }
         }
         out << "    return 0;\n";
@@ -140,23 +146,19 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     return out.str();
 }
 
-void Transpiler::execute(const Stmt& stmt) {
-    stmt.accept(*this);
-}
-
 std::string Transpiler::evaluate(const Expr& expr) {
-    return std::any_cast<std::string>(expr.accept(*this));
+    return expr.accept(*this);
 }
 
-std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+std::string Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
     return "(" + evaluate(*expr.left) + " " + expr.op.lexeme + " " + evaluate(*expr.right) + ")";
 }
 
-std::any Transpiler::visitGroupingExpr(const GroupingExpr& expr) {
+std::string Transpiler::visitGroupingExpr(const GroupingExpr& expr) {
     return "(" + evaluate(*expr.expression) + ")";
 }
 
-std::any Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
+std::string Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
     if (std::holds_alternative<std::string>(expr.value)) {
         return "\"" + std::get<std::string>(expr.value) + "\"";
     } else if (std::holds_alternative<double>(expr.value)) {
@@ -164,18 +166,20 @@ std::any Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
         oss << std::get<double>(expr.value);
         return oss.str();
     } else if (std::holds_alternative<bool>(expr.value)) {
-        return std::get<bool>(expr.value) ? std::string("true") : std::string("false");
+        return std::get<bool>(expr.value) ? "true" : "false";
+    } else if (std::holds_alternative<std::monostate>(expr.value)) {
+        return "std::nullopt";
     }
-    return std::string("nullptr");
+    return "nullptr";
 }
 
-std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
+std::string Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
     return "(" + expr.op.lexeme + evaluate(*expr.right) + ")";
 }
 
-std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
+std::string Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
     out << "    " << evaluate(*stmt.expression) << ";\n";
-    return {};
+    return "";
 }
 
 std::string to_cpp_type(const TypeInfo& type) {
@@ -197,6 +201,12 @@ std::string to_cpp_type(const TypeInfo& type) {
             }
         }
         cpp_type += ")>";
+    } else if (type.baseType.lexeme == "option") {
+        cpp_type = "std::optional<";
+        if (!type.params.empty()) {
+            cpp_type += to_cpp_type(type.params[0]);
+        }
+        cpp_type += ">";
     } else {
         cpp_type = type.baseType.lexeme;
     }
@@ -211,7 +221,7 @@ std::string to_cpp_type(const TypeInfo& type) {
     return cpp_type;
 }
 
-std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
+std::string Transpiler::visitLetStmt(const LetStmt& stmt) {
     out << "    ";
     bool is_struct = stmt.type && std::isupper(stmt.type->baseType.lexeme[0]);
     if (!stmt.isMutable && !is_struct && !(stmt.type && stmt.type->isReference) && !(stmt.type && stmt.type->baseType.type == TokenType::FUNCTION)) {
@@ -226,10 +236,10 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
         out << " = " << evaluate(*stmt.initializer);
     }
     out << ";\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
+std::string Transpiler::visitTraitStmt(const TraitStmt& stmt) {
     out << "struct " << stmt.name.lexeme << " {\n";
     for (const auto& method : stmt.methods) {
         out << "    virtual ";
@@ -248,23 +258,23 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
         out << ") = 0;\n";
     }
     out << "};\n\n";
-    return {};
+    return "";
 }
 
 #include "Chtholly.h"
 #include <fstream>
-std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
+std::string Transpiler::visitImplStmt(const ImplStmt& stmt) {
     // This is handled by visitStructStmt
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
+std::string Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
-        return {};
+        return "";
     }
     std::string path = std::get<std::string>(stmt.path.literal);
     if (transpiled_files.count(path)) {
-        return {};
+        return "";
     }
 
     transpiled_files.insert(path);
@@ -272,7 +282,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     std::ifstream file(path);
     if (!file.is_open()) {
         // Error already reported by resolver
-        return {};
+        return "";
     }
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -281,7 +291,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     auto statements = chtholly.run(buffer.str(), true);
 
     if (ErrorReporter::hadError) {
-        return {};
+        return "";
     }
 
     Transpiler transpiler;
@@ -294,13 +304,11 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     // Update the current set of transpiled files
     this->transpiled_files = transpiler.transpiled_files;
 
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+std::string Transpiler::visitGetExpr(const GetExpr& expr) {
     if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
-        // This is a hack to get around the fact that we don't have a proper type system yet.
-        // We'll just assume that if the object is a variable and it's capitalized, it's an enum.
         if (isupper(var->name.lexeme[0])) {
             return evaluate(*expr.object) + "::" + expr.name.lexeme;
         }
@@ -308,15 +316,15 @@ std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     return evaluate(*expr.object) + "." + expr.name.lexeme;
 }
 
-std::any Transpiler::visitSetExpr(const SetExpr& expr) {
+std::string Transpiler::visitSetExpr(const SetExpr& expr) {
     return evaluate(*expr.object) + "." + expr.name.lexeme + " = " + evaluate(*expr.value);
 }
 
-std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) {
+std::string Transpiler::visitBorrowExpr(const BorrowExpr& expr) {
     return "&" + evaluate(*expr.expression);
 }
 
-std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
+std::string Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
     std::stringstream ss;
     ss << "[](";
     for (size_t i = 0; i < expr.params.size(); ++i) {
@@ -343,7 +351,7 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
     return ss.str();
 }
 
-std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
+std::string Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme;
     if (impls.count(stmt.name.lexeme)) {
         const auto* impl = impls.at(stmt.name.lexeme);
@@ -369,47 +377,47 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     if (impls.count(stmt.name.lexeme)) {
         const auto* impl = impls.at(stmt.name.lexeme);
         for (const auto& method : impl->methods) {
-            visitFunctionStmt(*method, stmt.name);
+            method->accept(*this);
         }
     }
     out << "};\n\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
+std::string Transpiler::visitVariableExpr(const VariableExpr& expr) {
     return expr.name.lexeme;
 }
 
-std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
+std::string Transpiler::visitAssignExpr(const AssignExpr& expr) {
     return expr.name.lexeme + " = " + evaluate(*expr.value);
 }
 
-std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
+std::string Transpiler::visitBlockStmt(const BlockStmt& stmt) {
     out << "    {\n";
     for (const auto& statement : stmt.statements) {
-        execute(*statement);
+        statement->accept(*this);
     }
     out << "    }\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitIfStmt(const IfStmt& stmt) {
+std::string Transpiler::visitIfStmt(const IfStmt& stmt) {
     out << "    if (" << evaluate(*stmt.condition) << ") ";
-    execute(*stmt.thenBranch);
+    stmt.thenBranch->accept(*this);
     if (stmt.elseBranch) {
         out << " else ";
-        execute(*stmt.elseBranch);
+        stmt.elseBranch->accept(*this);
     }
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
+std::string Transpiler::visitWhileStmt(const WhileStmt& stmt) {
     out << "    while (" << evaluate(*stmt.condition) << ") ";
-    execute(*stmt.body);
-    return {};
+    stmt.body->accept(*this);
+    return "";
 }
 
-std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
+std::string Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
     std::string switch_var = "switch_val";
     out << "    do {\n";
     out << "        auto " << switch_var << " = " << evaluate(*stmt.expression) << ";\n";
@@ -420,28 +428,28 @@ std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
         out << "            matched = true;\n";
         out << "        }\n";
         out << "        if (matched) ";
-        execute(*case_stmt.body);
+        case_stmt.body->accept(*this);
     }
 
     if (stmt.defaultCase) {
         out << "        if (!matched) ";
-        execute(*stmt.defaultCase->body);
+        stmt.defaultCase->body->accept(*this);
     }
     out << "    } while(false);\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
+std::string Transpiler::visitBreakStmt(const BreakStmt& stmt) {
     out << "    break;\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
+std::string Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
     // For if-else if, fallthrough is the default behavior.
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+std::string Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
     std::stringstream ss;
     ss << expr.name.lexeme << "{";
     bool first = true;
@@ -456,7 +464,23 @@ std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& exp
     return ss.str();
 }
 
-std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+std::string Transpiler::visitCallExpr(const CallExpr& expr) {
+    if (auto* getExpr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (getExpr->name.lexeme == "unwarp") {
+            return evaluate(*getExpr->object) + ".value()";
+        }
+        if (getExpr->name.lexeme == "unwarp_or") {
+            std::string args;
+            for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                args += evaluate(*expr.arguments[i]);
+                if (i < expr.arguments.size() - 1) {
+                    args += ", ";
+                }
+            }
+            return evaluate(*getExpr->object) + ".value_or(" + args + ")";
+        }
+    }
+
     if (auto* callee_var = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
         if (callee_var->name.lexeme == "print") {
             std::string args;
@@ -466,9 +490,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     args += " << ";
                 }
             }
-            return std::make_any<std::string>("std::cout << " + args + " << std::endl");
+            return "std::cout << " + args + " << std::endl";
         } else if (callee_var->name.lexeme == "input") {
-            return std::make_any<std::string>("chtholly_input()");
+            return "chtholly_input()";
         } else if (callee_var->name.lexeme == "fs_read") {
             std::string args;
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
@@ -477,7 +501,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     args += ", ";
                 }
             }
-            return std::make_any<std::string>("chtholly_fs_read(" + args + ")");
+            return "chtholly_fs_read(" + args + ")";
         } else if (callee_var->name.lexeme == "fs_write") {
             std::string args;
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
@@ -486,7 +510,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     args += ", ";
                 }
             }
-            return std::make_any<std::string>("chtholly_fs_write(" + args + ")");
+            return "chtholly_fs_write(" + args + ")";
         }
     }
 
@@ -508,10 +532,10 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             args += ", ";
         }
     }
-    return std::make_any<std::string>(callee + "(" + args + ")");
+    return callee + "(" + args + ")";
 }
 
-std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
+std::string Transpiler::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) {
     if (!stmt.generics.empty()) {
         out << "template<";
         for (size_t i = 0; i < stmt.generics.size(); ++i) {
@@ -540,13 +564,13 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt, std::optional<T
     }
     out << ") {\n";
     for (const auto& statement : stmt.body) {
-        execute(*statement);
+        statement->accept(*this);
     }
     out << "}\n\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
+std::string Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << "    return";
     if (stmt.value) {
         if (auto binary = dynamic_cast<const BinaryExpr*>(stmt.value.get())) {
@@ -556,10 +580,10 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
         }
     }
     out << ";\n";
-    return {};
+    return "";
 }
 
-std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
+std::string Transpiler::visitEnumStmt(const EnumStmt& stmt) {
     out << "enum class " << stmt.name.lexeme << " {\n";
     for (size_t i = 0; i < stmt.members.size(); ++i) {
         out << "    " << stmt.members[i].lexeme;
@@ -569,5 +593,5 @@ std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
         out << "\n";
     }
     out << "};\n\n";
-    return {};
+    return "";
 }

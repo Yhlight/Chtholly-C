@@ -4,8 +4,9 @@ The self-hosting goal has been cancelled to focus on creating a robust and featu
 
 ## Phase 1: Stabilization and Core Refinement
 
-- [ ] **Parser Overhaul**: Replace the recursive descent parser with a more robust Pratt parser to better handle operator precedence and complex expressions.
+- [x] **Parser Overhaul**: Replace the recursive descent parser with a more robust Pratt parser to better handle operator precedence and complex expressions.
 - [ ] **Semantic Analysis (Resolver) Hardening**: Improve the borrow checker, type checking, and error reporting. Implement more robust scope management, especially for modules.
+  - Currently working on: Implementing built-in generic types like `option<T>`.
 - [ ] **Transpiler Improvements**: Refactor the transpiler for better C++ code generation, focusing on correctness, readability, and performance. Ensure correct type mapping.
 - [ ] **Comprehensive Test Suite**: Augment the existing test suite to cover more edge cases and ensure stability during refactoring.
 
