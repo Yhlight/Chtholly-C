@@ -6,7 +6,7 @@ This document outlines the development progress and future goals for the Chtholl
 
 - [x] Create project directory structure (`src`, `tests`, `scripts`)
 - [x] Establish build system with CMake and Python build script
-- [ ] Implement core data structures (Token, TypeInfo)
+- [x] Implement core data structures (Token, TypeInfo)
 
 ## Phase 2: Lexer
 

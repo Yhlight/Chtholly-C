@@ -1,4 +1,4 @@
-#include "chtholly.cpp"
+#include "chtholly.h"
 
 int main() {
     hello();
