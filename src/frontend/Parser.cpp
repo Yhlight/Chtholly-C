@@ -44,7 +44,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
             let_stmt->is_public = is_public;
             fields.push_back(std::move(let_stmt));
         } else {
-            ErrorReporter::error(peek().line, "Expect 'let' or 'mut' in struct body.");
+            ErrorReporter::error(peek(), "Expect 'let' or 'mut' in struct body.");
             synchronize();
         }
     }
@@ -188,7 +188,7 @@ std::unique_ptr<Stmt> Parser::switchStatement() {
             consume(TokenType::COLON, "Expect ':' after 'default'.");
             defaultCase = CaseStmt{nullptr, statement()};
         } else {
-            ErrorReporter::error(peek().line, "Expect 'case' or 'default' in switch statement.");
+            ErrorReporter::error(peek(), "Expect 'case' or 'default' in switch statement.");
             synchronize();
         }
     }
@@ -256,7 +256,7 @@ std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee, std::vect
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             if (arguments.size() >= 255) {
-                ErrorReporter::error(peek().line, "Can't have more than 255 arguments.");
+                ErrorReporter::error(peek(), "Can't have more than 255 arguments.");
             }
             arguments.push_back(expression());
         } while (match({TokenType::COMMA}));
@@ -272,7 +272,7 @@ std::vector<std::pair<Token, TypeInfo>> Parser::parseParameters() {
     if (peek().type != TokenType::RIGHT_PAREN) {
         do {
             if (parameters.size() >= 255) {
-                ErrorReporter::error(peek().line, "Can't have more than 255 parameters.");
+                ErrorReporter::error(peek(), "Can't have more than 255 parameters.");
             }
             Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
             consume(TokenType::COLON, "Expect ':' after parameter name.");
@@ -376,7 +376,7 @@ Token Parser::consume(TokenType type, const std::string& message) {
 }
 
 Parser::ParseError Parser::error(const Token& token, const std::string& message) {
-    ErrorReporter::error(token.line, message);
+    ErrorReporter::error(token, message);
     return ParseError(message);
 }
 
@@ -393,6 +393,8 @@ void Parser::synchronize() {
             case TokenType::WHILE:
             case TokenType::RETURN:
             case TokenType::IMPL:
+            case TokenType::STRUCT:
+            case TokenType::TRAIT:
                 return;
         }
 

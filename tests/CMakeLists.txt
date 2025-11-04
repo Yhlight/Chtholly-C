@@ -4,6 +4,7 @@ project(ChthollyTests)
 
 add_executable(
     ChthollyTests
+    test_error_reporting.cpp
     test_lexer.cpp
     test_parser.cpp
     test_transpiler.cpp

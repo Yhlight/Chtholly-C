@@ -40,7 +40,7 @@ std::unique_ptr<Expr> PrattParser::parsePrecedence(Precedence precedence) {
     auto prefixRule = getRule(token_type).prefix;
 
     if (prefixRule == nullptr) {
-        ErrorReporter::error(parser.peek().line, "Expect expression.");
+        ErrorReporter::error(parser.peek(), "Expect expression.");
         return nullptr;
     }
     parser.advance();
@@ -143,7 +143,7 @@ std::unique_ptr<Expr> PrattParser::finishCall(std::unique_ptr<Expr> callee, std:
     if (parser.peek().type != TokenType::RIGHT_PAREN) {
         do {
             if (arguments.size() >= 255) {
-                ErrorReporter::error(parser.peek().line, "Can't have more than 255 arguments.");
+                ErrorReporter::error(parser.peek(), "Can't have more than 255 arguments.");
             }
             arguments.push_back(parse());
         } while (parser.match({TokenType::COMMA}));
@@ -168,8 +168,7 @@ std::unique_ptr<Expr> PrattParser::assignment(std::unique_ptr<Expr> left) {
         return std::make_unique<SetExpr>(std::move(get->object), get->name, std::move(value));
     }
 
-    ErrorReporter::error(parser.previous().line, "Invalid assignment target.");
-    return nullptr;
+    throw parser.error(parser.previous(), "Invalid assignment target.");
 }
 
 std::unique_ptr<Expr> PrattParser::borrow() {
@@ -202,6 +201,6 @@ std::unique_ptr<Expr> PrattParser::structInitializer(std::unique_ptr<Expr> left)
         parser.consume(TokenType::RIGHT_BRACE, "Expect '}' after struct initializer.");
         return std::make_unique<StructInitializerExpr>(var->name, std::move(initializers));
     }
-    ErrorReporter::error(parser.peek().line, "Expect struct name before initializer.");
+    ErrorReporter::error(parser.peek(), "Expect struct name before initializer.");
     return nullptr;
 }

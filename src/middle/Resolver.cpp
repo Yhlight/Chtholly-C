@@ -49,7 +49,7 @@ void Resolver::endScope() {
 void Resolver::declare(const Token& name) {
     if (scopes.empty()) return;
     if (scopes.back().count(name.lexeme)) {
-        ErrorReporter::error(name.line, "Already a variable with this name in this scope.");
+        ErrorReporter::error(name, "Already a variable with this name in this scope.");
     }
     scopes.back()[name.lexeme] = VariableState();
 }
@@ -85,14 +85,14 @@ std::any Resolver::visitLetStmt(const LetStmt& stmt) {
 
 std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
     if (!scopes.empty() && scopes.back().count(expr.name.lexeme) && !scopes.back().at(expr.name.lexeme).defined) {
-        ErrorReporter::error(expr.name.line, "Can't read local variable in its own initializer.");
+        ErrorReporter::error(expr.name, "Can't read local variable in its own initializer.");
     }
 
     resolveLocal(expr, expr.name);
     for (int i = scopes.size() - 1; i >= 0; i--) {
         if (scopes[i].count(expr.name.lexeme)) {
             if (scopes[i].at(expr.name.lexeme).moved) {
-                ErrorReporter::error(expr.name.line, "Use of moved value.");
+                ErrorReporter::error(expr.name, "Use of moved value.");
             }
             expr.resolved_type = scopes[i].at(expr.name.lexeme).type;
             return {};
@@ -107,10 +107,10 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     for (int i = scopes.size() - 1; i >= 0; i--) {
         if (scopes[i].count(expr.name.lexeme)) {
             if (!scopes[i].at(expr.name.lexeme).is_mutable) {
-                ErrorReporter::error(expr.name.line, "Cannot assign to an immutable variable.");
+                ErrorReporter::error(expr.name, "Cannot assign to an immutable variable.");
             }
             if (scopes[i].at(expr.name.lexeme).immutable_borrows > 0) {
-                ErrorReporter::error(expr.name.line, "Cannot assign to a variable that is currently borrowed.");
+                ErrorReporter::error(expr.name, "Cannot assign to a variable that is currently borrowed.");
             }
             expr.resolved_type = expr.value->resolved_type;
             return {};
@@ -126,7 +126,7 @@ void Resolver::resolveLocal(const Expr& expr, const Token& name) {
         }
     }
 
-    ErrorReporter::error(name.line, "Use of unresolved variable '" + name.lexeme + "'.");
+    ErrorReporter::error(name, "Use of unresolved variable '" + name.lexeme + "'.");
 }
 
 std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
@@ -156,7 +156,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
     if (stmt.traitName) {
         if (stmt.traitName->lexeme.rfind("operator::", 0) == 0) {
             if (!structs.count(stmt.structName.lexeme)) {
-                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+                ErrorReporter::error(stmt.structName, "Struct '" + stmt.structName.lexeme + "' not found.");
                 return {};
             }
             std::string op = stmt.traitName->lexeme.substr(10);
@@ -168,22 +168,22 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
                 }
             }
             if (!found) {
-                ErrorReporter::error(stmt.structName.line, "Impl for operator '" + op + "' must contain a method named '" + op + "'.");
+                ErrorReporter::error(stmt.structName, "Impl for operator '" + op + "' must contain a method named '" + op + "'.");
             }
 
         } else {
             if (traits.find(stmt.traitName->lexeme) == traits.end()) {
-                ErrorReporter::error(stmt.traitName->line, "Trait '" + stmt.traitName->lexeme + "' not found.");
+                ErrorReporter::error(*stmt.traitName, "Trait '" + stmt.traitName->lexeme + "' not found.");
                 return {};
             }
             if (!structs.count(stmt.structName.lexeme)) {
-                ErrorReporter::error(stmt.structName.line, "Struct '" + stmt.structName.lexeme + "' not found.");
+                ErrorReporter::error(stmt.structName, "Struct '" + stmt.structName.lexeme + "' not found.");
                 return {};
             }
 
             const auto* trait = traits.at(stmt.traitName->lexeme);
             if (trait->methods.size() != stmt.methods.size()) {
-                ErrorReporter::error(stmt.structName.line, "Impl does not implement all methods of the trait.");
+                ErrorReporter::error(stmt.structName, "Impl does not implement all methods of the trait.");
                 return {};
             }
 
@@ -193,7 +193,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
                     generic_map[trait->generics[i].lexeme] = stmt.generics[i];
                 }
             } else {
-                ErrorReporter::error(stmt.structName.line, "Number of generic arguments does not match trait.");
+                ErrorReporter::error(stmt.structName, "Number of generic arguments does not match trait.");
                 return {};
             }
 
@@ -201,10 +201,10 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
                 const auto& traitMethod = trait->methods[i];
                 const auto& implMethod = stmt.methods[i];
                 if (traitMethod->name.lexeme != implMethod->name.lexeme) {
-                    ErrorReporter::error(implMethod->name.line, "Method name does not match trait.");
+                    ErrorReporter::error(implMethod->name, "Method name does not match trait.");
                 }
                 if (traitMethod->params.size() != implMethod->params.size()) {
-                    ErrorReporter::error(implMethod->name.line, "Number of parameters does not match trait.");
+                    ErrorReporter::error(implMethod->name, "Number of parameters does not match trait.");
                 }
                 for (size_t j = 0; j < traitMethod->params.size(); ++j) {
                     auto trait_param_type = traitMethod->params[j].second;
@@ -213,7 +213,7 @@ std::any Resolver::visitImplStmt(const ImplStmt& stmt) {
                         trait_param_type = generic_map.at(trait_param_type.baseType.lexeme);
                     }
                     if (trait_param_type.baseType.lexeme != impl_param_type.baseType.lexeme) {
-                        ErrorReporter::error(implMethod->name.line, "Parameter type does not match trait.");
+                        ErrorReporter::error(implMethod->name, "Parameter type does not match trait.");
                     }
                 }
             }
@@ -246,14 +246,14 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
                 scopes.front()[name] = state;
             }
         } else if (stmt.path.lexeme != "iostream") {
-            ErrorReporter::error(stmt.path.line, "Unknown standard library module.");
+            ErrorReporter::error(stmt.path, "Unknown standard library module.");
         }
         return {};
     }
     std::string path = std::get<std::string>(stmt.path.literal);
     std::ifstream file(path);
     if (!file.is_open()) {
-        ErrorReporter::error(stmt.path.line, "Could not open file: " + path);
+        ErrorReporter::error(stmt.path, "Could not open file: " + path);
         return {};
     }
     std::stringstream buffer;
@@ -285,7 +285,7 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
     if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
         if (var->name.lexeme == "self") {
             if (currentClass == ClassType::NONE) {
-                ErrorReporter::error(var->name.line, "Can't use 'self' outside of a class.");
+                ErrorReporter::error(var->name, "Can't use 'self' outside of a class.");
                 return {};
             }
         }
@@ -297,7 +297,7 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
             for (const auto& field : s->fields) {
                 if (field->name.lexeme == expr.name.lexeme) {
                     if (!field->is_public && (currentClass == ClassType::NONE || currentStructName != s->name.lexeme)) {
-                        ErrorReporter::error(expr.name.line, "Cannot access private field '" + expr.name.lexeme + "' of struct '" + s->name.lexeme + "'.");
+                        ErrorReporter::error(expr.name, "Cannot access private field '" + expr.name.lexeme + "' of struct '" + s->name.lexeme + "'.");
                     }
                     expr.resolved_type = field->type;
                 }
@@ -321,10 +321,10 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
             if (scopes[i].count(var->name.lexeme)) {
                 if (expr.isMutable) {
                     if (!scopes[i].at(var->name.lexeme).is_mutable) {
-                        ErrorReporter::error(var->name.line, "Cannot mutably borrow an immutable variable.");
+                        ErrorReporter::error(var->name, "Cannot mutably borrow an immutable variable.");
                     }
                     if (scopes[i].at(var->name.lexeme).immutable_borrows > 0) {
-                        ErrorReporter::error(var->name.line, "Cannot mutably borrow a variable that is currently immutably borrowed.");
+                        ErrorReporter::error(var->name, "Cannot mutably borrow a variable that is currently immutably borrowed.");
                     }
                     scopes[i][var->name.lexeme].moved = true;
                 } else {
@@ -382,11 +382,11 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
         if (auto* var = dynamic_cast<const VariableExpr*>(get->object.get())) {
             if (var->name.lexeme == "reflect" && get->name.lexeme == "get_field_names") {
                 if (expr.generic_args.size() != 1) {
-                    ErrorReporter::error(expr.paren.line, "get_field_names requires exactly one generic argument.");
+                    ErrorReporter::error(expr.paren, "get_field_names requires exactly one generic argument.");
                 } else {
                     const auto& type = expr.generic_args[0];
                     if (structs.find(type.baseType.lexeme) == structs.end()) {
-                        ErrorReporter::error(expr.paren.line, "Generic argument to get_field_names must be a struct type.");
+                        ErrorReporter::error(expr.paren, "Generic argument to get_field_names must be a struct type.");
                     } else {
                         TypeInfo array_type;
                         array_type.baseType = Token{TokenType::IDENTIFIER, "array", std::monostate{}, -1};
@@ -397,7 +397,7 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
             } else if (var->name.lexeme == "meta") {
                 if (get->name.lexeme == "is_struct" || get->name.lexeme == "is_int" || get->name.lexeme == "is_uint" || get->name.lexeme == "is_double" || get->name.lexeme == "is_char" || get->name.lexeme == "is_bool" || get->name.lexeme == "is_string" || get->name.lexeme == "is_array") {
                     if (expr.generic_args.size() != 1) {
-                        ErrorReporter::error(expr.paren.line, get->name.lexeme + " requires exactly one generic argument.");
+                        ErrorReporter::error(expr.paren, get->name.lexeme + " requires exactly one generic argument.");
                     } else {
                         expr.resolved_type = TypeInfo{Token{TokenType::IDENTIFIER, "bool", std::monostate{}, -1}};
                     }
@@ -450,7 +450,7 @@ std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt, std::optional<Tok
 
 std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     if (currentFunction == FunctionType::NONE) {
-        ErrorReporter::error(stmt.keyword.line, "Can't return from top-level code.");
+        ErrorReporter::error(stmt.keyword, "Can't return from top-level code.");
     }
 
     if (stmt.value) {
@@ -503,13 +503,13 @@ std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
 
 std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr) {
     if (structs.find(expr.name.lexeme) == structs.end()) {
-        ErrorReporter::error(expr.name.line, "Struct '" + expr.name.lexeme + "' not found.");
+        ErrorReporter::error(expr.name, "Struct '" + expr.name.lexeme + "' not found.");
         return {};
     }
 
     const auto* struct_decl = structs.at(expr.name.lexeme);
     if (struct_decl->fields.size() != expr.initializers.size()) {
-        ErrorReporter::error(expr.name.line, "Incorrect number of fields in initializer for struct '" + expr.name.lexeme + "'.");
+        ErrorReporter::error(expr.name, "Incorrect number of fields in initializer for struct '" + expr.name.lexeme + "'.");
     }
 
     for (const auto& [name, value] : expr.initializers) {
@@ -519,13 +519,13 @@ std::any Resolver::visitStructInitializerExpr(const StructInitializerExpr& expr)
                 found = true;
                 resolve(*value);
                 if (field->type && value->resolved_type && field->type->baseType.lexeme != value->resolved_type->baseType.lexeme) {
-                    ErrorReporter::error(name.line, "Type mismatch for field '" + name.lexeme + "'.");
+                    ErrorReporter::error(name, "Type mismatch for field '" + name.lexeme + "'.");
                 }
                 break;
             }
         }
         if (!found) {
-            ErrorReporter::error(name.line, "Struct '" + expr.name.lexeme + "' does not have a field named '" + name.lexeme + "'.");
+            ErrorReporter::error(name, "Struct '" + expr.name.lexeme + "' does not have a field named '" + name.lexeme + "'.");
         }
     }
 
@@ -556,14 +556,14 @@ std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
 
 std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
     if (currentLoop == LoopType::NONE) {
-        ErrorReporter::error(stmt.keyword.line, "Can't use 'break' outside of a loop or switch statement.");
+        ErrorReporter::error(stmt.keyword, "Can't use 'break' outside of a loop or switch statement.");
     }
     return {};
 }
 
 std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
     if (currentLoop != LoopType::SWITCH) {
-        ErrorReporter::error(stmt.keyword.line, "Can't use 'fallthrough' outside of a switch statement.");
+        ErrorReporter::error(stmt.keyword, "Can't use 'fallthrough' outside of a switch statement.");
     }
     return {};
 }

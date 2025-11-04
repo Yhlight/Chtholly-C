@@ -37,7 +37,7 @@
 
 ## Phase 5: Compiler Internals Refactoring
 
-- [ ] **Error Reporting**: Refactor the `ErrorReporter` to provide more detailed contextual information, such as line and column numbers, and potentially code snippets. Implement a more robust panic-mode recovery in the parser.
+- [~] **Error Reporting**: Refactor the `ErrorReporter` to provide more detailed contextual information, such as line and column numbers, and potentially code snippets. Implement a more robust panic-mode recovery in the parser. (Note: In-progress, facing issues with token-based error reporting for invalid assignment targets.)
 - [ ] **Resolver Decomposition**: Break down the monolithic `Resolver` class into smaller, more focused components.
     - [ ] Create a dedicated `ScopeManager` to handle lexical scopes.
     - [ ] Implement a `TypeChecker` to manage type inference and validation.
