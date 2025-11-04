@@ -37,3 +37,9 @@ TEST(TranspilerTest, BlockStatement) {
     std::string expected = "{\n1.000000;\n2.000000;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, VariableDeclaration) {
+    std::string source = "let a = 1; mut b = 2;";
+    std::string expected = "const auto a = 1.000000;\nauto b = 2.000000;\n";
+    EXPECT_EQ(transpile(source), expected);
+}

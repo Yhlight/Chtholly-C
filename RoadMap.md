@@ -5,12 +5,12 @@
 - [x] **Lexer:** Implement the lexical analyzer to convert source code into a stream of tokens.
 - [x] **Parser:** Implement the parser to build an Abstract Syntax Tree (AST) from the token stream.
 - [x] **AST:** Define the structure of the Abstract Syntax Tree.
-- [ ] **Transpiler:** Implement the C++ transpiler to generate C++ code from the AST. (In Progress)
+- [x] **Transpiler:** Implement the C++ transpiler to generate C++ code from the AST.
 - [x] **Build System:** Set up the initial CMake build system and Python build script.
 
 ## Phase 2: Language Features
 
-- [ ] Variables (let, mut)
+- [ ] Variables (let, mut) (In Progress)
 - [ ] Basic types (int, double, char, bool, string)
 - [ ] Functions
 - [ ] Control flow (if, while, switch)

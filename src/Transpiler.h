@@ -17,6 +17,7 @@ public:
 
     std::any visitExpressionStmt(ExpressionStmt& stmt) override;
     std::any visitBlockStmt(BlockStmt& stmt) override;
+    std::any visitVarStmt(VarStmt& stmt) override;
 
 private:
     std::string transpile(Expr& expr);

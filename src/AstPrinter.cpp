@@ -48,6 +48,16 @@ std::any AstPrinter::visitBlockStmt(BlockStmt& stmt) {
     return out.str();
 }
 
+std::any AstPrinter::visitVarStmt(VarStmt& stmt) {
+    std::stringstream out;
+    out << "(" << stmt.keyword.lexeme << " " << stmt.name.lexeme;
+    if (stmt.initializer) {
+        out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
 std::string AstPrinter::parenthesize(const std::string& name, const std::vector<Expr*>& exprs) {
     std::stringstream out;
     out << "(" << name;

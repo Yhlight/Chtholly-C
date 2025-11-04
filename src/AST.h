@@ -10,6 +10,7 @@ namespace chtholly {
 // Forward declarations for visitors
 struct ExprVisitor;
 struct StmtVisitor;
+struct VarStmt;
 
 // Base class for all expression nodes
 struct Expr {
@@ -90,11 +91,23 @@ struct BlockStmt : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
 };
 
+struct VarStmt : Stmt {
+    VarStmt(Token keyword, Token name, std::unique_ptr<Expr> initializer)
+        : keyword(keyword), name(name), initializer(std::move(initializer)) {}
+
+    std::any accept(StmtVisitor& visitor) override;
+
+    Token keyword;
+    Token name;
+    std::unique_ptr<Expr> initializer;
+};
+
 // Visitor interface for statements
 struct StmtVisitor {
     virtual ~StmtVisitor() = default;
     virtual std::any visitExpressionStmt(ExpressionStmt& stmt) = 0;
     virtual std::any visitBlockStmt(BlockStmt& stmt) = 0;
+    virtual std::any visitVarStmt(VarStmt& stmt) = 0;
 };
 
 // Implementations of accept methods
@@ -105,5 +118,6 @@ inline std::any VariableExpr::accept(ExprVisitor& visitor) { return visitor.visi
 
 inline std::any ExpressionStmt::accept(StmtVisitor& visitor) { return visitor.visitExpressionStmt(*this); }
 inline std::any BlockStmt::accept(StmtVisitor& visitor) { return visitor.visitBlockStmt(*this); }
+inline std::any VarStmt::accept(StmtVisitor& visitor) { return visitor.visitVarStmt(*this); }
 
 } // namespace chtholly

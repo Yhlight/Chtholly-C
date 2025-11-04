@@ -8,7 +8,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!isAtEnd()) {
         try {
-            statements.push_back(statement());
+            statements.push_back(declaration());
         } catch (ParseError& error) {
             synchronize();
         }
@@ -89,6 +89,24 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     throw error(peek(), "Expect expression.");
+}
+
+std::unique_ptr<Stmt> Parser::declaration() {
+    if (match({TokenType::LET, TokenType::MUT})) {
+        return varDeclaration();
+    }
+    return statement();
+}
+
+std::unique_ptr<Stmt> Parser::varDeclaration() {
+    Token keyword = previous();
+    Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+    std::unique_ptr<Expr> initializer = nullptr;
+    if (match({TokenType::EQUAL})) {
+        initializer = expression();
+    }
+    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+    return std::make_unique<VarStmt>(keyword, name, std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::statement() {

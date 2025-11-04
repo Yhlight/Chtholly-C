@@ -16,6 +16,7 @@ public:
 
     std::any visitExpressionStmt(ExpressionStmt& stmt) override;
     std::any visitBlockStmt(BlockStmt& stmt) override;
+    std::any visitVarStmt(VarStmt& stmt) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<Expr*>& exprs);

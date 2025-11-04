@@ -37,3 +37,9 @@ TEST(ParserTest, BlockStatement) {
     std::string expected = "(block 1.000000 2.000000)\n";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, VariableDeclaration) {
+    std::string source = "let a = 1;";
+    std::string expected = "(let a = 1.000000)\n";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
