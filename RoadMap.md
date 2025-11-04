@@ -2,9 +2,9 @@
 
 ## Phase 1: Core Compiler Infrastructure
 
-- [ ] **Lexer:** Implement the lexical analyzer to convert source code into a stream of tokens. (In Progress)
-- [ ] **Parser:** Implement the parser to build an Abstract Syntax Tree (AST) from the token stream.
-- [ ] **AST:** Define the structure of the Abstract Syntax Tree.
+- [x] **Lexer:** Implement the lexical analyzer to convert source code into a stream of tokens.
+- [ ] **Parser:** Implement the parser to build an Abstract Syntax Tree (AST) from the token stream. (In Progress)
+- [ ] **AST:** Define the structure of the Abstract Syntax Tree. (In Progress)
 - [ ] **Transpiler:** Implement the C++ transpiler to generate C++ code from the AST.
 - [x] **Build System:** Set up the initial CMake build system and Python build script.
 

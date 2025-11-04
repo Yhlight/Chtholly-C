@@ -1,0 +1,62 @@
+#include "AstPrinter.h"
+#include <sstream>
+
+namespace chtholly {
+
+std::string AstPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    std::stringstream out;
+    for (const auto& stmt : statements) {
+        out << std::any_cast<std::string>(stmt->accept(*this)) << std::endl;
+    }
+    return out.str();
+}
+
+std::any AstPrinter::visitBinaryExpr(BinaryExpr& expr) {
+    return parenthesize(expr.op.lexeme, {expr.left.get(), expr.right.get()});
+}
+
+std::any AstPrinter::visitUnaryExpr(UnaryExpr& expr) {
+    return parenthesize(expr.op.lexeme, {expr.right.get()});
+}
+
+std::any AstPrinter::visitLiteralExpr(LiteralExpr& expr) {
+    if (std::holds_alternative<std::string>(expr.value)) {
+        return std::get<std::string>(expr.value);
+    } else if (std::holds_alternative<double>(expr.value)) {
+        return std::to_string(std::get<double>(expr.value));
+    } else if (std::holds_alternative<bool>(expr.value)) {
+        return std::get<bool>(expr.value) ? "true" : "false";
+    }
+    return std::string("nil");
+}
+
+std::any AstPrinter::visitVariableExpr(VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
+std::any AstPrinter::visitExpressionStmt(ExpressionStmt& stmt) {
+    return std::any_cast<std::string>(stmt.expression->accept(*this));
+}
+
+std::any AstPrinter::visitBlockStmt(BlockStmt& stmt) {
+    std::stringstream out;
+    out << "(block";
+    for (const auto& statement : stmt.statements) {
+        out << " " << std::any_cast<std::string>(statement->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::string AstPrinter::parenthesize(const std::string& name, const std::vector<Expr*>& exprs) {
+    std::stringstream out;
+    out << "(" << name;
+    for (Expr* expr : exprs) {
+        out << " ";
+        out << std::any_cast<std::string>(expr->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+} // namespace chtholly
