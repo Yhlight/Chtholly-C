@@ -1,5 +1,35 @@
 #include <Lexer.h>
 #include <cctype>
+#include <map>
+
+static const std::map<std::string, TokenType> keywords = {
+    {"func", TokenType::FUNC},
+    {"let", TokenType::LET},
+    {"mut", TokenType::MUT},
+    {"if", TokenType::IF},
+    {"else", TokenType::ELSE},
+    {"switch", TokenType::SWITCH},
+    {"case", TokenType::CASE},
+    {"default", TokenType::DEFAULT},
+    {"for", TokenType::FOR},
+    {"while", TokenType::WHILE},
+    {"return", TokenType::RETURN},
+    {"struct", TokenType::STRUCT},
+    {"enum", TokenType::ENUM},
+    {"trait", TokenType::TRAIT},
+    {"impl", TokenType::IMPL},
+    {"import", TokenType::IMPORT},
+    {"int", TokenType::INT},
+    {"double", TokenType::DOUBLE},
+    {"char", TokenType::CHAR},
+    {"bool", TokenType::BOOL},
+    {"string", TokenType::STRING},
+    {"void", TokenType::VOID},
+    {"array", TokenType::ARRAY},
+    {"option", TokenType::OPTION},
+    {"result", TokenType::RESULT},
+    {"function", TokenType::FUNCTION},
+};
 
 Lexer::Lexer(const std::string& source) : source(source) {}
 
@@ -149,76 +179,10 @@ Token Lexer::number() {
 
 Token Lexer::identifier() {
     while (std::isalnum(peek()) || peek() == '_') advance();
-    return makeToken(identifierType());
-}
-
-TokenType Lexer::identifierType() {
-    switch (source[start]) {
-        case 'a': return checkKeyword(1, 4, "rray", TokenType::ARRAY);
-        case 'b': return checkKeyword(1, 3, "ool", TokenType::BOOL);
-        case 'c':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 'a': return checkKeyword(2, 2, "se", TokenType::CASE);
-                    case 'h': return checkKeyword(2, 2, "ar", TokenType::CHAR);
-                }
-            }
-            break;
-        case 'd': return checkKeyword(1, 6, "ouble", TokenType::DOUBLE);
-        case 'e':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 'l': return checkKeyword(2, 2, "se", TokenType::ELSE);
-                    case 'n': return checkKeyword(2, 2, "um", TokenType::ENUM);
-                }
-            }
-            break;
-        case 'f':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 'o': return checkKeyword(2, 1, "r", TokenType::FOR);
-                    case 'u': return checkKeyword(2, 2, "nc", TokenType::FUNC);
-                }
-            }
-            break;
-        case 'i':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 'f': return TokenType::IF;
-                    case 'm': return checkKeyword(2, 2, "pl", TokenType::IMPL);
-                    case 'n': return checkKeyword(2, 1, "t", TokenType::INT);
-                }
-            }
-            break;
-        case 'l': return checkKeyword(1, 2, "et", TokenType::LET);
-        case 'm': return checkKeyword(1, 2, "ut", TokenType::MUT);
-        case 'o': return checkKeyword(1, 5, "ption", TokenType::OPTION);
-        case 'r':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 'e': return checkKeyword(2, 4, "turn", TokenType::RETURN);
-                }
-            }
-            break;
-        case 's':
-            if (current - start > 1) {
-                switch (source[start + 1]) {
-                    case 't': return checkKeyword(2, 4, "ruct", TokenType::STRUCT);
-                    case 'w': return checkKeyword(2, 4, "itch", TokenType::SWITCH);
-                }
-            }
-            break;
-        case 't': return checkKeyword(1, 4, "rait", TokenType::TRAIT);
-        case 'v': return checkKeyword(1, 3, "oid", TokenType::VOID);
-        case 'w': return checkKeyword(1, 4, "hile", TokenType::WHILE);
+    std::string text = source.substr(start, current - start);
+    auto it = keywords.find(text);
+    if (it != keywords.end()) {
+        return makeToken(it->second);
     }
-
-    return TokenType::IDENTIFIER;
-}
-
-TokenType Lexer::checkKeyword(size_t start, size_t length, const char* rest, TokenType type) {
-    if (current - this->start == start + length && source.substr(this->start + start, length) == rest) {
-        return type;
-    }
-    return TokenType::IDENTIFIER;
+    return makeToken(TokenType::IDENTIFIER);
 }

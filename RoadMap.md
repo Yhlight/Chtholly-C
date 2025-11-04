@@ -6,8 +6,8 @@
 - [x] Initialize `CMakeLists.txt`
 - [x] Create `build.py` script for automation
 - [x] Implement basic Lexer
-- [ ] Implement basic Parser (LL(K) Recursive Descent)
-- [ ] Implement Abstract Syntax Tree (AST)
+- [x] Implement basic Parser (LL(K) Recursive Descent)
+- [x] Implement Abstract Syntax Tree (AST)
 - [ ] Implement Semantic Analyzer
 - [ ] Implement Code Generator (C++ transpilation)
 
