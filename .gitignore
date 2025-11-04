@@ -44,6 +44,5 @@
 build/
 
 # Test artifacts
-tests/*.cpp
-tests/*
 !tests/*.cns
+tests/test_lexer

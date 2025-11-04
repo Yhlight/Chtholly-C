@@ -43,46 +43,7 @@ def run(args):
 def test(args):
     """Runs the test suite."""
     build(args)
-    executable = os.path.join("build", "chtholly")
-    if not os.path.exists(executable):
-        print(f"Executable not found: {executable}")
-        exit(1)
-
-    test_dir = "tests"
-    if not os.path.exists(test_dir):
-        print(f"Test directory not found: {test_dir}")
-        exit(1)
-
-    for filename in os.listdir(test_dir):
-        if filename.endswith(".cns"):
-            test_file = os.path.join(test_dir, filename)
-            cpp_file = os.path.join(test_dir, filename.replace(".cns", ".cpp"))
-            output_executable = os.path.join(test_dir, filename.replace(".cns", ""))
-
-            # Run chtholly compiler
-            run_command([executable, test_file, cpp_file])
-
-            # Compile generated C++ code
-            run_command(["g++", cpp_file, "-o", output_executable])
-
-            # Run the compiled code and capture output
-            result = subprocess.run([output_executable], capture_output=True, text=True)
-
-            # Extract expected output from comments
-            with open(test_file, "r") as f:
-                expected_output = ""
-                for line in f:
-                    if line.strip().startswith("// expect:"):
-                        expected_output += line.strip().replace("// expect:", "").strip() + "\n"
-
-            # Compare actual output with expected output
-            if result.stdout == expected_output:
-                print(f"Test passed: {filename}")
-            else:
-                print(f"Test failed: {filename}")
-                print(f"Expected output:\\n{expected_output}")
-                print(f"Actual output:\\n{result.stdout}")
-                exit(1)
+    run_command(["ctest"], cwd="build")
 
 
 def main():

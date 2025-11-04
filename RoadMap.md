@@ -5,7 +5,7 @@
 - [x] Set up project structure (`src`, `include`, `tests`)
 - [x] Initialize `CMakeLists.txt`
 - [x] Create `build.py` script for automation
-- [ ] Implement basic Lexer
+- [x] Implement basic Lexer
 - [ ] Implement basic Parser (LL(K) Recursive Descent)
 - [ ] Implement Abstract Syntax Tree (AST)
 - [ ] Implement Semantic Analyzer
