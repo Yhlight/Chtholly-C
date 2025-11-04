@@ -35,6 +35,7 @@ public:
     std::any visitSwitchStmt(const SwitchStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
 
 private:
     std::string parenthesize(const std::string& name, const std::vector<Expr*>& exprs);

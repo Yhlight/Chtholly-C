@@ -114,7 +114,8 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     for (const auto& stmt : statements) {
         if (dynamic_cast<StructStmt*>(stmt.get()) ||
             dynamic_cast<TraitStmt*>(stmt.get()) ||
-            dynamic_cast<FunctionStmt*>(stmt.get())) {
+            dynamic_cast<FunctionStmt*>(stmt.get()) ||
+            dynamic_cast<EnumStmt*>(stmt.get())) {
             execute(*stmt);
         }
     }
@@ -127,7 +128,8 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
                 !dynamic_cast<TraitStmt*>(stmt.get()) &&
                 !dynamic_cast<FunctionStmt*>(stmt.get()) &&
                 !dynamic_cast<ImplStmt*>(stmt.get()) &&
-                !dynamic_cast<ImportStmt*>(stmt.get())) {
+                !dynamic_cast<ImportStmt*>(stmt.get()) &&
+                !dynamic_cast<EnumStmt*>(stmt.get())) {
                 execute(*stmt);
             }
         }
@@ -296,6 +298,13 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
 }
 
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+    if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        // This is a hack to get around the fact that we don't have a proper type system yet.
+        // We'll just assume that if the object is a variable and it's capitalized, it's an enum.
+        if (isupper(var->name.lexeme[0])) {
+            return evaluate(*expr.object) + "::" + expr.name.lexeme;
+        }
+    }
     return evaluate(*expr.object) + "." + expr.name.lexeme;
 }
 
@@ -547,5 +556,18 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
         }
     }
     out << ";\n";
+    return {};
+}
+
+std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
+    out << "enum class " << stmt.name.lexeme << " {\n";
+    for (size_t i = 0; i < stmt.members.size(); ++i) {
+        out << "    " << stmt.members[i].lexeme;
+        if (i < stmt.members.size() - 1) {
+            out << ",";
+        }
+        out << "\n";
+    }
+    out << "};\n\n";
     return {};
 }

@@ -24,6 +24,7 @@ std::map<std::string, TokenType> keywords = {
     {"break",  TokenType::BREAK},
     {"default",TokenType::DEFAULT},
     {"fallthrough", TokenType::FALLTHROUGH},
+    {"enum", TokenType::ENUM},
 };
 
 Lexer::Lexer(const std::string& source) : source(source) {}
@@ -72,7 +73,13 @@ void Lexer::scanToken() {
         case ']': addToken(TokenType::RIGHT_BRACKET); break;
         case '{': addToken(TokenType::LEFT_BRACE); break;
         case '}': addToken(TokenType::RIGHT_BRACE); break;
-        case ':': addToken(TokenType::COLON); break;
+        case ':':
+            if (match(':')) {
+                addToken(TokenType::COLON_COLON);
+            } else {
+                addToken(TokenType::COLON);
+            }
+            break;
         case ',': addToken(TokenType::COMMA); break;
         case '.': addToken(TokenType::DOT); break;
         case '-':

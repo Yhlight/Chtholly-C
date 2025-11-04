@@ -23,6 +23,7 @@ struct ImportStmt;
 struct SwitchStmt;
 struct BreakStmt;
 struct FallthroughStmt;
+struct EnumStmt;
 
 class StmtVisitor {
 public:
@@ -40,6 +41,7 @@ public:
     virtual std::any visitSwitchStmt(const SwitchStmt& stmt) = 0;
     virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
+    virtual std::any visitEnumStmt(const EnumStmt& stmt) = 0;
     virtual ~StmtVisitor() = default;
 };
 
@@ -233,5 +235,17 @@ struct SwitchStmt : Stmt {
 
     std::any accept(StmtVisitor& visitor) const override {
         return visitor.visitSwitchStmt(*this);
+    }
+};
+
+struct EnumStmt : Stmt {
+    Token name;
+    std::vector<Token> members;
+
+    EnumStmt(Token name, std::vector<Token> members);
+    ~EnumStmt() override;
+
+    std::any accept(StmtVisitor& visitor) const override {
+        return visitor.visitEnumStmt(*this);
     }
 };

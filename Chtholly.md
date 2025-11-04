@@ -1,6 +1,6 @@
 ## Chtholly
 Chtholly是一门基于C++实现的编程语言，Chtholly以简洁，高性能，接管所有权，编译期为特征，出于个人爱好而非实现更好的编程语言
-Chtholly很大程度上向Rust靠拢，但是Chtholly不是照搬Rust，Chtholly具有很多独特的语法    
+Chtholly很大程度上向Rust靠拢，但是Chtholly不是照搬Rust，Chtholly具有很多独特的语法
 也就是说，Chtholly遵循零成本抽象以及运行时极简原则，尽可能把事情交给编译期进行
 
 Chtholly文件后缀为.cns
@@ -36,16 +36,16 @@ func main(args: array[string]) -> result<void, string>
 这个类型有两个方法表示pass和fail
 T类型使用pass方法，K类型使用fail方法
 
-pass()和fail()方法能够接收任何值作为输出信息  
-这两个方法将直接决定程序的结果  
+pass()和fail()方法能够接收任何值作为输出信息
+这两个方法将直接决定程序的结果
 
-result对象共有pass，fail，is_pass，is_fail四个方法  
-其中pass和fail表示结果  
-而is_pass和is_fail表示过程，它们会计算表达式，返回bool值      
+result对象共有pass，fail，is_pass，is_fail四个方法
+其中pass和fail表示结果
+而is_pass和is_fail表示过程，它们会计算表达式，返回bool值
 
-is_pass表示是否通过，这通常是可容忍的  
-而is_fail表示是否失败，这通常是不可容忍的  
-通过这两个方法的使用，你需要灵活使用if语句与pass，fail方法进行错误的处理  
+is_pass表示是否通过，这通常是可容忍的
+而is_fail表示是否失败，这通常是不可容忍的
+通过这两个方法的使用，你需要灵活使用if语句与pass，fail方法进行错误的处理
 
 ```Chtholly
 func main(args: array[string]) -> result<void, string>
@@ -136,6 +136,8 @@ array
 
 struct
 
+function
+
 ```Chtholly
 let a : uint8 = 25;
 let b : array = ["1145", "2235", 24];
@@ -143,7 +145,7 @@ let c : array[string] = ["1145", "2345"];
 ```
 
 ### 枚举
-Chtholly使用enum创建枚举  
+Chtholly使用enum创建枚举
 
 ```
 enum color
@@ -189,18 +191,11 @@ let my_func: function(int, int) -> int = add;
 ```
 
 #### lambda函数
-Chtholly的lambda函数使用与C++完全一致的语法  
-默认情况下，捕获属于不可变引用  
+Chtholly的lambda函数使用与C++完全一致的语法
+默认情况下，捕获属于不可变引用
 
 ```Chtholly
 let add = [](a: int, b: int) -> int { return a + b; };
-```
-
-#### function类型
-Chtholly使用`function`关键字来表示函数类型，可以用于变量的类型注解。
-
-```Chtholly
-let my_func: function(int, int) -> int = add;
 ```
 
 #### 参数所有权
@@ -456,7 +451,7 @@ struct value<T> impl Comparable
     }
 }
 
-// 特例化操作，可以实现多个约束
+// 泛型特例化操作以及实现多个约束
 struct value<int> impl Comparable, OtherTrait
 {
     value: int,
@@ -485,6 +480,33 @@ func main(args: array[string]) -> Result<void, string>
 {
     let val1 = value{ value: 10 };
     get_greater(&val1, &value{ value: 5 });
+}
+```
+
+### 约束函数
+除了接入约束的形式，还有实现约束的形式
+
+```Chtholly
+// 接入约束
+struct Point<T> impl Comparable
+{
+
+}
+
+// 实现约束
+struct Point<T>
+{
+    impl Comparable
+    public gt(&self, other: &self) -> bool
+    {
+
+    }
+
+    impl OtherTrait
+    public other_method(&self) -> void
+    {
+
+    }
 }
 ```
 
@@ -571,14 +593,13 @@ fs_write("my_file.txt", "Hello, Chtholly!");
 
 ### operator
 #### 操作符自定义
-Chtholly支持操作符自定义，此功能由模块operator提供  
-此为自举前实现的功能  
+Chtholly支持操作符自定义，此功能由模块operator提供
+此为自举前实现的功能
 
 ```Chtholly
 import operator;
 
-struct Point
-impl operator::add  // +
+struct Point impl operator::add  // +
 , operator::sub  // -
 , operator::mul  // *
 , operator::div  // /
@@ -614,100 +635,108 @@ impl operator::add  // +
 ```
 
 ## 类型转换
-Chtholly支持类型转换，使用type_cast<T>()进行转换  
-此函数为内置函数，不需要导入  
+Chtholly支持类型转换，使用type_cast<T>()进行转换
+此函数为内置函数，不需要导入
 
 ```chtholly
 let a: int8 = type_cast<int8>(10.5);
 ```
 
 ### 静态反射
-Chtholly支持静态反射，由模块reflect提供静态反射  
+Chtholly支持静态反射，由模块reflect提供静态反射
 
 #### field
-你可以通过reflect::field类获取结构体的字段  
+你可以通过reflect::field类获取结构体的字段
 
 ##### 常用方法
-- get_name() 获取字段名  
-- get_type() 获取字段类型  
-- get_value() 获取字段值  
-- set_value() 设置字段值  
-- get_fields() 获取结构体的所有字段  
-- get_field() 获取结构体的指定字段  
-- get_field_value() 获取结构体的指定字段的值  
-- set_field_value() 设置结构体的指定字段的值  
-- get_field_type() 获取结构体的指定字段的类型  
-- get_field_index() 获取结构体的指定字段的索引  
-- get_field_by_index() 获取结构体的指定索引的字段  
-- get_field_count() 获取结构体的字段数量  
-...更多方法待补充  
+- get_name() 获取字段名
+- get_type() 获取字段类型
+- get_value() 获取字段值
+- set_value() 设置字段值
+- get_fields() 获取结构体的所有字段
+- get_field() 获取结构体的指定字段
+- get_field_value() 获取结构体的指定字段的值
+- set_field_value() 设置结构体的指定字段的值
+- get_field_type() 获取结构体的指定字段的类型
+- get_field_index() 获取结构体的指定字段的索引
+- get_field_by_index() 获取结构体的指定索引的字段
+- get_field_count() 获取结构体的字段数量
+...更多方法待补充
 
 #### method
-你可以通过reflect::method类获取结构体的方法  
+你可以通过reflect::method类获取结构体的方法
 
 ##### 常用方法
-- get_name() 获取方法名  
-- get_return_type() 获取方法返回值类型  
-- get_parameters() 获取方法参数  
-- get_parameter_count() 获取方法参数数量  
-- get_methods() 获取结构体的所有方法  
-- get_method() 获取结构体的指定方法  
-...更多方法待补充  
+- get_name() 获取方法名
+- get_return_type() 获取方法返回值类型
+- get_parameters() 获取方法参数
+- get_parameter_count() 获取方法参数数量
+- get_methods() 获取结构体的所有方法
+- get_method() 获取结构体的指定方法
+...更多方法待补充
 
 #### tarit
-你可以通过reflect::trait类获取结构体的特性  
+你可以通过reflect::trait类获取结构体的特性
 
 ##### 常用方法
-- get_name() 获取特性名  
+- get_name() 获取特性名
 - get_traits() 获取结构体的所有特性
 - get_trait() 获取结构体的指定特性
 - get_trait_count() 获取结构体的特性数量
-- get_return_type() 获取特征返回值类型  
-- get_parameters() 获取特征参数  
-- get_parameter_count() 获取特征参数数量  
-...更多方法待补充  
+- get_return_type() 获取特征返回值类型
+- get_parameters() 获取特征参数
+- get_parameter_count() 获取特征参数数量
+...更多方法待补充
 
 ### 元编程
-元编程由meta模块提供  
+元编程由meta模块提供
 
 #### 类型诊断
-你可以使用一系列的meta::is_type函数进行类型诊断  
-这不会从精确的角度进行类型诊断，而是从最宽泛的角度进行类型诊断    
+你可以使用一系列的meta::is_type函数进行类型诊断
+这不会从精确的角度进行类型诊断，而是从最宽泛的角度进行类型诊断
 
-- meta::is_int(T) 判断T是否为int类型  
-- meta::is_uint(T) 判断T是否为uint类型  
-- meta::is_double(T) 判断T是否为double类型  
-- meta::is_char(T) 判断T是否为char类型  
-- meta::is_bool(T) 判断T是否为bool类型  
-- meta::is_string(T) 判断T是否为string类型  
-- meta::is_array(T) 判断T是否为array类型  
-- meta::is_struct(T) 判断T是否为struct类型  
+- meta::is_int(T) 判断T是否为int类型
+- meta::is_uint(T) 判断T是否为uint类型
+- meta::is_double(T) 判断T是否为double类型
+- meta::is_char(T) 判断T是否为char类型
+- meta::is_bool(T) 判断T是否为bool类型
+- meta::is_string(T) 判断T是否为string类型
+- meta::is_array(T) 判断T是否为array类型
+- meta::is_struct(T) 判断T是否为struct类型
 
 #### 类型修饰
-- meta::is_let(T)  判断T是否为let类型  
-- meta::is_mut(T)  判断T是否为mut类型  
-- meta::is_borrow(T) 判断T是否是借用，而不是移动  
-- meta::is_borrow_mut(T) 判断T是否为可变借用  
-- meta::is_move(T) 判断T是否为移动  
+- meta::is_let(T)  判断T是否为let类型
+- meta::is_mut(T)  判断T是否为mut类型
+- meta::is_borrow(T) 判断T是否是借用，而不是移动
+- meta::is_borrow_mut(T) 判断T是否为可变借用
+- meta::is_move(T) 判断T是否为移动
 
-...元编程待补充  
+...元编程待补充
 
 #### util
-util模块是工具模块，主要用于提供一些工具函数  
-将分为特征与函数  
+util模块是工具模块，主要用于提供一些工具函数
+将分为特征与函数
 
-**特征**  
-- util::to_string(T) 将T转换为string    
+**特征**
+- util::to_string(T) 将T转换为string
 
 **函数**
-- util::string_cast(T) 将T转换为string，通常会调用自定义类型的to_string方法  
-- util::serialize(T) 将T序列化  
-- util::deserialize(T) 将T反序列化  
-- util::unique_id() 获取一个唯一的id  
+- util::string_cast(T) 将T转换为string，通常会调用自定义类型的to_string方法
+- util::serialize(T) 将T序列化
+- util::deserialize(T) 将T反序列化
+- util::unique_id() 获取一个唯一的id
+
+```Chtholly
+import util;
+
+func print_any<T ? util::to_string>(T value) -> void
+{
+    print(util::string_cast(value));
+}
+```
 
 ### CLI
 使用阻塞式CLI
 
 ## 自举
-如果能够完成上述所有的内容，那么Chtholly已经是一门完整的编程语言了
-这时候就要考虑通过自举实现自己的编译器，然后逐渐扩展更多的语法特征
+Chtholly的定位是MIT开源的社区项目，不应该进行自举，这会增加维护的难度，而是尽可能维护C++版本的编译器

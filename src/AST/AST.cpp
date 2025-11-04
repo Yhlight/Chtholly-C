@@ -18,6 +18,7 @@ BreakStmt::~BreakStmt() = default;
 FallthroughStmt::~FallthroughStmt() = default;
 CaseStmt::~CaseStmt() = default;
 SwitchStmt::~SwitchStmt() = default;
+EnumStmt::~EnumStmt() = default;
 
 // Stmt constructors
 ExpressionStmt::ExpressionStmt(std::unique_ptr<Expr> expression) : expression(std::move(expression)) {}
@@ -55,6 +56,7 @@ BreakStmt::BreakStmt(Token keyword) : keyword(keyword) {}
 FallthroughStmt::FallthroughStmt(Token keyword) : keyword(keyword) {}
 CaseStmt::CaseStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body) : condition(std::move(condition)), body(std::move(body)) {}
 SwitchStmt::SwitchStmt(std::unique_ptr<Expr> expression, std::vector<CaseStmt> cases, std::optional<CaseStmt> defaultCase) : expression(std::move(expression)), cases(std::move(cases)), defaultCase(std::move(defaultCase)) {}
+EnumStmt::EnumStmt(Token name, std::vector<Token> members) : name(name), members(std::move(members)) {}
 
 // Expr destructors
 Expr::~Expr() = default;

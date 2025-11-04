@@ -48,11 +48,13 @@ public:
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
     const std::vector<std::unique_ptr<Stmt>>& get_statements() const;
 
 private:
     std::map<std::string, const TraitStmt*> traits;
     std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const EnumStmt*> enums;
 
     enum class FunctionType {
         NONE,

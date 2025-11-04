@@ -116,3 +116,4 @@ std::any ASTPrinter::visitImportStmt(const ImportStmt& stmt) { return std::strin
 std::any ASTPrinter::visitSwitchStmt(const SwitchStmt& stmt) { return std::string(""); }
 std::any ASTPrinter::visitBreakStmt(const BreakStmt& stmt) { return std::string(""); }
 std::any ASTPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) { return std::string(""); }
+std::any ASTPrinter::visitEnumStmt(const EnumStmt& stmt) { return std::string(""); }

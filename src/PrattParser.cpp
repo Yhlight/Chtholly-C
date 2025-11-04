@@ -24,6 +24,7 @@ std::unique_ptr<Stmt> PrattParser::declaration() {
         if (match(TokenType::TRAIT)) return traitDeclaration();
         if (match(TokenType::IMPL)) return implDeclaration();
         if (match(TokenType::IMPORT)) return importStatement();
+        if (match(TokenType::ENUM)) return enumDeclaration();
         if (match(TokenType::LET)) return letDeclaration();
         return statement();
     } catch (const std::runtime_error& e) {
@@ -128,6 +129,7 @@ int PrattParser::precedence() {
         case TokenType::SLASH:
             return 2;
         case TokenType::LEFT_PAREN:
+        case TokenType::COLON_COLON:
              return 3;
         default:
             return 0;
@@ -173,6 +175,12 @@ std::unique_ptr<Expr> PrattParser::infix(std::unique_ptr<Expr> left) {
         Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
         std::vector<TypeInfo> generic_args;
         return std::make_unique<CallExpr>(std::move(left), paren, std::move(arguments), std::move(generic_args));
+    }
+
+    if (peek().type == TokenType::COLON_COLON) {
+        advance();
+        Token name = consume(TokenType::IDENTIFIER, "Expect identifier after '::'.");
+        return std::make_unique<GetExpr>(std::move(left), name);
     }
 
     Token op = advance();
@@ -325,4 +333,17 @@ std::unique_ptr<Stmt> PrattParser::importStatement() {
         consume(TokenType::SEMICOLON, "Expect ';' after import path.");
         return std::make_unique<ImportStmt>(path, true);
     }
+}
+
+std::unique_ptr<Stmt> PrattParser::enumDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect enum name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before enum body.");
+    std::vector<Token> members;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            members.push_back(consume(TokenType::IDENTIFIER, "Expect enum member name."));
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after enum body.");
+    return std::make_unique<EnumStmt>(name, std::move(members));
 }

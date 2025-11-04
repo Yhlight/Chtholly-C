@@ -15,6 +15,8 @@ void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
             traits[trait->name.lexeme] = trait;
         } else if (auto* s = dynamic_cast<StructStmt*>(statement.get())) {
             structs[s->name.lexeme] = s;
+        } else if (auto* e = dynamic_cast<EnumStmt*>(statement.get())) {
+            enums[e->name.lexeme] = e;
         }
     }
 
@@ -290,6 +292,21 @@ std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
 
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
     resolve(*expr.object);
+    if (auto* var = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        if (enums.count(var->name.lexeme)) {
+            const auto* an_enum = enums.at(var->name.lexeme);
+            bool found = false;
+            for (const auto& member : an_enum->members) {
+                if (member.lexeme == expr.name.lexeme) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                ErrorReporter::error(expr.name.line, "Enum '" + var->name.lexeme + "' does not have a member named '" + expr.name.lexeme + "'.");
+            }
+        }
+    }
     return {};
 }
 
@@ -432,5 +449,11 @@ std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
 
 std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
     resolve(*expr.right);
+    return {};
+}
+
+std::any Resolver::visitEnumStmt(const EnumStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
     return {};
 }

@@ -48,4 +48,5 @@ private:
     std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitImplStmt(const ImplStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
 };

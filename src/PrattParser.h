@@ -25,6 +25,7 @@ private:
     std::unique_ptr<Stmt> traitDeclaration();
     std::unique_ptr<Stmt> implDeclaration();
     std::unique_ptr<Stmt> importStatement();
+    std::unique_ptr<Stmt> enumDeclaration();
     std::vector<std::unique_ptr<Stmt>> block();
     std::unique_ptr<Stmt> expressionStatement();
 
