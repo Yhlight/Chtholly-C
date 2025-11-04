@@ -16,7 +16,7 @@
 - [ ] Variables (let, mut)
 - [ ] Data Types (int, double, char, bool, string)
 - [ ] Operators
-- [ ] Control Flow (if, else, switch) - *In Progress*
+- [x] Control Flow (if, else, switch)
 - [ ] Functions
 - [ ] Structs
 
