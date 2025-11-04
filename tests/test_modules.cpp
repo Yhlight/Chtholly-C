@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
-#include "Lexer.h"
-#include "Parser.h"
-#include "Resolver.h"
-#include "Transpiler.h"
-#include "Error.h"
+#include "../src/Lexer.h"
+#include "../src/PrattParser.h"
+#include "../src/Resolver.h"
+#include "../src/Transpiler.h"
+#include "../src/Error.h"
 #include <fstream>
 
 class ModuleTest : public ::testing::Test {
@@ -17,7 +17,7 @@ TEST_F(ModuleTest, ParseImport) {
     std::string source = "import \"my_module.cns\";";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     ASSERT_EQ(stmts.size(), 1);
     auto* importStmt = dynamic_cast<ImportStmt*>(stmts[0].get());
@@ -29,7 +29,7 @@ TEST_F(ModuleTest, ResolveMissingModule) {
     std::string source = "import \"missing_module.cns\";";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     Resolver resolver;
     resolver.resolve(stmts);
@@ -46,11 +46,9 @@ TEST_F(ModuleTest, TranspileImport) {
 
     Lexer lexer(main_source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
-    Resolver resolver;
-    resolver.resolve(stmts);
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     std::string output = transpiler.transpile(stmts);
 
     std::string expected_module = "int my_func() {\n"

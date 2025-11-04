@@ -1,40 +1,32 @@
 # Chtholly Development Roadmap
 
-## Phase 1: Foundational Infrastructure
+The self-hosting goal has been cancelled to focus on creating a robust and feature-rich C++ implementation for the open-source community.
 
-- [x] **Project Setup**: Initialize the project structure, including `src`, `tests`, and `scripts` directories.
-- [x] **Build System**: Implement a CMake build system and a Python build script.
-- [x] **Lexer**: Implement a lexer to tokenize the Chtholly source code.
-- [x] **Parser**: Implement a parser to build an Abstract Syntax Tree (AST). (Note: Expression parsing has been refatored to use a Pratt parser for better operator-precedence handling.)
-- [x] **AST**: Define the data structures for the AST.
-- [x] **Basic Transpiler**: Implement a basic transpiler that can generate C++ code from a simple AST.
+## Phase 1: Stabilization and Core Refinement
 
-## Phase 2: Core Language Features
+- [ ] **Parser Overhaul**: Replace the recursive descent parser with a more robust Pratt parser to better handle operator precedence and complex expressions.
+- [ ] **Semantic Analysis (Resolver) Hardening**: Improve the borrow checker, type checking, and error reporting. Implement more robust scope management, especially for modules.
+- [ ] **Transpiler Improvements**: Refactor the transpiler for better C++ code generation, focusing on correctness, readability, and performance. Ensure correct type mapping.
+- [ ] **Comprehensive Test Suite**: Augment the existing test suite to cover more edge cases and ensure stability during refactoring.
 
-- [x] **Variables**: Implement `let` and `mut` variable declarations.
-- [x] **Data Types**: Implement basic data types (int, double, bool, string).
-- [x] **Operators**: Implement basic arithmetic and logical operators.
-- [x] **Control Flow**: Implement `if`, `else`, `while`, and `switch` statements.
-- [x] **Functions**: Implement function definitions and calls.
+## Phase 2: Standard Library Completion
 
-## Phase 3: Advanced Language Features
+- [ ] **filesystem**: Finalize implementation for file system operations.
+- [ ] **operator**: Implement operator overloading via traits (`Add`, `Sub`, etc.).
+- [ ] **reflect**: Complete the static reflection capabilities.
+- [ ] **meta**: Finalize compile-time metaprogramming features.
+- [ ] **util**: Add a utility module for common tasks like string conversions.
 
-- [x] **Structs**: Implement struct definitions, instantiation, and field access.
-- [x] **Access Modifiers**: Implement `public` and `private` access control for struct fields.
-- [x] **Ownership System**: Implement the ownership system with `&` and `&mut` references.
-- [x] **Generics**: Implement generic functions and structs.
-- [x] **Lambda Expressions and Function Types**: Implement lambda expressions and function types.
-- [x] **Traits**: Implement traits for defining shared behavior and operator overloading.
-- [x] **Modules**: Implement the module system with `import`.
+## Phase 3: New Language Features
 
-## Phase 4: Standard Library
+- [ ] **Enums and Pattern Matching**: Implement algebraic data types and a `match` statement for pattern matching.
+- [ ] **Enhanced Control Flow**: Add `for` loops (including range-based loops).
+- [ ] **Error Handling**: Introduce a robust error handling mechanism (e.g., `Result<T, E>` type and `?` operator).
+- [ ] **Macros**: Implement a simple macro system for syntactic abstraction.
 
-- [x] **iostream**: Implement the `iostream` module for input and output.
-- [x] **filesystem**: Implement the `filesystem` module for file system operations.
-- [x] **operator**: Implement the `operator` module for operator overloading.
-- [~] **reflect**: Implement the `reflect` module for static reflection. (Note: Static field name reflection has been implemented.)
-- [~] **meta**: Implement the `meta` module for metaprogramming. (Note: Type-checking functions like `is_int`, `is_struct`, etc., have been implemented.)
+## Phase 4: Tooling and Ecosystem
 
-## Phase 5: Self-Hosting
-
-- [ ] **Self-Hosting Compiler**: Rewrite the Chtholly compiler in Chtholly.
+- [ ] **Language Server Protocol (LSP) Support**: Develop a language server for IDE features (auto-completion, diagnostics).
+- [ ] **Code Formatter**: Create an official code formatter (`chtholly fmt`).
+- [ ] **Package Manager**: Design a simple package and dependency manager.
+- [ ] **Documentation**: Create a website with comprehensive tutorials, language reference, and standard library documentation.

@@ -1,60 +1,49 @@
 #pragma once
 
-#include "Token.h"
 #include "AST/Expr.h"
+#include "AST/Stmt.h"
+#include "Token.h"
 #include <vector>
-#include <map>
-#include <functional>
+#include <memory>
 
-class Parser;
-
-enum class Precedence {
-    NONE,
-    ASSIGNMENT,  // =
-    OR,          // or
-    AND,         // and
-    EQUALITY,    // == !=
-    COMPARISON,  // < > <= >=
-    TERM,        // + -
-    FACTOR,      // * /
-    UNARY,       // ! -
-    CALL,        // . ()
-    PRIMARY
-};
+class BlockStmt;
 
 class PrattParser {
 public:
-    PrattParser(Parser& parser);
-    std::unique_ptr<Expr> parse();
+    PrattParser(const std::vector<Token>& tokens);
+    std::vector<std::unique_ptr<Stmt>> parse();
 
 private:
-    using PrefixParseFn = std::function<std::unique_ptr<Expr>()>;
-    using InfixParseFn = std::function<std::unique_ptr<Expr>(std::unique_ptr<Expr>)>;
+    std::unique_ptr<Stmt> declaration();
+    std::unique_ptr<Stmt> letDeclaration();
+    std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> ifStatement();
+    std::unique_ptr<Stmt> whileStatement();
+    std::unique_ptr<Stmt> function(const std::string& kind, bool body_required = true);
+    std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Stmt> returnStatement();
+    std::unique_ptr<Stmt> traitDeclaration();
+    std::unique_ptr<Stmt> implDeclaration();
+    std::unique_ptr<Stmt> importStatement();
+    std::vector<std::unique_ptr<Stmt>> block();
+    std::unique_ptr<Stmt> expressionStatement();
 
-    struct ParseRule {
-        PrefixParseFn prefix;
-        InfixParseFn infix;
-        Precedence precedence;
-    };
+    std::unique_ptr<Expr> expression();
+    std::unique_ptr<Expr> prefix();
+    std::unique_ptr<Expr> infix(std::unique_ptr<Expr> left);
 
-    Parser& parser;
-    std::map<TokenType, ParseRule> rules;
+    int precedence();
+    const Token& peek() const;
+    const Token& previous() const;
+    bool isAtEnd() const;
+    Token advance();
+    bool check(TokenType type) const;
+    template<typename... Types>
+    bool match(Types... types);
+    Token consume(TokenType type, const std::string& message);
+    void synchronize();
+    TypeInfo parseType();
 
-    std::unique_ptr<Expr> parsePrecedence(Precedence precedence);
-    const ParseRule& getRule(TokenType type);
-
-    std::unique_ptr<Expr> unary();
-    std::unique_ptr<Expr> binary(std::unique_ptr<Expr> left);
-    std::unique_ptr<Expr> grouping();
-    std::unique_ptr<Expr> literal();
-    std::unique_ptr<Expr> variable();
-    std::unique_ptr<Expr> call(std::unique_ptr<Expr> left);
-    std::unique_ptr<Expr> genericCall(std::unique_ptr<Expr> callee);
-    std::unique_ptr<Expr> get(std::unique_ptr<Expr> left);
-    std::unique_ptr<Expr> assignment(std::unique_ptr<Expr> left);
-    std::unique_ptr<Expr> borrow();
-    std::unique_ptr<Expr> lambda();
-    std::unique_ptr<Expr> structInitializer(std::unique_ptr<Expr> left);
-    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<TypeInfo> generic_args);
-    bool LA_is_generic_call();
+    const std::vector<Token>& tokens;
+    int current = 0;
 };

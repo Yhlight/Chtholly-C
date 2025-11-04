@@ -2,14 +2,13 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
-#include <vector>
 #include "Error.h"
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements, bool is_module) {
     // Pre-scan for ImplStmts to populate the map
     for (const auto& stmt : statements) {
         if (auto* impl = dynamic_cast<ImplStmt*>(stmt.get())) {
-            impls[impl->structName.lexeme].push_back(impl);
+            impls[impl->structName.lexeme] = impl;
         }
     }
 
@@ -31,43 +30,38 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         if (has_lambda) {
             out << "#include <functional>\n";
         }
-        bool has_reflect = false;
+        out << "\n";
+        bool has_input = false;
         for (const auto& statement : statements) {
             if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
                 if (auto* callExpr = dynamic_cast<const CallExpr*>(exprStmt->expression.get())) {
-                    if (auto* getExpr = dynamic_cast<const GetExpr*>(callExpr->callee.get())) {
-                        if (auto* varExpr = dynamic_cast<const VariableExpr*>(getExpr->object.get())) {
-                            if (varExpr->name.lexeme == "reflect" && getExpr->name.lexeme == "get_field_names") {
-                                has_reflect = true;
-                                break;
-                            }
+                    if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
+                        if (callee->name.lexeme == "input") {
+                            has_input = true;
+                            break;
                         }
                     }
                 }
             } else if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
                 if (letStmt->initializer) {
                     if (auto* callExpr = dynamic_cast<const CallExpr*>(letStmt->initializer.get())) {
-                        if (auto* getExpr = dynamic_cast<const GetExpr*>(callExpr->callee.get())) {
-                            if (auto* varExpr = dynamic_cast<const VariableExpr*>(getExpr->object.get())) {
-                                if (varExpr->name.lexeme == "reflect" && getExpr->name.lexeme == "get_field_names") {
-                                    has_reflect = true;
-                                    break;
-                                }
+                        if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
+                            if (callee->name.lexeme == "input") {
+                                has_input = true;
+                                break;
                             }
                         }
                     }
                 }
             }
         }
-        if (has_reflect) {
-            out << "#include <vector>\n";
+        if (has_input) {
+            out << "std::string chtholly_input() {\n"
+                << "    std::string line;\n"
+                << "    std::getline(std::cin, line);\n"
+                << "    return line;\n"
+                << "}\n\n";
         }
-        out << "\n";
-        out << "std::string chtholly_input() {\n"
-            << "    std::string line;\n"
-            << "    std::getline(std::cin, line);\n"
-            << "    return line;\n"
-            << "}\n\n";
         bool has_fs = false;
         for (const auto& statement : statements) {
             if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
@@ -153,21 +147,6 @@ std::string Transpiler::evaluate(const Expr& expr) {
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
-    if (expr.left->resolved_type) {
-        auto type = expr.left->resolved_type;
-        if (impls.count(type->baseType.lexeme)) {
-            const auto& impl_list = impls.at(type->baseType.lexeme);
-            if (op_to_trait.count(expr.op.type)) {
-                std::string trait_name = op_to_trait.at(expr.op.type);
-                std::string method_name = op_to_method.at(expr.op.type);
-                for (const auto& impl : impl_list) {
-                    if (impl->traitName && impl->traitName->lexeme == trait_name) {
-                        return evaluate(*expr.left) + "." + method_name + "(" + evaluate(*expr.right) + ")";
-                    }
-                }
-            }
-        }
-    }
     return "(" + evaluate(*expr.left) + " " + expr.op.lexeme + " " + evaluate(*expr.right) + ")";
 }
 
@@ -201,8 +180,6 @@ std::string to_cpp_type(const TypeInfo& type) {
     std::string cpp_type;
     if (type.baseType.lexeme == "string") {
         cpp_type = "std::string";
-    } else if (type.baseType.lexeme == "int") {
-        cpp_type = "int";
     } else if (type.baseType.type == TokenType::FUNCTION) {
         cpp_type = "std::function<";
         if (type.returnType) {
@@ -240,8 +217,6 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     }
     if (stmt.type) {
         out << to_cpp_type(*stmt.type) << " " << stmt.name.lexeme;
-    } else if (stmt.initializer && stmt.initializer->resolved_type) {
-        out << to_cpp_type(*stmt.initializer->resolved_type) << " " << stmt.name.lexeme;
     } else {
         out << "auto " << stmt.name.lexeme;
     }
@@ -250,53 +225,6 @@ std::any Transpiler::visitLetStmt(const LetStmt& stmt) {
     }
     out << ";\n";
     return {};
-}
-
-std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
-    std::string switch_var = "switch_val";
-    out << "    do {\n";
-    out << "        auto " << switch_var << " = " << evaluate(*stmt.expression) << ";\n";
-    out << "        bool matched = false;\n";
-
-    for (const auto& case_stmt : stmt.cases) {
-        out << "        if (!matched && (" << switch_var << " == " << evaluate(*case_stmt.condition) << ")) {\n";
-        out << "            matched = true;\n";
-        out << "        }\n";
-        out << "        if (matched) ";
-        execute(*case_stmt.body);
-    }
-
-    if (stmt.defaultCase) {
-        out << "        if (!matched) ";
-        execute(*stmt.defaultCase->body);
-    }
-    out << "    } while(false);\n";
-    return {};
-}
-
-std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
-    out << "    break;\n";
-    return {};
-}
-
-std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
-    // For if-else if, fallthrough is the default behavior.
-    return {};
-}
-
-std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
-    std::stringstream ss;
-    ss << expr.name.lexeme << "{";
-    bool first = true;
-    for (const auto& [name, value] : expr.initializers) {
-        if (!first) {
-            ss << ", ";
-        }
-        ss << "." << name.lexeme << " = " << evaluate(*value);
-        first = false;
-    }
-    ss << "}";
-    return ss.str();
 }
 
 std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
@@ -324,7 +252,7 @@ std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
 #include "Chtholly.h"
 #include <fstream>
 std::any Transpiler::visitImplStmt(const ImplStmt& stmt) {
-    // This is handled in the pre-scan
+    // This is handled by visitStructStmt
     return {};
 }
 
@@ -354,7 +282,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
         return {};
     }
 
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     // Share the set of already transpiled files to prevent infinite loops
     transpiler.transpiled_files = this->transpiled_files;
 
@@ -409,37 +337,14 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     out << "struct " << stmt.name.lexeme;
     if (impls.count(stmt.name.lexeme)) {
-        out << " : ";
-        bool first = true;
-        for (const auto* impl : impls.at(stmt.name.lexeme)) {
-            if (impl->traitName) {
-                if (!first) {
-                    out << ", ";
-                }
-                out << "public " << impl->traitName->lexeme;
-                first = false;
-            }
+        const auto* impl = impls.at(stmt.name.lexeme);
+        if (impl->traitName) {
+            out << " : public " << impl->traitName->lexeme;
         }
     }
     out << " {\n";
 
-    if (!stmt.fields.empty()) {
-        if (stmt.fields[0]->is_public) {
-            out << "public:\n";
-        } else {
-            out << "private:\n";
-        }
-    }
-
-    bool in_public = true;
     for (const auto& field : stmt.fields) {
-        if (field->is_public && !in_public) {
-            out << "public:\n";
-            in_public = true;
-        } else if (!field->is_public && in_public) {
-            out << "private:\n";
-            in_public = false;
-        }
         out << "    ";
         if (field->type) {
             out << to_cpp_type(*field->type) << " " << field->name.lexeme;
@@ -453,10 +358,9 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     }
 
     if (impls.count(stmt.name.lexeme)) {
-        for (const auto* impl : impls.at(stmt.name.lexeme)) {
-            for (const auto& method : impl->methods) {
-                visitFunctionStmt(*method, stmt.name);
-            }
+        const auto* impl = impls.at(stmt.name.lexeme);
+        for (const auto& method : impl->methods) {
+            visitFunctionStmt(*method, stmt.name);
         }
     }
     out << "};\n\n";
@@ -496,6 +400,53 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
     return {};
 }
 
+std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
+    std::string switch_var = "switch_val";
+    out << "    do {\n";
+    out << "        auto " << switch_var << " = " << evaluate(*stmt.expression) << ";\n";
+    out << "        bool matched = false;\n";
+
+    for (const auto& case_stmt : stmt.cases) {
+        out << "        if (!matched && (" << switch_var << " == " << evaluate(*case_stmt.condition) << ")) {\n";
+        out << "            matched = true;\n";
+        out << "        }\n";
+        out << "        if (matched) ";
+        execute(*case_stmt.body);
+    }
+
+    if (stmt.defaultCase) {
+        out << "        if (!matched) ";
+        execute(*stmt.defaultCase->body);
+    }
+    out << "    } while(false);\n";
+    return {};
+}
+
+std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
+    out << "    break;\n";
+    return {};
+}
+
+std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    // For if-else if, fallthrough is the default behavior.
+    return {};
+}
+
+std::any Transpiler::visitStructInitializerExpr(const StructInitializerExpr& expr) {
+    std::stringstream ss;
+    ss << expr.name.lexeme << "{";
+    bool first = true;
+    for (const auto& [name, value] : expr.initializers) {
+        if (!first) {
+            ss << ", ";
+        }
+        ss << "." << name.lexeme << " = " << evaluate(*value);
+        first = false;
+    }
+    ss << "}";
+    return ss.str();
+}
+
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto* callee_var = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
         if (callee_var->name.lexeme == "print") {
@@ -527,49 +478,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 }
             }
             return std::make_any<std::string>("chtholly_fs_write(" + args + ")");
-        }
-    }
-
-    if (auto* get = dynamic_cast<const GetExpr*>(expr.callee.get())) {
-        if (auto* var = dynamic_cast<const VariableExpr*>(get->object.get())) {
-            if (var->name.lexeme == "reflect" && get->name.lexeme == "get_field_names") {
-                if (expr.generic_args.size() == 1) {
-                    const auto& type = expr.generic_args[0];
-                    if (resolver.structs.count(type.baseType.lexeme)) {
-                        const auto* struct_decl = resolver.structs.at(type.baseType.lexeme);
-                        std::string result = "std::vector<std::string>{";
-                        for (size_t i = 0; i < struct_decl->fields.size(); ++i) {
-                            result += "\"" + struct_decl->fields[i]->name.lexeme + "\"";
-                            if (i < struct_decl->fields.size() - 1) {
-                                result += ", ";
-                            }
-                        }
-                        result += "}";
-                        return result;
-                    }
-                }
-            } else if (var->name.lexeme == "meta") {
-                if (expr.generic_args.size() == 1) {
-                    const auto& type = expr.generic_args[0];
-                    if (get->name.lexeme == "is_struct") {
-                        return std::make_any<std::string>(resolver.structs.count(type.baseType.lexeme) ? "true" : "false");
-                    } else if (get->name.lexeme == "is_int") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "int" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_uint") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "uint" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_double") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "double" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_char") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "char" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_bool") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "bool" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_string") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "string" ? "true" : "false");
-                    } else if (get->name.lexeme == "is_array") {
-                        return std::make_any<std::string>(type.baseType.lexeme == "array" ? "true" : "false");
-                    }
-                }
-            }
         }
     }
 
@@ -610,21 +518,18 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt, std::optional<T
     } else {
         out << "void";
     }
-    out << " " << stmt.name.lexeme << "(";
-    bool first = true;
-    for (const auto& param : stmt.params) {
-        if (param.first.lexeme == "self") continue;
-        if (!first) {
+    out << " ";
+    if (structName) {
+        out << structName->lexeme << "::";
+    }
+    out << stmt.name.lexeme << "(";
+    for (size_t i = 0; i < stmt.params.size(); ++i) {
+        out << to_cpp_type(stmt.params[i].second) << " " << stmt.params[i].first.lexeme;
+        if (i < stmt.params.size() - 1) {
             out << ", ";
         }
-        out << to_cpp_type(param.second) << " " << param.first.lexeme;
-        first = false;
     }
-    out << ")";
-    if (structName) {
-        out << " override";
-    }
-    out << " {\n";
+    out << ") {\n";
     for (const auto& statement : stmt.body) {
         execute(*statement);
     }

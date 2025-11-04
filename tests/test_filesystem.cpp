@@ -1,28 +1,20 @@
 #include "gtest/gtest.h"
 #include "../src/Transpiler.h"
 #include "../src/Lexer.h"
-#include "../src/Parser.h"
-#include "../src/Resolver.h"
+#include "../src/PrattParser.h"
 
 TEST(FileSystemTest, ReadFile) {
-    std::string source = "import filesystem; let content = fs_read(\"test.txt\");";
+    std::string source = "let content = fs_read(\"test.txt\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
-    Resolver resolver;
-    resolver.resolve(stmts);
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n"
         "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
         "#include <fstream>\n"
         "#include <sstream>\n\n"
         "std::string chtholly_fs_read(const std::string& path) {\n"
@@ -44,24 +36,17 @@ TEST(FileSystemTest, ReadFile) {
 }
 
 TEST(FileSystemTest, WriteFile) {
-    std::string source = "import filesystem; fs_write(\"test.txt\", \"hello\");";
+    std::string source = "fs_write(\"test.txt\", \"hello\");";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
-    Resolver resolver;
-    resolver.resolve(stmts);
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     std::string result = transpiler.transpile(stmts);
     std::string expected =
         "#include <iostream>\n"
         "#include <variant>\n"
         "#include <string>\n\n"
-        "std::string chtholly_input() {\n"
-        "    std::string line;\n"
-        "    std::getline(std::cin, line);\n"
-        "    return line;\n"
-        "}\n\n"
         "#include <fstream>\n"
         "#include <sstream>\n\n"
         "std::string chtholly_fs_read(const std::string& path) {\n"

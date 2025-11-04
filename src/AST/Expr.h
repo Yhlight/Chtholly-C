@@ -43,7 +43,7 @@ public:
 class Expr {
 public:
     virtual std::any accept(ExprVisitor& visitor) const = 0;
-    virtual ~Expr() = default;
+    virtual ~Expr();
     mutable std::optional<TypeInfo> resolved_type;
 };
 
@@ -52,8 +52,8 @@ struct BinaryExpr : Expr {
     Token op;
     std::unique_ptr<Expr> right;
 
-    BinaryExpr(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
-        : left(std::move(left)), op(op), right(std::move(right)) {}
+    BinaryExpr(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right);
+    ~BinaryExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitBinaryExpr(*this);
@@ -63,8 +63,8 @@ struct BinaryExpr : Expr {
 struct GroupingExpr : Expr {
     std::unique_ptr<Expr> expression;
 
-    explicit GroupingExpr(std::unique_ptr<Expr> expression)
-        : expression(std::move(expression)) {}
+    explicit GroupingExpr(std::unique_ptr<Expr> expression);
+    ~GroupingExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitGroupingExpr(*this);
@@ -74,8 +74,8 @@ struct GroupingExpr : Expr {
 struct LiteralExpr : Expr {
     std::variant<std::monostate, std::string, double, bool> value;
 
-    explicit LiteralExpr(std::variant<std::monostate, std::string, double, bool> value)
-        : value(value) {}
+    explicit LiteralExpr(std::variant<std::monostate, std::string, double, bool> value);
+    ~LiteralExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitLiteralExpr(*this);
@@ -86,8 +86,8 @@ struct UnaryExpr : Expr {
     Token op;
     std::unique_ptr<Expr> right;
 
-    UnaryExpr(Token op, std::unique_ptr<Expr> right)
-        : op(op), right(std::move(right)) {}
+    UnaryExpr(Token op, std::unique_ptr<Expr> right);
+    ~UnaryExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitUnaryExpr(*this);
@@ -97,7 +97,8 @@ struct UnaryExpr : Expr {
 struct VariableExpr : Expr {
     Token name;
 
-    explicit VariableExpr(Token name) : name(name) {}
+    explicit VariableExpr(Token name);
+    ~VariableExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitVariableExpr(*this);
@@ -108,8 +109,8 @@ struct AssignExpr : Expr {
     Token name;
     std::unique_ptr<Expr> value;
 
-    AssignExpr(Token name, std::unique_ptr<Expr> value)
-        : name(name), value(std::move(value)) {}
+    AssignExpr(Token name, std::unique_ptr<Expr> value);
+    ~AssignExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitAssignExpr(*this);
@@ -122,8 +123,8 @@ struct CallExpr : Expr {
     std::vector<std::unique_ptr<Expr>> arguments;
     std::vector<TypeInfo> generic_args;
 
-    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments, std::vector<TypeInfo> generic_args)
-        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments)), generic_args(std::move(generic_args)) {}
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments, std::vector<TypeInfo> generic_args);
+    ~CallExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitCallExpr(*this);
@@ -134,8 +135,8 @@ struct GetExpr : Expr {
     std::unique_ptr<Expr> object;
     Token name;
 
-    GetExpr(std::unique_ptr<Expr> object, Token name)
-        : object(std::move(object)), name(name) {}
+    GetExpr(std::unique_ptr<Expr> object, Token name);
+    ~GetExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitGetExpr(*this);
@@ -147,8 +148,8 @@ struct SetExpr : Expr {
     Token name;
     std::unique_ptr<Expr> value;
 
-    SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value)
-        : object(std::move(object)), name(name), value(std::move(value)) {}
+    SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value);
+    ~SetExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitSetExpr(*this);
@@ -159,8 +160,8 @@ struct BorrowExpr : Expr {
     std::unique_ptr<Expr> expression;
     bool isMutable;
 
-    BorrowExpr(std::unique_ptr<Expr> expression, bool isMutable)
-        : expression(std::move(expression)), isMutable(isMutable) {}
+    BorrowExpr(std::unique_ptr<Expr> expression, bool isMutable);
+    ~BorrowExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitBorrowExpr(*this);
@@ -172,8 +173,8 @@ struct LambdaExpr : Expr {
     std::vector<std::unique_ptr<Stmt>> body;
     std::optional<TypeInfo> returnType;
 
-    LambdaExpr(std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType)
-        : params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
+    LambdaExpr(std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType);
+    ~LambdaExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitLambdaExpr(*this);
@@ -184,8 +185,8 @@ struct StructInitializerExpr : Expr {
     Token name;
     std::map<Token, std::unique_ptr<Expr>> initializers;
 
-    StructInitializerExpr(Token name, std::map<Token, std::unique_ptr<Expr>> initializers)
-        : name(name), initializers(std::move(initializers)) {}
+    StructInitializerExpr(Token name, std::map<Token, std::unique_ptr<Expr>> initializers);
+    ~StructInitializerExpr() override;
 
     std::any accept(ExprVisitor& visitor) const override {
         return visitor.visitStructInitializerExpr(*this);

@@ -3,7 +3,7 @@ add_library(chtholly_lib
     Lexer.cpp
     Error.cpp
     AST/ASTPrinter.cpp
-    Parser.cpp
+    AST/AST.cpp
     PrattParser.cpp
     Transpiler.cpp
     Chtholly.cpp

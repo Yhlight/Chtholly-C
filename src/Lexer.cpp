@@ -19,14 +19,11 @@ std::map<std::string, TokenType> keywords = {
     {"impl",   TokenType::IMPL},
     {"for",    TokenType::FOR},
     {"import", TokenType::IMPORT},
-    {"operator", TokenType::OPERATOR},
-    {"public", TokenType::PUBLIC},
-    {"private", TokenType::PRIVATE},
     {"switch", TokenType::SWITCH},
     {"case",   TokenType::CASE},
     {"break",  TokenType::BREAK},
+    {"default",TokenType::DEFAULT},
     {"fallthrough", TokenType::FALLTHROUGH},
-    {"default", TokenType::DEFAULT},
 };
 
 Lexer::Lexer(const std::string& source) : source(source) {}
@@ -75,12 +72,16 @@ void Lexer::scanToken() {
         case ']': addToken(TokenType::RIGHT_BRACKET); break;
         case '{': addToken(TokenType::LEFT_BRACE); break;
         case '}': addToken(TokenType::RIGHT_BRACE); break;
-        case ':':
-            addToken(match(':') ? TokenType::COLON_COLON : TokenType::COLON);
-            break;
+        case ':': addToken(TokenType::COLON); break;
         case ',': addToken(TokenType::COMMA); break;
         case '.': addToken(TokenType::DOT); break;
-        case '-': addToken(TokenType::MINUS); break;
+        case '-':
+            if (match('>')) {
+                addToken(TokenType::ARROW);
+            } else {
+                addToken(TokenType::MINUS);
+            }
+            break;
         case '+': addToken(TokenType::PLUS); break;
         case ';': addToken(TokenType::SEMICOLON); break;
         case '*': addToken(TokenType::STAR); break;

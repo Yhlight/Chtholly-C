@@ -3,13 +3,11 @@
 #include "Expr.h"
 #include "Stmt.h"
 #include <string>
-#include <vector>
 
 class ASTPrinter : public ExprVisitor, public StmtVisitor {
 public:
-    std::string print(const Expr& expr);
-    std::string print(const Stmt& stmt);
-
+    std::string print(Expr* expr);
+    std::string print(Stmt* stmt);
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
     std::any visitGroupingExpr(const GroupingExpr& expr) override;
     std::any visitLiteralExpr(const LiteralExpr& expr) override;
@@ -28,7 +26,7 @@ public:
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitIfStmt(const IfStmt& stmt) override;
     std::any visitWhileStmt(const WhileStmt& stmt) override;
-    std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName) override;
+    std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
     std::any visitTraitStmt(const TraitStmt& stmt) override;
@@ -39,6 +37,5 @@ public:
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 
 private:
-    std::string parenthesize(const std::string& name, const std::vector<const Expr*>& exprs);
-    std::string parenthesize(const std::string& name, const std::vector<const Stmt*>& stmts);
+    std::string parenthesize(const std::string& name, const std::vector<Expr*>& exprs);
 };

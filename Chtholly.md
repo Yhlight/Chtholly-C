@@ -552,14 +552,10 @@ print("Hello, " + name);
 ```
 
 ### filesystem
-Chtholly 的标准库 `filesystem` 模块提供了基本的文件系统功能。要使用这些函数，您必须先导入 `filesystem` 模块。
-
-```Chtholly
-import filesystem;
-```
+Chtholly 的标准库 `filesystem` 模块提供了基本的文件系统功能。
 
 #### fs_read 函数
-`fs_read` 函数用于读取文件的全部内容，并将其作为字符串返回。
+`fs_read` 是一个内置函数，用于读取文件的全部内容，并将其作为字符串返回。
 
 ```Chtholly
 let content = fs_read("my_file.txt");
@@ -567,7 +563,7 @@ print(content);
 ```
 
 #### fs_write 函数
-`fs_write` 函数用于将字符串内容写入文件。
+`fs_write` 是一个内置函数，用于将字符串内容写入文件。
 
 ```Chtholly
 fs_write("my_file.txt", "Hello, Chtholly!");

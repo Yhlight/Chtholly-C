@@ -14,15 +14,14 @@ enum class TokenType {
     EQUAL, EQUAL_EQUAL,
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
-    COLON_COLON,
+    ARROW,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,
 
     // Keywords.
     LET, MUT, TRUE, FALSE, IF, ELSE, WHILE, FUNC, FUNCTION, RETURN, STRUCT,
-    TRAIT, IMPL, FOR, IMPORT, OPERATOR, PUBLIC, PRIVATE, SWITCH, CASE, BREAK,
-    FALLTHROUGH, DEFAULT,
+    TRAIT, IMPL, FOR, IMPORT, SWITCH, CASE, BREAK, DEFAULT, FALLTHROUGH,
 
     // Logical operators
     AMPERSAND_AMPERSAND, PIPE_PIPE,
@@ -35,8 +34,4 @@ struct Token {
     std::string lexeme;
     std::variant<std::monostate, std::string, double, bool> literal;
     int line;
-
-    bool operator<(const Token& other) const {
-        return lexeme < other.lexeme;
-    }
 };

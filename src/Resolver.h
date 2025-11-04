@@ -5,14 +5,12 @@
 #include <vector>
 #include <map>
 #include <string>
-#include "TypeInfo.h"
 
 struct VariableState {
     bool defined = false;
     bool is_mutable = false;
     int immutable_borrows = 0;
     bool moved = false;
-    std::optional<TypeInfo> type;
 };
 
 class Resolver : public ExprVisitor, public StmtVisitor {
@@ -32,7 +30,6 @@ public:
     std::any visitSetExpr(const SetExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
-    std::any visitStructInitializerExpr(const StructInitializerExpr& expr) override;
 
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitLetStmt(const LetStmt& stmt) override;
@@ -42,17 +39,20 @@ public:
     std::any visitFunctionStmt(const FunctionStmt& stmt, std::optional<Token> structName = std::nullopt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
-    std::any visitTraitStmt(const TraitStmt& stmt) override;
-    std::any visitImplStmt(const ImplStmt& stmt) override;
-    std::any visitImportStmt(const ImportStmt& stmt) override;
     std::any visitSwitchStmt(const SwitchStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitStructInitializerExpr(const StructInitializerExpr& expr) override;
+#include <map>
 
-    std::map<std::string, const StructStmt*> structs;
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
+    std::any visitImplStmt(const ImplStmt& stmt) override;
+    std::any visitImportStmt(const ImportStmt& stmt) override;
+    const std::vector<std::unique_ptr<Stmt>>& get_statements() const;
+
 private:
     std::map<std::string, const TraitStmt*> traits;
-    std::map<std::string, std::map<std::string, VariableState>> std_modules;
+    std::map<std::string, const StructStmt*> structs;
 
     enum class FunctionType {
         NONE,
@@ -86,5 +86,5 @@ private:
     FunctionType currentFunction = FunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
     LoopType currentLoop = LoopType::NONE;
-    std::string currentStructName;
+    std::vector<std::unique_ptr<Stmt>> statements;
 };

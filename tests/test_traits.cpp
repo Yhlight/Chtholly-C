@@ -1,10 +1,10 @@
 #include "gtest/gtest.h"
-#include "Lexer.h"
-#include "Parser.h"
-#include "AST/ASTPrinter.h"
-#include "Resolver.h"
-#include "Transpiler.h"
-#include "Error.h"
+#include "../src/Lexer.h"
+#include "../src/PrattParser.h"
+#include "../src/AST/ASTPrinter.h"
+#include "../src/Resolver.h"
+#include "../src/Transpiler.h"
+#include "../src/Error.h"
 
 class TraitTest : public ::testing::Test {
 protected:
@@ -17,17 +17,17 @@ TEST_F(TraitTest, TraitDeclaration) {
     std::string source = "trait MyTrait { my_func(a: int) -> void; }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     ASSERT_EQ(stmts.size(), 1);
     ASSERT_NE(dynamic_cast<TraitStmt*>(stmts[0].get()), nullptr);
 }
 
 TEST_F(TraitTest, ImplDeclaration) {
-    std::string source = "struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "struct MyStruct {} impl MyTrait for MyStruct { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     ASSERT_EQ(stmts.size(), 2);
     ASSERT_NE(dynamic_cast<StructStmt*>(stmts[0].get()), nullptr);
@@ -38,35 +38,31 @@ TEST_F(TraitTest, TranspileTrait) {
     std::string source = "trait MyTrait { my_func(a: int) -> void; }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
-    Resolver resolver;
-    resolver.resolve(stmts);
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     std::string output = transpiler.transpile(stmts);
     std::string expected = "struct MyTrait {\n    virtual void my_func(int a) = 0;\n};\n\n";
     ASSERT_TRUE(output.find(expected) != std::string::npos);
 }
 
 TEST_F(TraitTest, TranspileImpl) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
-    Resolver resolver;
-    resolver.resolve(stmts);
-    Transpiler transpiler(resolver);
+    Transpiler transpiler;
     std::string output = transpiler.transpile(stmts);
     std::string expected = "struct MyStruct : public MyTrait {\n";
     ASSERT_TRUE(output.find(expected) != std::string::npos);
 }
 
 TEST_F(TraitTest, ResolveImpl) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: int) -> void {} }";
+    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { func my_func(a: int) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     Resolver resolver;
     resolver.resolve(stmts);
@@ -77,7 +73,7 @@ TEST_F(TraitTest, ResolveImplMissingMethod) {
     std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct {}";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     Resolver resolver;
     resolver.resolve(stmts);
@@ -85,10 +81,10 @@ TEST_F(TraitTest, ResolveImplMissingMethod) {
 }
 
 TEST_F(TraitTest, ResolveImplWrongSignature) {
-    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { my_func(a: string) -> void {} }";
+    std::string source = "trait MyTrait { my_func(a: int) -> void; } struct MyStruct {} impl MyTrait for MyStruct { func my_func(a: string) -> void {} }";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     Resolver resolver;
     resolver.resolve(stmts);
@@ -99,7 +95,7 @@ TEST_F(TraitTest, ResolveImplNonExistentTrait) {
     std::string source = "struct MyStruct {} impl MyTrait for MyStruct {}";
     Lexer lexer(source);
     auto tokens = lexer.scanTokens();
-    Parser parser(tokens);
+    PrattParser parser(tokens);
     auto stmts = parser.parse();
     Resolver resolver;
     resolver.resolve(stmts);
