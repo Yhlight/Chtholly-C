@@ -366,7 +366,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }

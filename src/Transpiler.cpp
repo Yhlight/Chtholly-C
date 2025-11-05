@@ -103,6 +103,11 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         }
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
+            if (var_expr->name.lexeme == "input") {
+                return TypeInfo{"std::string"};
+            }
+        }
         if (auto get_expr = dynamic_cast<const GetExpr*>(call_expr->callee.get())) {
              if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
                 if (var_expr->name.lexeme == "meta") {
@@ -154,6 +159,16 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     std::stringstream final_code;
     if (imported_modules.count("iostream")) {
         final_code << "#include <iostream>\n";
+        if (input_used) {
+            final_code << "#include <string>\n";
+            final_code << R"(
+std::string input() {
+    std::string line;
+    std::getline(std::cin, line);
+    return line;
+}
+)";
+        }
     }
     if (imported_modules.count("filesystem")) {
         final_code << "#include <fstream>\n";
@@ -290,6 +305,13 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             out << " << std::endl";
             return out.str();
+        }
+        if (var_expr->name.lexeme == "input") {
+            if (imported_modules.find("iostream") == imported_modules.end()) {
+                return std::string("/* ERROR: 'input' function called without importing 'iostream' */");
+            }
+            input_used = true;
+            return std::string("input()");
         }
         if (var_expr->name.lexeme == "fs_read") {
             if (imported_modules.find("filesystem") == imported_modules.end()) {

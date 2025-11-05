@@ -177,3 +177,16 @@ TEST(TranspilerTest, OperatorOverloading) {
     std::string transpiled_code = transpile(source);
     EXPECT_NE(transpiled_code.find(expected), std::string::npos);
 }
+
+TEST(TranspilerTest, InputStatement) {
+    std::string source = "import iostream; let name = input();";
+    std::string expected = "const std::string name = input();\n";
+    EXPECT_NE(transpile(source).find(expected), std::string::npos);
+}
+
+TEST(TranspilerTest, InputWithoutImport) {
+    std::string source = "let name = input();";
+    std::string expected_error = "/* ERROR: 'input' function called without importing 'iostream' */";
+    std::string transpiled_code = transpile(source);
+    EXPECT_NE(transpiled_code.find(expected_error), std::string::npos);
+}

@@ -61,6 +61,7 @@ private:
     std::vector<std::map<std::string, TypeInfo>> scopes;
     std::map<std::string, const StructStmt*> structs;
     bool is_in_switch = false;
+    bool input_used = false;
 };
 
 } // namespace chtholly
