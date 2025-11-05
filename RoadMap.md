@@ -36,4 +36,6 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `iostream` module with `print` function
   - [x] `filesystem` module with `fs_read` and `fs_write`
 - [ ] Implement static reflection and metaprogramming features.
+  - [x] Symbol table and basic type analysis engine
+  - [x] `meta` module with `is_int`
 - [ ] Implement operator overloading.

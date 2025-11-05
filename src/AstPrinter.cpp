@@ -154,11 +154,11 @@ std::any AstPrinter::visitStructStmt(const StructStmt& stmt) {
 
 std::any AstPrinter::visitImportStmt(const ImportStmt& stmt) {
     if (std::holds_alternative<std::string>(stmt.path)) {
-        LiteralExpr literal(std::get<std::string>(stmt.path));
-        return parenthesize("import", &literal);
+        auto literal = std::make_unique<LiteralExpr>(std::get<std::string>(stmt.path));
+        return parenthesize("import", literal.get());
     }
-    VariableExpr var(std::get<Token>(stmt.path));
-    return parenthesize("import", &var);
+    auto var = std::make_unique<VariableExpr>(std::get<Token>(stmt.path));
+    return parenthesize("import", var.get());
 }
 
 std::any AstPrinter::visitSwitchStmt(const SwitchStmt& stmt) {

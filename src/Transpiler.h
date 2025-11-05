@@ -6,11 +6,14 @@
 #include <vector>
 #include <sstream>
 #include <set>
+#include <vector>
+#include <map>
 
 namespace chtholly {
 
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
+    Transpiler();
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
@@ -28,6 +31,7 @@ public:
     std::any visitDerefExpr(const DerefExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
+    void visitBlockStmt(const BlockStmt& stmt, bool create_scope);
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;
     std::any visitFunctionStmt(const FunctionStmt& stmt) override;
     std::any visitIfStmt(const IfStmt& stmt) override;
@@ -43,8 +47,17 @@ public:
 
 private:
     std::string transpileType(const TypeExpr& type);
+    TypeInfo typeExprToTypeInfo(const TypeExpr* type);
+    TypeInfo get_type(const Expr& expr);
+    void enterScope();
+    void exitScope();
+    void define(const std::string& name, const TypeInfo& type);
+    TypeInfo lookup(const std::string& name);
+
     std::stringstream out;
     std::set<std::string> imported_modules;
+    std::vector<std::map<std::string, TypeInfo>> scopes;
+    bool is_in_switch = false;
 };
 
 } // namespace chtholly

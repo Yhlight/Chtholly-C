@@ -4,6 +4,66 @@
 
 namespace chtholly {
 
+Transpiler::Transpiler() {
+    enterScope(); // Global scope
+}
+
+void Transpiler::enterScope() {
+    scopes.emplace_back();
+}
+
+void Transpiler::exitScope() {
+    scopes.pop_back();
+}
+
+void Transpiler::define(const std::string& name, const TypeInfo& type) {
+    if (scopes.empty()) {
+        enterScope();
+    }
+    scopes.back()[name] = type;
+}
+
+TypeInfo Transpiler::lookup(const std::string& name) {
+    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+        auto found = it->find(name);
+        if (found != it->end()) {
+            return found->second;
+        }
+    }
+    // In a real compiler, we'd throw a semantic error here.
+    // In a real compiler, we'd throw a semantic error here.
+    // For now, return a default TypeInfo.
+    return TypeInfo{};
+}
+
+TypeInfo Transpiler::get_type(const Expr& expr) {
+    // This is a simplification. We'd need to handle all expression types.
+    if (auto literal_expr = dynamic_cast<const LiteralExpr*>(&expr)) {
+        if (std::holds_alternative<long long>(literal_expr->value)) return TypeInfo{"int"};
+        if (std::holds_alternative<double>(literal_expr->value)) return TypeInfo{"double"};
+        if (std::holds_alternative<std::string>(literal_expr->value)) return TypeInfo{"string"};
+        if (std::holds_alternative<bool>(literal_expr->value)) return TypeInfo{"bool"};
+        if (std::holds_alternative<char>(literal_expr->value)) return TypeInfo{"char"};
+    }
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(&expr)) {
+        return lookup(var_expr->name.lexeme);
+    }
+    return TypeInfo{"auto"};
+}
+
+TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
+    if (!type) {
+        return TypeInfo{ "auto" };
+    }
+
+    if (auto baseType = dynamic_cast<const BaseTypeExpr*>(type)) {
+        return TypeInfo{ transpileType(*baseType) };
+    }
+
+    // Fallback for more complex types not yet handled.
+    return TypeInfo{ "auto" };
+}
+
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     for (const auto& statement : statements) {
         statement->accept(*this);
@@ -75,6 +135,18 @@ std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
 
 // Placeholder for now
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+            if (var_expr->name.lexeme == "meta") {
+                std::string function_name = get_expr->name.lexeme;
+                if (function_name == "is_int") {
+                    TypeInfo arg_type = get_type(*expr.arguments[0]);
+                    return std::string(arg_type.name == "int" ? "true" : "false");
+                }
+            }
+        }
+    }
+
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
         if (var_expr->name.lexeme == "print") {
             if (imported_modules.find("iostream") == imported_modules.end()) {
@@ -128,12 +200,18 @@ std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) { return nullptr; }
 std::any Transpiler::visitDerefExpr(const DerefExpr& expr) { return nullptr; }
 
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
+    visitBlockStmt(stmt, true);
+    return nullptr;
+}
+
+void Transpiler::visitBlockStmt(const BlockStmt& stmt, bool create_scope) {
+    if (create_scope) enterScope();
     out << "{\n";
     for (const auto& statement : stmt.statements) {
         statement->accept(*this);
     }
     out << "}\n";
-    return nullptr;
+    if (create_scope) exitScope();
 }
 
 std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
@@ -143,7 +221,13 @@ std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
 }
 
 std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
-    out << (stmt.isMutable ? "auto " : "const auto ") << stmt.name.lexeme;
+    TypeInfo type = typeExprToTypeInfo(stmt.type.get());
+    // TODO: If no type annotation, infer from initializer.
+    // For now, we'll just use 'auto' if no type is given.
+
+    define(stmt.name.lexeme, type);
+
+    out << (stmt.isMutable ? "" : "const ") << type.name << " " << stmt.name.lexeme;
     if (stmt.initializer) {
         out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
     }
@@ -183,6 +267,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     return nullptr;
 }
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
+    is_in_switch = true;
     out << "{\n";
     out << "auto&& __switch_val = " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ";\n";
     bool first_case = true;
@@ -257,6 +342,7 @@ std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
     }
 
     out << "}\n";
+    is_in_switch = false;
     return nullptr;
 }
 std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
@@ -264,7 +350,9 @@ std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
     return nullptr;
 }
 std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
-    out << "break;\n";
+    if (!is_in_switch) {
+        out << "break;\n";
+    }
     return nullptr;
 }
 std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
@@ -286,15 +374,25 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    // We could define the function in the current scope here.
+    // define(stmt.name.lexeme, ...);
+
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
+
+    enterScope();
     for (size_t i = 0; i < stmt.params.size(); ++i) {
-        out << transpileType(*stmt.param_types[i]) << " " << stmt.params[i].lexeme;
+        TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
+        define(stmt.params[i].lexeme, paramType);
+        out << paramType.name << " " << stmt.params[i].lexeme;
         if (i < stmt.params.size() - 1) {
             out << ", ";
         }
     }
     out << ") ";
-    stmt.body->accept(*this);
+
+    visitBlockStmt(*stmt.body, false);
+
+    exitScope();
     return nullptr;
 }
 

@@ -61,7 +61,7 @@ TEST(TranspilerTest, WhileStatement) {
 
 TEST(TranspilerTest, SwitchStatement) {
     std::string source = "switch (x) { case 1: { y = 1; break; } default: { y = 2; } }";
-    std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\nbreak;\n}\nelse {\ny = 2;\n}\n}\n";
+    std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\n}\nelse {\ny = 2;\n}\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
@@ -144,4 +144,15 @@ TEST(TranspilerTest, FilesystemWithoutImport) {
 
     EXPECT_NE(transpiled_code.find(expected_read_error), std::string::npos);
     EXPECT_NE(transpiled_code.find(expected_write_error), std::string::npos);
+}
+
+TEST(TranspilerTest, MetaIsInt) {
+    std::string source = R"(
+        let x: int = 10;
+        let y: string = "hello";
+        let is_x_int = meta::is_int(x);
+        let is_y_int = meta::is_int(y);
+    )";
+    std::string expected = "const int x = 10;\nconst std::string y = \"hello\";\nconst auto is_x_int = true;\nconst auto is_y_int = false;\n";
+    EXPECT_EQ(transpile(source), expected);
 }

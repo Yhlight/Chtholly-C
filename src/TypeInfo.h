@@ -1,7 +1,7 @@
 #ifndef CHTHOLLY_TYPEINFO_H
 #define CHTHOLLY_TYPEINFO_H
 
-#include "Token.h"
+#include <string>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -9,7 +9,7 @@
 namespace chtholly {
 
 struct TypeInfo {
-    TokenType base_type;
+    std::string name;
     bool is_ref = false;
     bool is_mut_ref = false;
 
@@ -23,11 +23,12 @@ struct TypeInfo {
     // For generic types
     std::vector<std::unique_ptr<TypeInfo>> generic_args;
 
-    explicit TypeInfo(TokenType base_type) : base_type(base_type) {}
+    TypeInfo() = default;
+    explicit TypeInfo(std::string name) : name(std::move(name)) {}
 
     // Copy constructor
     TypeInfo(const TypeInfo& other) {
-        base_type = other.base_type;
+        name = other.name;
         is_ref = other.is_ref;
         is_mut_ref = other.is_mut_ref;
 
@@ -51,7 +52,7 @@ struct TypeInfo {
             return *this;
         }
 
-        base_type = other.base_type;
+        name = other.name;
         is_ref = other.is_ref;
         is_mut_ref = other.is_mut_ref;
 

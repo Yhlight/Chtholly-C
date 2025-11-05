@@ -40,7 +40,8 @@ enum class TokenType {
     // Module names and their functions
     IOSTREAM,
     FILESYSTEM, FS_READ, FS_WRITE,
-    OPERATOR, REFLECT, META, UTIL,
+    OPERATOR, REFLECT, UTIL,
+    META,
 
     // Type Keywords
     INT, INT8, INT16, INT32, INT64,

@@ -282,6 +282,9 @@ std::unique_ptr<Expr> Parser::call() {
     while (true) {
         if (match(TokenType::LEFT_PAREN)) {
             expr = finishCall(std::move(expr));
+        } else if (match(TokenType::COLON_COLON)) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::'.");
+            expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
         } else {
             break;
         }
@@ -309,7 +312,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META)) {
         return std::make_unique<VariableExpr>(previous());
     }
 
