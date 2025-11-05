@@ -94,6 +94,12 @@ TEST(ParserTest, StructDeclaration) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, StructWithTrait) {
+    std::string source = "struct Point impl operator::add { let x: int; }";
+    std::string expected = "(struct Point (impl (. operator add)) (let x))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, ReturnStatement) {
     std::string source = "return 1;";
     std::string expected = "(return 1)";

@@ -167,6 +167,14 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+
+    std::vector<std::unique_ptr<Expr>> traits;
+    if (match(TokenType::IMPL)) {
+        do {
+            traits.push_back(expression());
+        } while (match(TokenType::COMMA));
+    }
+
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
@@ -184,7 +192,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(std::move(name), std::move(fields), std::move(methods));
+    return std::make_unique<StructStmt>(std::move(name), std::move(traits), std::move(fields), std::move(methods));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
@@ -282,8 +290,8 @@ std::unique_ptr<Expr> Parser::call() {
     while (true) {
         if (match(TokenType::LEFT_PAREN)) {
             expr = finishCall(std::move(expr));
-        } else if (match(TokenType::COLON_COLON)) {
-            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::'.");
+        } else if (match(TokenType::COLON_COLON, TokenType::DOT)) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::' or '.'.");
             expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
         } else {
             break;
@@ -312,8 +320,14 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR)) {
+        if (peek().type == TokenType::LEFT_BRACE) {
+            return structLiteral();
+        }
         return std::make_unique<VariableExpr>(previous());
+    }
+    if (match(TokenType::SELF)) {
+        return std::make_unique<SelfExpr>(previous());
     }
 
     if (match(TokenType::LEFT_PAREN)) {
@@ -323,6 +337,21 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     throw error(peek(), "Expect expression.");
+}
+
+std::unique_ptr<Expr> Parser::structLiteral() {
+    Token name = previous();
+    consume(TokenType::LEFT_BRACE, "Expect '{' after struct name.");
+    std::map<std::string, std::unique_ptr<Expr>> fields;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            Token field_name = consume(TokenType::IDENTIFIER, "Expect field name.");
+            consume(TokenType::COLON, "Expect ':' after field name.");
+            fields[field_name.lexeme] = expression();
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+    return std::make_unique<StructLiteralExpr>(std::move(name), std::move(fields));
 }
 
 // Helper method implementations

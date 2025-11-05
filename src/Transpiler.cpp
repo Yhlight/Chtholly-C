@@ -4,6 +4,35 @@
 
 namespace chtholly {
 
+// A simple visitor to find all struct declarations in the AST.
+class StructScanner : public StmtVisitor {
+public:
+    std::any visitStructStmt(const StructStmt& stmt) override {
+        structs[stmt.name.lexeme] = &stmt;
+        return nullptr;
+    }
+    // We only care about structs, so other visit methods are empty.
+    std::any visitBlockStmt(const BlockStmt& stmt) override {
+        for (const auto& s : stmt.statements) {
+            s->accept(*this);
+        }
+        return nullptr;
+    }
+    std::any visitExpressionStmt(const ExpressionStmt& stmt) override { return nullptr; }
+    std::any visitFunctionStmt(const FunctionStmt& stmt) override { return nullptr; }
+    std::any visitIfStmt(const IfStmt& stmt) override { return nullptr; }
+    std::any visitVarStmt(const VarStmt& stmt) override { return nullptr; }
+    std::any visitWhileStmt(const WhileStmt& stmt) override { return nullptr; }
+    std::any visitReturnStmt(const ReturnStmt& stmt) override { return nullptr; }
+    std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override { return nullptr; }
+    std::any visitCaseStmt(const CaseStmt& stmt) override { return nullptr; }
+    std::any visitBreakStmt(const BreakStmt& stmt) override { return nullptr; }
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override { return nullptr; }
+
+    std::map<std::string, const StructStmt*> structs;
+};
+
 Transpiler::Transpiler() {
     enterScope(); // Global scope
 }
@@ -48,6 +77,11 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     if (auto var_expr = dynamic_cast<const VariableExpr*>(&expr)) {
         return lookup(var_expr->name.lexeme);
     }
+    if (auto get_expr = dynamic_cast<const GetExpr*>(&expr)) {
+        // This is a simplification. We'd need to be able to look up
+        // the type of the property on the object's type.
+        return TypeInfo{"auto"};
+    }
     return TypeInfo{"auto"};
 }
 
@@ -65,6 +99,13 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
 }
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    // Pre-scan for struct definitions.
+    StructScanner scanner;
+    for (const auto& statement : statements) {
+        statement->accept(scanner);
+    }
+    this->structs = scanner.structs;
+
     for (const auto& statement : statements) {
         statement->accept(*this);
     }
@@ -92,6 +133,22 @@ std::string fs_read(const std::string& path) {
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+    if (expr.op.type == TokenType::PLUS) {
+        TypeInfo left_type = get_type(*expr.left);
+        if (structs.count(left_type.name)) {
+            const StructStmt* s = structs[left_type.name];
+            for (const auto& trait : s->traits) {
+                if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
+                    if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                        if (var_expr->name.lexeme == "operator" && get_expr->name.lexeme == "add") {
+                            return std::any_cast<std::string>(expr.left->accept(*this)) + ".add(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return std::any_cast<std::string>(expr.left->accept(*this)) + " " + expr.op.lexeme + " " + std::any_cast<std::string>(expr.right->accept(*this));
 }
 
@@ -193,11 +250,30 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     return out.str();
 }
 std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
-std::any Transpiler::visitGetExpr(const GetExpr& expr) { return nullptr; }
+std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+    return std::any_cast<std::string>(expr.object->accept(*this)) + "." + expr.name.lexeme;
+}
 std::any Transpiler::visitSetExpr(const SetExpr& expr) { return nullptr; }
-std::any Transpiler::visitSelfExpr(const SelfExpr& expr) { return nullptr; }
+std::any Transpiler::visitSelfExpr(const SelfExpr& expr) {
+    return std::string("this");
+}
 std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) { return nullptr; }
 std::any Transpiler::visitDerefExpr(const DerefExpr& expr) { return nullptr; }
+
+std::any Transpiler::visitStructLiteralExpr(const StructLiteralExpr& expr) {
+    std::stringstream out;
+    out << expr.name.lexeme << "{";
+    bool first = true;
+    for (const auto& [name, value] : expr.fields) {
+        if (!first) {
+            out << ", ";
+        }
+        first = false;
+        out << "." << name << " = " << std::any_cast<std::string>(value->accept(*this));
+    }
+    out << "}";
+    return out.str();
+}
 
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
     visitBlockStmt(stmt, true);

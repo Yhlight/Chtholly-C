@@ -51,6 +51,7 @@ private:
     std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee);
+    std::unique_ptr<Expr> structLiteral();
 
     // Helper methods
     bool isAtEnd();

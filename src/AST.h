@@ -7,6 +7,7 @@
 #include <memory>
 #include <any>
 #include <utility>
+#include <map>
 
 namespace chtholly {
 
@@ -24,6 +25,7 @@ struct SetExpr;
 struct SelfExpr;
 struct BorrowExpr;
 struct DerefExpr;
+struct StructLiteralExpr;
 
 struct TypeExpr;
 struct BaseTypeExpr;
@@ -62,6 +64,7 @@ public:
     virtual std::any visitSelfExpr(const SelfExpr& expr) = 0;
     virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
     virtual std::any visitDerefExpr(const DerefExpr& expr) = 0;
+    virtual std::any visitStructLiteralExpr(const StructLiteralExpr& expr) = 0;
 };
 
 // Base class for all expressions
@@ -194,6 +197,14 @@ struct DerefExpr : Expr {
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitDerefExpr(*this); }
 };
 
+struct StructLiteralExpr : Expr {
+    Token name;
+    std::map<std::string, std::unique_ptr<Expr>> fields;
+    StructLiteralExpr(Token name, std::map<std::string, std::unique_ptr<Expr>> fields)
+        : name(std::move(name)), fields(std::move(fields)) {}
+    std::any accept(ExprVisitor& visitor) const override { return visitor.visitStructLiteralExpr(*this); }
+};
+
 
 // Concrete Statement Nodes
 struct BlockStmt : Stmt {
@@ -256,10 +267,11 @@ struct ReturnStmt : Stmt {
 
 struct StructStmt : Stmt {
     Token name;
+    std::vector<std::unique_ptr<Expr>> traits;
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
-    StructStmt(Token name, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
-        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
+    StructStmt(Token name, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(std::move(name)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitStructStmt(*this); }
 };
 

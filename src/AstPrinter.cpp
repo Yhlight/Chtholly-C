@@ -7,7 +7,11 @@ template<typename... Args>
 std::string AstPrinter::parenthesize(const std::string& name, Args... args) {
     std::stringstream out;
     out << "(" << name;
-    ((out << " " << std::any_cast<std::string>(args->accept(*this))), ...);
+    std::vector<std::string> arg_strings;
+    ((arg_strings.push_back(std::any_cast<std::string>(args->accept(*this)))), ...);
+    for (const auto& s : arg_strings) {
+        out << " " << s;
+    }
     out << ")";
     return out.str();
 }
@@ -77,7 +81,8 @@ std::any AstPrinter::visitLambdaExpr(const LambdaExpr& expr) {
 }
 
 std::any AstPrinter::visitGetExpr(const GetExpr& expr) {
-    return parenthesize("." + expr.name.lexeme, expr.object.get());
+    auto temp_var = std::make_unique<VariableExpr>(expr.name);
+    return parenthesize(".", expr.object.get(), temp_var.get());
 }
 
 std::any AstPrinter::visitSetExpr(const SetExpr& expr) {
@@ -94,6 +99,16 @@ std::any AstPrinter::visitBorrowExpr(const BorrowExpr& expr) {
 
 std::any AstPrinter::visitDerefExpr(const DerefExpr& expr) {
     return parenthesize("*", expr.expression.get());
+}
+
+std::any AstPrinter::visitStructLiteralExpr(const StructLiteralExpr& expr) {
+    std::stringstream out;
+    out << "(struct_literal " << expr.name.lexeme;
+    for (const auto& [name, value] : expr.fields) {
+        out << " (:= " << name << " " << std::any_cast<std::string>(value->accept(*this)) << ")";
+    }
+    out << ")";
+    return out.str();
 }
 
 std::any AstPrinter::visitBlockStmt(const BlockStmt& stmt) {
@@ -142,6 +157,13 @@ std::any AstPrinter::visitReturnStmt(const ReturnStmt& stmt) {
 std::any AstPrinter::visitStructStmt(const StructStmt& stmt) {
     std::stringstream out;
     out << "(struct " << stmt.name.lexeme;
+    if (!stmt.traits.empty()) {
+        out << " (impl";
+        for (const auto& trait : stmt.traits) {
+            out << " " << std::any_cast<std::string>(trait->accept(*this));
+        }
+        out << ")";
+    }
     for (const auto& field : stmt.fields) {
         out << " " << std::any_cast<std::string>(field->accept(*this));
     }

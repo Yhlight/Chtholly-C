@@ -25,6 +25,7 @@ public:
     std::any visitSelfExpr(const SelfExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitDerefExpr(const DerefExpr& expr) override;
+    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override;

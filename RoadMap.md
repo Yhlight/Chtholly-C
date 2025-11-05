@@ -39,3 +39,4 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Symbol table and basic type analysis engine
   - [x] `meta` module with `is_int`
 - [ ] Implement operator overloading.
+  - [x] `operator::add`

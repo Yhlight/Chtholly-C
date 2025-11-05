@@ -29,6 +29,7 @@ public:
     std::any visitSelfExpr(const SelfExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitDerefExpr(const DerefExpr& expr) override;
+    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     void visitBlockStmt(const BlockStmt& stmt, bool create_scope);
@@ -57,6 +58,7 @@ private:
     std::stringstream out;
     std::set<std::string> imported_modules;
     std::vector<std::map<std::string, TypeInfo>> scopes;
+    std::map<std::string, const StructStmt*> structs;
     bool is_in_switch = false;
 };
 

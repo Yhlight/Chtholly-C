@@ -156,3 +156,21 @@ TEST(TranspilerTest, MetaIsInt) {
     std::string expected = "const int x = 10;\nconst std::string y = \"hello\";\nconst auto is_x_int = true;\nconst auto is_y_int = false;\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, OperatorOverloading) {
+    std::string source = R"(
+        struct Point impl operator::add {
+            let x: int;
+            let y: int;
+            add(other: Point) -> Point {
+                return Point{x: self.x + other.x, y: self.y + other.y};
+            }
+        }
+        let p1: Point = Point{x: 1, y: 2};
+        let p2: Point = Point{x: 3, y: 4};
+        let p3 = p1 + p2;
+    )";
+    std::string expected = "const auto p3 = p1.add(p2);\n";
+    std::string transpiled_code = transpile(source);
+    EXPECT_NE(transpiled_code.find(expected), std::string::npos);
+}
