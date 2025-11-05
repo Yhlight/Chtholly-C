@@ -4,6 +4,7 @@
 #include "Lexer.h"
 #include <vector>
 #include <string>
+#include <fstream>
 
 using namespace chtholly;
 
@@ -104,4 +105,43 @@ TEST(TranspilerTest, PrintWithoutImport) {
     std::string source = "print(\"Hello, World!\");";
     std::string expected = "/* ERROR: 'print' function called without importing 'iostream' */;\n";
     EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, FilesystemReadWrite) {
+    // Create a temporary file to read from
+    std::ofstream outfile("test_read.txt");
+    outfile << "Hello from file!";
+    outfile.close();
+
+    std::string source = R"(
+        import filesystem;
+        let content = fs_read("test_read.txt");
+        fs_write("test_write.txt", content);
+    )";
+
+    // We can't execute the transpiled code directly here,
+    // but we can verify that the C++ output is correct.
+    std::string expected_prefix = "#include <fstream>\n#include <sstream>\n";
+    std::string expected_read = "fs_read(\"test_read.txt\")";
+    std::string expected_write = "{ std::ofstream file(\"test_write.txt\"); file << content; }";
+
+    std::string transpiled_code = transpile(source);
+
+    EXPECT_TRUE(transpiled_code.rfind(expected_prefix, 0) == 0);
+    EXPECT_NE(transpiled_code.find(expected_read), std::string::npos);
+    EXPECT_NE(transpiled_code.find(expected_write), std::string::npos);
+}
+
+TEST(TranspilerTest, FilesystemWithoutImport) {
+    std::string source = R"(
+        let content = fs_read("test.txt");
+        fs_write("test.txt", "hello");
+    )";
+    std::string expected_read_error = "/* ERROR: 'fs_read' function called without importing 'filesystem' */";
+    std::string expected_write_error = "/* ERROR: 'fs_write' function called without importing 'filesystem' */";
+
+    std::string transpiled_code = transpile(source);
+
+    EXPECT_NE(transpiled_code.find(expected_read_error), std::string::npos);
+    EXPECT_NE(transpiled_code.find(expected_write_error), std::string::npos);
 }

@@ -309,7 +309,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::FS_READ, TokenType::FS_WRITE)) {
         return std::make_unique<VariableExpr>(previous());
     }
 

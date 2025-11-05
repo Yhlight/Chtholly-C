@@ -35,10 +35,12 @@ enum class TokenType {
     PUBLIC, PRIVATE, SELF, NONE, TRUE, FALSE, IMPORT,
 
     // Built-in functions that are treated like keywords by the lexer
-    PRINT, INPUT, FS_READ, FS_WRITE, TYPE_CAST,
+    PRINT, INPUT, TYPE_CAST,
 
-    // Module names
-    IOSTREAM, FILESYSTEM, OPERATOR, REFLECT, META, UTIL,
+    // Module names and their functions
+    IOSTREAM,
+    FILESYSTEM, FS_READ, FS_WRITE,
+    OPERATOR, REFLECT, META, UTIL,
 
     // Type Keywords
     INT, INT8, INT16, INT32, INT64,

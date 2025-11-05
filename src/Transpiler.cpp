@@ -13,6 +13,18 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     if (imported_modules.count("iostream")) {
         final_code << "#include <iostream>\n";
     }
+    if (imported_modules.count("filesystem")) {
+        final_code << "#include <fstream>\n";
+        final_code << "#include <sstream>\n";
+        final_code << R"(
+std::string fs_read(const std::string& path) {
+    std::ifstream file(path);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+)";
+    }
     // Add other includes here as needed
 
     final_code << out.str();
@@ -66,8 +78,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
         if (var_expr->name.lexeme == "print") {
             if (imported_modules.find("iostream") == imported_modules.end()) {
-                // For simplicity, we're not throwing a proper compiler error here yet.
-                // In a real implementation, this would be a semantic error.
                 return std::string("/* ERROR: 'print' function called without importing 'iostream' */");
             }
             std::stringstream out;
@@ -79,6 +89,22 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 }
             }
             out << " << std::endl";
+            return out.str();
+        }
+        if (var_expr->name.lexeme == "fs_read") {
+            if (imported_modules.find("filesystem") == imported_modules.end()) {
+                return std::string("/* ERROR: 'fs_read' function called without importing 'filesystem' */");
+            }
+            // Simplified: assumes one argument, the filename.
+            return "fs_read(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+        }
+        if (var_expr->name.lexeme == "fs_write") {
+            if (imported_modules.find("filesystem") == imported_modules.end()) {
+                return std::string("/* ERROR: 'fs_write' function called without importing 'filesystem' */");
+            }
+            // Simplified: assumes two arguments, filename and content.
+            std::stringstream out;
+            out << "{ std::ofstream file(" << std::any_cast<std::string>(expr.arguments[0]->accept(*this)) << "); file << " << std::any_cast<std::string>(expr.arguments[1]->accept(*this)) << "; }";
             return out.str();
         }
     }
