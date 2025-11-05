@@ -41,6 +41,7 @@ public:
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
 
 private:
+    std::string transpileType(const TypeExpr& type);
     std::stringstream out;
 };
 

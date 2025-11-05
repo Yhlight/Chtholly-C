@@ -24,7 +24,7 @@ private:
 
     // Grammar rules
     std::unique_ptr<Stmt> declaration();
-    std::unique_ptr<Stmt> varDeclaration();
+    std::unique_ptr<VarStmt> varDeclaration(bool consume_semicolon = true);
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> ifStatement();
@@ -32,10 +32,14 @@ private:
     std::unique_ptr<Stmt> switchStatement();
     std::unique_ptr<CaseStmt> caseStatement();
     std::unique_ptr<Stmt> returnStatement();
+    std::unique_ptr<Stmt> breakStatement();
+    std::unique_ptr<Stmt> fallthroughStatement();
     std::unique_ptr<Stmt> importStatement();
     std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind);
     std::unique_ptr<Stmt> structDeclaration();
     std::vector<std::unique_ptr<Stmt>> block();
+
+    std::unique_ptr<TypeExpr> type();
 
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> assignment();
@@ -46,10 +50,12 @@ private:
     std::unique_ptr<Expr> unary();
     std::unique_ptr<Expr> call();
     std::unique_ptr<Expr> primary();
+    std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee);
 
     // Helper methods
     bool isAtEnd();
     Token peek();
+    Token lookahead();
     Token previous();
     Token advance();
     bool check(TokenType type);

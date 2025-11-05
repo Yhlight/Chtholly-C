@@ -7,7 +7,7 @@ namespace chtholly {
 
 const std::map<std::string, TokenType> Lexer::keywords = {
     {"if", TokenType::IF}, {"else", TokenType::ELSE}, {"for", TokenType::FOR}, {"while", TokenType::WHILE},
-    {"switch", TokenType::SWITCH}, {"case", TokenType::CASE}, {"break", TokenType::BREAK}, {"fallthrough", TokenType::FALLTHROUGH},
+    {"switch", TokenType::SWITCH}, {"case", TokenType::CASE}, {"default", TokenType::DEFAULT}, {"break", TokenType::BREAK}, {"fallthrough", TokenType::FALLTHROUGH},
     {"func", TokenType::FUNC}, {"return", TokenType::RETURN}, {"struct", TokenType::STRUCT}, {"enum", TokenType::ENUM},
     {"impl", TokenType::IMPL}, {"trait", TokenType::TRAIT}, {"let", TokenType::LET}, {"mut", TokenType::MUT},
     {"public", TokenType::PUBLIC}, {"private", TokenType::PRIVATE}, {"self", TokenType::SELF}, {"none", TokenType::NONE},

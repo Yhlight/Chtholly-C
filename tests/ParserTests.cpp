@@ -83,20 +83,26 @@ TEST(ParserTest, BlockStatement) {
 }
 
 TEST(ParserTest, FunctionDeclaration) {
-    std::string source = "func add(a, b) { return a + b; }";
+    std::string source = "func add(a: int, b: int) -> int { return a + b; }";
     std::string expected = "(func add (block (return (+ a b))))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
 TEST(ParserTest, StructDeclaration) {
-    std::string source = "struct Point { func new() {} }";
-    std::string expected = "(struct Point)"; // Simplified for now
+    std::string source = "struct Point { let x: int; let y: int; }";
+    std::string expected = "(struct Point (let x) (let y))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
 TEST(ParserTest, ReturnStatement) {
     std::string source = "return 1;";
     std::string expected = "(return 1)";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
+TEST(ParserTest, CallExpression) {
+    std::string source = "add(1, 2);";
+    std::string expected = "(; (call add 1 2))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 

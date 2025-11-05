@@ -18,7 +18,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match(TokenType::FUNC)) return functionDeclaration("function");
         if (match(TokenType::STRUCT)) return structDeclaration();
-        if (match(TokenType::LET, TokenType::MUT)) return varDeclaration();
+        if (match(TokenType::LET, TokenType::MUT)) return varDeclaration(true);
         return statement();
     } catch (ParseError& error) {
         synchronize();
@@ -26,19 +26,21 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::unique_ptr<Stmt> Parser::varDeclaration() {
+std::unique_ptr<VarStmt> Parser::varDeclaration(bool consume_semicolon) {
     Token keyword = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
-    std::unique_ptr<TypeExpr> type = nullptr;
-    // if (match(TokenType::COLON)) {
-    //     type = typeAnnotation();
-    // }
+    std::unique_ptr<TypeExpr> type_expr = nullptr;
+    if (match(TokenType::COLON)) {
+        type_expr = type();
+    }
     std::unique_ptr<Expr> initializer = nullptr;
     if (match(TokenType::EQUAL)) {
         initializer = expression();
     }
-    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
-    return std::make_unique<VarStmt>(std::move(name), std::move(type), std::move(initializer), keyword.type == TokenType::MUT);
+    if (consume_semicolon) {
+        consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+    }
+    return std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), keyword.type == TokenType::MUT);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -46,6 +48,8 @@ std::unique_ptr<Stmt> Parser::statement() {
     if (match(TokenType::WHILE)) return whileStatement();
     if (match(TokenType::SWITCH)) return switchStatement();
     if (match(TokenType::RETURN)) return returnStatement();
+    if (match(TokenType::BREAK)) return breakStatement();
+    if (match(TokenType::FALLTHROUGH)) return fallthroughStatement();
     if (match(TokenType::IMPORT)) return importStatement();
     if (match(TokenType::LEFT_BRACE)) return std::make_unique<BlockStmt>(block());
     return expressionStatement();
@@ -91,8 +95,13 @@ std::unique_ptr<Stmt> Parser::switchStatement() {
 }
 
 std::unique_ptr<CaseStmt> Parser::caseStatement() {
-    consume(TokenType::CASE, "Expect 'case'.");
-    auto value = expression();
+    std::unique_ptr<Expr> value = nullptr;
+    if (match(TokenType::CASE)) {
+        value = expression();
+    } else {
+        consume(TokenType::DEFAULT, "Expect 'case' or 'default'.");
+        // value is already nullptr for default case
+    }
     consume(TokenType::COLON, "Expect ':' after case value.");
     auto body = statement();
     return std::make_unique<CaseStmt>(std::move(value), std::move(body));
@@ -106,6 +115,18 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
     }
     consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_unique<ReturnStmt>(std::move(keyword), std::move(value));
+}
+
+std::unique_ptr<Stmt> Parser::breakStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'break'.");
+    return std::make_unique<BreakStmt>(std::move(keyword));
+}
+
+std::unique_ptr<Stmt> Parser::fallthroughStatement() {
+    Token keyword = previous();
+    consume(TokenType::SEMICOLON, "Expect ';' after 'fallthrough'.");
+    return std::make_unique<FallthroughStmt>(std::move(keyword));
 }
 
 std::unique_ptr<Stmt> Parser::importStatement() {
@@ -128,15 +149,15 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
             parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
-            // consume(TokenType::COLON, "Expect ':' after parameter name.");
-            // param_types.push_back(typeAnnotation());
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            param_types.push_back(type());
         } while (match(TokenType::COMMA));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
     std::unique_ptr<TypeExpr> returnType = nullptr;
-    // if (match(TokenType::ARROW)) {
-    //     returnType = typeAnnotation();
-    // }
+    if (match(TokenType::ARROW)) {
+        returnType = type();
+    }
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     auto body = std::make_unique<BlockStmt>(block());
     return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
@@ -148,10 +169,16 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        if (match(TokenType::FUNC)) {
+        if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
             methods.push_back(functionDeclaration("method"));
+        } else if (match(TokenType::LET, TokenType::MUT)) {
+            fields.push_back(varDeclaration(false));
+            consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
         } else {
-            // This is a simplification. We'd need to parse field declarations.
+            // If it's not a method or a field, it's an error.
+            // We advance to avoid an infinite loop.
+            error(peek(), "Expect field or method in struct body.");
+            advance();
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
@@ -165,6 +192,16 @@ std::vector<std::unique_ptr<Stmt>> Parser::block() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
     return statements;
+}
+
+std::unique_ptr<TypeExpr> Parser::type() {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID)) {
+        return std::make_unique<BaseTypeExpr>(previous());
+    }
+
+    // For now, we only support base types.
+    // We will add array and function types here later.
+    throw error(peek(), "Expect type name.");
 }
 
 
@@ -235,7 +272,30 @@ std::unique_ptr<Expr> Parser::unary() {
         auto right = unary();
         return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
     }
-    return primary();
+    return call();
+}
+
+std::unique_ptr<Expr> Parser::call() {
+    auto expr = primary();
+    while (true) {
+        if (match(TokenType::LEFT_PAREN)) {
+            expr = finishCall(std::move(expr));
+        } else {
+            break;
+        }
+    }
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
+    std::vector<std::unique_ptr<Expr>> arguments;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            arguments.push_back(expression());
+        } while (match(TokenType::COMMA));
+    }
+    Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+    return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
 }
 
 std::unique_ptr<Expr> Parser::primary() {
@@ -267,6 +327,11 @@ bool Parser::isAtEnd() {
 
 Token Parser::peek() {
     return tokens[current];
+}
+
+Token Parser::lookahead() {
+    if (isAtEnd()) return peek();
+    return tokens[current + 1];
 }
 
 Token Parser::previous() {

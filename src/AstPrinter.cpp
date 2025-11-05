@@ -140,7 +140,16 @@ std::any AstPrinter::visitReturnStmt(const ReturnStmt& stmt) {
 }
 
 std::any AstPrinter::visitStructStmt(const StructStmt& stmt) {
-    return "(struct " + stmt.name.lexeme + ")";
+    std::stringstream out;
+    out << "(struct " << stmt.name.lexeme;
+    for (const auto& field : stmt.fields) {
+        out << " " << std::any_cast<std::string>(field->accept(*this));
+    }
+    for (const auto& method : stmt.methods) {
+        out << " " << std::any_cast<std::string>(method->accept(*this));
+    }
+    out << ")";
+    return out.str();
 }
 
 std::any AstPrinter::visitImportStmt(const ImportStmt& stmt) {
