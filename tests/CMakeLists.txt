@@ -13,6 +13,8 @@ add_executable(chtholly_tests
     AstPrinterTests.cpp
     ParserTests.cpp
     TranspilerTests.cpp
+    TestOperatorOverload.cpp
+    TestHelpers.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib GTest::gtest_main)

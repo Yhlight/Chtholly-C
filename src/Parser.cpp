@@ -181,10 +181,20 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
             methods.push_back(functionDeclaration("method"));
-        } else if (match(TokenType::LET, TokenType::MUT)) {
-            fields.push_back(varDeclaration(false));
+        } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
+            // This is a field declaration.
+            Token name = consume(TokenType::IDENTIFIER, "Expect field name.");
+            consume(TokenType::COLON, "Expect ':' after field name.");
+            auto type_expr = type();
+            std::unique_ptr<Expr> initializer = nullptr;
+            if (match(TokenType::EQUAL)) {
+                initializer = expression();
+            }
             consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
-        } else {
+            // We use a dummy token for the keyword, since struct fields don't have one.
+            fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false));
+        }
+         else {
             // If it's not a method or a field, it's an error.
             // We advance to avoid an infinite loop.
             error(peek(), "Expect field or method in struct body.");

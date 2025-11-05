@@ -49,6 +49,7 @@ public:
 private:
     std::string transpileType(const TypeExpr& type);
     TypeInfo typeExprToTypeInfo(const TypeExpr* type);
+    bool has_trait(const std::string& struct_name, const std::string& trait_name);
     TypeInfo get_type(const Expr& expr);
     void enterScope();
     void exitScope();

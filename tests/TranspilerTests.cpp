@@ -19,13 +19,13 @@ std::string transpile(const std::string& source) {
 
 TEST(TranspilerTest, VariableDeclaration) {
     std::string source = "let x = 10;";
-    std::string expected = "const auto x = 10;\n";
+    std::string expected = "const int x = 10;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 TEST(TranspilerTest, MutableVariableDeclaration) {
     std::string source = "mut y = \"hello\";";
-    std::string expected = "auto y = \"hello\";\n";
+    std::string expected = "std::string y = \"hello\";\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
@@ -37,7 +37,7 @@ TEST(TranspilerTest, ExpressionStatement) {
 
 TEST(TranspilerTest, BlockStatement) {
     std::string source = "{ let a = 1; mut b = 2; }";
-    std::string expected = "{\nconst auto a = 1;\nauto b = 2;\n}\n";
+    std::string expected = "{\nconst int a = 1;\nint b = 2;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
@@ -84,13 +84,13 @@ TEST(TranspilerTest, FunctionDeclaration) {
 }
 
 TEST(TranspilerTest, StructDeclaration) {
-    std::string source = "struct Point { let x: int; let y: int; }";
+    std::string source = "struct Point { x: int; y: int; }";
     std::string expected = "struct Point {\nint x;\nint y;\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 TEST(TranspilerTest, StructWithMethod) {
-    std::string source = "struct Point { let x: int; move(dx: int) -> void { x = x + dx; } }";
+    std::string source = "struct Point { x: int; move(dx: int) -> void { x = x + dx; } }";
     std::string expected = "struct Point {\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
@@ -153,24 +153,27 @@ TEST(TranspilerTest, MetaIsInt) {
         let is_x_int = meta::is_int(x);
         let is_y_int = meta::is_int(y);
     )";
-    std::string expected = "const int x = 10;\nconst std::string y = \"hello\";\nconst auto is_x_int = true;\nconst auto is_y_int = false;\n";
+    std::string expected = "const int x = 10;\nconst std::string y = \"hello\";\nconst bool is_x_int = true;\nconst bool is_y_int = false;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 TEST(TranspilerTest, OperatorOverloading) {
     std::string source = R"(
+        import operator;
         struct Point impl operator::add {
-            let x: int;
-            let y: int;
+            x: int;
+            y: int;
             add(other: Point) -> Point {
                 return Point{x: self.x + other.x, y: self.y + other.y};
             }
         }
-        let p1: Point = Point{x: 1, y: 2};
-        let p2: Point = Point{x: 3, y: 4};
-        let p3 = p1 + p2;
+        func main() {
+            let p1: Point = Point{x: 1, y: 2};
+            let p2: Point = Point{x: 3, y: 4};
+            let p3 = p1 + p2;
+        }
     )";
-    std::string expected = "const auto p3 = p1.add(p2);\n";
+    std::string expected = "const Point p3 = p1.add(p2);\n";
     std::string transpiled_code = transpile(source);
     EXPECT_NE(transpiled_code.find(expected), std::string::npos);
 }

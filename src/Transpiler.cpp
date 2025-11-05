@@ -1,6 +1,8 @@
 #include "Transpiler.h"
 #include <utility>
 #include <stdexcept>
+#include <map>
+#include "Token.h"
 
 namespace chtholly {
 
@@ -66,21 +68,57 @@ TypeInfo Transpiler::lookup(const std::string& name) {
 }
 
 TypeInfo Transpiler::get_type(const Expr& expr) {
-    // This is a simplification. We'd need to handle all expression types.
     if (auto literal_expr = dynamic_cast<const LiteralExpr*>(&expr)) {
         if (std::holds_alternative<long long>(literal_expr->value)) return TypeInfo{"int"};
         if (std::holds_alternative<double>(literal_expr->value)) return TypeInfo{"double"};
-        if (std::holds_alternative<std::string>(literal_expr->value)) return TypeInfo{"string"};
+        if (std::holds_alternative<std::string>(literal_expr->value)) return TypeInfo{"std::string"};
         if (std::holds_alternative<bool>(literal_expr->value)) return TypeInfo{"bool"};
         if (std::holds_alternative<char>(literal_expr->value)) return TypeInfo{"char"};
     }
     if (auto var_expr = dynamic_cast<const VariableExpr*>(&expr)) {
         return lookup(var_expr->name.lexeme);
     }
-    if (auto get_expr = dynamic_cast<const GetExpr*>(&expr)) {
-        // This is a simplification. We'd need to be able to look up
-        // the type of the property on the object's type.
-        return TypeInfo{"auto"};
+    if (auto struct_literal = dynamic_cast<const StructLiteralExpr*>(&expr)) {
+        return TypeInfo{struct_literal->name.lexeme};
+    }
+    if (auto binary_expr = dynamic_cast<const BinaryExpr*>(&expr)) {
+        static const std::map<TokenType, std::string> binary_op_traits = {
+            {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
+            {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
+            {TokenType::BANG_EQUAL, "not_equal"}, {TokenType::LESS, "less"}, {TokenType::LESS_EQUAL, "less_equal"},
+            {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
+            {TokenType::AND, "and"}, {TokenType::OR, "or"}
+        };
+        auto it = binary_op_traits.find(binary_expr->op.type);
+        if (it != binary_op_traits.end()) {
+            TypeInfo left_type = get_type(*binary_expr->left);
+            if (has_trait(left_type.name, it->second)) {
+                const StructStmt* s = structs[left_type.name];
+                for (const auto& method : s->methods) {
+                    if (method->name.lexeme == it->second) {
+                        return typeExprToTypeInfo(method->return_type.get());
+                    }
+                }
+            }
+        }
+    }
+    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
+        if (auto get_expr = dynamic_cast<const GetExpr*>(call_expr->callee.get())) {
+             if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                if (var_expr->name.lexeme == "meta") {
+                    return TypeInfo{"bool"};
+                }
+            }
+            TypeInfo callee_type = get_type(*get_expr->object);
+            if (structs.count(callee_type.name)) {
+                const StructStmt* s = structs[callee_type.name];
+                for (const auto& method : s->methods) {
+                    if (method->name.lexeme == get_expr->name.lexeme) {
+                        return typeExprToTypeInfo(method->return_type.get());
+                    }
+                }
+            }
+        }
     }
     return TypeInfo{"auto"};
 }
@@ -132,20 +170,37 @@ std::string fs_read(const std::string& path) {
     return final_code.str();
 }
 
-std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
-    if (expr.op.type == TokenType::PLUS) {
-        TypeInfo left_type = get_type(*expr.left);
-        if (structs.count(left_type.name)) {
-            const StructStmt* s = structs[left_type.name];
-            for (const auto& trait : s->traits) {
-                if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
-                    if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
-                        if (var_expr->name.lexeme == "operator" && get_expr->name.lexeme == "add") {
-                            return std::any_cast<std::string>(expr.left->accept(*this)) + ".add(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
-                        }
+// Helper function to check if a struct implements a specific trait.
+bool Transpiler::has_trait(const std::string& struct_name, const std::string& trait_name) {
+    if (structs.count(struct_name)) {
+        const StructStmt* s = structs[struct_name];
+        for (const auto& trait : s->traits) {
+            if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
+                if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                    if (var_expr->name.lexeme == "operator" && get_expr->name.lexeme == trait_name) {
+                        return true;
                     }
                 }
             }
+        }
+    }
+    return false;
+}
+
+std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+    static const std::map<TokenType, std::string> binary_op_traits = {
+        {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
+        {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
+        {TokenType::BANG_EQUAL, "not_equal"}, {TokenType::LESS, "less"}, {TokenType::LESS_EQUAL, "less_equal"},
+        {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
+        {TokenType::AND, "and"}, {TokenType::OR, "or"}
+    };
+
+    auto it = binary_op_traits.find(expr.op.type);
+    if (it != binary_op_traits.end()) {
+        TypeInfo left_type = get_type(*expr.left);
+        if (has_trait(left_type.name, it->second)) {
+            return std::any_cast<std::string>(expr.left->accept(*this)) + "." + it->second + "(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
         }
     }
 
@@ -153,6 +208,19 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
 }
 
 std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
+    static const std::map<TokenType, std::string> unary_op_traits = {
+        {TokenType::MINUS, "prefix_sub"}, // Assuming '-' is prefix decrement for overloading
+        {TokenType::BANG, "not"}
+    };
+
+    auto it = unary_op_traits.find(expr.op.type);
+    if (it != unary_op_traits.end()) {
+        TypeInfo right_type = get_type(*expr.right);
+        if (has_trait(right_type.name, it->second)) {
+            return std::any_cast<std::string>(expr.right->accept(*this)) + "." + it->second + "()";
+        }
+    }
+
     return expr.op.lexeme + std::any_cast<std::string>(expr.right->accept(*this));
 }
 
@@ -251,7 +319,11 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
 }
 std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
-    return std::any_cast<std::string>(expr.object->accept(*this)) + "." + expr.name.lexeme;
+    std::string separator = ".";
+    if (dynamic_cast<const SelfExpr*>(expr.object.get())) {
+        separator = "->";
+    }
+    return std::any_cast<std::string>(expr.object->accept(*this)) + separator + expr.name.lexeme;
 }
 std::any Transpiler::visitSetExpr(const SetExpr& expr) { return nullptr; }
 std::any Transpiler::visitSelfExpr(const SelfExpr& expr) {
@@ -298,8 +370,9 @@ std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
 
 std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
     TypeInfo type = typeExprToTypeInfo(stmt.type.get());
-    // TODO: If no type annotation, infer from initializer.
-    // For now, we'll just use 'auto' if no type is given.
+    if (stmt.initializer && type.name == "auto") {
+        type = get_type(*stmt.initializer);
+    }
 
     define(stmt.name.lexeme, type);
 
