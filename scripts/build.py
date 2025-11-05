@@ -7,11 +7,9 @@ import sys
 def run_command(command, cwd):
     """Runs a command in a specified directory and checks for errors."""
     print(f"Executing: {' '.join(command)} in {cwd}")
-    result = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
+    result = subprocess.run(command, cwd=cwd)
     if result.returncode != 0:
         print(f"Error executing command: {' '.join(command)}")
-        print(result.stdout)
-        print(result.stderr)
         sys.exit(1)
     return result
 

@@ -53,6 +53,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `reflect` module with `get_fields`
   - [x] `reflect` module with `get_method_count`
   - [x] `reflect` module with `get_methods`
+  - [x] `util` module with `string_cast` and `to_string` trait
 - [x] Implement operator overloading.
   - [x] `operator::add`
   - [x] `operator::sub`

@@ -90,7 +90,7 @@ std::any AstPrinter::visitSetExpr(const SetExpr& expr) {
 }
 
 std::any AstPrinter::visitSelfExpr(const SelfExpr& expr) {
-    return std::string("self");
+    return std::string("this");
 }
 
 std::any AstPrinter::visitBorrowExpr(const BorrowExpr& expr) {

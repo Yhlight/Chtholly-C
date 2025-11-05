@@ -92,7 +92,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         auto it = binary_op_traits.find(binary_expr->op.type);
         if (it != binary_op_traits.end()) {
             TypeInfo left_type = get_type(*binary_expr->left);
-            if (has_trait(left_type.name, it->second)) {
+            if (has_trait(left_type.name, "operator", it->second)) {
                 const StructStmt* s = structs[left_type.name];
                 for (const auto& method : s->methods) {
                     if (method->name.lexeme == it->second) {
@@ -122,6 +122,11 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
                 if (get_expr->name.lexeme == "get_methods") {
                     return TypeInfo{"std::vector<chtholly_method>"};
+                }
+            }
+            if (var_expr->name.lexeme == "util") {
+                if (get_expr->name.lexeme == "string_cast") {
+                    return TypeInfo{"std::string"};
                 }
             }
             }
@@ -221,13 +226,13 @@ struct chtholly_method {
 }
 
 // Helper function to check if a struct implements a specific trait.
-bool Transpiler::has_trait(const std::string& struct_name, const std::string& trait_name) {
+bool Transpiler::has_trait(const std::string& struct_name, const std::string& module_name, const std::string& trait_name) {
     if (structs.count(struct_name)) {
         const StructStmt* s = structs[struct_name];
         for (const auto& trait : s->traits) {
             if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
                 if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
-                    if (var_expr->name.lexeme == "operator" && get_expr->name.lexeme == trait_name) {
+                    if (var_expr->name.lexeme == module_name && get_expr->name.lexeme == trait_name) {
                         return true;
                     }
                 }
@@ -249,7 +254,7 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
     auto it = binary_op_traits.find(expr.op.type);
     if (it != binary_op_traits.end()) {
         TypeInfo left_type = get_type(*expr.left);
-        if (has_trait(left_type.name, it->second)) {
+        if (has_trait(left_type.name, "operator", it->second)) {
             return std::any_cast<std::string>(expr.left->accept(*this)) + "." + it->second + "(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
         }
     }
@@ -266,7 +271,7 @@ std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
     auto it = unary_op_traits.find(expr.op.type);
     if (it != unary_op_traits.end()) {
         TypeInfo right_type = get_type(*expr.right);
-        if (has_trait(right_type.name, it->second)) {
+        if (has_trait(right_type.name, "operator", it->second)) {
             return std::any_cast<std::string>(expr.right->accept(*this)) + "." + it->second + "()";
         }
     }
@@ -415,6 +420,27 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown reflect function call */");
 }
 
+std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (expr.arguments.empty()) {
+        return std::string("/* ERROR: util function requires one argument */");
+    }
+    TypeInfo arg_type = get_type(*expr.arguments[0]);
+
+    if (function_name == "string_cast") {
+        if (arg_type.name == "int" || arg_type.name == "double" || arg_type.name == "unsigned int") {
+            return "std::to_string(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+        }
+        if (has_trait(arg_type.name, "util", "to_string")) {
+            return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".to_string()";
+        }
+    }
+
+    return std::string("/* ERROR: Unknown util function call */");
+}
+
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
@@ -423,6 +449,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "reflect") {
                 return handleReflectFunction(expr);
+            }
+            if (var_expr->name.lexeme == "util") {
+                return handleUtilFunction(expr);
             }
         }
     }

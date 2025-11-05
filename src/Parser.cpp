@@ -157,6 +157,29 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
     std::vector<std::unique_ptr<TypeExpr>> param_types;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
+            // Handle special 'self' parameters
+            if (peek().type == TokenType::AMPERSAND) {
+                bool isMutable = (lookahead().type == TokenType::MUT);
+                int self_offset = isMutable ? 2 : 1;
+
+                if (current + self_offset < tokens.size() && tokens[current + self_offset].type == TokenType::SELF) {
+                    advance(); // consume &
+                    if (isMutable) advance(); // consume mut
+                    Token self_token = consume(TokenType::SELF, "Expect 'self'.");
+
+                    auto element_type = std::make_unique<BaseTypeExpr>(self_token);
+                    param_types.push_back(std::make_unique<BorrowTypeExpr>(std::move(element_type), isMutable));
+                    parameters.push_back(self_token);
+                    continue;
+                }
+            } else if (peek().type == TokenType::SELF) {
+                Token self_token = advance();
+                param_types.push_back(std::make_unique<BaseTypeExpr>(self_token));
+                parameters.push_back(self_token);
+                continue;
+            }
+
+            // Fallback to regular parameter
             parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
             consume(TokenType::COLON, "Expect ':' after parameter name.");
             param_types.push_back(type());
@@ -194,6 +217,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        match(TokenType::FUNC); // Optional func keyword
         if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
             methods.push_back(functionDeclaration("method"));
         } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
@@ -366,7 +390,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }

@@ -49,10 +49,11 @@ public:
 private:
     std::string transpileType(const TypeExpr& type);
     TypeInfo typeExprToTypeInfo(const TypeExpr* type);
-    bool has_trait(const std::string& struct_name, const std::string& trait_name);
+    bool has_trait(const std::string& struct_name, const std::string& module_name, const std::string& trait_name);
     TypeInfo get_type(const Expr& expr);
     std::any handleMetaFunction(const CallExpr& expr);
     std::any handleReflectFunction(const CallExpr& expr);
+    std::any handleUtilFunction(const CallExpr& expr);
     void enterScope();
     void exitScope();
     void define(const std::string& name, const TypeInfo& type);
