@@ -145,6 +145,13 @@ std::unique_ptr<Stmt> Parser::importStatement() {
 
 std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    std::vector<Token> generic_params;
+    if (match(TokenType::LESS)) {
+        do {
+            generic_params.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match(TokenType::COMMA));
+        consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
+    }
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Token> parameters;
     std::vector<std::unique_ptr<TypeExpr>> param_types;
@@ -162,11 +169,19 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
     }
     consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     auto body = std::make_unique<BlockStmt>(block());
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+
+    std::vector<Token> generic_params;
+    if (match(TokenType::LESS)) {
+        do {
+            generic_params.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match(TokenType::COMMA));
+        consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
+    }
 
     std::vector<std::unique_ptr<Expr>> traits;
     if (match(TokenType::IMPL)) {
@@ -202,7 +217,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(std::move(name), std::move(traits), std::move(fields), std::move(methods));
+    return std::make_unique<StructStmt>(std::move(name), std::move(generic_params), std::move(traits), std::move(fields), std::move(methods));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {
@@ -215,8 +230,22 @@ std::vector<std::unique_ptr<Stmt>> Parser::block() {
 }
 
 std::unique_ptr<TypeExpr> Parser::type() {
+    if (match(TokenType::AMPERSAND)) {
+        bool isMutable = match(TokenType::MUT);
+        auto element_type = type();
+        return std::make_unique<BorrowTypeExpr>(std::move(element_type), isMutable);
+    }
     if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID)) {
-        return std::make_unique<BaseTypeExpr>(previous());
+        Token base_type = previous();
+        if (match(TokenType::LESS)) {
+            std::vector<std::unique_ptr<TypeExpr>> generic_args;
+            do {
+                generic_args.push_back(type());
+            } while (match(TokenType::COMMA));
+            consume(TokenType::GREATER, "Expect '>' after generic arguments.");
+            return std::make_unique<GenericTypeExpr>(std::move(base_type), std::move(generic_args));
+        }
+        return std::make_unique<BaseTypeExpr>(std::move(base_type));
     }
 
     // For now, we only support base types.
@@ -238,6 +267,10 @@ std::unique_ptr<Expr> Parser::assignment() {
 
         if (auto varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
             return std::make_unique<AssignExpr>(varExpr->name, std::move(value));
+        } else if (auto getExpr = dynamic_cast<GetExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(getExpr->object), getExpr->name, std::move(value));
+        } else if (auto derefExpr = dynamic_cast<DerefExpr*>(expr.get())) {
+            return std::make_unique<SetExpr>(std::move(derefExpr->expression), Token{TokenType::STAR, "*", nullptr, 0}, std::move(value));
         }
 
         error(equals, "Invalid assignment target.");
@@ -287,9 +320,12 @@ std::unique_ptr<Expr> Parser::factor() {
 }
 
 std::unique_ptr<Expr> Parser::unary() {
-    if (match(TokenType::BANG, TokenType::MINUS)) {
+    if (match(TokenType::BANG, TokenType::MINUS, TokenType::STAR)) {
         Token op = previous();
         auto right = unary();
+        if (op.type == TokenType::STAR) {
+            return std::make_unique<DerefExpr>(std::move(right));
+        }
         return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
     }
     return call();

@@ -131,6 +131,9 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
     if (auto baseType = dynamic_cast<const BaseTypeExpr*>(type)) {
         return TypeInfo{ transpileType(*baseType) };
     }
+    if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(type)) {
+        return TypeInfo{ transpileType(*borrowType) };
+    }
 
     // Fallback for more complex types not yet handled.
     return TypeInfo{ "auto" };
@@ -325,12 +328,19 @@ std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     }
     return std::any_cast<std::string>(expr.object->accept(*this)) + separator + expr.name.lexeme;
 }
-std::any Transpiler::visitSetExpr(const SetExpr& expr) { return nullptr; }
+std::any Transpiler::visitSetExpr(const SetExpr& expr) {
+    if (expr.name.type == TokenType::STAR) {
+        return "*" + std::any_cast<std::string>(expr.object->accept(*this)) + " = " + std::any_cast<std::string>(expr.value->accept(*this));
+    }
+    return std::any_cast<std::string>(expr.object->accept(*this)) + "." + expr.name.lexeme + " = " + std::any_cast<std::string>(expr.value->accept(*this));
+}
 std::any Transpiler::visitSelfExpr(const SelfExpr& expr) {
     return std::string("this");
 }
 std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) { return nullptr; }
-std::any Transpiler::visitDerefExpr(const DerefExpr& expr) { return nullptr; }
+std::any Transpiler::visitDerefExpr(const DerefExpr& expr) {
+    return "*" + std::any_cast<std::string>(expr.expression->accept(*this));
+}
 
 std::any Transpiler::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     std::stringstream out;
@@ -511,20 +521,40 @@ std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
 
 std::string Transpiler::transpileType(const TypeExpr& type) {
     if (auto baseType = dynamic_cast<const BaseTypeExpr*>(&type)) {
-        // Simple mapping for now. This will need to be expanded.
         if (baseType->type.lexeme == "int") return "int";
         if (baseType->type.lexeme == "string") return "std::string";
         if (baseType->type.lexeme == "bool") return "bool";
         if (baseType->type.lexeme == "void") return "void";
-        return baseType->type.lexeme; // For user-defined types (structs)
+        return baseType->type.lexeme;
     }
-    // Handle other types like ArrayTypeExpr, etc. here later.
-    return "auto"; // Default fallback
+    if (auto genericType = dynamic_cast<const GenericTypeExpr*>(&type)) {
+        std::string s = genericType->base_type.lexeme + "<";
+        for (size_t i = 0; i < genericType->generic_args.size(); ++i) {
+            s += transpileType(*genericType->generic_args[i]);
+            if (i < genericType->generic_args.size() - 1) {
+                s += ", ";
+            }
+        }
+        s += ">";
+        return s;
+    }
+    if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(&type)) {
+        return transpileType(*borrowType->element_type) + (borrowType->isMutable ? "&" : " const&");
+    }
+    return "auto";
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
-    // We could define the function in the current scope here.
-    // define(stmt.name.lexeme, ...);
+    if (!stmt.generic_params.empty()) {
+        out << "template <";
+        for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
+            out << "typename " << stmt.generic_params[i].lexeme;
+            if (i < stmt.generic_params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ">\n";
+    }
 
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
 
@@ -546,6 +576,16 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
 }
 
 std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
+    if (!stmt.generic_params.empty()) {
+        out << "template <";
+        for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
+            out << "typename " << stmt.generic_params[i].lexeme;
+            if (i < stmt.generic_params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ">\n";
+    }
     out << "struct " << stmt.name.lexeme << " {\n";
     for (const auto& field : stmt.fields) {
         // This reuses the VarStmt logic, but we need to adapt it slightly for fields.

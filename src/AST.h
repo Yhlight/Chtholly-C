@@ -32,6 +32,7 @@ struct BaseTypeExpr;
 struct ArrayTypeExpr;
 struct FunctionTypeExpr;
 struct GenericTypeExpr;
+struct BorrowTypeExpr;
 
 struct Stmt;
 struct BlockStmt;
@@ -221,12 +222,13 @@ struct ExpressionStmt : Stmt {
 
 struct FunctionStmt : Stmt {
     Token name;
+    std::vector<Token> generic_params;
     std::vector<Token> params;
     std::vector<std::unique_ptr<TypeExpr>> param_types;
     std::unique_ptr<TypeExpr> return_type;
     std::unique_ptr<BlockStmt> body;
-    FunctionStmt(Token name, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
-        : name(std::move(name)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
+    FunctionStmt(Token name, std::vector<Token> generic_params, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
+        : name(std::move(name)), generic_params(std::move(generic_params)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
 };
 
@@ -267,11 +269,12 @@ struct ReturnStmt : Stmt {
 
 struct StructStmt : Stmt {
     Token name;
+    std::vector<Token> generic_params;
     std::vector<std::unique_ptr<Expr>> traits;
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
-    StructStmt(Token name, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
-        : name(std::move(name)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
+    StructStmt(Token name, std::vector<Token> generic_params, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(std::move(name)), generic_params(std::move(generic_params)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitStructStmt(*this); }
 };
 
@@ -341,6 +344,13 @@ struct GenericTypeExpr : TypeExpr {
     std::vector<std::unique_ptr<TypeExpr>> generic_args;
     GenericTypeExpr(Token base_type, std::vector<std::unique_ptr<TypeExpr>> generic_args)
         : base_type(std::move(base_type)), generic_args(std::move(generic_args)) {}
+};
+
+struct BorrowTypeExpr : TypeExpr {
+    std::unique_ptr<TypeExpr> element_type;
+    bool isMutable;
+    BorrowTypeExpr(std::unique_ptr<TypeExpr> element_type, bool isMutable)
+        : element_type(std::move(element_type)), isMutable(isMutable) {}
 };
 
 } // namespace chtholly
