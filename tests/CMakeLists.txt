@@ -14,6 +14,7 @@ add_executable(chtholly_tests
     ParserTests.cpp
     TranspilerTests.cpp
     MetaTests.cpp
+    ReflectionTests.cpp
     TestOperatorOverload.cpp
     TestGenerics.cpp
     TestHelpers.cpp

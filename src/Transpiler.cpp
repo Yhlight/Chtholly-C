@@ -113,6 +113,17 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (var_expr->name.lexeme == "meta") {
                     return TypeInfo{"bool"};
                 }
+            if (var_expr->name.lexeme == "reflect") {
+                if (get_expr->name.lexeme == "get_field_count" || get_expr->name.lexeme == "get_method_count") {
+                    return TypeInfo{"int"};
+                }
+                if (get_expr->name.lexeme == "get_fields") {
+                    return TypeInfo{"std::vector<chtholly_field>"};
+                }
+                if (get_expr->name.lexeme == "get_methods") {
+                    return TypeInfo{"std::vector<chtholly_method>"};
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -180,6 +191,27 @@ std::string fs_read(const std::string& path) {
     buffer << file.rdbuf();
     return buffer.str();
 }
+)";
+    }
+    if (reflect_used) {
+        final_code << "#include <string>\n";
+        final_code << "#include <vector>\n";
+        final_code << R"(
+struct chtholly_field {
+    std::string name;
+    std::string type;
+};
+
+struct chtholly_parameter {
+    std::string name;
+    std::string type;
+};
+
+struct chtholly_method {
+    std::string name;
+    std::string return_type;
+    std::vector<chtholly_parameter> parameters;
+};
 )";
     }
     // Add other includes here as needed
@@ -311,11 +343,86 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown meta function call */");
 }
 
+std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (expr.arguments.empty()) {
+        return std::string("/* ERROR: reflect function requires one argument */");
+    }
+    TypeInfo arg_type = get_type(*expr.arguments[0]);
+
+    if (function_name == "get_field_count") {
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            return std::to_string(s->fields.size());
+        } else {
+            return std::string("0"); // Return 0 if not a struct
+        }
+    }
+    if (function_name == "get_method_count") {
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            return std::to_string(s->methods.size());
+        } else {
+            return std::string("0"); // Return 0 if not a struct
+        }
+    }
+    if (function_name == "get_fields") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            std::stringstream ss;
+            ss << "std::vector<chtholly_field>{";
+            for (size_t i = 0; i < s->fields.size(); ++i) {
+                ss << "{\"" << s->fields[i]->name.lexeme << "\", \"" << transpileType(*s->fields[i]->type) << "\"}";
+                if (i < s->fields.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << "}";
+            return ss.str();
+        } else {
+            return std::string("std::vector<chtholly_field>{}");
+        }
+    }
+    if (function_name == "get_methods") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            std::stringstream ss;
+            ss << "std::vector<chtholly_method>{";
+            for (size_t i = 0; i < s->methods.size(); ++i) {
+                ss << "{\"" << s->methods[i]->name.lexeme << "\", \"" << (s->methods[i]->return_type ? transpileType(*s->methods[i]->return_type) : "void") << "\", {";
+                for (size_t j = 0; j < s->methods[i]->params.size(); ++j) {
+                    ss << "{\"" << s->methods[i]->params[j].lexeme << "\", \"" << transpileType(*s->methods[i]->param_types[j]) << "\"}";
+                    if (j < s->methods[i]->params.size() - 1) {
+                        ss << ", ";
+                    }
+                }
+                ss << "}}";
+                if (i < s->methods.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << "}";
+            return ss.str();
+        } else {
+            return std::string("std::vector<chtholly_method>{}");
+        }
+    }
+
+    return std::string("/* ERROR: Unknown reflect function call */");
+}
+
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "meta") {
                 return handleMetaFunction(expr);
+            }
+            if (var_expr->name.lexeme == "reflect") {
+                return handleReflectFunction(expr);
             }
         }
     }

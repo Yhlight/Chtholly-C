@@ -52,6 +52,7 @@ private:
     bool has_trait(const std::string& struct_name, const std::string& trait_name);
     TypeInfo get_type(const Expr& expr);
     std::any handleMetaFunction(const CallExpr& expr);
+    std::any handleReflectFunction(const CallExpr& expr);
     void enterScope();
     void exitScope();
     void define(const std::string& name, const TypeInfo& type);
@@ -63,6 +64,7 @@ private:
     std::map<std::string, const StructStmt*> structs;
     bool is_in_switch = false;
     bool input_used = false;
+    bool reflect_used = false;
 };
 
 } // namespace chtholly

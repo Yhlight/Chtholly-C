@@ -235,7 +235,7 @@ std::unique_ptr<TypeExpr> Parser::type() {
         auto element_type = type();
         return std::make_unique<BorrowTypeExpr>(std::move(element_type), isMutable);
     }
-    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE)) {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
             std::vector<std::unique_ptr<TypeExpr>> generic_args;
@@ -366,7 +366,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }
