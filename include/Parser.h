@@ -21,6 +21,7 @@ private:
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<FunctionStmt> methodDeclaration();
     std::unique_ptr<Stmt> function();
+    std::vector<Token> parseTemplateParameters();
     std::vector<Param> parseParameters();
     std::unique_ptr<BlockStmt> parseBody();
     std::unique_ptr<Stmt> varDeclaration();

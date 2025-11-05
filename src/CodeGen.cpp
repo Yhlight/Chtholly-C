@@ -87,6 +87,16 @@ void CodeGen::visit(const ExpressionStmt& stmt) {
 }
 
 void CodeGen::visit(const FunctionStmt& stmt) {
+    if (!stmt.templateParams.empty()) {
+        result += "template<";
+        for (size_t i = 0; i < stmt.templateParams.size(); ++i) {
+            result += "typename " + stmt.templateParams[i].lexeme;
+            if (i < stmt.templateParams.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += ">\n";
+    }
     result += "auto " + stmt.name.lexeme + "(";
     for (size_t i = 0; i < stmt.params.size(); ++i) {
         const auto& param = stmt.params[i];
@@ -104,6 +114,16 @@ void CodeGen::visit(const FunctionStmt& stmt) {
 }
 
 void CodeGen::visit(const StructStmt& stmt) {
+    if (!stmt.templateParams.empty()) {
+        result += "template<";
+        for (size_t i = 0; i < stmt.templateParams.size(); ++i) {
+            result += "typename " + stmt.templateParams[i].lexeme;
+            if (i < stmt.templateParams.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += ">\n";
+    }
     isInsideStruct = true;
     result += "struct " + stmt.name.lexeme + " {\n";
     for (const auto& field : stmt.fields) {

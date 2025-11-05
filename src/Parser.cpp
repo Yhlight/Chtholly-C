@@ -26,9 +26,21 @@ std::unique_ptr<Stmt> Parser::declaration() {
 
 std::unique_ptr<Stmt> Parser::function() {
     Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
+    auto templateParams = parseTemplateParameters();
     auto parameters = parseParameters();
     auto body = parseBody();
-    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body));
+    return std::make_unique<FunctionStmt>(name, std::move(templateParams), std::move(parameters), std::move(body));
+}
+
+std::vector<Token> Parser::parseTemplateParameters() {
+    std::vector<Token> templateParams;
+    if (match({TokenType::LESS})) {
+        do {
+            templateParams.push_back(consume(TokenType::IDENTIFIER, "Expect template parameter name."));
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after template parameters.");
+    }
+    return templateParams;
 }
 
 std::vector<Param> Parser::parseParameters() {
@@ -68,18 +80,20 @@ std::unique_ptr<BlockStmt> Parser::parseBody() {
 
 std::unique_ptr<FunctionStmt> Parser::methodDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect method name.");
+    auto templateParams = parseTemplateParameters();
     auto parameters = parseParameters();
     auto body = parseBody();
-    return std::make_unique<FunctionStmt>(name, std::move(parameters), std::move(body));
+    return std::make_unique<FunctionStmt>(name, std::move(templateParams), std::move(parameters), std::move(body));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    auto templateParams = parseTemplateParameters();
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<VarDeclStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        if (check(TokenType::IDENTIFIER) && checkNext(TokenType::LEFT_PAREN)) {
+        if (check(TokenType::IDENTIFIER) && (checkNext(TokenType::LEFT_PAREN) || checkNext(TokenType::LESS))) {
             methods.push_back(methodDeclaration());
         } else if (check(TokenType::IDENTIFIER) && checkNext(TokenType::COLON)) {
             Token fieldName = consume(TokenType::IDENTIFIER, "Expect field name.");
@@ -96,7 +110,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(name, std::move(fields), std::move(methods));
+    return std::make_unique<StructStmt>(name, std::move(templateParams), std::move(fields), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::varDeclaration() {

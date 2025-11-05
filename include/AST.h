@@ -209,11 +209,12 @@ struct BlockStmt : Stmt {
 // Struct statements
 struct StructStmt : Stmt {
     Token name;
+    std::vector<Token> templateParams;
     std::vector<std::unique_ptr<VarDeclStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
 
-    StructStmt(Token name, std::vector<std::unique_ptr<VarDeclStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
-        : name(name), fields(std::move(fields)), methods(std::move(methods)) {}
+    StructStmt(Token name, std::vector<Token> templateParams, std::vector<std::unique_ptr<VarDeclStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(name), templateParams(std::move(templateParams)), fields(std::move(fields)), methods(std::move(methods)) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visit(*this);
@@ -242,11 +243,12 @@ struct Param {
 // Function statements
 struct FunctionStmt : Stmt {
     Token name;
+    std::vector<Token> templateParams;
     std::vector<Param> params;
     std::unique_ptr<BlockStmt> body;
 
-    FunctionStmt(Token name, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
-        : name(name), params(std::move(params)), body(std::move(body)) {}
+    FunctionStmt(Token name, std::vector<Token> templateParams, std::vector<Param> params, std::unique_ptr<BlockStmt> body)
+        : name(name), templateParams(std::move(templateParams)), params(std::move(params)), body(std::move(body)) {}
 
     void accept(StmtVisitor& visitor) const override {
         visitor.visit(*this);
