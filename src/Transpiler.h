@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <set>
 
 namespace chtholly {
 
@@ -43,6 +44,7 @@ public:
 private:
     std::string transpileType(const TypeExpr& type);
     std::stringstream out;
+    std::set<std::string> imported_modules;
 };
 
 } // namespace chtholly

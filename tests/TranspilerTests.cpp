@@ -93,3 +93,15 @@ TEST(TranspilerTest, StructWithMethod) {
     std::string expected = "struct Point {\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, PrintStatement) {
+    std::string source = "import iostream; print(\"Hello, World!\");";
+    std::string expected = "#include <iostream>\nstd::cout << \"Hello, World!\" << std::endl;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, PrintWithoutImport) {
+    std::string source = "print(\"Hello, World!\");";
+    std::string expected = "/* ERROR: 'print' function called without importing 'iostream' */;\n";
+    EXPECT_EQ(transpile(source), expected);
+}

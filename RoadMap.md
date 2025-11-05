@@ -32,5 +32,7 @@ This document outlines the development progress and future goals for the Chtholl
 ## Phase 5: Advanced Features
 
 - [ ] Implement the standard library (`iostream`, `filesystem`, etc.).
+  - [x] Basic module import system
+  - [x] `iostream` module with `print` function
 - [ ] Implement static reflection and metaprogramming features.
 - [ ] Implement operator overloading.

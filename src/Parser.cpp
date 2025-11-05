@@ -134,8 +134,10 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     std::variant<std::string, Token> path;
     if (match(TokenType::STRING_LITERAL)) {
         path = std::get<std::string>(previous().literal);
+    } else if (match(TokenType::IDENTIFIER, TokenType::IOSTREAM, TokenType::FILESYSTEM, TokenType::OPERATOR, TokenType::REFLECT, TokenType::META, TokenType::UTIL)) {
+        path = previous();
     } else {
-        path = consume(TokenType::IDENTIFIER, "Expect module name or file path after 'import'.");
+        throw error(peek(), "Expect module name or file path after 'import'.");
     }
     consume(TokenType::SEMICOLON, "Expect ';' after import statement.");
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
@@ -307,7 +309,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
-    if (match(TokenType::IDENTIFIER)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT)) {
         return std::make_unique<VariableExpr>(previous());
     }
 

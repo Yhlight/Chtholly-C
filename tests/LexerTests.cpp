@@ -171,3 +171,18 @@ TEST(LexerTest, ComprehensiveTest) {
         EXPECT_EQ(tokens[i].type, expected_types[i]);
     }
 }
+
+TEST(LexerTest, ModuleAndBuiltinKeywords) {
+    std::string source = "import iostream; print(\"hello\");";
+    Lexer lexer(source);
+    std::vector<Token> tokens = lexer.scanTokens();
+    std::vector<TokenType> expected = {
+        TokenType::IMPORT, TokenType::IOSTREAM, TokenType::SEMICOLON,
+        TokenType::PRINT, TokenType::LEFT_PAREN, TokenType::STRING_LITERAL, TokenType::RIGHT_PAREN, TokenType::SEMICOLON,
+        TokenType::END_OF_FILE
+    };
+    ASSERT_EQ(tokens.size(), expected.size());
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        EXPECT_EQ(tokens[i].type, expected[i]);
+    }
+}

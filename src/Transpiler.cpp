@@ -8,7 +8,15 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     for (const auto& statement : statements) {
         statement->accept(*this);
     }
-    return out.str();
+
+    std::stringstream final_code;
+    if (imported_modules.count("iostream")) {
+        final_code << "#include <iostream>\n";
+    }
+    // Add other includes here as needed
+
+    final_code << out.str();
+    return final_code.str();
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
@@ -55,6 +63,26 @@ std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
 
 // Placeholder for now
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        if (var_expr->name.lexeme == "print") {
+            if (imported_modules.find("iostream") == imported_modules.end()) {
+                // For simplicity, we're not throwing a proper compiler error here yet.
+                // In a real implementation, this would be a semantic error.
+                return std::string("/* ERROR: 'print' function called without importing 'iostream' */");
+            }
+            std::stringstream out;
+            out << "std::cout << ";
+            for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+                if (i < expr.arguments.size() - 1) {
+                    out << " << ";
+                }
+            }
+            out << " << std::endl";
+            return out.str();
+        }
+    }
+
     std::stringstream out;
     out << std::any_cast<std::string>(expr.callee->accept(*this)) << "(";
     for (size_t i = 0; i < expr.arguments.size(); ++i) {
@@ -83,7 +111,8 @@ std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
 }
 
 std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
-    out << std::any_cast<std::string>(stmt.expression->accept(*this)) << ";\n";
+    std::string s = std::any_cast<std::string>(stmt.expression->accept(*this));
+    out << s << ";\n";
     return nullptr;
 }
 
@@ -119,7 +148,14 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << ";\n";
     return nullptr;
 }
-std::any Transpiler::visitImportStmt(const ImportStmt& stmt) { return nullptr; }
+std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
+    if (std::holds_alternative<Token>(stmt.path)) {
+        std::string module_name = std::get<Token>(stmt.path).lexeme;
+        imported_modules.insert(module_name);
+    }
+    // File imports are not handled yet.
+    return nullptr;
+}
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
     out << "{\n";
     out << "auto&& __switch_val = " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ";\n";
