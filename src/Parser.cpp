@@ -235,7 +235,7 @@ std::unique_ptr<TypeExpr> Parser::type() {
         auto element_type = type();
         return std::make_unique<BorrowTypeExpr>(std::move(element_type), isMutable);
     }
-    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID)) {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
             std::vector<std::unique_ptr<TypeExpr>> generic_args;

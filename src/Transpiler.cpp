@@ -256,7 +256,7 @@ std::any Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
         return std::to_string(std::get<long long>(expr.value));
     }
     if (std::holds_alternative<bool>(expr.value)) {
-        return std::get<bool>(expr.value) ? "true" : "false";
+        return std::string(std::get<bool>(expr.value) ? "true" : "false");
     }
     if (std::holds_alternative<char>(expr.value)) {
         return "'" + std::string(1, std::get<char>(expr.value)) + "'";
@@ -277,15 +277,45 @@ std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
 }
 
 // Placeholder for now
+std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (expr.arguments.empty()) {
+        return std::string("/* ERROR: meta function requires one argument */");
+    }
+    TypeInfo arg_type = get_type(*expr.arguments[0]);
+
+    if (function_name == "is_int") {
+        return std::string(arg_type.name == "int" ? "true" : "false");
+    }
+    if (function_name == "is_uint") {
+        return std::string(arg_type.name == "unsigned int" ? "true" : "false");
+    }
+    if (function_name == "is_double") {
+        return std::string(arg_type.name == "double" ? "true" : "false");
+    }
+    if (function_name == "is_char") {
+        return std::string(arg_type.name == "char" ? "true" : "false");
+    }
+    if (function_name == "is_bool") {
+        return std::string(arg_type.name == "bool" ? "true" : "false");
+    }
+    if (function_name == "is_string") {
+        return std::string(arg_type.name == "std::string" ? "true" : "false");
+    }
+    if (function_name == "is_struct") {
+        return std::string(structs.count(arg_type.name) ? "true" : "false");
+    }
+
+    return std::string("/* ERROR: Unknown meta function call */");
+}
+
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "meta") {
-                std::string function_name = get_expr->name.lexeme;
-                if (function_name == "is_int") {
-                    TypeInfo arg_type = get_type(*expr.arguments[0]);
-                    return std::string(arg_type.name == "int" ? "true" : "false");
-                }
+                return handleMetaFunction(expr);
             }
         }
     }
@@ -544,6 +574,7 @@ std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
 std::string Transpiler::transpileType(const TypeExpr& type) {
     if (auto baseType = dynamic_cast<const BaseTypeExpr*>(&type)) {
         if (baseType->type.lexeme == "int") return "int";
+        if (baseType->type.lexeme == "uint") return "unsigned int";
         if (baseType->type.lexeme == "string") return "std::string";
         if (baseType->type.lexeme == "bool") return "bool";
         if (baseType->type.lexeme == "void") return "void";

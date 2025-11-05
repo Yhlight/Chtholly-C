@@ -13,6 +13,7 @@ add_executable(chtholly_tests
     AstPrinterTests.cpp
     ParserTests.cpp
     TranspilerTests.cpp
+    MetaTests.cpp
     TestOperatorOverload.cpp
     TestGenerics.cpp
     TestHelpers.cpp

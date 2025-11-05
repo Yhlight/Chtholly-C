@@ -43,6 +43,12 @@ This document outlines the development progress and future goals for the Chtholl
 - [ ] Implement static reflection and metaprogramming features.
   - [x] Symbol table and basic type analysis engine
   - [x] `meta` module with `is_int`
+  - [x] `meta` module with `is_uint`
+  - [x] `meta` module with `is_double`
+  - [x] `meta` module with `is_char`
+  - [x] `meta` module with `is_bool`
+  - [x] `meta` module with `is_string`
+  - [x] `meta` module with `is_struct`
 - [x] Implement operator overloading.
   - [x] `operator::add`
   - [x] `operator::sub`
