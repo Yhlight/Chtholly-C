@@ -5,12 +5,14 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "TypeInfo.h"
 
 struct VariableState {
     bool defined = false;
     bool is_mutable = false;
     int immutable_borrows = 0;
     bool moved = false;
+    std::optional<TypeInfo> type;
 };
 
 class Resolver : public ExprVisitor, public StmtVisitor {
@@ -53,6 +55,7 @@ private:
     std::map<std::string, const TraitStmt*> traits;
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, std::map<std::string, VariableState>> std_modules;
 
     enum class FunctionType {
         NONE,

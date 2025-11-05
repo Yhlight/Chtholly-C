@@ -174,6 +174,8 @@ std::unique_ptr<Expr> PrattParser::prefix() {
             consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
             return std::make_unique<GroupingExpr>(std::move(expr));
         }
+        case TokenType::LEFT_BRACKET:
+            return lambdaExpression();
         case TokenType::MINUS:
         case TokenType::BANG: {
             return std::make_unique<UnaryExpr>(token, prefix());
@@ -294,8 +296,21 @@ TypeInfo PrattParser::parseType() {
     return TypeInfo(typeToken, isRef, isMut);
 }
 
+std::vector<Token> PrattParser::parseGenerics() {
+    std::vector<Token> generics;
+    if (match(TokenType::LESS)) {
+        do {
+            generics.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+        } while (match(TokenType::COMMA));
+        consume(TokenType::GREATER, "Expect '>' after generics.");
+    }
+    return generics;
+}
+
+
 std::unique_ptr<Stmt> PrattParser::function(const std::string& kind, bool body_required) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    std::vector<Token> generics = parseGenerics();
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<std::pair<Token, TypeInfo>> parameters;
     if (!check(TokenType::RIGHT_PAREN)) {
@@ -315,33 +330,59 @@ std::unique_ptr<Stmt> PrattParser::function(const std::string& kind, bool body_r
     if (body_required) {
         consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
         std::vector<std::unique_ptr<Stmt>> body = block();
-        return std::make_unique<FunctionStmt>(name, std::vector<Token>(), std::move(parameters), std::move(body), std::move(returnType));
+        return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::move(body), std::move(returnType));
     } else {
         consume(TokenType::SEMICOLON, "Expect ';' after " + kind + " signature.");
-        return std::make_unique<FunctionStmt>(name, std::vector<Token>(), std::move(parameters), std::vector<std::unique_ptr<Stmt>>(), std::move(returnType));
+        return std::make_unique<FunctionStmt>(name, std::move(generics), std::move(parameters), std::vector<std::unique_ptr<Stmt>>(), std::move(returnType));
     }
 }
 
+std::unique_ptr<Expr> PrattParser::lambdaExpression() {
+    consume(TokenType::RIGHT_BRACKET, "Expect ']' after '[' in lambda expression.");
+    consume(TokenType::LEFT_PAREN, "Expect '(' after '[]' in lambda expression.");
+    std::vector<std::pair<Token, TypeInfo>> parameters;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            parameters.emplace_back(paramName, parseType());
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+    std::optional<TypeInfo> returnType;
+    if (match(TokenType::ARROW)) {
+        returnType = parseType();
+    }
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
+    std::vector<std::unique_ptr<Stmt>> body = block();
+    return std::make_unique<LambdaExpr>(std::move(parameters), std::move(body), std::move(returnType));
+}
+
+
 std::unique_ptr<Stmt> PrattParser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
+    std::vector<Token> generics = parseGenerics();
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<LetStmt>> fields;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         fields.push_back(std::unique_ptr<LetStmt>(dynamic_cast<LetStmt*>(letDeclaration().release())));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(name, std::move(fields));
+    return std::make_unique<StructStmt>(name, std::move(generics), std::move(fields));
 }
 
 std::unique_ptr<Stmt> PrattParser::traitDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    std::vector<Token> generics = parseGenerics();
     consume(TokenType::LEFT_BRACE, "Expect '{' before trait body.");
     std::vector<std::unique_ptr<Stmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         methods.push_back(function("method", false));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
-    return std::make_unique<TraitStmt>(name, std::vector<Token>(), std::move(methods));
+    return std::make_unique<TraitStmt>(name, std::move(generics), std::move(methods));
 }
 
 std::unique_ptr<Stmt> PrattParser::implDeclaration() {

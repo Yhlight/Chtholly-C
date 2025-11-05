@@ -5,10 +5,17 @@ Resolver::Resolver() {
     scopes.emplace_back();
     scopes.back()["print"] = VariableState{true, false, 0, false};
     scopes.back()["input"] = VariableState{true, false, 0, false};
-    scopes.back()["fs_read"] = VariableState{true, false, 0, false};
-    scopes.back()["fs_write"] = VariableState{true, false, 0, false};
     scopes.back()["option"] = VariableState{true, false, 0, false};
     scopes.back()["none"] = VariableState{true, false, 0, false};
+
+    TypeInfo fs_read_type(Token{TokenType::FUNCTION, "function", std::monostate{}, 0});
+    fs_read_type.returnType = std::make_shared<TypeInfo>(Token{TokenType::OPTION, "option", std::monostate{}, 0});
+    fs_read_type.returnType->params.push_back(TypeInfo{Token{TokenType::STRING, "string", std::monostate{}, 0}});
+    std_modules["filesystem"]["fs_read"] = VariableState{true, false, 0, false, std::move(fs_read_type)};
+
+    TypeInfo fs_write_type(Token{TokenType::FUNCTION, "function", std::monostate{}, 0});
+    fs_write_type.returnType = std::make_shared<TypeInfo>(Token{TokenType::TRUE, "bool", std::monostate{}, 0});
+    std_modules["filesystem"]["fs_write"] = VariableState{true, false, 0, false, std::move(fs_write_type)};
 }
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
@@ -75,6 +82,11 @@ std::string Resolver::visitLetStmt(const LetStmt& stmt) {
     define(stmt.name);
     if (!scopes.empty()) {
         scopes.back()[stmt.name.lexeme].is_mutable = stmt.isMutable;
+        if (stmt.type) {
+            scopes.back()[stmt.name.lexeme].type = stmt.type;
+        } else if (stmt.initializer && stmt.initializer->resolved_type) {
+            scopes.back()[stmt.name.lexeme].type = stmt.initializer->resolved_type;
+        }
     }
     return "";
 }
@@ -146,7 +158,7 @@ std::string Resolver::visitStructInitializerExpr(const StructInitializerExpr& ex
         }
     }
 
-    expr.resolved_type = TypeInfo{expr.name};
+    expr.resolved_type.emplace(TypeInfo{expr.name});
     return "";
 }
 
@@ -160,6 +172,9 @@ std::string Resolver::visitVariableExpr(const VariableExpr& expr) {
         if (scopes[i].count(expr.name.lexeme)) {
             if (scopes[i].at(expr.name.lexeme).moved) {
                 ErrorReporter::error(expr.name.line, "Use of moved value.");
+            }
+            if (scopes[i].at(expr.name.lexeme).type) {
+                expr.resolved_type = scopes[i].at(expr.name.lexeme).type;
             }
             return "";
         }
@@ -268,7 +283,11 @@ std::string Resolver::visitImplStmt(const ImplStmt& stmt) {
 
 std::string Resolver::visitImportStmt(const ImportStmt& stmt) {
     if (stmt.is_std) {
-        if (stmt.path.lexeme != "iostream" && stmt.path.lexeme != "filesystem") {
+        if (std_modules.count(stmt.path.lexeme)) {
+            for (auto& [name, state] : std_modules.at(stmt.path.lexeme)) {
+                scopes.back()[name] = std::move(state);
+            }
+        } else {
             ErrorReporter::error(stmt.path.line, "Unknown standard library module.");
         }
         return "";

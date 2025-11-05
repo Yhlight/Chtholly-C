@@ -19,6 +19,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
         out << "#include <string>\n";
         bool has_lambda = false;
         bool has_option = false;
+        bool has_fs = false;
         for (const auto& statement : statements) {
             if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
                 if ((letStmt->type && letStmt->type->baseType.type == TokenType::FUNCTION) ||
@@ -29,11 +30,30 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
                     has_option = true;
                 }
             }
+             if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
+                if (auto* callExpr = dynamic_cast<const CallExpr*>(exprStmt->expression.get())) {
+                    if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
+                        if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
+                            has_fs = true;
+                        }
+                    }
+                }
+            } else if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
+                if (letStmt->initializer) {
+                    if (auto* callExpr = dynamic_cast<const CallExpr*>(letStmt->initializer.get())) {
+                        if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
+                            if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
+                                has_fs = true;
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (has_lambda) {
             out << "#include <functional>\n";
         }
-        if (has_option) {
+        if (has_option || has_fs) {
             out << "#include <optional>\n";
         }
         out << "\n";
@@ -68,43 +88,21 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
                 << "    return line;\n"
                 << "}\n\n";
         }
-        bool has_fs = false;
-        for (const auto& statement : statements) {
-            if (auto* exprStmt = dynamic_cast<const ExpressionStmt*>(statement.get())) {
-                if (auto* callExpr = dynamic_cast<const CallExpr*>(exprStmt->expression.get())) {
-                    if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
-                        if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
-                            has_fs = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (auto* letStmt = dynamic_cast<const LetStmt*>(statement.get())) {
-                if (letStmt->initializer) {
-                    if (auto* callExpr = dynamic_cast<const CallExpr*>(letStmt->initializer.get())) {
-                        if (auto* callee = dynamic_cast<const VariableExpr*>(callExpr->callee.get())) {
-                            if (callee->name.lexeme == "fs_read" || callee->name.lexeme == "fs_write") {
-                                has_fs = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
         if (has_fs) {
             out << "#include <fstream>\n"
                 << "#include <sstream>\n\n"
-                << "std::string chtholly_fs_read(const std::string& path) {\n"
+                << "std::optional<std::string> chtholly_fs_read(const std::string& path) {\n"
                 << "    std::ifstream file(path);\n"
-                << "    if (!file.is_open()) return \"\";\n"
+                << "    if (!file.is_open()) return std::nullopt;\n"
                 << "    std::stringstream buffer;\n"
                 << "    buffer << file.rdbuf();\n"
                 << "    return buffer.str();\n"
                 << "}\n\n"
-                << "void chtholly_fs_write(const std::string& path, const std::string& content) {\n"
+                << "bool chtholly_fs_write(const std::string& path, const std::string& content) {\n"
                 << "    std::ofstream file(path);\n"
+                << "    if (!file.is_open()) return false;\n"
                 << "    file << content;\n"
+                << "    return true;\n"
                 << "}\n\n";
         }
     }

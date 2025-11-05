@@ -9,7 +9,7 @@ struct TypeInfo {
     bool isReference = false;
     bool isMutable = false;
     std::vector<TypeInfo> params;
-    std::unique_ptr<TypeInfo> returnType;
+    std::shared_ptr<TypeInfo> returnType;
 
     TypeInfo() = default;
     TypeInfo(Token baseType, bool isReference = false, bool isMutable = false)

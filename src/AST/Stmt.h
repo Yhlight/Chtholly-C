@@ -142,9 +142,10 @@ struct ReturnStmt : Stmt {
 
 struct StructStmt : Stmt {
     Token name;
+    std::vector<Token> generics;
     std::vector<std::unique_ptr<LetStmt>> fields;
 
-    StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields);
+    StructStmt(Token name, std::vector<Token> generics, std::vector<std::unique_ptr<LetStmt>> fields);
     ~StructStmt() override;
 
     std::string accept(StmtVisitor& visitor) const override {

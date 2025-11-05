@@ -28,7 +28,7 @@ IfStmt::IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch
 WhileStmt::WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body) : condition(std::move(condition)), body(std::move(body)) {}
 FunctionStmt::FunctionStmt(Token name, std::vector<Token> generics, std::vector<std::pair<Token, TypeInfo>> params, std::vector<std::unique_ptr<Stmt>> body, std::optional<TypeInfo> returnType) : name(name), generics(std::move(generics)), params(std::move(params)), body(std::move(body)), returnType(std::move(returnType)) {}
 ReturnStmt::ReturnStmt(Token keyword, std::unique_ptr<Expr> value) : keyword(keyword), value(std::move(value)) {}
-StructStmt::StructStmt(Token name, std::vector<std::unique_ptr<LetStmt>> fields) : name(name), fields(std::move(fields)) {}
+StructStmt::StructStmt(Token name, std::vector<Token> generics, std::vector<std::unique_ptr<LetStmt>> fields) : name(name), generics(std::move(generics)), fields(std::move(fields)) {}
 TraitStmt::TraitStmt(Token name, std::vector<Token> generics, std::vector<std::unique_ptr<Stmt>> raw_methods) : name(name), generics(std::move(generics)) {
     for (auto& stmt : raw_methods) {
         auto func_stmt = dynamic_cast<FunctionStmt*>(stmt.get());
