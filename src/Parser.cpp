@@ -314,7 +314,7 @@ std::unique_ptr<TypeExpr> Parser::type() {
         consume(TokenType::RIGHT_BRACKET, "Expect ']' after array type.");
         return std::make_unique<ArrayTypeExpr>(std::move(element_type), std::move(size));
     }
-    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT)) {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
             std::vector<std::unique_ptr<TypeExpr>> generic_args;

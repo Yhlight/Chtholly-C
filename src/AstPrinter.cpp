@@ -44,7 +44,7 @@ std::any AstPrinter::visitUnaryExpr(const UnaryExpr& expr) {
 
 std::any AstPrinter::visitLiteralExpr(const LiteralExpr& expr) {
     if (std::holds_alternative<std::nullptr_t>(expr.value)) {
-        return std::string("nil");
+        return std::string("none");
     }
     if (std::holds_alternative<std::string>(expr.value)) {
         return std::get<std::string>(expr.value);

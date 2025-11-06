@@ -65,6 +65,24 @@ TEST(TranspilerTest, ForStatement) {
     EXPECT_EQ(transpile(source), expected);
 }
 
+TEST(TranspilerTest, OptionType) {
+    std::string source = "let x: option<int> = none;";
+    std::string expected = "#include <optional>\nconst std::optional<int> x = nullptr;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, OptionUnwarp) {
+    std::string source = "let x: option<int> = 10; let y = x.unwarp();";
+    std::string expected = "#include <optional>\nconst std::optional<int> x = 10;\nconst auto y = x.value();\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, OptionUnwarpOr) {
+    std::string source = "let x: option<int> = none; let y = x.unwarp_or(5);";
+    std::string expected = "#include <optional>\nconst std::optional<int> x = nullptr;\nconst int y = x.value_or(5);\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
 TEST(TranspilerTest, SwitchStatement) {
     std::string source = "switch (x) { case 1: { y = 1; break; } default: { y = 2; } }";
     std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\n}\nelse {\ny = 2;\n}\n}\n";

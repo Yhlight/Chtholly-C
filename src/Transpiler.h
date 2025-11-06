@@ -73,6 +73,7 @@ private:
     bool reflect_used = false;
     bool vector_used = false;
     bool array_used = false;
+    bool optional_used = false;
 };
 
 } // namespace chtholly

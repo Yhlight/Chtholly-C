@@ -82,6 +82,12 @@ TEST(ParserTest, ForStatement) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, OptionType) {
+    std::string source = "let x: option<int> = none;";
+    std::string expected = "(let x none)";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, BlockStatement) {
     std::string source = "{ let x = 1; let y = 2; }";
     std::string expected = "(block (let x 1) (let y 2))";

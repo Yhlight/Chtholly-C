@@ -85,3 +85,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Type inference for array literals
 - [x] Enums
   - [x] Enum declaration parsing and transpilation
+- [x] Null safety
+  - [x] `option<T>` type
+  - [x] `none` literal
+  - [x] `.unwarp()` and `.unwarp_or()` methods

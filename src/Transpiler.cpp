@@ -132,6 +132,16 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
             }
         }
         if (auto get_expr = dynamic_cast<const GetExpr*>(call_expr->callee.get())) {
+            TypeInfo object_type = get_type(*get_expr->object);
+            if (object_type.name.rfind("std::optional", 0) == 0) {
+                if (get_expr->name.lexeme == "unwarp") {
+                    // This is simplified. A real implementation would extract the inner type.
+                    return TypeInfo{"auto"};
+                }
+                if (get_expr->name.lexeme == "unwarp_or") {
+                    return get_type(*call_expr->arguments[0]);
+                }
+            }
              if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
                 if (var_expr->name.lexeme == "meta") {
                     return TypeInfo{"bool"};
@@ -233,6 +243,9 @@ std::string fs_read(const std::string& path) {
     }
     if (array_used) {
         final_code << "#include <array>\n";
+    }
+    if (optional_used) {
+        final_code << "#include <optional>\n";
     }
     if (reflect_used) {
         final_code << "#include <string>\n";
@@ -481,6 +494,15 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        TypeInfo object_type = get_type(*get_expr->object);
+        if (object_type.name.rfind("std::optional", 0) == 0) {
+            if (get_expr->name.lexeme == "unwarp") {
+                return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value()";
+            }
+            if (get_expr->name.lexeme == "unwarp_or") {
+                return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value_or(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+            }
+        }
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "meta") {
                 return handleMetaFunction(expr);
@@ -805,6 +827,10 @@ std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
 
 std::string Transpiler::transpileType(const TypeExpr& type) {
     if (auto baseType = dynamic_cast<const BaseTypeExpr*>(&type)) {
+        if (baseType->type.lexeme == "option") {
+            optional_used = true;
+            return "std::optional";
+        }
         if (baseType->type.lexeme == "int") return "int";
         if (baseType->type.lexeme == "uint") return "unsigned int";
         if (baseType->type.lexeme == "string") return "std::string";
@@ -813,7 +839,12 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
         return baseType->type.lexeme;
     }
     if (auto genericType = dynamic_cast<const GenericTypeExpr*>(&type)) {
-        std::string s = genericType->base_type.lexeme + "<";
+        std::string base_name = genericType->base_type.lexeme;
+        if (base_name == "option") {
+            optional_used = true;
+            base_name = "std::optional";
+        }
+        std::string s = base_name + "<";
         for (size_t i = 0; i < genericType->generic_args.size(); ++i) {
             s += transpileType(*genericType->generic_args[i]);
             if (i < genericType->generic_args.size() - 1) {
