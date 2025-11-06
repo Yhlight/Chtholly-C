@@ -70,3 +70,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `operator::or`
   - [x] `operator::not`
   - [x] `operator::assign_add`
+  - [x] `operator::assign_sub`
+  - [x] `operator::assign_mul`
+  - [x] `operator::assign_div`
+  - [x] `operator::assign_mod`

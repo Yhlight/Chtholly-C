@@ -298,7 +298,7 @@ std::unique_ptr<Expr> Parser::assignment() {
         }
 
         error(equals, "Invalid assignment target.");
-    } else if (match(TokenType::PLUS_EQUAL)) {
+    } else if (match(TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL, TokenType::SLASH_EQUAL, TokenType::PERCENT_EQUAL)) {
         Token op = previous();
         auto value = assignment();
         return std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(value));
@@ -339,7 +339,7 @@ std::unique_ptr<Expr> Parser::term() {
 
 std::unique_ptr<Expr> Parser::factor() {
     auto expr = unary();
-    while (match(TokenType::SLASH, TokenType::STAR)) {
+    while (match(TokenType::SLASH, TokenType::STAR, TokenType::PERCENT)) {
         Token op = previous();
         auto right = unary();
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));

@@ -249,7 +249,8 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
         {TokenType::BANG_EQUAL, "not_equal"}, {TokenType::LESS, "less"}, {TokenType::LESS_EQUAL, "less_equal"},
         {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
         {TokenType::AND, "and"}, {TokenType::OR, "or"},
-        {TokenType::PLUS_EQUAL, "assign_add"}
+        {TokenType::PLUS_EQUAL, "assign_add"}, {TokenType::MINUS_EQUAL, "assign_sub"}, {TokenType::STAR_EQUAL, "assign_mul"},
+        {TokenType::SLASH_EQUAL, "assign_div"}, {TokenType::PERCENT_EQUAL, "assign_mod"}
     };
 
     auto it = binary_op_traits.find(expr.op.type);
