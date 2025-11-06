@@ -74,3 +74,8 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `operator::assign_mul`
   - [x] `operator::assign_div`
   - [x] `operator::assign_mod`
+- [x] Arrays
+  - [x] Dynamic arrays (`array[T]`)
+  - [x] Fixed-size arrays (`array[T; N]`)
+  - [x] Array literal parsing and transpilation
+  - [x] Type inference for array literals

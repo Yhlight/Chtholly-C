@@ -16,6 +16,16 @@ std::string AstPrinter::parenthesize(const std::string& name, Args... args) {
     return out.str();
 }
 
+std::any AstPrinter::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
+    std::stringstream out;
+    out << "(array";
+    for (const auto& element : expr.elements) {
+        out << " " << std::any_cast<std::string>(element->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
 std::string AstPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statements) {
     std::stringstream out;
     for (const auto& stmt : statements) {

@@ -259,6 +259,16 @@ std::unique_ptr<TypeExpr> Parser::type() {
         auto element_type = type();
         return std::make_unique<BorrowTypeExpr>(std::move(element_type), isMutable);
     }
+    if (match(TokenType::ARRAY)) {
+        consume(TokenType::LEFT_BRACKET, "Expect '[' after 'array'.");
+        auto element_type = type();
+        std::unique_ptr<Expr> size = nullptr;
+        if (match(TokenType::SEMICOLON)) {
+            size = expression();
+        }
+        consume(TokenType::RIGHT_BRACKET, "Expect ']' after array type.");
+        return std::make_unique<ArrayTypeExpr>(std::move(element_type), std::move(size));
+    }
     if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
@@ -408,6 +418,17 @@ std::unique_ptr<Expr> Parser::primary() {
         auto expr = expression();
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
         return std::make_unique<GroupingExpr>(std::move(expr));
+    }
+
+    if (match(TokenType::LEFT_BRACKET)) {
+        std::vector<std::unique_ptr<Expr>> elements;
+        if (!check(TokenType::RIGHT_BRACKET)) {
+            do {
+                elements.push_back(expression());
+            } while (match(TokenType::COMMA));
+        }
+        consume(TokenType::RIGHT_BRACKET, "Expect ']' after array elements.");
+        return std::make_unique<ArrayLiteralExpr>(std::move(elements));
     }
 
     throw error(peek(), "Expect expression.");

@@ -81,6 +81,14 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     if (auto struct_literal = dynamic_cast<const StructLiteralExpr*>(&expr)) {
         return TypeInfo{struct_literal->name.lexeme};
     }
+    if (auto array_literal = dynamic_cast<const ArrayLiteralExpr*>(&expr)) {
+        vector_used = true;
+        if (array_literal->elements.empty()) {
+            return TypeInfo{"std::vector<auto>"};
+        }
+        TypeInfo element_type = get_type(*array_literal->elements[0]);
+        return TypeInfo{"std::vector<" + element_type.name + ">"};
+    }
     if (auto binary_expr = dynamic_cast<const BinaryExpr*>(&expr)) {
         static const std::map<TokenType, std::string> binary_op_traits = {
             {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
@@ -155,6 +163,12 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
     if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(type)) {
         return TypeInfo{ transpileType(*borrowType) };
     }
+    if (auto arrayType = dynamic_cast<const ArrayTypeExpr*>(type)) {
+        return TypeInfo{ transpileType(*arrayType) };
+    }
+    if (auto genericType = dynamic_cast<const GenericTypeExpr*>(type)) {
+        return TypeInfo{ transpileType(*genericType) };
+    }
 
     // Fallback for more complex types not yet handled.
     return TypeInfo{ "auto" };
@@ -197,6 +211,12 @@ std::string fs_read(const std::string& path) {
     return buffer.str();
 }
 )";
+    }
+    if (vector_used) {
+        final_code << "#include <vector>\n";
+    }
+    if (array_used) {
+        final_code << "#include <array>\n";
     }
     if (reflect_used) {
         final_code << "#include <string>\n";
@@ -553,6 +573,19 @@ std::any Transpiler::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     return out.str();
 }
 
+std::any Transpiler::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
+    std::stringstream out;
+    out << "{";
+    for (size_t i = 0; i < expr.elements.size(); ++i) {
+        out << std::any_cast<std::string>(expr.elements[i]->accept(*this));
+        if (i < expr.elements.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << "}";
+    return out.str();
+}
+
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
     visitBlockStmt(stmt, true);
     return nullptr;
@@ -737,6 +770,15 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
     }
     if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(&type)) {
         return transpileType(*borrowType->element_type) + (borrowType->isMutable ? "&" : " const&");
+    }
+    if (auto arrayType = dynamic_cast<const ArrayTypeExpr*>(&type)) {
+        if (arrayType->size) {
+            array_used = true;
+            return "std::array<" + transpileType(*arrayType->element_type) + ", " + std::any_cast<std::string>(arrayType->size->accept(*this)) + ">";
+        } else {
+            vector_used = true;
+            return "std::vector<" + transpileType(*arrayType->element_type) + ">";
+        }
     }
     return "auto";
 }

@@ -26,6 +26,7 @@ struct SelfExpr;
 struct BorrowExpr;
 struct DerefExpr;
 struct StructLiteralExpr;
+struct ArrayLiteralExpr;
 
 struct TypeExpr;
 struct BaseTypeExpr;
@@ -66,6 +67,7 @@ public:
     virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
     virtual std::any visitDerefExpr(const DerefExpr& expr) = 0;
     virtual std::any visitStructLiteralExpr(const StructLiteralExpr& expr) = 0;
+    virtual std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) = 0;
 };
 
 // Base class for all expressions
@@ -204,6 +206,13 @@ struct StructLiteralExpr : Expr {
     StructLiteralExpr(Token name, std::map<std::string, std::unique_ptr<Expr>> fields)
         : name(std::move(name)), fields(std::move(fields)) {}
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitStructLiteralExpr(*this); }
+};
+
+struct ArrayLiteralExpr : Expr {
+    std::vector<std::unique_ptr<Expr>> elements;
+    explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> elements)
+        : elements(std::move(elements)) {}
+    std::any accept(ExprVisitor& visitor) const override { return visitor.visitArrayLiteralExpr(*this); }
 };
 
 

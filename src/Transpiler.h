@@ -30,6 +30,7 @@ public:
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitDerefExpr(const DerefExpr& expr) override;
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
+    std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     void visitBlockStmt(const BlockStmt& stmt, bool create_scope);
@@ -67,6 +68,8 @@ private:
     bool is_in_method = false;
     bool input_used = false;
     bool reflect_used = false;
+    bool vector_used = false;
+    bool array_used = false;
 };
 
 } // namespace chtholly
