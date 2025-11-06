@@ -91,3 +91,5 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `.unwarp()` and `.unwarp_or()` methods
 - [x] Type Casting
   - [x] `type_cast<T>(expr)`
+- [x] Function Types
+  - [x] `function(T...) -> U` type annotations

@@ -314,6 +314,23 @@ std::unique_ptr<TypeExpr> Parser::type() {
         consume(TokenType::RIGHT_BRACKET, "Expect ']' after array type.");
         return std::make_unique<ArrayTypeExpr>(std::move(element_type), std::move(size));
     }
+    if (match(TokenType::FUNCTION)) {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'function'.");
+        std::vector<std::unique_ptr<TypeExpr>> param_types;
+        if (!check(TokenType::RIGHT_PAREN)) {
+            do {
+                param_types.push_back(type());
+            } while (match(TokenType::COMMA));
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after function parameters.");
+
+        std::unique_ptr<TypeExpr> return_type = nullptr;
+        if (match(TokenType::ARROW)) {
+            return_type = type();
+        }
+        return std::make_unique<FunctionTypeExpr>(std::move(param_types), std::move(return_type));
+    }
+
     if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {

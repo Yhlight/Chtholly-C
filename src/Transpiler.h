@@ -75,6 +75,7 @@ private:
     bool vector_used = false;
     bool array_used = false;
     bool optional_used = false;
+    bool function_used = false;
 };
 
 } // namespace chtholly

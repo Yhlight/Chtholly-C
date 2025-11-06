@@ -220,3 +220,9 @@ TEST(TranspilerTest, InputWithoutImport) {
     std::string transpiled_code = transpile(source);
     EXPECT_NE(transpiled_code.find(expected_error), std::string::npos);
 }
+
+TEST(TranspilerTest, FunctionTypeAnnotation) {
+    std::string source = "let my_func: function(int, int) -> int = add;";
+    std::string expected = "#include <functional>\nconst std::function<int(int, int)> my_func = add;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
