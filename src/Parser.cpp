@@ -18,6 +18,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
     try {
         if (match(TokenType::FUNC)) return functionDeclaration("function");
         if (match(TokenType::STRUCT)) return structDeclaration();
+        if (match(TokenType::ENUM)) return enumDeclaration();
         if (match(TokenType::LET, TokenType::MUT)) return varDeclaration(true);
         return statement();
     } catch (ParseError& error) {
@@ -242,6 +243,19 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
     return std::make_unique<StructStmt>(std::move(name), std::move(generic_params), std::move(traits), std::move(fields), std::move(methods));
+}
+
+std::unique_ptr<Stmt> Parser::enumDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect enum name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before enum members.");
+    std::vector<Token> members;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            members.push_back(consume(TokenType::IDENTIFIER, "Expect enum member name."));
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after enum members.");
+    return std::make_unique<EnumStmt>(std::move(name), std::move(members));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {

@@ -79,3 +79,5 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Fixed-size arrays (`array[T; N]`)
   - [x] Array literal parsing and transpilation
   - [x] Type inference for array literals
+- [x] Enums
+  - [x] Enum declaration parsing and transpilation

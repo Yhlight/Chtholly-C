@@ -46,6 +46,7 @@ public:
     std::any visitCaseStmt(const CaseStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
 
 private:
     std::string transpileType(const TypeExpr& type);
@@ -64,6 +65,7 @@ private:
     std::set<std::string> imported_modules;
     std::vector<std::map<std::string, TypeInfo>> scopes;
     std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const EnumStmt*> enums;
     bool is_in_switch = false;
     bool is_in_method = false;
     bool input_used = false;

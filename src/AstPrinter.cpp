@@ -215,4 +215,14 @@ std::any AstPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) {
     return std::string("(fallthrough)");
 }
 
+std::any AstPrinter::visitEnumStmt(const EnumStmt& stmt) {
+    std::stringstream out;
+    out << "(enum " << stmt.name.lexeme;
+    for (const auto& member : stmt.members) {
+        out << " " << member.lexeme;
+    }
+    out << ")";
+    return out.str();
+}
+
 } // namespace chtholly

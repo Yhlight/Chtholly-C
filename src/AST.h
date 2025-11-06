@@ -49,6 +49,7 @@ struct SwitchStmt;
 struct CaseStmt;
 struct BreakStmt;
 struct FallthroughStmt;
+struct EnumStmt;
 
 // Visitor for Expressions
 class ExprVisitor {
@@ -92,6 +93,7 @@ public:
     virtual std::any visitCaseStmt(const CaseStmt& stmt) = 0;
     virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
+    virtual std::any visitEnumStmt(const EnumStmt& stmt) = 0;
 };
 
 // Base class for all statements
@@ -321,6 +323,14 @@ struct FallthroughStmt : Stmt {
     Token keyword;
     explicit FallthroughStmt(Token keyword) : keyword(std::move(keyword)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFallthroughStmt(*this); }
+};
+
+struct EnumStmt : Stmt {
+    Token name;
+    std::vector<Token> members;
+    EnumStmt(Token name, std::vector<Token> members)
+        : name(std::move(name)), members(std::move(members)) {}
+    std::any accept(StmtVisitor& visitor) const override { return visitor.visitEnumStmt(*this); }
 };
 
 

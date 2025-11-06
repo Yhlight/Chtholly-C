@@ -41,6 +41,7 @@ public:
     std::any visitCaseStmt(const CaseStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
 
 private:
     template<typename... Args>

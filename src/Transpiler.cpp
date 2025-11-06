@@ -6,14 +6,18 @@
 
 namespace chtholly {
 
-// A simple visitor to find all struct declarations in the AST.
-class StructScanner : public StmtVisitor {
+// A simple visitor to find all struct and enum declarations in the AST.
+class DeclarationScanner : public StmtVisitor {
 public:
     std::any visitStructStmt(const StructStmt& stmt) override {
         structs[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
-    // We only care about structs, so other visit methods are empty.
+    std::any visitEnumStmt(const EnumStmt& stmt) override {
+        enums[stmt.name.lexeme] = &stmt;
+        return nullptr;
+    }
+    // We only care about structs and enums, so other visit methods are empty.
     std::any visitBlockStmt(const BlockStmt& stmt) override {
         for (const auto& s : stmt.statements) {
             s->accept(*this);
@@ -33,6 +37,7 @@ public:
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override { return nullptr; }
 
     std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const EnumStmt*> enums;
 };
 
 Transpiler::Transpiler() {
@@ -175,12 +180,13 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
 }
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    // Pre-scan for struct definitions.
-    StructScanner scanner;
+    // Pre-scan for struct and enum definitions.
+    DeclarationScanner scanner;
     for (const auto& statement : statements) {
         statement->accept(scanner);
     }
     this->structs = scanner.structs;
+    this->enums = scanner.enums;
 
     for (const auto& statement : statements) {
         statement->accept(*this);
@@ -533,7 +539,11 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
 std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     std::string separator = ".";
-    if (dynamic_cast<const SelfExpr*>(expr.object.get())) {
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        if (enums.count(var_expr->name.lexeme)) {
+            separator = "::";
+        }
+    } else if (dynamic_cast<const SelfExpr*>(expr.object.get())) {
         separator = "->";
     }
     return std::any_cast<std::string>(expr.object->accept(*this)) + separator + expr.name.lexeme;
@@ -852,6 +862,19 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         out << ") ";
         method->body->accept(*this);
         is_in_method = false;
+    }
+    out << "};\n";
+    return nullptr;
+}
+
+std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
+    out << "enum class " << stmt.name.lexeme << " {\n";
+    for (size_t i = 0; i < stmt.members.size(); ++i) {
+        out << "    " << stmt.members[i].lexeme;
+        if (i < stmt.members.size() - 1) {
+            out << ",";
+        }
+        out << "\n";
     }
     out << "};\n";
     return nullptr;

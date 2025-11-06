@@ -37,6 +37,7 @@ private:
     std::unique_ptr<Stmt> importStatement();
     std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind);
     std::unique_ptr<Stmt> structDeclaration();
+    std::unique_ptr<Stmt> enumDeclaration();
     std::vector<std::unique_ptr<Stmt>> block();
 
     std::unique_ptr<TypeExpr> type();
