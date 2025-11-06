@@ -235,7 +235,25 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return get_type(*call_expr->arguments[0]);
                 }
             }
+            if (object_type.name.rfind("Result", 0) == 0) {
+                if (get_expr->name.lexeme == "unwarp") {
+                    return TypeInfo{"auto"};
+                }
+                if (get_expr->name.lexeme == "unwarp_err") {
+                    return TypeInfo{"auto"};
+                }
+            }
              if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                if (var_expr->name.lexeme == "result") {
+                    if (get_expr->name.lexeme == "pass") {
+                        TypeInfo type_arg = get_type(*call_expr->arguments[0]);
+                        return TypeInfo{"Result<" + type_arg.name + ", auto>"};
+                    }
+                    if (get_expr->name.lexeme == "fail") {
+                        TypeInfo type_arg = get_type(*call_expr->arguments[0]);
+                        return TypeInfo{"Result<auto, " + type_arg.name + ">"};
+                    }
+                }
                 if (var_expr->name.lexeme == "meta") {
                     return TypeInfo{"bool"};
                 }
@@ -339,6 +357,9 @@ std::string fs_read(const std::string& path) {
     }
     if (optional_used) {
         final_code << "#include <optional>\n";
+    }
+    if (result_used) {
+        final_code << "#include \"Result.h\"\n";
     }
     if (reflect_used) {
         final_code << "#include <string>\n";
@@ -613,6 +634,12 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 if (get_expr->name.lexeme == "fail") {
                     TypeInfo type = contextual_type.name.empty() ? get_type(expr) : contextual_type;
                     return type.name + "::fail(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+                }
+                if (get_expr->name.lexeme == "is_pass") {
+                    return "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ").is_pass()";
+                }
+                if (get_expr->name.lexeme == "is_fail") {
+                    return "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ").is_fail()";
                 }
             }
             if (var_expr->name.lexeme == "meta") {
@@ -949,6 +976,10 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
             optional_used = true;
             return "std::optional";
         }
+        if (baseType->type.lexeme == "result") {
+            result_used = true;
+            return "Result";
+        }
         if (baseType->type.lexeme == "int") return "int";
         if (baseType->type.lexeme == "uint") return "unsigned int";
         if (baseType->type.lexeme == "string") return "std::string";
@@ -961,6 +992,10 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
         if (base_name == "option") {
             optional_used = true;
             base_name = "std::optional";
+        }
+        if (base_name == "result") {
+            result_used = true;
+            base_name = "Result";
         }
         std::string s = base_name + "<";
         for (size_t i = 0; i < genericType->generic_args.size(); ++i) {

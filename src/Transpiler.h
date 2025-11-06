@@ -2,6 +2,7 @@
 #define CHTHOLLY_TRANSPILER_H
 
 #include "AST.h"
+#include "Result.h"
 #include <string>
 #include <vector>
 #include <sstream>
@@ -75,6 +76,7 @@ private:
     bool vector_used = false;
     bool array_used = false;
     bool optional_used = false;
+    bool result_used = false;
     TypeInfo contextual_type;
 };
 

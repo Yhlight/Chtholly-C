@@ -89,5 +89,10 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `option<T>` type
   - [x] `none` literal
   - [x] `.unwarp()` and `.unwarp_or()` methods
+- [x] Error Handling
+  - [x] `result<T, E>` type
+  - [x] `result::pass(value)` and `result::fail(value)`
+  - [x] `is_pass()` and `is_fail()` methods (instance and static)
+  - [x] `.unwarp()` and `.unwarp_err()` methods
 - [x] Type Casting
   - [x] `type_cast<T>(expr)`
