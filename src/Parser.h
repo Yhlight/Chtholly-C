@@ -54,7 +54,6 @@ private:
     std::unique_ptr<Expr> primary();
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee);
     std::unique_ptr<Expr> structLiteral();
-    std::unique_ptr<Expr> lambdaExpression();
 
     // Helper methods
     bool isAtEnd();
