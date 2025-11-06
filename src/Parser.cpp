@@ -331,7 +331,7 @@ std::unique_ptr<TypeExpr> Parser::type() {
         return std::make_unique<FunctionTypeExpr>(std::move(param_types), std::move(return_type));
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION)) {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION, TokenType::RESULT)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
             std::vector<std::unique_ptr<TypeExpr>> generic_args;
@@ -477,7 +477,7 @@ std::unique_ptr<Expr> Parser::primary() {
         return type_cast_expr;
     }
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL, TokenType::RESULT)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }

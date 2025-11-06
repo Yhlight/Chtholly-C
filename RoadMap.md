@@ -95,3 +95,6 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `function(T...) -> U` type annotations
 - [x] Lambda Expressions
   - [x] `[]() -> T {}` syntax
+- [x] Result Type
+  - [x] `result<T, E>` type
+  - [x] `result::pass`, `result::fail`, `result::is_pass`, `result::is_fail`

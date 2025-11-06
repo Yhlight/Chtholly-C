@@ -76,6 +76,8 @@ private:
     bool array_used = false;
     bool optional_used = false;
     bool function_used = false;
+    bool result_used = false;
+    TypeInfo current_var_type;
 };
 
 } // namespace chtholly
