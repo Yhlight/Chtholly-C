@@ -76,6 +76,12 @@ TEST(ParserTest, WhileStatement) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, ForStatement) {
+    std::string source = "for (let i = 0; i < 10; i = i + 1) print(i);";
+    std::string expected = "(for (let i 0) (< i 10) (= i (+ i 1)) (; (call print i)))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, BlockStatement) {
     std::string source = "{ let x = 1; let y = 2; }";
     std::string expected = "(block (let x 1) (let y 2))";

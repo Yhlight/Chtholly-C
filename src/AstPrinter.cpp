@@ -157,6 +157,10 @@ std::any AstPrinter::visitWhileStmt(const WhileStmt& stmt) {
     return parenthesize("while", stmt.condition.get(), stmt.body.get());
 }
 
+std::any AstPrinter::visitForStmt(const ForStmt& stmt) {
+    return parenthesize("for", stmt.initializer.get(), stmt.condition.get(), stmt.increment.get(), stmt.body.get());
+}
+
 std::any AstPrinter::visitReturnStmt(const ReturnStmt& stmt) {
     if (stmt.value) {
         return parenthesize("return", stmt.value.get());

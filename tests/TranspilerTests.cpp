@@ -59,6 +59,12 @@ TEST(TranspilerTest, WhileStatement) {
     EXPECT_EQ(transpile(source), expected);
 }
 
+TEST(TranspilerTest, ForStatement) {
+    std::string source = "for (let i = 0; i < 10; i = i + 1) { }";
+    std::string expected = "for (const int i = 0; i < 10; i = i + 1) {\n}\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
 TEST(TranspilerTest, SwitchStatement) {
     std::string source = "switch (x) { case 1: { y = 1; break; } default: { y = 2; } }";
     std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\n}\nelse {\ny = 2;\n}\n}\n";

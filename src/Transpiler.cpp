@@ -28,7 +28,17 @@ public:
     std::any visitFunctionStmt(const FunctionStmt& stmt) override { return nullptr; }
     std::any visitIfStmt(const IfStmt& stmt) override { return nullptr; }
     std::any visitVarStmt(const VarStmt& stmt) override { return nullptr; }
-    std::any visitWhileStmt(const WhileStmt& stmt) override { return nullptr; }
+    std::any visitWhileStmt(const WhileStmt& stmt) override {
+        stmt.body->accept(*this);
+        return nullptr;
+    }
+    std::any visitForStmt(const ForStmt& stmt) override {
+        if (stmt.initializer) {
+            stmt.initializer->accept(*this);
+        }
+        stmt.body->accept(*this);
+        return nullptr;
+    }
     std::any visitReturnStmt(const ReturnStmt& stmt) override { return nullptr; }
     std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
     std::any visitSwitchStmt(const SwitchStmt& stmt) override { return nullptr; }
@@ -646,6 +656,41 @@ std::any Transpiler::visitIfStmt(const IfStmt& stmt) {
 std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
     out << "while (" << std::any_cast<std::string>(stmt.condition->accept(*this)) << ") ";
     stmt.body->accept(*this);
+    return nullptr;
+}
+
+std::any Transpiler::visitForStmt(const ForStmt& stmt) {
+    enterScope();
+    out << "for (";
+    if (stmt.initializer) {
+        if (auto* exprStmt = dynamic_cast<ExpressionStmt*>(stmt.initializer.get())) {
+            out << std::any_cast<std::string>(exprStmt->expression->accept(*this));
+        } else if (auto* varStmt = dynamic_cast<VarStmt*>(stmt.initializer.get())) {
+            // Slightly simplified VarStmt handling for for-loops
+             TypeInfo type = typeExprToTypeInfo(varStmt->type.get());
+            if (varStmt->initializer && type.name == "auto") {
+                type = get_type(*varStmt->initializer);
+            }
+
+            define(varStmt->name.lexeme, type);
+
+            out << (varStmt->isMutable ? "" : "const ") << type.name << " " << varStmt->name.lexeme;
+            if (varStmt->initializer) {
+                out << " = " << std::any_cast<std::string>(varStmt->initializer->accept(*this));
+            }
+        }
+    }
+    out << "; ";
+    if (stmt.condition) {
+        out << std::any_cast<std::string>(stmt.condition->accept(*this));
+    }
+    out << "; ";
+    if (stmt.increment) {
+        out << std::any_cast<std::string>(stmt.increment->accept(*this));
+    }
+    out << ") ";
+    stmt.body->accept(*this);
+    exitScope();
     return nullptr;
 }
 std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {

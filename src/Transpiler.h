@@ -39,6 +39,7 @@ public:
     std::any visitIfStmt(const IfStmt& stmt) override;
     std::any visitVarStmt(const VarStmt& stmt) override;
     std::any visitWhileStmt(const WhileStmt& stmt) override;
+    std::any visitForStmt(const ForStmt& stmt) override;
     std::any visitReturnStmt(const ReturnStmt& stmt) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
     std::any visitImportStmt(const ImportStmt& stmt) override;

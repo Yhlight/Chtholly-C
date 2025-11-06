@@ -42,6 +42,7 @@ struct FunctionStmt;
 struct IfStmt;
 struct VarStmt;
 struct WhileStmt;
+struct ForStmt;
 struct ReturnStmt;
 struct StructStmt;
 struct ImportStmt;
@@ -86,6 +87,7 @@ public:
     virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
     virtual std::any visitVarStmt(const VarStmt& stmt) = 0;
     virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
+    virtual std::any visitForStmt(const ForStmt& stmt) = 0;
     virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
     virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
     virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
@@ -268,6 +270,16 @@ struct WhileStmt : Stmt {
     WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
         : condition(std::move(condition)), body(std::move(body)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitWhileStmt(*this); }
+};
+
+struct ForStmt : Stmt {
+    std::unique_ptr<Stmt> initializer;
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Expr> increment;
+    std::unique_ptr<Stmt> body;
+    ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment, std::unique_ptr<Stmt> body)
+        : initializer(std::move(initializer)), condition(std::move(condition)), increment(std::move(increment)), body(std::move(body)) {}
+    std::any accept(StmtVisitor& visitor) const override { return visitor.visitForStmt(*this); }
 };
 
 struct ReturnStmt : Stmt {
