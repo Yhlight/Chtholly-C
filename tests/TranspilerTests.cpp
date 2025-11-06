@@ -83,6 +83,12 @@ TEST(TranspilerTest, OptionUnwarpOr) {
     EXPECT_EQ(transpile(source), expected);
 }
 
+TEST(TranspilerTest, TypeCastExpression) {
+    std::string source = "let x = type_cast<int>(10);";
+    std::string expected = "const int x = static_cast<int>(10);\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
 TEST(TranspilerTest, SwitchStatement) {
     std::string source = "switch (x) { case 1: { y = 1; break; } default: { y = 2; } }";
     std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\n}\nelse {\ny = 2;\n}\n}\n";

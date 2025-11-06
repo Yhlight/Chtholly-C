@@ -7,7 +7,7 @@
 namespace chtholly {
 
 // A simple visitor to find all struct and enum declarations in the AST.
-class DeclarationScanner : public StmtVisitor {
+class DeclarationScanner : public StmtVisitor, public ExprVisitor {
 public:
     std::any visitStructStmt(const StructStmt& stmt) override {
         structs[stmt.name.lexeme] = &stmt;
@@ -17,34 +17,124 @@ public:
         enums[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
-    // We only care about structs and enums, so other visit methods are empty.
+
+    // --- Stmt visitors ---
     std::any visitBlockStmt(const BlockStmt& stmt) override {
         for (const auto& s : stmt.statements) {
             s->accept(*this);
         }
         return nullptr;
     }
-    std::any visitExpressionStmt(const ExpressionStmt& stmt) override { return nullptr; }
-    std::any visitFunctionStmt(const FunctionStmt& stmt) override { return nullptr; }
-    std::any visitIfStmt(const IfStmt& stmt) override { return nullptr; }
-    std::any visitVarStmt(const VarStmt& stmt) override { return nullptr; }
+    std::any visitExpressionStmt(const ExpressionStmt& stmt) override {
+        stmt.expression->accept(*this);
+        return nullptr;
+    }
+    std::any visitFunctionStmt(const FunctionStmt& stmt) override {
+        // Don't recurse into function bodies, we only care about top-level declarations
+        return nullptr;
+    }
+    std::any visitIfStmt(const IfStmt& stmt) override {
+        stmt.condition->accept(*this);
+        stmt.thenBranch->accept(*this);
+        if (stmt.elseBranch) stmt.elseBranch->accept(*this);
+        return nullptr;
+    }
+    std::any visitVarStmt(const VarStmt& stmt) override {
+        if (stmt.initializer) stmt.initializer->accept(*this);
+        return nullptr;
+    }
     std::any visitWhileStmt(const WhileStmt& stmt) override {
+        stmt.condition->accept(*this);
         stmt.body->accept(*this);
         return nullptr;
     }
     std::any visitForStmt(const ForStmt& stmt) override {
-        if (stmt.initializer) {
-            stmt.initializer->accept(*this);
-        }
+        if (stmt.initializer) stmt.initializer->accept(*this);
+        if (stmt.condition) stmt.condition->accept(*this);
+        if (stmt.increment) stmt.increment->accept(*this);
         stmt.body->accept(*this);
         return nullptr;
     }
-    std::any visitReturnStmt(const ReturnStmt& stmt) override { return nullptr; }
+    std::any visitReturnStmt(const ReturnStmt& stmt) override {
+        if (stmt.value) stmt.value->accept(*this);
+        return nullptr;
+    }
     std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
-    std::any visitSwitchStmt(const SwitchStmt& stmt) override { return nullptr; }
-    std::any visitCaseStmt(const CaseStmt& stmt) override { return nullptr; }
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override {
+        stmt.expression->accept(*this);
+        for (const auto& c : stmt.cases) {
+            c->accept(*this);
+        }
+        return nullptr;
+    }
+    std::any visitCaseStmt(const CaseStmt& stmt) override {
+        if (stmt.value) stmt.value->accept(*this);
+        stmt.body->accept(*this);
+        return nullptr;
+    }
     std::any visitBreakStmt(const BreakStmt& stmt) override { return nullptr; }
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override { return nullptr; }
+
+    // --- Expr visitors ---
+    std::any visitBinaryExpr(const BinaryExpr& expr) override {
+        expr.left->accept(*this);
+        expr.right->accept(*this);
+        return nullptr;
+    }
+    std::any visitUnaryExpr(const UnaryExpr& expr) override {
+        expr.right->accept(*this);
+        return nullptr;
+    }
+    std::any visitLiteralExpr(const LiteralExpr& expr) override { return nullptr; }
+    std::any visitGroupingExpr(const GroupingExpr& expr) override {
+        expr.expression->accept(*this);
+        return nullptr;
+    }
+    std::any visitVariableExpr(const VariableExpr& expr) override { return nullptr; }
+    std::any visitAssignExpr(const AssignExpr& expr) override {
+        expr.value->accept(*this);
+        return nullptr;
+    }
+    std::any visitCallExpr(const CallExpr& expr) override {
+        expr.callee->accept(*this);
+        for (const auto& arg : expr.arguments) {
+            arg->accept(*this);
+        }
+        return nullptr;
+    }
+    std::any visitLambdaExpr(const LambdaExpr& expr) override { return nullptr; } // Simplified
+    std::any visitGetExpr(const GetExpr& expr) override {
+        expr.object->accept(*this);
+        return nullptr;
+    }
+    std::any visitSetExpr(const SetExpr& expr) override {
+        expr.object->accept(*this);
+        expr.value->accept(*this);
+        return nullptr;
+    }
+    std::any visitSelfExpr(const SelfExpr& expr) override { return nullptr; }
+    std::any visitBorrowExpr(const BorrowExpr& expr) override { return nullptr; }
+    std::any visitDerefExpr(const DerefExpr& expr) override {
+        expr.expression->accept(*this);
+        return nullptr;
+    }
+    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override {
+        for (const auto& [name, value] : expr.fields) {
+            value->accept(*this);
+        }
+        return nullptr;
+    }
+    std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override {
+        for (const auto& element : expr.elements) {
+            element->accept(*this);
+        }
+        return nullptr;
+    }
+    std::any visitTypeCastExpr(const TypeCastExpr& expr) override {
+        expr.expression->accept(*this);
+        return nullptr;
+    }
+
 
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
@@ -124,6 +214,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
             }
         }
+    }
+    if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
+        return typeExprToTypeInfo(type_cast_expr->type.get());
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
@@ -626,6 +719,10 @@ std::any Transpiler::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
     }
     out << "}";
     return out.str();
+}
+
+std::any Transpiler::visitTypeCastExpr(const TypeCastExpr& expr) {
+    return "static_cast<" + transpileType(*expr.type) + ">(" + std::any_cast<std::string>(expr.expression->accept(*this)) + ")";
 }
 
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {

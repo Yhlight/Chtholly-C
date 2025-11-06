@@ -31,6 +31,7 @@ public:
     std::any visitDerefExpr(const DerefExpr& expr) override;
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override;
+    std::any visitTypeCastExpr(const TypeCastExpr& expr) override;
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     void visitBlockStmt(const BlockStmt& stmt, bool create_scope);

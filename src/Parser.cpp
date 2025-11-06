@@ -449,6 +449,17 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<LiteralExpr>(previous().literal);
     }
 
+    if (match(TokenType::TYPE_CAST)) {
+        auto type_cast_expr = std::make_unique<TypeCastExpr>(nullptr, nullptr);
+        consume(TokenType::LESS, "Expect '<' after 'type_cast'.");
+        type_cast_expr->type = type();
+        consume(TokenType::GREATER, "Expect '>' after type in type_cast.");
+        consume(TokenType::LEFT_PAREN, "Expect '(' after type_cast<T>.");
+        type_cast_expr->expression = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after expression in type_cast.");
+        return type_cast_expr;
+    }
+
     if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();

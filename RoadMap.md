@@ -89,3 +89,5 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `option<T>` type
   - [x] `none` literal
   - [x] `.unwarp()` and `.unwarp_or()` methods
+- [x] Type Casting
+  - [x] `type_cast<T>(expr)`

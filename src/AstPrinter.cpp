@@ -26,6 +26,10 @@ std::any AstPrinter::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
     return out.str();
 }
 
+std::any AstPrinter::visitTypeCastExpr(const TypeCastExpr& expr) {
+    return parenthesize("type_cast <type>", expr.expression.get());
+}
+
 std::string AstPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statements) {
     std::stringstream out;
     for (const auto& stmt : statements) {

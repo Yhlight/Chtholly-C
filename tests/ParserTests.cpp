@@ -88,6 +88,12 @@ TEST(ParserTest, OptionType) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, TypeCastExpression) {
+    std::string source = "type_cast<int>(10);";
+    std::string expected = "(; (type_cast <type> 10))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, BlockStatement) {
     std::string source = "{ let x = 1; let y = 2; }";
     std::string expected = "(block (let x 1) (let y 2))";
