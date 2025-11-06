@@ -64,6 +64,7 @@ private:
     std::vector<std::map<std::string, TypeInfo>> scopes;
     std::map<std::string, const StructStmt*> structs;
     bool is_in_switch = false;
+    bool is_in_method = false;
     bool input_used = false;
     bool reflect_used = false;
 };

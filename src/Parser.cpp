@@ -298,6 +298,10 @@ std::unique_ptr<Expr> Parser::assignment() {
         }
 
         error(equals, "Invalid assignment target.");
+    } else if (match(TokenType::PLUS_EQUAL)) {
+        Token op = previous();
+        auto value = assignment();
+        return std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(value));
     }
 
     return expr;

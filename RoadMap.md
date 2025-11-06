@@ -69,3 +69,4 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `operator::and`
   - [x] `operator::or`
   - [x] `operator::not`
+  - [x] `operator::assign_add`

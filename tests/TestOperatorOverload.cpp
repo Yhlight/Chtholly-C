@@ -33,6 +33,40 @@ const Point p3 = p1.add(p2);
     ASSERT_EQ(compile(source), expected);
 }
 
+TEST(TestOperatorOverload, CompoundAdd) {
+    std::string source = R"(
+        import operator;
+        struct Point impl operator::assign_add {
+            x: int;
+            y: int;
+            assign_add(&mut self, other: Point) {
+                self.x = self.x + other.x;
+                self.y = self.y + other.y;
+            }
+        }
+        func main() {
+            mut p1 = Point{x: 1, y: 2};
+            let p2 = Point{x: 3, y: 4};
+            p1 += p2;
+        }
+    )";
+    std::string expected = R"(struct Point {
+int x;
+int y;
+void assign_add(Point other) {
+this->x = this->x + other.x;
+this->y = this->y + other.y;
+}
+};
+void main() {
+Point p1 = Point{.x = 1, .y = 2};
+const Point p2 = Point{.x = 3, .y = 4};
+p1.assign_add(p2);
+}
+)";
+    ASSERT_EQ(compile(source), expected);
+}
+
 TEST(TestOperatorOverload, Subtract) {
     std::string source = R"(
         import operator;

@@ -248,7 +248,8 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
         {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
         {TokenType::BANG_EQUAL, "not_equal"}, {TokenType::LESS, "less"}, {TokenType::LESS_EQUAL, "less_equal"},
         {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
-        {TokenType::AND, "and"}, {TokenType::OR, "or"}
+        {TokenType::AND, "and"}, {TokenType::OR, "or"},
+        {TokenType::PLUS_EQUAL, "assign_add"}
     };
 
     auto it = binary_op_traits.find(expr.op.type);
@@ -520,7 +521,13 @@ std::any Transpiler::visitSetExpr(const SetExpr& expr) {
     if (expr.name.type == TokenType::STAR) {
         return "*" + std::any_cast<std::string>(expr.object->accept(*this)) + " = " + std::any_cast<std::string>(expr.value->accept(*this));
     }
-    return std::any_cast<std::string>(expr.object->accept(*this)) + "." + expr.name.lexeme + " = " + std::any_cast<std::string>(expr.value->accept(*this));
+
+    std::string separator = ".";
+    if (dynamic_cast<const SelfExpr*>(expr.object.get())) {
+        separator = "->";
+    }
+
+    return std::any_cast<std::string>(expr.object->accept(*this)) + separator + expr.name.lexeme + " = " + std::any_cast<std::string>(expr.value->accept(*this));
 }
 std::any Transpiler::visitSelfExpr(const SelfExpr& expr) {
     return std::string("this");
@@ -748,13 +755,15 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
 
     enterScope();
+    bool first_param = true;
     for (size_t i = 0; i < stmt.params.size(); ++i) {
+        if (stmt.params[i].lexeme == "self") continue;
+        if (!first_param) out << ", ";
+        first_param = false;
+
         TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
         define(stmt.params[i].lexeme, paramType);
         out << paramType.name << " " << stmt.params[i].lexeme;
-        if (i < stmt.params.size() - 1) {
-            out << ", ";
-        }
     }
     out << ") ";
 
@@ -787,15 +796,19 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
 
     for (const auto& method : stmt.methods) {
         // Re-using visitFunctionStmt logic here would be ideal, but for now, a direct implementation.
+        is_in_method = true;
         out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
+
+        bool first_param = true;
         for (size_t i = 0; i < method->params.size(); ++i) {
+            if (method->params[i].lexeme == "self") continue;
+            if (!first_param) out << ", ";
+            first_param = false;
             out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
-            if (i < method->params.size() - 1) {
-                out << ", ";
-            }
         }
         out << ") ";
         method->body->accept(*this);
+        is_in_method = false;
     }
     out << "};\n";
     return nullptr;
