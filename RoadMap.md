@@ -93,3 +93,5 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `type_cast<T>(expr)`
 - [x] Function Types
   - [x] `function(T...) -> U` type annotations
+- [x] Lambda Expressions
+  - [x] `[]() -> T {}` syntax

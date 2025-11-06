@@ -102,7 +102,10 @@ public:
         }
         return nullptr;
     }
-    std::any visitLambdaExpr(const LambdaExpr& expr) override { return nullptr; } // Simplified
+    std::any visitLambdaExpr(const LambdaExpr& expr) override {
+        expr.body->accept(*this);
+        return nullptr;
+    }
     std::any visitGetExpr(const GetExpr& expr) override {
         expr.object->accept(*this);
         return nullptr;
@@ -217,6 +220,20 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     }
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
         return typeExprToTypeInfo(type_cast_expr->type.get());
+    }
+    if (auto lambda_expr = dynamic_cast<const LambdaExpr*>(&expr)) {
+        function_used = true;
+        std::string s = "std::function<";
+        s += lambda_expr->return_type ? transpileType(*lambda_expr->return_type) : "void";
+        s += "(";
+        for (size_t i = 0; i < lambda_expr->param_types.size(); ++i) {
+            s += transpileType(*lambda_expr->param_types[i]);
+            if (i < lambda_expr->param_types.size() - 1) {
+                s += ", ";
+            }
+        }
+        s += ")>";
+        return TypeInfo{s};
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
@@ -667,7 +684,52 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     out << ")";
     return out.str();
 }
-std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
+
+std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
+    std::stringstream ss;
+    ss << "[";
+    for (size_t i = 0; i < expr.captures.size(); ++i) {
+        ss << expr.captures[i].lexeme;
+        if (i < expr.captures.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "](";
+
+    enterScope();
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        TypeInfo paramType = typeExprToTypeInfo(expr.param_types[i].get());
+        define(expr.params[i].lexeme, paramType);
+        ss << paramType.name << " " << expr.params[i].lexeme;
+        if (i < expr.params.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << ")";
+
+    if (expr.return_type) {
+        ss << " -> " << transpileType(*expr.return_type);
+    }
+    ss << " ";
+
+    std::stringstream body_ss;
+    std::streambuf* old_rdbuf = static_cast<std::iostream&>(out).rdbuf(body_ss.rdbuf());
+
+    visitBlockStmt(*expr.body, true);
+
+    static_cast<std::iostream&>(out).rdbuf(old_rdbuf);
+
+    exitScope();
+
+    std::string body_str = body_ss.str();
+    if (!body_str.empty() && body_str.back() == '\n') {
+        body_str.pop_back();
+    }
+    ss << body_str;
+
+    return ss.str();
+}
+
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     std::string separator = ".";
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
