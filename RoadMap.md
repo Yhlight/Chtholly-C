@@ -53,6 +53,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `meta` module with `is_bool`
   - [x] `meta` module with `is_string`
   - [x] `meta` module with `is_struct`
+  - [x] `meta` module with `is_array`
   - [x] `reflect` module with `get_field_count`
   - [x] `reflect` module with `get_fields`
   - [x] `reflect` module with `get_method_count`

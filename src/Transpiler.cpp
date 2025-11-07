@@ -549,6 +549,9 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
     if (function_name == "is_struct") {
         return std::string(structs.count(arg_type.name) ? "true" : "false");
     }
+    if (function_name == "is_array") {
+        return std::string(arg_type.name.rfind("std::vector", 0) == 0 || arg_type.name.rfind("std::array", 0) == 0 ? "true" : "false");
+    }
 
     return std::string("/* ERROR: Unknown meta function call */");
 }

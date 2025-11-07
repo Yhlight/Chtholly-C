@@ -13,6 +13,20 @@ TEST(MetaTest, IsInt) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(MetaTest, IsArray) {
+    std::string source = R"(
+        let x: array[int] = [1, 2, 3];
+        let y: array[int; 3] = [1, 2, 3];
+        let z: int = 10;
+        let is_x_array = meta::is_array(x);
+        let is_y_array = meta::is_array(y);
+        let is_z_array = meta::is_array(z);
+    )";
+    std::string expected = "const bool is_x_array = true;\nconst bool is_y_array = true;\nconst bool is_z_array = false;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(MetaTest, IsUInt) {
     std::string source = R"(
         let x: uint = 10;
