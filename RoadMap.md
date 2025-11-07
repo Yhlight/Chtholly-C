@@ -111,5 +111,5 @@ This document outlines the development progress and future goals for the Chtholl
 - [x] Trait declaration parsing
 - [x] Struct `impl` clause parsing
 - [x] Generic constraints parsing
-- [ ] Trait method transpilation
-- [ ] Generic constraints with traits
+- [x] Trait method transpilation
+- [x] Generic constraints with traits

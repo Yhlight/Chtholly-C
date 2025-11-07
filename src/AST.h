@@ -308,11 +308,12 @@ struct ReturnStmt : Stmt {
 struct StructStmt : Stmt {
     Token name;
     std::vector<Token> generic_params;
+    std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
     std::vector<std::unique_ptr<Expr>> traits;
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
-    StructStmt(Token name, std::vector<Token> generic_params, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
-        : name(std::move(name)), generic_params(std::move(generic_params)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
+    StructStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitStructStmt(*this); }
 };
 

@@ -53,6 +53,7 @@ public:
     std::any visitTraitStmt(const TraitStmt& stmt) override;
 
 private:
+    void transpile_generic_constraints(const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints);
     std::string transpileType(const TypeExpr& type);
     std::string getTypeString(const TypeInfo& type);
     TypeInfo typeExprToTypeInfo(const TypeExpr* type);
@@ -71,6 +72,7 @@ private:
     std::vector<std::map<std::string, TypeInfo>> scopes;
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const TraitStmt*> traits;
     bool is_in_switch = false;
     bool is_in_method = false;
     bool input_used = false;

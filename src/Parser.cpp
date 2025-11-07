@@ -248,9 +248,18 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
 
     std::vector<Token> generic_params;
+    std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
     if (match(TokenType::LESS)) {
         do {
-            generic_params.push_back(consume(TokenType::IDENTIFIER, "Expect generic type name."));
+            Token param_name = consume(TokenType::IDENTIFIER, "Expect generic type name.");
+            generic_params.push_back(param_name);
+            if (match(TokenType::QUESTION)) {
+                std::vector<std::unique_ptr<TypeExpr>> constraints;
+                do {
+                    constraints.push_back(type());
+                } while (match(TokenType::COMMA));
+                generic_constraints[param_name.lexeme] = std::move(constraints);
+            }
         } while (match(TokenType::COMMA));
         consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
     }
@@ -290,7 +299,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
-    return std::make_unique<StructStmt>(std::move(name), std::move(generic_params), std::move(traits), std::move(fields), std::move(methods));
+    return std::make_unique<StructStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(traits), std::move(fields), std::move(methods));
 }
 
 std::unique_ptr<Stmt> Parser::enumDeclaration() {
