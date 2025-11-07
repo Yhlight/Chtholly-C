@@ -17,10 +17,10 @@ TEST(TestOperatorOverload, Add) {
             let p3 = p1 + p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_add {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-Point add(Point other) override {
+Point add(Point other) {
 return Point{.x = this->x + other.x, .y = this->y + other.y};
 }
 };
@@ -49,10 +49,10 @@ TEST(TestOperatorOverload, PrefixAdd) {
             ++p1;
         }
     )";
-    std::string expected = R"(struct Point : public operator_prefix_add {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void prefix_add() override {
+void prefix_add() {
 this->x = this->x + 1;
 this->y = this->y + 1;
 }
@@ -81,10 +81,10 @@ TEST(TestOperatorOverload, PostfixAdd) {
             p1++;
         }
     )";
-    std::string expected = R"(struct Point : public operator_postfix_add {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void postfix_add() override {
+void postfix_add() {
 this->x = this->x + 1;
 this->y = this->y + 1;
 }
@@ -113,10 +113,10 @@ TEST(TestOperatorOverload, PrefixSub) {
             --p1;
         }
     )";
-    std::string expected = R"(struct Point : public operator_prefix_sub {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void prefix_sub() override {
+void prefix_sub() {
 this->x = this->x - 1;
 this->y = this->y - 1;
 }
@@ -145,10 +145,10 @@ TEST(TestOperatorOverload, PostfixSub) {
             p1--;
         }
     )";
-    std::string expected = R"(struct Point : public operator_postfix_sub {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void postfix_sub() override {
+void postfix_sub() {
 this->x = this->x - 1;
 this->y = this->y - 1;
 }
@@ -178,10 +178,10 @@ TEST(TestOperatorOverload, CompoundSubtract) {
             p1 -= p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_assign_sub {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void assign_sub(Point other) override {
+void assign_sub(Point other) {
 this->x = this->x - other.x;
 this->y = this->y - other.y;
 }
@@ -212,10 +212,10 @@ TEST(TestOperatorOverload, CompoundMultiply) {
             p1 *= p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_assign_mul {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void assign_mul(Point other) override {
+void assign_mul(Point other) {
 this->x = this->x * other.x;
 this->y = this->y * other.y;
 }
@@ -246,10 +246,10 @@ TEST(TestOperatorOverload, CompoundDivision) {
             p1 /= p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_assign_div {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void assign_div(Point other) override {
+void assign_div(Point other) {
 this->x = this->x / other.x;
 this->y = this->y / other.y;
 }
@@ -280,10 +280,10 @@ TEST(TestOperatorOverload, CompoundModulo) {
             p1 %= p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_assign_mod {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void assign_mod(Point other) override {
+void assign_mod(Point other) {
 this->x = this->x % other.x;
 this->y = this->y % other.y;
 }
@@ -314,10 +314,10 @@ TEST(TestOperatorOverload, CompoundAdd) {
             p1 += p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_assign_add {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-void assign_add(Point other) override {
+void assign_add(Point other) {
 this->x = this->x + other.x;
 this->y = this->y + other.y;
 }
@@ -347,10 +347,10 @@ TEST(TestOperatorOverload, Subtract) {
             let p3 = p1 - p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_sub {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-Point sub(Point other) override {
+Point sub(Point other) {
 return Point{.x = this->x - other.x, .y = this->y - other.y};
 }
 };
@@ -379,10 +379,10 @@ TEST(TestOperatorOverload, Multiply) {
             let p3 = p1 * p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_mul {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-Point mul(Point other) override {
+Point mul(Point other) {
 return Point{.x = this->x * other.x, .y = this->y * other.y};
 }
 };
@@ -411,10 +411,10 @@ TEST(TestOperatorOverload, Division) {
             let p3 = p1 / p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_div {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-Point div(Point other) override {
+Point div(Point other) {
 return Point{.x = this->x / other.x, .y = this->y / other.y};
 }
 };
@@ -447,13 +447,13 @@ TEST(TestOperatorOverload, Comparison) {
             let b2 = p1 > p2;
         }
     )";
-    std::string expected = R"(struct Point : public operator_less, public operator_greater {
+    std::string expected = R"(struct Point {
 int x;
 int y;
-bool less(Point other) override {
+bool less(Point other) {
 return this->x < other.x;
 }
-bool greater(Point other) override {
+bool greater(Point other) {
 return this->x > other.x;
 }
 };

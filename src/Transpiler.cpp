@@ -18,10 +18,7 @@ public:
         return nullptr;
     }
 
-    std::any visitTraitStmt(const TraitStmt& stmt) override {
-        traits[stmt.name.lexeme] = &stmt;
-        return nullptr;
-    }
+    std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
 
     // --- Stmt visitors ---
     std::any visitBlockStmt(const BlockStmt& stmt) override {
@@ -143,7 +140,6 @@ public:
 
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
-    std::map<std::string, const TraitStmt*> traits;
 };
 
 Transpiler::Transpiler() {
@@ -333,7 +329,6 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     }
     this->structs = scanner.structs;
     this->enums = scanner.enums;
-    this->traits = scanner.traits;
 
     for (const auto& statement : statements) {
         statement->accept(*this);
@@ -1092,23 +1087,6 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
     return "auto";
 }
 
-void Transpiler::transpile_generic_constraints(const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints) {
-    if (!constraints.empty()) {
-        out << "requires ";
-        bool first_constraint = true;
-        for (const auto& [param, constrs] : constraints) {
-            for (const auto& constraint : constrs) {
-                if (!first_constraint) {
-                    out << " && ";
-                }
-                first_constraint = false;
-                out << "std::is_base_of_v<" << transpileType(*constraint) << ", " << param << ">";
-            }
-        }
-        out << "\n";
-    }
-}
-
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     if (!stmt.generic_params.empty()) {
         out << "template <";
@@ -1119,7 +1097,6 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
             }
         }
         out << ">\n";
-        transpile_generic_constraints(stmt.generic_constraints);
     }
 
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
@@ -1157,30 +1134,8 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             }
         }
         out << ">\n";
-        transpile_generic_constraints(stmt.generic_constraints);
     }
-
-    out << "struct " << stmt.name.lexeme;
-
-    if (!stmt.traits.empty()) {
-        out << " : ";
-        for (size_t i = 0; i < stmt.traits.size(); ++i) {
-            // This is a simplification. It assumes traits are simple identifiers.
-            // A more robust solution would handle qualified names (e.g., module::Trait).
-            if (auto var_expr = dynamic_cast<const VariableExpr*>(stmt.traits[i].get())) {
-                 out << "public " << var_expr->name.lexeme;
-            } else if (auto get_expr = dynamic_cast<const GetExpr*>(stmt.traits[i].get())) {
-                out << "public " << std::any_cast<std::string>(get_expr->object->accept(*this)) << "_" << get_expr->name.lexeme;
-            }
-
-            if (i < stmt.traits.size() - 1) {
-                out << ", ";
-            }
-        }
-    }
-
-    out << " {\n";
-
+    out << "struct " << stmt.name.lexeme << " {\n";
     for (const auto& field : stmt.fields) {
         // This reuses the VarStmt logic, but we need to adapt it slightly for fields.
         out << transpileType(*field->type) << " " << field->name.lexeme;
@@ -1203,32 +1158,6 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
         }
         out << ") ";
-
-        // Add 'override' if the method is from a trait.
-        // This is a simplified check.
-        bool is_override = false;
-        for (const auto& trait_expr : stmt.traits) {
-            std::string trait_name;
-             if (auto var_expr = dynamic_cast<const VariableExpr*>(trait_expr.get())) {
-                trait_name = var_expr->name.lexeme;
-            } else if (auto get_expr = dynamic_cast<const GetExpr*>(trait_expr.get())) {
-                trait_name = std::any_cast<std::string>(get_expr->object->accept(*this)) + "_" + get_expr->name.lexeme;
-            }
-
-            if (traits.count(trait_name)) {
-                for (const auto& trait_method : traits.at(trait_name)->methods) {
-                    if (trait_method->name.lexeme == method->name.lexeme) {
-                        is_override = true;
-                        break;
-                    }
-                }
-            }
-            if (is_override) break;
-        }
-        if (is_override) {
-            out << "override ";
-        }
-
         if (method->body) {
             method->body->accept(*this);
         } else {
@@ -1254,14 +1183,8 @@ std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
 }
 
 std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
-    std::string trait_name = stmt.name.lexeme;
-    if (imported_modules.count("operator")) {
-        trait_name = "operator_" + trait_name;
-    }
-
-
-    out << "struct " << trait_name << " {\n";
-    out << "    virtual ~" << trait_name << "() = default;\n";
+    out << "struct " << stmt.name.lexeme << " {\n";
+    out << "    virtual ~" << stmt.name.lexeme << "() = default;\n";
     for (const auto& method : stmt.methods) {
         out << "    virtual " << (method->return_type ? transpileType(*method->return_type) : "void")
             << " " << method->name.lexeme << "(";
