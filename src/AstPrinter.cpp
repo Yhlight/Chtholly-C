@@ -16,6 +16,16 @@ std::string AstPrinter::parenthesize(const std::string& name, Args... args) {
     return out.str();
 }
 
+std::any AstPrinter::visitTraitStmt(const TraitStmt& stmt) {
+    std::stringstream out;
+    out << "(trait " << stmt.name.lexeme;
+    for (const auto& method : stmt.methods) {
+        out << " " << std::any_cast<std::string>(method->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
 std::any AstPrinter::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
     std::stringstream out;
     out << "(array";
@@ -140,7 +150,10 @@ std::any AstPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
 }
 
 std::any AstPrinter::visitFunctionStmt(const FunctionStmt& stmt) {
-    return parenthesize("func " + stmt.name.lexeme, stmt.body.get());
+    if (stmt.body) {
+        return parenthesize("func " + stmt.name.lexeme, stmt.body.get());
+    }
+    return "(func " + stmt.name.lexeme + ")";
 }
 
 std::any AstPrinter::visitIfStmt(const IfStmt& stmt) {

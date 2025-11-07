@@ -18,6 +18,8 @@ public:
         return nullptr;
     }
 
+    std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
+
     // --- Stmt visitors ---
     std::any visitBlockStmt(const BlockStmt& stmt) override {
         for (const auto& s : stmt.statements) {
@@ -1112,7 +1114,11 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     }
     out << ") ";
 
-    visitBlockStmt(*stmt.body, false);
+    if (stmt.body) {
+        visitBlockStmt(*stmt.body, false);
+    } else {
+        out << ";\n";
+    }
 
     exitScope();
     return nullptr;
@@ -1152,7 +1158,11 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
         }
         out << ") ";
-        method->body->accept(*this);
+        if (method->body) {
+            method->body->accept(*this);
+        } else {
+            out << ";\n";
+        }
         is_in_method = false;
     }
     out << "};\n";
@@ -1169,6 +1179,11 @@ std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
         out << "\n";
     }
     out << "};\n";
+    return nullptr;
+}
+
+std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
+    // For now, do nothing.
     return nullptr;
 }
 

@@ -19,6 +19,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
         if (match(TokenType::FUNC)) return functionDeclaration("function");
         if (match(TokenType::STRUCT)) return structDeclaration();
         if (match(TokenType::ENUM)) return enumDeclaration();
+        if (match(TokenType::TRAIT)) return traitDeclaration();
         if (match(TokenType::LET, TokenType::MUT)) return varDeclaration(true);
         return statement();
     } catch (ParseError& error) {
@@ -175,7 +176,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
-std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind) {
+std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
     if (match(TokenType::LESS)) {
@@ -222,8 +223,15 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
     if (match(TokenType::ARROW)) {
         returnType = type();
     }
-    consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
-    auto body = std::make_unique<BlockStmt>(block());
+
+    std::unique_ptr<BlockStmt> body = nullptr;
+    if (has_body) {
+        consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        body = std::make_unique<BlockStmt>(block());
+    } else {
+        consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
+    }
+
     return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
 }
 
@@ -287,6 +295,18 @@ std::unique_ptr<Stmt> Parser::enumDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after enum members.");
     return std::make_unique<EnumStmt>(std::move(name), std::move(members));
+}
+
+std::unique_ptr<Stmt> Parser::traitDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before trait body.");
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        consume(TokenType::FUNC, "Expect 'func' before method signature in trait.");
+        methods.push_back(functionDeclaration("method", false));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
+    return std::make_unique<TraitStmt>(std::move(name), std::move(methods));
 }
 
 std::vector<std::unique_ptr<Stmt>> Parser::block() {

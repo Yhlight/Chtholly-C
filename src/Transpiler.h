@@ -50,6 +50,7 @@ public:
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
     std::any visitEnumStmt(const EnumStmt& stmt) override;
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
 
 private:
     std::string transpileType(const TypeExpr& type);

@@ -64,8 +64,6 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `reflect` module with `get_method_count`
   - [x] `reflect` module with `get_methods`
   - [x] `util` module with `string_cast` and `to_string` trait
-  - [ ] `util` module with `serialize` and `deserialize`
-  - [ ] `util` module with `unique_id`
 - [x] Implement operator overloading.
   - [x] `operator::add`
   - [x] `operator::sub`
@@ -108,3 +106,9 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `.unwarp()` and `.unwarp_err()` methods
 - [x] Type Casting
   - [x] `type_cast<T>(expr)`
+
+## Phase 6: Traits and Constraints
+- [ ] Trait declaration parsing
+- [ ] Struct `impl` clause parsing
+- [ ] Trait method transpilation
+- [ ] Generic constraints with traits

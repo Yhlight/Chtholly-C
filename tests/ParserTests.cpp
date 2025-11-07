@@ -22,6 +22,18 @@ TEST(ParserTest, BasicExpression) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, TraitDeclaration) {
+    std::string source = "trait MyTrait { func foo(); func bar(a: int) -> bool; }";
+    std::string expected = "(trait MyTrait (func foo) (func bar))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
+TEST(ParserTest, StructWithMultipleTraits) {
+    std::string source = "struct Point impl operator::add, operator::sub { let x: int; }";
+    std::string expected = "(struct Point (impl (. operator add) (. operator sub)) (let x))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, ParenthesizedExpression) {
     std::string source = "(1 + 2) * 3;";
     std::string expected = "(; (* (group (+ 1 2)) 3))";

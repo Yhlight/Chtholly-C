@@ -52,6 +52,7 @@ struct CaseStmt;
 struct BreakStmt;
 struct FallthroughStmt;
 struct EnumStmt;
+struct TraitStmt;
 
 // Visitor for Expressions
 class ExprVisitor {
@@ -98,6 +99,7 @@ public:
     virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
     virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
     virtual std::any visitEnumStmt(const EnumStmt& stmt) = 0;
+    virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
 };
 
 // Base class for all statements
@@ -355,6 +357,14 @@ struct EnumStmt : Stmt {
     EnumStmt(Token name, std::vector<Token> members)
         : name(std::move(name)), members(std::move(members)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitEnumStmt(*this); }
+};
+
+struct TraitStmt : Stmt {
+    Token name;
+    std::vector<std::unique_ptr<FunctionStmt>> methods;
+    TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods)
+        : name(std::move(name)), methods(std::move(methods)) {}
+    std::any accept(StmtVisitor& visitor) const override { return visitor.visitTraitStmt(*this); }
 };
 
 
