@@ -722,9 +722,6 @@ util模块是工具模块，主要用于提供一些工具函数
 
 **函数**
 - util::string_cast(T) 将T转换为string，通常会调用自定义类型的to_string方法  
-- util::serialize(T) 将T序列化  
-- util::deserialize(T) 将T反序列化  
-- util::unique_id() 获取一个唯一的id  
 
 ```Chtholly
 import util;
