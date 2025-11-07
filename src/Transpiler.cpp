@@ -1,4 +1,5 @@
 #include "Transpiler.h"
+#include <functional>
 #include <utility>
 #include <stdexcept>
 #include <map>
@@ -420,6 +421,24 @@ bool Transpiler::has_trait(const std::string& struct_name, const std::string& mo
                 }
             }
         }
+        for (const auto& method : s->methods) {
+            if (method->trait_impl) {
+                // This is a simplified check. A full implementation would involve
+                // resolving the type expression to a trait name.
+                if (auto base_type = dynamic_cast<const BaseTypeExpr*>(method->trait_impl.get())) {
+                    if (base_type->type.lexeme == trait_name) {
+                        return true;
+                    }
+                }
+                 if (auto get_expr = dynamic_cast<const GetExpr*>(method->trait_impl.get())) {
+                     if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                         if (var_expr->name.lexeme == module_name && get_expr->name.lexeme == trait_name) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
     }
     return false;
 }
@@ -642,6 +661,60 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             return ss.str();
         } else {
             return std::string("std::vector<chtholly_method>{}");
+        }
+    }
+
+    if (function_name == "get_traits") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            std::set<std::string> trait_names;
+
+            // This is recursive, so declare it first.
+            std::function<std::string(const TypeExpr*)> getTraitNameFromTypeExpr =
+                [&](const TypeExpr* type) -> std::string {
+                if (!type) return "unknown_trait";
+                if (auto baseType = dynamic_cast<const BaseTypeExpr*>(type)) {
+                    return baseType->type.lexeme;
+                }
+                if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(type)) {
+                    return getTraitNameFromTypeExpr(borrowType->element_type.get());
+                }
+                if (auto genericType = dynamic_cast<const GenericTypeExpr*>(type)) {
+                    return genericType->base_type.lexeme;
+                }
+                return "unknown_trait";
+            };
+
+
+            for (const auto& trait_expr : s->traits) {
+                 if (auto get_expr = dynamic_cast<const GetExpr*>(trait_expr.get())) {
+                    if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+                        trait_names.insert(var_expr->name.lexeme + "::" + get_expr->name.lexeme);
+                    }
+                }
+            }
+
+            for (const auto& method : s->methods) {
+                if (method->trait_impl) {
+                    trait_names.insert(getTraitNameFromTypeExpr(method->trait_impl.get()));
+                }
+            }
+
+            std::stringstream ss;
+            ss << "std::vector<std::string>{";
+            bool first = true;
+            for (const auto& name : trait_names) {
+                if (!first) {
+                    ss << ", ";
+                }
+                first = false;
+                ss << "\"" << name << "\"";
+            }
+            ss << "}";
+            return ss.str();
+        } else {
+            return std::string("std::vector<std::string>{}");
         }
     }
 
@@ -1146,8 +1219,10 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
     }
 
     for (const auto& method : stmt.methods) {
-        // Re-using visitFunctionStmt logic here would be ideal, but for now, a direct implementation.
         is_in_method = true;
+        if (method->trait_impl) {
+            out << "virtual ";
+        }
         out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
 
         bool first_param = true;
@@ -1158,6 +1233,25 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
         }
         out << ") ";
+
+        bool is_const_self = false;
+        for (size_t i = 0; i < method->params.size(); ++i) {
+            if (method->params[i].lexeme == "self") {
+                if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(method->param_types[i].get())) {
+                    if (!borrowType->isMutable) {
+                        is_const_self = true;
+                    }
+                }
+            }
+        }
+        if (is_const_self) {
+            out << "const ";
+        }
+
+        if (method->trait_impl) {
+            out << "override ";
+        }
+
         if (method->body) {
             method->body->accept(*this);
         } else {

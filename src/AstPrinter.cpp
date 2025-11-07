@@ -149,9 +149,16 @@ std::any AstPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
     return parenthesize(";", stmt.expression.get());
 }
 
+// Forward declare the helper
+std::string getTypeExprString(const TypeExpr* type);
+
 std::any AstPrinter::visitFunctionStmt(const FunctionStmt& stmt) {
     std::stringstream out;
     out << "(func " << stmt.name.lexeme;
+
+    if (stmt.trait_impl) {
+        out << " impl " << getTypeExprString(stmt.trait_impl.get());
+    }
 
     if (!stmt.generic_params.empty()) {
         out << " <";
@@ -176,6 +183,32 @@ std::any AstPrinter::visitFunctionStmt(const FunctionStmt& stmt) {
 
     out << ")";
     return out.str();
+}
+
+// Helper function to convert TypeExpr to string for AstPrinter
+std::string getTypeExprString(const TypeExpr* type) {
+    if (!type) return "";
+    if (auto baseType = dynamic_cast<const BaseTypeExpr*>(type)) {
+        return baseType->type.lexeme;
+    }
+    if (auto genericType = dynamic_cast<const GenericTypeExpr*>(type)) {
+        std::string s = genericType->base_type.lexeme + "<";
+        for (size_t i = 0; i < genericType->generic_args.size(); ++i) {
+            s += getTypeExprString(genericType->generic_args[i].get());
+            if (i < genericType->generic_args.size() - 1) {
+                s += ", ";
+            }
+        }
+        s += ">";
+        return s;
+    }
+    if (auto arrayType = dynamic_cast<const ArrayTypeExpr*>(type)) {
+        return "array[" + getTypeExprString(arrayType->element_type.get()) + "]";
+    }
+    if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(type)) {
+        return (borrowType->isMutable ? "&mut " : "&") + getTypeExprString(borrowType->element_type.get());
+    }
+    return "type";
 }
 
 std::any AstPrinter::visitIfStmt(const IfStmt& stmt) {

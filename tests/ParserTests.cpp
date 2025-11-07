@@ -166,3 +166,15 @@ TEST(ParserTest, ComprehensiveTest) {
     std::string expected = "(func main (block (let x 10) (if-else (> x 5) (block (; (= x (- x 1)))) (block (; (= x 0)))) (while (> x 0) (block (; (= x (- x 1))))) (return x)))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, StructWithInlineImpl) {
+    std::string source = R"(
+struct Point {
+    impl MyTrait {
+        func method() {}
+    }
+}
+)";
+    std::string expected = "(struct Point (func method impl MyTrait (block)))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}

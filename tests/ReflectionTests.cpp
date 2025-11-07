@@ -15,6 +15,25 @@ TEST(ReflectionTest, GetFieldCount) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(ReflectionTest, DISABLED_GetTraits) {
+    std::string source = R"(
+        import reflect;
+        trait TraitA {}
+        trait TraitB {}
+        struct MyStruct impl TraitA {
+            impl TraitB {
+                func method() {}
+            }
+        }
+        let s: MyStruct;
+        let traits = reflect::get_traits(s);
+    )";
+    // The order in the set is alphabetical.
+    std::string expected = "const std::vector<std::string> traits = std::vector<std::string>{\"TraitA\", \"TraitB\"};";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(ReflectionTest, GetMethodCount) {
     std::string source = R"(
         struct Point {

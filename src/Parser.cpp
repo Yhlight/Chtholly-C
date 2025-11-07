@@ -176,7 +176,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
-std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body) {
+std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, std::unique_ptr<TypeExpr> trait_impl) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
     std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
@@ -241,7 +241,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
         consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
     }
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), std::move(trait_impl));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -275,27 +275,37 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        match(TokenType::FUNC); // Optional func keyword
-        if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
-            methods.push_back(functionDeclaration("method"));
-        } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
-            // This is a field declaration.
-            Token name = consume(TokenType::IDENTIFIER, "Expect field name.");
-            consume(TokenType::COLON, "Expect ':' after field name.");
-            auto type_expr = type();
-            std::unique_ptr<Expr> initializer = nullptr;
-            if (match(TokenType::EQUAL)) {
-                initializer = expression();
+        if (match(TokenType::IMPL)) {
+            auto trait_type = type();
+            consume(TokenType::LEFT_BRACE, "Expect '{' after trait name in impl block.");
+            while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+                match(TokenType::FUNC); // Optional func keyword
+                methods.push_back(functionDeclaration("method", true, trait_type->clone()));
             }
-            consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
-            // We use a dummy token for the keyword, since struct fields don't have one.
-            fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false));
-        }
-         else {
-            // If it's not a method or a field, it's an error.
-            // We advance to avoid an infinite loop.
-            error(peek(), "Expect field or method in struct body.");
-            advance();
+            consume(TokenType::RIGHT_BRACE, "Expect '}' after impl block.");
+        } else {
+            match(TokenType::FUNC); // Optional func keyword
+            if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
+                methods.push_back(functionDeclaration("method"));
+            } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
+                // This is a field declaration.
+                Token name = consume(TokenType::IDENTIFIER, "Expect field name.");
+                consume(TokenType::COLON, "Expect ':' after field name.");
+                auto type_expr = type();
+                std::unique_ptr<Expr> initializer = nullptr;
+                if (match(TokenType::EQUAL)) {
+                    initializer = expression();
+                }
+                consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
+                // We use a dummy token for the keyword, since struct fields don't have one.
+                fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false));
+            }
+             else {
+                // If it's not a method or a field, it's an error.
+                // We advance to avoid an infinite loop.
+                error(peek(), "Expect field or method in struct body.");
+                advance();
+            }
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
