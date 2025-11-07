@@ -250,12 +250,13 @@ struct ExpressionStmt : Stmt {
 struct FunctionStmt : Stmt {
     Token name;
     std::vector<Token> generic_params;
+    std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
     std::vector<Token> params;
     std::vector<std::unique_ptr<TypeExpr>> param_types;
     std::unique_ptr<TypeExpr> return_type;
     std::unique_ptr<BlockStmt> body;
-    FunctionStmt(Token name, std::vector<Token> generic_params, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
-        : name(std::move(name)), generic_params(std::move(generic_params)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
+    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
+        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
 };
 

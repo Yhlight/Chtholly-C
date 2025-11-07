@@ -108,7 +108,8 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `type_cast<T>(expr)`
 
 ## Phase 6: Traits and Constraints
-- [ ] Trait declaration parsing
-- [ ] Struct `impl` clause parsing
+- [x] Trait declaration parsing
+- [x] Struct `impl` clause parsing
+- [x] Generic constraints parsing
 - [ ] Trait method transpilation
 - [ ] Generic constraints with traits

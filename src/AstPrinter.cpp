@@ -150,10 +150,32 @@ std::any AstPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
 }
 
 std::any AstPrinter::visitFunctionStmt(const FunctionStmt& stmt) {
-    if (stmt.body) {
-        return parenthesize("func " + stmt.name.lexeme, stmt.body.get());
+    std::stringstream out;
+    out << "(func " << stmt.name.lexeme;
+
+    if (!stmt.generic_params.empty()) {
+        out << " <";
+        for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
+            out << stmt.generic_params[i].lexeme;
+            if (stmt.generic_constraints.count(stmt.generic_params[i].lexeme)) {
+                out << " ? ";
+                // This part is simplified for brevity. A real implementation
+                // would need to print the type expressions of the constraints.
+                out << stmt.generic_constraints.at(stmt.generic_params[i].lexeme).size() << "_constraints";
+            }
+            if (i < stmt.generic_params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ">";
     }
-    return "(func " + stmt.name.lexeme + ")";
+
+    if (stmt.body) {
+        out << " " << std::any_cast<std::string>(stmt.body->accept(*this));
+    }
+
+    out << ")";
+    return out.str();
 }
 
 std::any AstPrinter::visitIfStmt(const IfStmt& stmt) {

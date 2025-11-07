@@ -22,6 +22,12 @@ TEST(ParserTest, BasicExpression) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, FunctionWithGenericConstraints) {
+    std::string source = "func my_func<T ? MyTrait>() {}";
+    std::string expected = "(func my_func <T ? 1_constraints> (block))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, TraitDeclaration) {
     std::string source = "trait MyTrait { func foo(); func bar(a: int) -> bool; }";
     std::string expected = "(trait MyTrait (func foo) (func bar))";

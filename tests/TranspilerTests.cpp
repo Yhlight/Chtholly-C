@@ -220,3 +220,9 @@ TEST(TranspilerTest, InputWithoutImport) {
     std::string transpiled_code = transpile(source);
     EXPECT_NE(transpiled_code.find(expected_error), std::string::npos);
 }
+
+TEST(TranspilerTest, TraitDeclaration) {
+    std::string source = "trait MyTrait { func foo(); func bar(a: int) -> bool; }";
+    std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n    virtual bool bar(int a) = 0;\n};\n";
+    EXPECT_EQ(transpile(source), expected);
+}

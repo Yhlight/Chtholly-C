@@ -1183,7 +1183,21 @@ std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
 }
 
 std::any Transpiler::visitTraitStmt(const TraitStmt& stmt) {
-    // For now, do nothing.
+    out << "struct " << stmt.name.lexeme << " {\n";
+    out << "    virtual ~" << stmt.name.lexeme << "() = default;\n";
+    for (const auto& method : stmt.methods) {
+        out << "    virtual " << (method->return_type ? transpileType(*method->return_type) : "void")
+            << " " << method->name.lexeme << "(";
+        bool first_param = true;
+        for (size_t i = 0; i < method->params.size(); ++i) {
+            if (method->params[i].lexeme == "self") continue;
+            if (!first_param) out << ", ";
+            first_param = false;
+            out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
+        }
+        out << ") = 0;\n";
+    }
+    out << "};\n";
     return nullptr;
 }
 
