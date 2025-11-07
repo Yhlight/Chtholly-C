@@ -32,6 +32,11 @@ TEST(TestGenerics, GenericStruct) {
         struct Point {
             T x;
             T y;
+            template<class Archive>
+            void serialize(Archive& archive) {
+                archive(x);
+                archive(y);
+            }
         };
     )";
     ASSERT_EQ(normalize(compile(source)), normalize(expected));

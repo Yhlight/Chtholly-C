@@ -20,6 +20,11 @@ TEST(TestOperatorOverload, Add) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 Point add(Point other) {
 return Point{.x = this->x + other.x, .y = this->y + other.y};
 }
@@ -53,6 +58,11 @@ TEST(TestOperatorOverload, CompoundSubtract) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 void assign_sub(Point other) {
 this->x = this->x - other.x;
 this->y = this->y - other.y;
@@ -87,6 +97,11 @@ TEST(TestOperatorOverload, CompoundMultiply) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 void assign_mul(Point other) {
 this->x = this->x * other.x;
 this->y = this->y * other.y;
@@ -121,6 +136,11 @@ TEST(TestOperatorOverload, CompoundDivision) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 void assign_div(Point other) {
 this->x = this->x / other.x;
 this->y = this->y / other.y;
@@ -155,6 +175,11 @@ TEST(TestOperatorOverload, CompoundModulo) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 void assign_mod(Point other) {
 this->x = this->x % other.x;
 this->y = this->y % other.y;
@@ -189,6 +214,11 @@ TEST(TestOperatorOverload, CompoundAdd) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 void assign_add(Point other) {
 this->x = this->x + other.x;
 this->y = this->y + other.y;
@@ -222,6 +252,11 @@ TEST(TestOperatorOverload, Subtract) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 Point sub(Point other) {
 return Point{.x = this->x - other.x, .y = this->y - other.y};
 }
@@ -254,6 +289,11 @@ TEST(TestOperatorOverload, Multiply) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 Point mul(Point other) {
 return Point{.x = this->x * other.x, .y = this->y * other.y};
 }
@@ -286,6 +326,11 @@ TEST(TestOperatorOverload, Division) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 Point div(Point other) {
 return Point{.x = this->x / other.x, .y = this->y / other.y};
 }
@@ -322,6 +367,11 @@ TEST(TestOperatorOverload, Comparison) {
     std::string expected = R"(struct Point {
 int x;
 int y;
+template<class Archive>
+void serialize(Archive& archive) {
+    archive(x);
+    archive(y);
+}
 bool less(Point other) {
 return this->x < other.x;
 }

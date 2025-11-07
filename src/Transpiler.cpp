@@ -269,8 +269,14 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
             }
             if (var_expr->name.lexeme == "util") {
-                if (get_expr->name.lexeme == "string_cast") {
+                if (get_expr->name.lexeme == "string_cast" || get_expr->name.lexeme == "serialize") {
                     return TypeInfo{"std::string"};
+                }
+                if (get_expr->name.lexeme == "deserialize") {
+                    return TypeInfo{"auto"};
+                }
+                if (get_expr->name.lexeme == "unique_id") {
+                    return TypeInfo{"long long"};
                 }
             }
             }
@@ -360,6 +366,40 @@ std::string fs_read(const std::string& path) {
     }
     if (result_used) {
         final_code << "#include \"Result.h\"\n";
+    }
+    if (serialize_used) {
+        final_code << "#include <sstream>\n";
+        final_code << "#include </usr/local/include/cereal/archives/json.hpp>\n";
+        final_code << R"(
+template<typename T>
+std::string chtholly_serialize(const T& obj) {
+    std::stringstream ss;
+    {
+        cereal::JSONOutputArchive archive(ss);
+        archive(obj);
+    }
+    return ss.str();
+}
+
+template<typename T>
+T chtholly_deserialize(const std::string& json) {
+    T obj;
+    std::stringstream ss(json);
+    {
+        cereal::JSONInputArchive archive(ss);
+        archive(obj);
+    }
+    return obj;
+}
+)";
+    }
+    if (unique_id_used) {
+        final_code << R"(
+long long chtholly_unique_id() {
+    static long long id = 0;
+    return id++;
+}
+)";
     }
     if (reflect_used) {
         final_code << "#include <string>\n";
@@ -589,18 +629,36 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
 
-    if (expr.arguments.empty()) {
-        return std::string("/* ERROR: util function requires one argument */");
-    }
-    TypeInfo arg_type = get_type(*expr.arguments[0]);
-
     if (function_name == "string_cast") {
+        if (expr.arguments.empty()) {
+            return std::string("/* ERROR: string_cast requires one argument */");
+        }
+        TypeInfo arg_type = get_type(*expr.arguments[0]);
         if (arg_type.name == "int" || arg_type.name == "double" || arg_type.name == "unsigned int") {
             return "std::to_string(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
         }
         if (has_trait(arg_type.name, "util", "to_string")) {
             return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".to_string()";
         }
+    } else if (function_name == "serialize") {
+        if (expr.arguments.empty()) {
+            return std::string("/* ERROR: serialize requires one argument */");
+        }
+        serialize_used = true;
+        return "chtholly_serialize(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    } else if (function_name == "deserialize") {
+        if (expr.arguments.empty()) {
+            return std::string("/* ERROR: deserialize requires one argument */");
+        }
+        serialize_used = true;
+        if (expr.generic_args.empty()) {
+            return std::string("/* ERROR: deserialize requires a generic type argument */");
+        }
+        std::string type_name = transpileType(*expr.generic_args[0]);
+        return "chtholly_deserialize<" + type_name + ">(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    } else if (function_name == "unique_id") {
+        unique_id_used = true;
+        return std::string("chtholly_unique_id()");
     }
 
     return std::string("/* ERROR: Unknown util function call */");
@@ -1075,6 +1133,13 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         }
         out << ";\n";
     }
+
+    out << "template<class Archive>\n";
+    out << "void serialize(Archive& archive) {\n";
+    for (const auto& field : stmt.fields) {
+        out << "    archive(" << field->name.lexeme << ");\n";
+    }
+    out << "}\n";
 
     for (const auto& method : stmt.methods) {
         // Re-using visitFunctionStmt logic here would be ideal, but for now, a direct implementation.

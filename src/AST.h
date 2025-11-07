@@ -153,9 +153,10 @@ struct AssignExpr : Expr {
 struct CallExpr : Expr {
     std::unique_ptr<Expr> callee;
     Token paren;
+    std::vector<std::unique_ptr<TypeExpr>> generic_args;
     std::vector<std::unique_ptr<Expr>> arguments;
-    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
-        : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(arguments)) {}
+    CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<TypeExpr>> generic_args, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(std::move(paren)), generic_args(std::move(generic_args)), arguments(std::move(arguments)) {}
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitCallExpr(*this); }
 };
 

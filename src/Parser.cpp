@@ -418,7 +418,16 @@ std::unique_ptr<Expr> Parser::call() {
     auto expr = primary();
     while (true) {
         if (match(TokenType::LEFT_PAREN)) {
-            expr = finishCall(std::move(expr));
+            expr = finishCall(std::move(expr), {});
+        } else if (isGenericArgumentList()) {
+            advance(); // consume '<'
+            std::vector<std::unique_ptr<TypeExpr>> generic_args;
+            do {
+                generic_args.push_back(type());
+            } while (match(TokenType::COMMA));
+            consume(TokenType::GREATER, "Expect '>' after generic arguments.");
+            consume(TokenType::LEFT_PAREN, "Expect '(' after generic arguments.");
+            expr = finishCall(std::move(expr), std::move(generic_args));
         } else if (match(TokenType::COLON_COLON, TokenType::DOT)) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::' or '.'.");
             expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
@@ -429,7 +438,7 @@ std::unique_ptr<Expr> Parser::call() {
     return expr;
 }
 
-std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
+std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<TypeExpr>> generic_args) {
     std::vector<std::unique_ptr<Expr>> arguments;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
@@ -437,7 +446,7 @@ std::unique_ptr<Expr> Parser::finishCall(std::unique_ptr<Expr> callee) {
         } while (match(TokenType::COMMA));
     }
     Token paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
-    return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
+    return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(generic_args), std::move(arguments));
 }
 
 std::unique_ptr<Expr> Parser::primary() {
@@ -573,6 +582,42 @@ void Parser::synchronize() {
 
         advance();
     }
+}
+
+bool Parser::isGenericArgumentList() {
+    if (peek().type != TokenType::LESS) {
+        return false;
+    }
+
+    int saved_current = current;
+    bool result = false;
+
+    try {
+        advance(); // consume '<'
+        if (isAtEnd()) {
+            current = saved_current;
+            return false;
+        }
+
+        // Check for at least one type
+        type();
+
+        while (match(TokenType::COMMA)) {
+            type();
+        }
+
+        if (peek().type == TokenType::GREATER) {
+            advance(); // consume '>'
+            if (!isAtEnd() && peek().type == TokenType::LEFT_PAREN) {
+                result = true;
+            }
+        }
+    } catch (ParseError& e) {
+        // Fallthrough, result is false
+    }
+
+    current = saved_current;
+    return result;
 }
 
 } // namespace chtholly
