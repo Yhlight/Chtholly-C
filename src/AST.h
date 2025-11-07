@@ -119,8 +119,9 @@ struct BinaryExpr : Expr {
 struct UnaryExpr : Expr {
     Token op;
     std::unique_ptr<Expr> right;
-    UnaryExpr(Token op, std::unique_ptr<Expr> right)
-        : op(std::move(op)), right(std::move(right)) {}
+    bool is_postfix;
+    UnaryExpr(Token op, std::unique_ptr<Expr> right, bool is_postfix = false)
+        : op(std::move(op)), right(std::move(right)), is_postfix(is_postfix) {}
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitUnaryExpr(*this); }
 };
 

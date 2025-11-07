@@ -10,6 +10,7 @@ namespace chtholly {
 
 struct TypeInfo {
     std::string name;
+    bool is_mutable = false;
     bool is_ref = false;
     bool is_mut_ref = false;
 
@@ -29,6 +30,7 @@ struct TypeInfo {
     // Copy constructor
     TypeInfo(const TypeInfo& other) {
         name = other.name;
+        is_mutable = other.is_mutable;
         is_ref = other.is_ref;
         is_mut_ref = other.is_mut_ref;
 
@@ -53,6 +55,7 @@ struct TypeInfo {
         }
 
         name = other.name;
+        is_mutable = other.is_mutable;
         is_ref = other.is_ref;
         is_mut_ref = other.is_mut_ref;
 

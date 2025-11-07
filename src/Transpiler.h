@@ -53,6 +53,7 @@ public:
 
 private:
     std::string transpileType(const TypeExpr& type);
+    std::string getTypeString(const TypeInfo& type);
     TypeInfo typeExprToTypeInfo(const TypeExpr* type);
     bool has_trait(const std::string& struct_name, const std::string& module_name, const std::string& trait_name);
     TypeInfo get_type(const Expr& expr);
@@ -77,8 +78,6 @@ private:
     bool array_used = false;
     bool optional_used = false;
     bool result_used = false;
-    bool serialize_used = false;
-    bool unique_id_used = false;
     TypeInfo contextual_type;
 };
 

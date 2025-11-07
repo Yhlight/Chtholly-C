@@ -218,6 +218,12 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
         return typeExprToTypeInfo(type_cast_expr->type.get());
     }
+    if (auto borrow_expr = dynamic_cast<const BorrowExpr*>(&expr)) {
+        TypeInfo type = get_type(*borrow_expr->expression);
+        type.is_ref = true;
+        type.is_mut_ref = borrow_expr->isMutable;
+        return type;
+    }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
             if (var_expr->name.lexeme == "input") {
@@ -269,14 +275,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
             }
             if (var_expr->name.lexeme == "util") {
-                if (get_expr->name.lexeme == "string_cast" || get_expr->name.lexeme == "serialize") {
+                if (get_expr->name.lexeme == "string_cast") {
                     return TypeInfo{"std::string"};
-                }
-                if (get_expr->name.lexeme == "deserialize") {
-                    return TypeInfo{"auto"};
-                }
-                if (get_expr->name.lexeme == "unique_id") {
-                    return TypeInfo{"long long"};
                 }
             }
             }
@@ -303,7 +303,10 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
         return TypeInfo{ transpileType(*baseType) };
     }
     if (auto borrowType = dynamic_cast<const BorrowTypeExpr*>(type)) {
-        return TypeInfo{ transpileType(*borrowType) };
+        TypeInfo info = typeExprToTypeInfo(borrowType->element_type.get());
+        info.is_ref = true;
+        info.is_mut_ref = borrowType->isMutable;
+        return info;
     }
     if (auto arrayType = dynamic_cast<const ArrayTypeExpr*>(type)) {
         return TypeInfo{ transpileType(*arrayType) };
@@ -367,40 +370,6 @@ std::string fs_read(const std::string& path) {
     if (result_used) {
         final_code << "#include \"Result.h\"\n";
     }
-    if (serialize_used) {
-        final_code << "#include <sstream>\n";
-        final_code << "#include </usr/local/include/cereal/archives/json.hpp>\n";
-        final_code << R"(
-template<typename T>
-std::string chtholly_serialize(const T& obj) {
-    std::stringstream ss;
-    {
-        cereal::JSONOutputArchive archive(ss);
-        archive(obj);
-    }
-    return ss.str();
-}
-
-template<typename T>
-T chtholly_deserialize(const std::string& json) {
-    T obj;
-    std::stringstream ss(json);
-    {
-        cereal::JSONInputArchive archive(ss);
-        archive(obj);
-    }
-    return obj;
-}
-)";
-    }
-    if (unique_id_used) {
-        final_code << R"(
-long long chtholly_unique_id() {
-    static long long id = 0;
-    return id++;
-}
-)";
-    }
     if (reflect_used) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
@@ -426,6 +395,14 @@ struct chtholly_method {
 
     final_code << out.str();
     return final_code.str();
+}
+
+std::string Transpiler::getTypeString(const TypeInfo& type) {
+    std::string s = type.name;
+    if (type.is_ref) {
+        s += "&";
+    }
+    return s;
 }
 
 // Helper function to check if a struct implements a specific trait.
@@ -468,19 +445,45 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
 }
 
 std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
-    static const std::map<TokenType, std::string> unary_op_traits = {
-        {TokenType::MINUS, "prefix_sub"}, // Assuming '-' is prefix decrement for overloading
+    static const std::map<TokenType, std::string> prefix_op_traits = {
+        {TokenType::PLUS_PLUS, "prefix_add"},
+        {TokenType::MINUS_MINUS, "prefix_sub"}
+    };
+    static const std::map<TokenType, std::string> postfix_op_traits = {
+        {TokenType::PLUS_PLUS, "postfix_add"},
+        {TokenType::MINUS_MINUS, "postfix_sub"}
+    };
+    static const std::map<TokenType, std::string> other_unary_op_traits = {
         {TokenType::BANG, "not"}
     };
 
-    auto it = unary_op_traits.find(expr.op.type);
-    if (it != unary_op_traits.end()) {
+
+    if (expr.op.type == TokenType::PLUS_PLUS || expr.op.type == TokenType::MINUS_MINUS) {
+        const auto& trait_map = expr.is_postfix ? postfix_op_traits : prefix_op_traits;
+        auto it = trait_map.find(expr.op.type);
+        TypeInfo right_type = get_type(*expr.right);
+        if (has_trait(right_type.name, "operator", it->second)) {
+            return std::any_cast<std::string>(expr.right->accept(*this)) + "." + it->second + "()";
+        }
+
+        // Default to standard C++ operators
+        if (expr.is_postfix) {
+            return std::any_cast<std::string>(expr.right->accept(*this)) + expr.op.lexeme;
+        } else {
+            return expr.op.lexeme + std::any_cast<std::string>(expr.right->accept(*this));
+        }
+    }
+
+    // Handle other unary operators like '!'
+    auto it = other_unary_op_traits.find(expr.op.type);
+    if (it != other_unary_op_traits.end()) {
         TypeInfo right_type = get_type(*expr.right);
         if (has_trait(right_type.name, "operator", it->second)) {
             return std::any_cast<std::string>(expr.right->accept(*this)) + "." + it->second + "()";
         }
     }
 
+    // Default for all other unary operators (like '-')
     return expr.op.lexeme + std::any_cast<std::string>(expr.right->accept(*this));
 }
 
@@ -551,6 +554,21 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
     }
     if (function_name == "is_array") {
         return std::string(arg_type.name.rfind("std::vector", 0) == 0 || arg_type.name.rfind("std::array", 0) == 0 ? "true" : "false");
+    }
+    if (function_name == "is_let") {
+        return std::string(!arg_type.is_mutable ? "true" : "false");
+    }
+    if (function_name == "is_mut") {
+        return std::string(arg_type.is_mutable ? "true" : "false");
+    }
+    if (function_name == "is_borrow") {
+        return std::string(arg_type.is_ref ? "true" : "false");
+    }
+    if (function_name == "is_borrow_mut") {
+        return std::string(arg_type.is_mut_ref ? "true" : "false");
+    }
+    if (function_name == "is_move") {
+        return std::string(!arg_type.is_ref ? "true" : "false");
     }
 
     return std::string("/* ERROR: Unknown meta function call */");
@@ -643,25 +661,6 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
         if (has_trait(arg_type.name, "util", "to_string")) {
             return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".to_string()";
         }
-    } else if (function_name == "serialize") {
-        if (expr.arguments.empty()) {
-            return std::string("/* ERROR: serialize requires one argument */");
-        }
-        serialize_used = true;
-        return "chtholly_serialize(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    } else if (function_name == "deserialize") {
-        if (expr.arguments.empty()) {
-            return std::string("/* ERROR: deserialize requires one argument */");
-        }
-        serialize_used = true;
-        if (expr.generic_args.empty()) {
-            return std::string("/* ERROR: deserialize requires a generic type argument */");
-        }
-        std::string type_name = transpileType(*expr.generic_args[0]);
-        return "chtholly_deserialize<" + type_name + ">(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    } else if (function_name == "unique_id") {
-        unique_id_used = true;
-        return std::string("chtholly_unique_id()");
     }
 
     return std::string("/* ERROR: Unknown util function call */");
@@ -794,7 +793,9 @@ std::any Transpiler::visitSetExpr(const SetExpr& expr) {
 std::any Transpiler::visitSelfExpr(const SelfExpr& expr) {
     return std::string("this");
 }
-std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) { return nullptr; }
+std::any Transpiler::visitBorrowExpr(const BorrowExpr& expr) {
+    return std::string("&") + std::any_cast<std::string>(expr.expression->accept(*this));
+}
 std::any Transpiler::visitDerefExpr(const DerefExpr& expr) {
     return "*" + std::any_cast<std::string>(expr.expression->accept(*this));
 }
@@ -857,10 +858,11 @@ std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
     if (stmt.initializer && type.name == "auto") {
         type = get_type(*stmt.initializer);
     }
+    type.is_mutable = stmt.isMutable;
 
     define(stmt.name.lexeme, type);
 
-    out << (stmt.isMutable ? "" : "const ") << type.name << " " << stmt.name.lexeme;
+    out << (type.is_mutable ? "" : "const ") << getTypeString(type) << " " << stmt.name.lexeme;
     if (stmt.initializer) {
         TypeInfo old_context = contextual_type;
         contextual_type = type;
@@ -902,7 +904,7 @@ std::any Transpiler::visitForStmt(const ForStmt& stmt) {
 
             define(varStmt->name.lexeme, type);
 
-            out << (varStmt->isMutable ? "" : "const ") << type.name << " " << varStmt->name.lexeme;
+            out << (type.is_mutable ? "" : "const ") << getTypeString(type) << " " << varStmt->name.lexeme;
             if (varStmt->initializer) {
                 out << " = " << std::any_cast<std::string>(varStmt->initializer->accept(*this));
             }
@@ -1106,7 +1108,7 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
 
         TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
         define(stmt.params[i].lexeme, paramType);
-        out << paramType.name << " " << stmt.params[i].lexeme;
+        out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
     }
     out << ") ";
 
@@ -1136,13 +1138,6 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         }
         out << ";\n";
     }
-
-    out << "template<class Archive>\n";
-    out << "void serialize(Archive& archive) {\n";
-    for (const auto& field : stmt.fields) {
-        out << "    archive(" << field->name.lexeme << ");\n";
-    }
-    out << "}\n";
 
     for (const auto& method : stmt.methods) {
         // Re-using visitFunctionStmt logic here would be ideal, but for now, a direct implementation.

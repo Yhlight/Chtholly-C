@@ -13,6 +13,48 @@ TEST(MetaTest, IsInt) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(MetaTest, IsLetAndIsMut) {
+    std::string source = R"(
+        let x: int = 10;
+        mut y: int = 20;
+        let is_x_let = meta::is_let(x);
+        let is_x_mut = meta::is_mut(x);
+        let is_y_let = meta::is_let(y);
+        let is_y_mut = meta::is_mut(y);
+    )";
+    std::string expected = "const bool is_x_let = true;\nconst bool is_x_mut = false;\nconst bool is_y_let = false;\nconst bool is_y_mut = true;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
+TEST(MetaTest, IsBorrowAndIsMove) {
+    std::string source = R"(
+        let x: int = 10;
+        let y: &int = &x;
+        let is_x_borrow = meta::is_borrow(x);
+        let is_x_move = meta::is_move(x);
+        let is_y_borrow = meta::is_borrow(y);
+        let is_y_move = meta::is_move(y);
+    )";
+    std::string expected = "const bool is_x_borrow = false;\nconst bool is_x_move = true;\nconst bool is_y_borrow = true;\nconst bool is_y_move = false;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
+TEST(MetaTest, IsBorrowMut) {
+    std::string source = R"(
+        mut x: int = 10;
+        let y: &int = &x;
+        let z: &mut int = &mut x;
+        let is_x_borrow_mut = meta::is_borrow_mut(x);
+        let is_y_borrow_mut = meta::is_borrow_mut(y);
+        let is_z_borrow_mut = meta::is_borrow_mut(z);
+    )";
+    std::string expected = "const bool is_x_borrow_mut = false;\nconst bool is_y_borrow_mut = false;\nconst bool is_z_borrow_mut = true;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(MetaTest, IsArray) {
     std::string source = R"(
         let x: array[int] = [1, 2, 3];

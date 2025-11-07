@@ -403,13 +403,18 @@ std::unique_ptr<Expr> Parser::factor() {
 }
 
 std::unique_ptr<Expr> Parser::unary() {
-    if (match(TokenType::BANG, TokenType::MINUS, TokenType::STAR)) {
+    if (match(TokenType::BANG, TokenType::MINUS, TokenType::STAR, TokenType::PLUS_PLUS, TokenType::MINUS_MINUS)) {
         Token op = previous();
         auto right = unary();
         if (op.type == TokenType::STAR) {
             return std::make_unique<DerefExpr>(std::move(right));
         }
         return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
+    }
+    if (match(TokenType::AMPERSAND)) {
+        bool isMutable = match(TokenType::MUT);
+        auto expr = unary();
+        return std::make_unique<BorrowExpr>(std::move(expr), isMutable);
     }
     return call();
 }
@@ -431,6 +436,9 @@ std::unique_ptr<Expr> Parser::call() {
         } else if (match(TokenType::COLON_COLON, TokenType::DOT)) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '::' or '.'.");
             expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
+        } else if (match(TokenType::PLUS_PLUS, TokenType::MINUS_MINUS)) {
+            Token op = previous();
+            expr = std::make_unique<UnaryExpr>(std::move(op), std::move(expr), true);
         } else {
             break;
         }

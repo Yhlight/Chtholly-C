@@ -115,13 +115,13 @@ TEST(TranspilerTest, FunctionDeclaration) {
 
 TEST(TranspilerTest, StructDeclaration) {
     std::string source = "struct Point { x: int; y: int; }";
-    std::string expected = "struct Point {\nint x;\nint y;\ntemplate<class Archive>\nvoid serialize(Archive& archive) {\n    archive(x);\n    archive(y);\n}\n};\n";
+    std::string expected = "struct Point {\nint x;\nint y;\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 TEST(TranspilerTest, StructWithMethod) {
     std::string source = "struct Point { x: int; move(dx: int) -> void { x = x + dx; } }";
-    std::string expected = "struct Point {\nint x;\ntemplate<class Archive>\nvoid serialize(Archive& archive) {\n    archive(x);\n}\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
+    std::string expected = "struct Point {\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 

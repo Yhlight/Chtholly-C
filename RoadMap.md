@@ -54,13 +54,18 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `meta` module with `is_string`
   - [x] `meta` module with `is_struct`
   - [x] `meta` module with `is_array`
+  - [x] `meta` module with `is_let`
+  - [x] `meta` module with `is_mut`
+  - [x] `meta` module with `is_borrow`
+  - [x] `meta` module with `is_borrow_mut`
+  - [x] `meta` module with `is_move`
   - [x] `reflect` module with `get_field_count`
   - [x] `reflect` module with `get_fields`
   - [x] `reflect` module with `get_method_count`
   - [x] `reflect` module with `get_methods`
   - [x] `util` module with `string_cast` and `to_string` trait
-  - [x] `util` module with `serialize` and `deserialize`
-  - [x] `util` module with `unique_id`
+  - [ ] `util` module with `serialize` and `deserialize`
+  - [ ] `util` module with `unique_id`
 - [x] Implement operator overloading.
   - [x] `operator::add`
   - [x] `operator::sub`
@@ -81,6 +86,10 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `operator::assign_mul`
   - [x] `operator::assign_div`
   - [x] `operator::assign_mod`
+  - [x] `operator::prefix_add`
+  - [x] `operator::prefix_sub`
+  - [x] `operator::postfix_add`
+  - [x] `operator::postfix_sub`
 - [x] Arrays
   - [x] Dynamic arrays (`array[T]`)
   - [x] Fixed-size arrays (`array[T; N]`)

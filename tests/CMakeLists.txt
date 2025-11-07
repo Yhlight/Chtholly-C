@@ -21,7 +21,6 @@ add_executable(chtholly_tests
     TestArray.cpp
     TestEnum.cpp
     TestHelpers.cpp
-    UtilFunctionsTests.cpp
 )
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib GTest::gtest_main)
