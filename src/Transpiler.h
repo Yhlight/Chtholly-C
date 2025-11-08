@@ -15,6 +15,8 @@ namespace chtholly {
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
     Transpiler();
+    Transpiler(std::set<std::string>* transpiled_files);
+    ~Transpiler();
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
@@ -82,6 +84,8 @@ private:
     bool optional_used = false;
     bool result_used = false;
     TypeInfo contextual_type;
+    std::set<std::string>* transpiled_files;
+    bool owns_transpiled_files = false;
 };
 
 } // namespace chtholly

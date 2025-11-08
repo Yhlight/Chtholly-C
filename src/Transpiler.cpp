@@ -3,6 +3,10 @@
 #include <stdexcept>
 #include <map>
 #include "Token.h"
+#include <fstream>
+#include <sstream>
+#include "Lexer.h"
+#include "Parser.h"
 
 namespace chtholly {
 
@@ -142,8 +146,18 @@ public:
     std::map<std::string, const EnumStmt*> enums;
 };
 
-Transpiler::Transpiler() {
+Transpiler::Transpiler() : transpiled_files(new std::set<std::string>()), owns_transpiled_files(true) {
     enterScope(); // Global scope
+}
+
+Transpiler::Transpiler(std::set<std::string>* transpiled_files) : transpiled_files(transpiled_files), owns_transpiled_files(false) {
+    enterScope(); // Global scope
+}
+
+Transpiler::~Transpiler() {
+    if (owns_transpiled_files) {
+        delete transpiled_files;
+    }
 }
 
 void Transpiler::enterScope() {
@@ -933,12 +947,36 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << ";\n";
     return nullptr;
 }
+std::string readFile(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + path);
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (std::holds_alternative<Token>(stmt.path)) {
         std::string module_name = std::get<Token>(stmt.path).lexeme;
         imported_modules.insert(module_name);
+    } else if (std::holds_alternative<std::string>(stmt.path)) {
+        std::string file_path = std::get<std::string>(stmt.path);
+
+        if (transpiled_files->find(file_path) == transpiled_files->end()) {
+            transpiled_files->insert(file_path);
+            std::string source = readFile(file_path);
+
+            Lexer lexer(source);
+            std::vector<Token> tokens = lexer.scanTokens();
+            Parser parser(tokens);
+            std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+            Transpiler import_transpiler(transpiled_files);
+            out << import_transpiler.transpile(statements);
+        }
     }
-    // File imports are not handled yet.
     return nullptr;
 }
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {

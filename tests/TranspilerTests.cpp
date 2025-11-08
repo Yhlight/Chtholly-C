@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <filesystem>
 
 using namespace chtholly;
 
@@ -230,5 +231,13 @@ TEST(TranspilerTest, InputWithoutImport) {
 TEST(TranspilerTest, TraitDeclaration) {
     std::string source = "trait MyTrait { func foo(); func bar(a: int) -> bool; }";
     std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n    virtual bool bar(int a) = 0;\n};\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, FileImport) {
+    std::filesystem::path current_path = __FILE__;
+    std::filesystem::path module_path = current_path.parent_path() / "test_module.cns";
+    std::string source = "import \"" + module_path.string() + "\"; let x = add(1, 2);";
+    std::string expected = "int add(int a, int b) {\nreturn a + b;\n}\nconst auto x = add(1, 2);\n";
     EXPECT_EQ(transpile(source), expected);
 }
