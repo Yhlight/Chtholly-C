@@ -292,3 +292,15 @@ TEST(TranspilerTest, LambdaExpressionWithMultipleCaptures) {
 	std::string expected = "const int x = 10;\nconst int y = 20;\nconst auto add_xy = [x, y](int a) -> int {\nreturn a + x + y;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, FunctionType) {
+	std::string source = "let my_func: function(int, int) -> int = add;";
+	std::string expected = "#include <functional>\nconst std::function<int(int, int)> my_func = add;\n";
+	EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, LambdaExpressionWithReferenceCapture) {
+	std::string source = "mut x = 10; let add_x = [&x](a: int) -> int { return a + x; };";
+	std::string expected = "int x = 10;\nconst auto add_x = [&x](int a) -> int {\nreturn a + x;\n}\n;\n";
+	EXPECT_EQ(transpile(source), expected);
+}

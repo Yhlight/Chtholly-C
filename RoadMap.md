@@ -110,6 +110,8 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Basic lambda syntax `[]() {}`
   - [x] Parameter and return type syntax
   - [x] Variable capture `[var]`
+- [x] Function types
+  - [x] `function(T, U) -> R` syntax for type annotations
 
 ## Phase 6: Traits and Constraints
 - [x] Trait declaration parsing

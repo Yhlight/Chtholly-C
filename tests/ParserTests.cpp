@@ -154,6 +154,12 @@ TEST(ParserTest, LambdaExpression) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, FunctionType) {
+	std::string source = "let my_func: function(int, int) -> int = add;";
+	std::string expected = "(let my_func add)";
+	EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, ComprehensiveTest) {
     std::string source = R"(
         func main() {

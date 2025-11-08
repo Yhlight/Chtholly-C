@@ -345,6 +345,9 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
     if (auto genericType = dynamic_cast<const GenericTypeExpr*>(type)) {
         return TypeInfo{ transpileType(*genericType) };
     }
+    if (auto funcType = dynamic_cast<const FunctionTypeExpr*>(type)) {
+        return TypeInfo{ transpileType(*funcType) };
+    }
 
     // Fallback for more complex types not yet handled.
     return TypeInfo{ "auto" };
@@ -411,6 +414,9 @@ std::string fs_read(const std::string& path) {
     }
     if (result_used) {
         final_code << "#include \"Result.h\"\n";
+    }
+    if (function_used) {
+        final_code << "#include <functional>\n";
     }
     if (reflect_used) {
         final_code << "#include <string>\n";
@@ -1161,6 +1167,20 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
             vector_used = true;
             return "std::vector<" + transpileType(*arrayType->element_type) + ">";
         }
+    }
+    if (auto funcType = dynamic_cast<const FunctionTypeExpr*>(&type)) {
+        function_used = true;
+        std::string s = "std::function<";
+        s += funcType->return_type ? transpileType(*funcType->return_type) : "void";
+        s += "(";
+        for (size_t i = 0; i < funcType->param_types.size(); ++i) {
+            s += transpileType(*funcType->param_types[i]);
+            if (i < funcType->param_types.size() - 1) {
+                s += ", ";
+            }
+        }
+        s += ")>";
+        return s;
     }
     return "auto";
 }

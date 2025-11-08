@@ -3,6 +3,7 @@
 
 #include "AST.h"
 #include "Result.h"
+#include <functional>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -83,6 +84,7 @@ private:
     bool array_used = false;
     bool optional_used = false;
     bool result_used = false;
+    bool function_used = false;
     TypeInfo contextual_type;
     std::set<std::string>* transpiled_files;
     bool owns_transpiled_files = false;
