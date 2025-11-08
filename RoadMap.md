@@ -27,7 +27,7 @@ This document outlines the development progress and future goals for the Chtholl
 
 ## Phase 4: Transpiler
 
-- [ ] Implement the Transpiler to convert the AST to C++ code.
+- [x] Implement the Transpiler to convert the AST to C++ code.
   - [x] Expression and basic statement transpilation
 - [x] Implement visitors for all AST node types.
 - [x] Add support for all language features, including generics, traits, and modules.

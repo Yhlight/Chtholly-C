@@ -74,6 +74,7 @@ private:
     std::vector<std::map<std::string, TypeInfo>> scopes;
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const FunctionStmt*> functions;
     std::map<std::string, const TraitStmt*> traits;
     bool is_in_switch = false;
     bool is_in_method = false;

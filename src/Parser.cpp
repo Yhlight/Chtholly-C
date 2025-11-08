@@ -179,17 +179,21 @@ std::unique_ptr<Stmt> Parser::importStatement() {
 std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
-    std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
+    std::map<std::string, std::unique_ptr<TypeExpr>> generic_defaults;
+    std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> constraints;
     if (match(TokenType::LESS)) {
         do {
             Token param_name = consume(TokenType::IDENTIFIER, "Expect generic type name.");
             generic_params.push_back(param_name);
+            if (match(TokenType::EQUAL)) {
+                generic_defaults[param_name.lexeme] = type();
+            }
             if (match(TokenType::QUESTION)) {
-                std::vector<std::unique_ptr<TypeExpr>> constraints;
+                std::vector<std::unique_ptr<TypeExpr>> constraint_list;
                 do {
-                    constraints.push_back(type());
+                    constraint_list.push_back(type());
                 } while (match(TokenType::COMMA));
-                generic_constraints[param_name.lexeme] = std::move(constraints);
+                constraints[param_name.lexeme] = std::move(constraint_list);
             }
         } while (match(TokenType::COMMA));
         consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
@@ -197,6 +201,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
     consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Token> parameters;
     std::vector<std::unique_ptr<TypeExpr>> param_types;
+    bool is_mut_method = false;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
             // Handle special 'self' parameters
@@ -205,6 +210,9 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
                 int self_offset = isMutable ? 2 : 1;
 
                 if (current + self_offset < tokens.size() && tokens[current + self_offset].type == TokenType::SELF) {
+                    if (isMutable) {
+                        is_mut_method = true;
+                    }
                     advance(); // consume &
                     if (isMutable) advance(); // consume mut
                     Token self_token = consume(TokenType::SELF, "Expect 'self'.");
@@ -241,7 +249,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
         consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
     }
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access);
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_defaults), std::move(constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access, is_mut_method);
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -328,7 +336,7 @@ std::unique_ptr<Stmt> Parser::traitDeclaration() {
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         consume(TokenType::FUNC, "Expect 'func' before method signature in trait.");
-        methods.push_back(functionDeclaration("method", false));
+        methods.push_back(functionDeclaration("method", false, Access::PUBLIC));
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after trait body.");
     return std::make_unique<TraitStmt>(std::move(name), std::move(methods));
@@ -539,14 +547,49 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     if (match(TokenType::LEFT_BRACKET)) {
-        std::vector<std::unique_ptr<Expr>> elements;
-        if (!check(TokenType::RIGHT_BRACKET)) {
-            do {
-                elements.push_back(expression());
-            } while (match(TokenType::COMMA));
+        if ((peek().type == TokenType::RIGHT_BRACKET || peek().type == TokenType::AMPERSAND || peek().type == TokenType::IDENTIFIER) && lookahead().type == TokenType::LEFT_PAREN) {
+            // This is a lambda expression
+            std::vector<LambdaCapture> captures;
+            if (!check(TokenType::RIGHT_BRACKET)) {
+                do {
+                    bool is_by_ref = match(TokenType::AMPERSAND);
+                    captures.push_back({consume(TokenType::IDENTIFIER, "Expect capture variable name."), is_by_ref});
+                } while (match(TokenType::COMMA));
+            }
+            consume(TokenType::RIGHT_BRACKET, "Expect ']' after lambda captures.");
+
+            consume(TokenType::LEFT_PAREN, "Expect '(' after lambda captures.");
+            std::vector<Token> params;
+            std::vector<std::unique_ptr<TypeExpr>> param_types;
+            if (!check(TokenType::RIGHT_PAREN)) {
+                do {
+                    params.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+                    consume(TokenType::COLON, "Expect ':' after parameter name.");
+                    param_types.push_back(type());
+                } while (match(TokenType::COMMA));
+            }
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after lambda parameters.");
+
+            std::unique_ptr<TypeExpr> return_type = nullptr;
+            if (match(TokenType::ARROW)) {
+                return_type = type();
+            }
+
+            consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
+            auto body = std::make_unique<BlockStmt>(block());
+
+            return std::make_unique<LambdaExpr>(std::move(captures), std::move(params), std::move(param_types), std::move(return_type), std::move(body));
+        } else {
+            // This is an array literal
+            std::vector<std::unique_ptr<Expr>> elements;
+            if (!check(TokenType::RIGHT_BRACKET)) {
+                do {
+                    elements.push_back(expression());
+                } while (match(TokenType::COMMA));
+            }
+            consume(TokenType::RIGHT_BRACKET, "Expect ']' after array elements.");
+            return std::make_unique<ArrayLiteralExpr>(std::move(elements));
         }
-        consume(TokenType::RIGHT_BRACKET, "Expect ']' after array elements.");
-        return std::make_unique<ArrayLiteralExpr>(std::move(elements));
     }
 
     throw error(peek(), "Expect expression.");

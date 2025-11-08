@@ -7,8 +7,8 @@
 #include "Transpiler.h"
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: chtholly [file]" << std::endl;
+    if (argc < 2 || argc > 3) {
+        std::cerr << "Usage: chtholly <input_file> [output_file]" << std::endl;
         return 1;
     }
 
@@ -32,7 +32,16 @@ int main(int argc, char* argv[]) {
         chtholly::Transpiler transpiler;
         std::string output = transpiler.transpile(statements);
 
-        std::cout << output;
+        if (argc == 3) {
+            std::ofstream outfile(argv[2]);
+            if (!outfile.is_open()) {
+                std::cerr << "Error: Could not open output file " << argv[2] << std::endl;
+                return 1;
+            }
+            outfile << output;
+        } else {
+            std::cout << output;
+        }
     } catch (const std::exception& e) {
         std::cerr << "An error occurred: " << e.what() << std::endl;
         return 1;

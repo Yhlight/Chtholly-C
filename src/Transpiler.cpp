@@ -21,6 +21,11 @@ public:
         enums[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
+    std::any visitFunctionStmt(const FunctionStmt& stmt) override {
+        functions[stmt.name.lexeme] = &stmt;
+        // Don't recurse into function bodies, we only care about top-level declarations
+        return nullptr;
+    }
 
     std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
 
@@ -33,10 +38,6 @@ public:
     }
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override {
         stmt.expression->accept(*this);
-        return nullptr;
-    }
-    std::any visitFunctionStmt(const FunctionStmt& stmt) override {
-        // Don't recurse into function bodies, we only care about top-level declarations
         return nullptr;
     }
     std::any visitIfStmt(const IfStmt& stmt) override {
@@ -144,6 +145,7 @@ public:
 
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const FunctionStmt*> functions;
 };
 
 Transpiler::Transpiler() : transpiled_files(new std::set<std::string>()), owns_transpiled_files(true) {
@@ -266,6 +268,14 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
+            if (functions.count(var_expr->name.lexeme)) {
+                const FunctionStmt* func = functions[var_expr->name.lexeme];
+                if (func->return_type) {
+                    return typeExprToTypeInfo(func->return_type.get());
+                } else {
+                    return TypeInfo{"void"};
+                }
+            }
             if (var_expr->name.lexeme == "input") {
                 return TypeInfo{"std::string"};
             }
@@ -367,6 +377,7 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     }
     this->structs = scanner.structs;
     this->enums = scanner.enums;
+    this->functions = scanner.functions;
 
     for (const auto& statement : statements) {
         statement->accept(*this);
@@ -806,7 +817,31 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     out << ")";
     return out.str();
 }
-std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
+std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
+    std::stringstream out;
+    out << "[";
+    bool first_capture = true;
+    for (const auto& capture : expr.captures) {
+        if (!first_capture) out << ", ";
+        first_capture = false;
+        if (capture.is_by_ref) out << "&";
+        out << capture.name.lexeme;
+    }
+    out << "](";
+    bool first_param = true;
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        if (!first_param) out << ", ";
+        first_param = false;
+        out << transpileType(*expr.param_types[i]) << " " << expr.params[i].lexeme;
+    }
+    out << ")";
+    if (expr.return_type) {
+        out << " -> " << transpileType(*expr.return_type);
+    }
+    out << " ";
+    visitBlockStmt(*expr.body, true);
+    return out.str();
+}
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     std::string separator = ".";
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
@@ -895,7 +930,7 @@ std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
 
 std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
     TypeInfo type = typeExprToTypeInfo(stmt.type.get());
-    if (stmt.initializer && type.name == "auto") {
+    if (stmt.initializer && (!stmt.type || type.name == "auto")) {
         type = get_type(*stmt.initializer);
     }
     type.is_mutable = stmt.isMutable;
@@ -997,7 +1032,25 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
             Parser parser(tokens);
             std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
 
+            // Scan for declarations in the imported file and add them to the current transpiler.
+            DeclarationScanner scanner;
+            for (const auto& statement : statements) {
+                statement->accept(scanner);
+            }
+            for (const auto& [name, func] : scanner.functions) {
+                this->functions[name] = func;
+            }
+            for (const auto& [name, s] : scanner.structs) {
+                this->structs[name] = s;
+            }
+            for (const auto& [name, e] : scanner.enums) {
+                this->enums[name] = e;
+            }
+
             Transpiler import_transpiler(transpiled_files);
+            import_transpiler.functions = functions;
+            import_transpiler.structs = structs;
+            import_transpiler.enums = enums;
             out << import_transpiler.transpile(statements);
         }
     }
@@ -1100,21 +1153,46 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
     return "auto";
 }
 
+// In Transpiler.cpp
+
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    is_in_method = true;
+
     if (!stmt.generic_params.empty()) {
         out << "template <";
         for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
             out << "typename " << stmt.generic_params[i].lexeme;
+            if (stmt.generic_defaults.count(stmt.generic_params[i].lexeme)) {
+                out << " = " << transpileType(*stmt.generic_defaults.at(stmt.generic_params[i].lexeme));
+            }
             if (i < stmt.generic_params.size() - 1) {
                 out << ", ";
             }
         }
         out << ">\n";
     }
+    transpile_generic_constraints(stmt.constraints);
 
-    out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
+    // Determine return type
+    std::string return_type_str = "void";
+    if (stmt.return_type) {
+        return_type_str = transpileType(*stmt.return_type);
+    }
+
+    out << return_type_str << " " << stmt.name.lexeme << "(";
 
     enterScope();
+
+    // Handle 'self' parameter for methods
+    bool is_static_method = true;
+    for (const auto& param : stmt.params) {
+        if (param.lexeme == "self") {
+            is_static_method = false;
+            break;
+        }
+    }
+
+    // Transpile parameters
     bool first_param = true;
     for (size_t i = 0; i < stmt.params.size(); ++i) {
         if (stmt.params[i].lexeme == "self") continue;
@@ -1123,9 +1201,15 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
 
         TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
         define(stmt.params[i].lexeme, paramType);
+
         out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
     }
     out << ") ";
+
+    // Add 'const' for const methods
+    if (!is_static_method && !stmt.is_mut_method) {
+        out << "const ";
+    }
 
     if (stmt.body) {
         visitBlockStmt(*stmt.body, false);
@@ -1134,6 +1218,7 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     }
 
     exitScope();
+    is_in_method = false;
     return nullptr;
 }
 
@@ -1203,6 +1288,23 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
 
     out << "};\n";
     return nullptr;
+}
+
+void Transpiler::transpile_generic_constraints(const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints) {
+    if (constraints.empty()) {
+        return;
+    }
+    out << "requires ";
+    bool first_constraint = true;
+    for (const auto& [name, constraint_list] : constraints) {
+        for (const auto& constraint : constraint_list) {
+            if (!first_constraint) {
+                out << " && ";
+            }
+            first_constraint = false;
+            out << "requires(" << name << " v) { v." << transpileType(*constraint) << "; }";
+        }
+    }
 }
 
 std::any Transpiler::visitEnumStmt(const EnumStmt& stmt) {
