@@ -943,91 +943,42 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
 }
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
     is_in_switch = true;
-    out << "{\n";
-    out << "auto&& __switch_val = " << std::any_cast<std::string>(stmt.expression->accept(*this)) << ";\n";
-    bool first_case = true;
-    const CaseStmt* default_case = nullptr;
-
-    for (size_t i = 0; i < stmt.cases.size(); ) {
-        if (!stmt.cases[i]->value) {
-            default_case = stmt.cases[i].get();
-            i++;
-            continue;
-        }
-
-        std::vector<const CaseStmt*> current_cases;
-        current_cases.push_back(stmt.cases[i].get());
-
-        bool has_fallthrough = false;
-        if (const auto* block = dynamic_cast<const BlockStmt*>(stmt.cases[i]->body.get())) {
-             if (!block->statements.empty()) {
-                if (dynamic_cast<const FallthroughStmt*>(block->statements.back().get())) {
-                    has_fallthrough = true;
-                }
-            }
-        }
-
-        size_t j = i + 1;
-        while (has_fallthrough && j < stmt.cases.size()) {
-            current_cases.push_back(stmt.cases[j].get());
-            if (const auto* block = dynamic_cast<const BlockStmt*>(stmt.cases[j]->body.get())) {
-                if (!block->statements.empty()) {
-                    if (!dynamic_cast<const FallthroughStmt*>(block->statements.back().get())) {
-                        has_fallthrough = false;
-                    }
-                } else {
-                  has_fallthrough = false;
-                }
-            }
-            j++;
-        }
-
-        if (first_case) {
-            out << "if (";
-            first_case = false;
-        } else {
-            out << "else if (";
-        }
-
-        for (size_t k = 0; k < current_cases.size(); ++k) {
-            out << "__switch_val == " << std::any_cast<std::string>(current_cases[k]->value->accept(*this));
-            if (k < current_cases.size() - 1) {
-                out << " || ";
-            }
-        }
-        out << ") {\n";
-
-        for (const auto& case_to_transpile : current_cases) {
-            if (const auto* block = dynamic_cast<const BlockStmt*>(case_to_transpile->body.get())) {
-                for(const auto& statement : block->statements) {
-                    // Don't transpile the fallthrough statement itself
-                    if (!dynamic_cast<const FallthroughStmt*>(statement.get())) {
-                        statement->accept(*this);
-                    }
-                }
-            }
-        }
-        out << "}\n";
-        i = j;
+    out << "switch (" << std::any_cast<std::string>(stmt.expression->accept(*this)) << ") {\n";
+    for (const auto& case_stmt : stmt.cases) {
+        case_stmt->accept(*this);
     }
-
-    if (default_case) {
-        out << "else ";
-        default_case->body->accept(*this);
-    }
-
     out << "}\n";
     is_in_switch = false;
     return nullptr;
 }
 std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
-    // This should not be called directly. Logic is handled in visitSwitchStmt.
+    if (stmt.value) {
+        out << "case " << std::any_cast<std::string>(stmt.value->accept(*this)) << ":\n";
+    } else {
+        out << "default:\n";
+    }
+    stmt.body->accept(*this);
+
+    // Add implicit break if there's no fallthrough, break, or return.
+    bool has_terminator = false;
+    if (const auto* block = dynamic_cast<const BlockStmt*>(stmt.body.get())) {
+        if (!block->statements.empty()) {
+            const auto& last_stmt = block->statements.back();
+            if (dynamic_cast<const FallthroughStmt*>(last_stmt.get()) ||
+                dynamic_cast<const BreakStmt*>(last_stmt.get()) ||
+                dynamic_cast<const ReturnStmt*>(last_stmt.get())) {
+                has_terminator = true;
+            }
+        }
+    }
+
+    if (!has_terminator) {
+        out << "break;\n";
+    }
     return nullptr;
 }
 std::any Transpiler::visitBreakStmt(const BreakStmt& stmt) {
-    if (!is_in_switch) {
-        out << "break;\n";
-    }
+    out << "break;\n";
     return nullptr;
 }
 std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {

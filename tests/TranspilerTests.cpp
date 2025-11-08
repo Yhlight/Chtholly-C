@@ -89,21 +89,27 @@ TEST(TranspilerTest, TypeCastExpression) {
     EXPECT_EQ(transpile(source), expected);
 }
 
+
 TEST(TranspilerTest, SwitchStatement) {
-    std::string source = "switch (x) { case 1: { y = 1; break; } default: { y = 2; } }";
-    std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1) {\ny = 1;\n}\nelse {\ny = 2;\n}\n}\n";
-    EXPECT_EQ(transpile(source), expected);
-}
-
-TEST(TranspilerTest, SwitchFallthroughStatement) {
-    std::string source = "switch (x) { case 1: { y = 1; fallthrough; } case 2: { y = 2; } }";
-    std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1 || __switch_val == 2) {\ny = 1;\ny = 2;\n}\n}\n";
-    EXPECT_EQ(transpile(source), expected);
-}
-
-TEST(TranspilerTest, SwitchMultipleFallthroughStatement) {
-    std::string source = "switch (x) { case 1: { y = 1; fallthrough; } case 2: { y = 2; fallthrough; } case 3: { y = 3; } }";
-    std::string expected = "{\nauto&& __switch_val = x;\nif (__switch_val == 1 || __switch_val == 2 || __switch_val == 3) {\ny = 1;\ny = 2;\ny = 3;\n}\n}\n";
+    std::string source = R"(
+        switch (x) {
+            case 1: {
+                y = 1;
+                fallthrough;
+            }
+            case 2: {
+                y = 2;
+                break;
+            }
+            case 3: {
+                y = 3;
+            }
+            default: {
+                y = 4;
+            }
+        }
+    )";
+    std::string expected = "switch (x) {\ncase 1:\n{\ny = 1;\n[[fallthrough]];\n}\ncase 2:\n{\ny = 2;\nbreak;\n}\ncase 3:\n{\ny = 3;\n}\nbreak;\ndefault:\n{\ny = 4;\n}\nbreak;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
