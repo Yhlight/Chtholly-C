@@ -148,6 +148,12 @@ TEST(ParserTest, CallExpression) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, LambdaExpression) {
+    std::string source = "let add = [a](b: int) -> int { return a + b; };";
+    std::string expected = "(let add (lambda [a] (b) (block (return (+ a b)))))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, ComprehensiveTest) {
     std::string source = R"(
         func main() {

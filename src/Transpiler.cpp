@@ -4,6 +4,8 @@
 #include <map>
 #include "Token.h"
 #include <fstream>
+#include <sstream>
+#include <filesystem>
 #include "Lexer.h"
 #include "Parser.h"
 
@@ -349,16 +351,27 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
 }
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
-    // Pre-scan for struct and enum definitions.
+    // First pass: handle all import statements.
+    for (const auto& statement : statements) {
+        if (dynamic_cast<const ImportStmt*>(statement.get())) {
+            statement->accept(*this);
+        }
+    }
+
+    // Second pass: scan for declarations in the current file + imported ones.
     DeclarationScanner scanner;
     for (const auto& statement : statements) {
         statement->accept(scanner);
     }
-    this->structs = scanner.structs;
-    this->enums = scanner.enums;
+    this->structs.insert(scanner.structs.begin(), scanner.structs.end());
+    this->enums.insert(scanner.enums.begin(), scanner.enums.end());
 
+
+    // Third pass: transpile the rest of the statements.
     for (const auto& statement : statements) {
-        statement->accept(*this);
+        if (!dynamic_cast<const ImportStmt*>(statement.get())) {
+            statement->accept(*this);
+        }
     }
 
     std::stringstream final_code;
@@ -795,7 +808,47 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     out << ")";
     return out.str();
 }
-std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
+std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
+    std::stringstream ss;
+    ss << "[";
+    for (size_t i = 0; i < expr.captures.size(); ++i) {
+        ss << expr.captures[i].lexeme;
+        if (i < expr.captures.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "](";
+
+    enterScope();
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        TypeInfo paramType = typeExprToTypeInfo(expr.param_types[i].get());
+        define(expr.params[i].lexeme, paramType);
+        ss << getTypeString(paramType) << " " << expr.params[i].lexeme;
+        if (i < expr.params.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << ")";
+
+    if (expr.return_type) {
+        ss << " -> " << transpileType(*expr.return_type);
+    }
+
+    ss << " ";
+    // Temporarily redirect 'out' to capture the block's transpilation
+    std::stringstream body_out;
+    std::swap(out, body_out);
+
+    visitBlockStmt(*expr.body, false);
+
+    std::swap(out, body_out); // Restore original 'out'
+
+    ss << body_out.str();
+
+    exitScope();
+
+    return ss.str();
+}
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     std::string separator = ".";
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
@@ -965,14 +1018,20 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
         std::string module_name = std::get<Token>(stmt.path).lexeme;
         imported_modules.insert(module_name);
     } else if (std::holds_alternative<std::string>(stmt.path)) {
-        std::string file_path = std::get<std::string>(stmt.path);
+        std::string file_path_str = std::get<std::string>(stmt.path);
+        std::filesystem::path file_path(file_path_str);
+        if (!std::filesystem::exists(file_path)) {
+            // In a real compiler, we'd report a file not found error.
+            return nullptr;
+        }
+        std::string canonical_path = std::filesystem::canonical(file_path);
 
-        if (transpiled_files->count(file_path)) {
+        if (transpiled_files->count(canonical_path)) {
             return nullptr; // Already transpiled
         }
-        transpiled_files->insert(file_path);
+        transpiled_files->insert(canonical_path);
 
-        std::ifstream file(file_path);
+        std::ifstream file(canonical_path);
         if (!file.is_open()) {
             // In a real compiler, we'd report a file not found error.
             return nullptr;
@@ -986,10 +1045,28 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
         Parser parser(tokens);
         std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
 
-        // Use a new transpiler instance to handle the imported file
-        // This is a simplified approach. A real compiler would manage symbols across files.
-        Transpiler file_transpiler(transpiled_files);
-        out << file_transpiler.transpile(statements);
+        // Pre-scan for declarations in the imported file
+        DeclarationScanner scanner;
+        for (const auto& statement : statements) {
+            statement->accept(scanner);
+        }
+        // Merge declarations into the current transpiler
+        this->structs.insert(scanner.structs.begin(), scanner.structs.end());
+        this->enums.insert(scanner.enums.begin(), scanner.enums.end());
+
+        // Transpile the imported statements into a temporary stream
+        std::stringstream imported_out;
+        std::swap(out, imported_out);
+
+        for (const auto& statement : statements) {
+            statement->accept(*this);
+        }
+
+        // Restore the original stream and prepend the imported code
+        std::swap(out, imported_out);
+        std::string original_content = out.str();
+        out.str("");
+        out << imported_out.str() << original_content;
     }
     return nullptr;
 }

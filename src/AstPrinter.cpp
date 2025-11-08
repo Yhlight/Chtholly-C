@@ -101,7 +101,23 @@ std::any AstPrinter::visitCallExpr(const CallExpr& expr) {
 }
 
 std::any AstPrinter::visitLambdaExpr(const LambdaExpr& expr) {
-    return std::string("(lambda)");
+    std::stringstream out;
+    out << "(lambda [";
+    for (size_t i = 0; i < expr.captures.size(); ++i) {
+        out << expr.captures[i].lexeme;
+        if (i < expr.captures.size() - 1) {
+            out << " ";
+        }
+    }
+    out << "] (";
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        out << expr.params[i].lexeme;
+        if (i < expr.params.size() - 1) {
+            out << " ";
+        }
+    }
+    out << ") " << std::any_cast<std::string>(expr.body->accept(*this)) << ")";
+    return out.str();
 }
 
 std::any AstPrinter::visitGetExpr(const GetExpr& expr) {

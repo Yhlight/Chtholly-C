@@ -106,6 +106,10 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `.unwarp()` and `.unwarp_err()` methods
 - [x] Type Casting
   - [x] `type_cast<T>(expr)`
+- [x] Lambda expressions
+  - [x] Basic lambda syntax `[]() {}`
+  - [x] Parameter and return type syntax
+  - [x] Variable capture `[var]`
 
 ## Phase 6: Traits and Constraints
 - [x] Trait declaration parsing

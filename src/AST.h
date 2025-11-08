@@ -166,11 +166,15 @@ struct CallExpr : Expr {
 };
 
 struct LambdaExpr : Expr {
-    // Simplified for now
+    std::vector<Token> captures;
     std::vector<Token> params;
-    std::unique_ptr<Stmt> body;
-    LambdaExpr(std::vector<Token> params, std::unique_ptr<Stmt> body)
-        : params(std::move(params)), body(std::move(body)) {}
+    std::vector<std::unique_ptr<TypeExpr>> param_types;
+    std::unique_ptr<TypeExpr> return_type;
+    std::unique_ptr<BlockStmt> body;
+
+    LambdaExpr(std::vector<Token> captures, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
+        : captures(std::move(captures)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
+
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitLambdaExpr(*this); }
 };
 

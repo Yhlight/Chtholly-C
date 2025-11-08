@@ -268,3 +268,27 @@ TEST(TranspilerTest, InternalTraitImplementation) {
     std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n};\nstruct MyStruct : public MyTrait {\npublic:\nvoid foo() override {\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, LambdaExpression) {
+    std::string source = "let add = [](a: int, b: int) -> int { return a + b; };";
+    std::string expected = "const auto add = [](int a, int b) -> int {\nreturn a + b;\n}\n;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, LambdaExpressionNoParams) {
+	std::string source = "let get_five = []() -> int { return 5; };";
+	std::string expected = "const auto get_five = []() -> int {\nreturn 5;\n}\n;\n";
+	EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, LambdaExpressionWithCapture) {
+	std::string source = "let x = 10; let add_x = [x](a: int) -> int { return a + x; };";
+	std::string expected = "const int x = 10;\nconst auto add_x = [x](int a) -> int {\nreturn a + x;\n}\n;\n";
+	EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, LambdaExpressionWithMultipleCaptures) {
+	std::string source = "let x = 10; let y = 20; let add_xy = [x, y](a: int) -> int { return a + x + y; };";
+	std::string expected = "const int x = 10;\nconst int y = 20;\nconst auto add_xy = [x, y](int a) -> int {\nreturn a + x + y;\n}\n;\n";
+	EXPECT_EQ(transpile(source), expected);
+}

@@ -55,8 +55,10 @@ private:
     std::unique_ptr<Expr> primary();
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<TypeExpr>> generic_args);
     std::unique_ptr<Expr> structLiteral();
+    std::unique_ptr<Expr> lambdaExpression();
 
     // Helper methods
+    bool isLambdaExpressionAhead();
     bool isGenericArgumentList();
     bool isAtEnd();
     Token peek();

@@ -539,6 +539,10 @@ std::unique_ptr<Expr> Parser::primary() {
         return std::make_unique<GroupingExpr>(std::move(expr));
     }
 
+    if (isLambdaExpressionAhead()) {
+        return lambdaExpression();
+    }
+
     if (match(TokenType::LEFT_BRACKET)) {
         std::vector<std::unique_ptr<Expr>> elements;
         if (!check(TokenType::RIGHT_BRACKET)) {
@@ -551,6 +555,44 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     throw error(peek(), "Expect expression.");
+}
+
+std::unique_ptr<Expr> Parser::lambdaExpression() {
+    consume(TokenType::LEFT_BRACKET, "Expect '[' at the start of a lambda expression.");
+    std::vector<Token> captures;
+    if (!check(TokenType::RIGHT_BRACKET)) {
+        do {
+            if (match(TokenType::AMPERSAND)) {
+                captures.push_back(previous());
+            }
+            if (match(TokenType::IDENTIFIER)) {
+                captures.push_back(previous());
+            }
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_BRACKET, "Expect ']' after lambda capture list.");
+
+    consume(TokenType::LEFT_PAREN, "Expect '(' after lambda capture list.");
+    std::vector<Token> parameters;
+    std::vector<std::unique_ptr<TypeExpr>> param_types;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            consume(TokenType::COLON, "Expect ':' after parameter name.");
+            param_types.push_back(type());
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+    std::unique_ptr<TypeExpr> returnType = nullptr;
+    if (match(TokenType::ARROW)) {
+        returnType = type();
+    }
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before lambda body.");
+    auto body = std::make_unique<BlockStmt>(block());
+
+    return std::make_unique<LambdaExpr>(std::move(captures), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
 }
 
 std::unique_ptr<Expr> Parser::structLiteral() {
@@ -669,6 +711,32 @@ bool Parser::isGenericArgumentList() {
     } catch (ParseError& e) {
         // Fallthrough, result is false
     }
+
+    current = saved_current;
+    return result;
+}
+
+bool Parser::isLambdaExpressionAhead() {
+    if (peek().type != TokenType::LEFT_BRACKET) {
+        return false;
+    }
+
+    int saved_current = current;
+    advance(); // Consume '['
+
+    // Look for ']'
+    while (!isAtEnd() && peek().type != TokenType::RIGHT_BRACKET) {
+        advance();
+    }
+
+    if (isAtEnd() || peek().type != TokenType::RIGHT_BRACKET) {
+        current = saved_current;
+        return false;
+    }
+
+    advance(); // Consume ']'
+
+    bool result = !isAtEnd() && peek().type == TokenType::LEFT_PAREN;
 
     current = saved_current;
     return result;
