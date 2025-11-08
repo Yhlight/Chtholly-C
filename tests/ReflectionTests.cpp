@@ -15,6 +15,21 @@ TEST(ReflectionTest, GetFieldCount) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(ReflectionTest, GetFieldValue) {
+    std::string source = R"(
+        import reflect;
+        struct Point {
+            x: int;
+            y: string;
+        }
+        let p: Point = Point{x: 1, y: "hello"};
+        let x_val = reflect::get_field_value(p, "x");
+    )";
+    std::string expected = "const int x_val = p.x;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(ReflectionTest, GetMethodCount) {
     std::string source = R"(
         struct Point {

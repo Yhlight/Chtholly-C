@@ -6,6 +6,7 @@
 #include <fstream>
 #include "Lexer.h"
 #include "Parser.h"
+#include <algorithm>
 
 namespace chtholly {
 
@@ -301,6 +302,26 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
                 if (get_expr->name.lexeme == "get_methods") {
                     return TypeInfo{"std::vector<chtholly_method>"};
+                }
+                if (get_expr->name.lexeme == "get_field_value") {
+                    if (call_expr->arguments.size() < 2) {
+                        return TypeInfo{"auto"};
+                    }
+                    TypeInfo object_type = get_type(*call_expr->arguments[0]);
+                    if (structs.count(object_type.name)) {
+                        const StructStmt* s = structs[object_type.name];
+                        if (auto field_name_literal = dynamic_cast<const LiteralExpr*>(call_expr->arguments[1].get())) {
+                            if (std::holds_alternative<std::string>(field_name_literal->value)) {
+                                std::string field_name = std::get<std::string>(field_name_literal->value);
+                                for (const auto& field : s->fields) {
+                                    if (field->name.lexeme == field_name) {
+                                        return typeExprToTypeInfo(field->type.get());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return TypeInfo{"auto"};
                 }
             }
             if (var_expr->name.lexeme == "util") {
@@ -670,6 +691,18 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
         } else {
             return std::string("std::vector<chtholly_method>{}");
         }
+    }
+    if (function_name == "get_field_value") {
+        if (expr.arguments.size() < 2) {
+            return std::string("/* ERROR: get_field_value requires two arguments */");
+        }
+        std::string object_name = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string field_name_str = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        // Remove quotes from the field name string literal
+        if (field_name_str.length() >= 2 && field_name_str.front() == '"' && field_name_str.back() == '"') {
+            field_name_str = field_name_str.substr(1, field_name_str.length() - 2);
+        }
+        return object_name + "." + field_name_str;
     }
 
     return std::string("/* ERROR: Unknown reflect function call */");

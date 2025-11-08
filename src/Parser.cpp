@@ -307,6 +307,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         }
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct body.");
+    match(TokenType::SEMICOLON); // Optionally consume a semicolon
     return std::make_unique<StructStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(traits), std::move(fields), std::move(methods));
 }
 

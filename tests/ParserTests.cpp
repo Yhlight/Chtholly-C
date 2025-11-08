@@ -136,6 +136,14 @@ TEST(ParserTest, StructWithTrait) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, StructDeclarationWithAndWithoutSemicolon) {
+    std::string source_with_semicolon = "struct Point { x: int; };";
+    std::string source_without_semicolon = "struct Point { x: int; }";
+    std::string expected = "(struct Point (let x))";
+    EXPECT_EQ(parseAndPrint(source_with_semicolon), expected);
+    EXPECT_EQ(parseAndPrint(source_without_semicolon), expected);
+}
+
 TEST(ParserTest, ReturnStatement) {
     std::string source = "return 1;";
     std::string expected = "(return 1)";
