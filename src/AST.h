@@ -57,49 +57,59 @@ struct TraitStmt;
 // Visitor for Expressions
 class ExprVisitor {
 public:
-    virtual std::any visitBinaryExpr(const BinaryExpr& expr) = 0;
-    virtual std::any visitUnaryExpr(const UnaryExpr& expr) = 0;
-    virtual std::any visitLiteralExpr(const LiteralExpr& expr) = 0;
-    virtual std::any visitGroupingExpr(const GroupingExpr& expr) = 0;
-    virtual std::any visitVariableExpr(const VariableExpr& expr) = 0;
-    virtual std::any visitAssignExpr(const AssignExpr& expr) = 0;
-    virtual std::any visitCallExpr(const CallExpr& expr) = 0;
-    virtual std::any visitLambdaExpr(const LambdaExpr& expr) = 0;
-    virtual std::any visitGetExpr(const GetExpr& expr) = 0;
-    virtual std::any visitSetExpr(const SetExpr& expr) = 0;
-    virtual std::any visitSelfExpr(const SelfExpr& expr) = 0;
-    virtual std::any visitBorrowExpr(const BorrowExpr& expr) = 0;
-    virtual std::any visitDerefExpr(const DerefExpr& expr) = 0;
-    virtual std::any visitStructLiteralExpr(const StructLiteralExpr& expr) = 0;
-    virtual std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) = 0;
-    virtual std::any visitTypeCastExpr(const TypeCastExpr& expr) = 0;
+    virtual std::any visitBinaryExpr(const BinaryExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitUnaryExpr(const UnaryExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitLiteralExpr(const LiteralExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitGroupingExpr(const GroupingExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitVariableExpr(const VariableExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitAssignExpr(const AssignExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitCallExpr(const CallExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitLambdaExpr(const LambdaExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitGetExpr(const GetExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitSetExpr(const SetExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitSelfExpr(const SelfExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitBorrowExpr(const BorrowExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitDerefExpr(const DerefExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitStructLiteralExpr(const StructLiteralExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitTypeCastExpr(const TypeCastExpr& expr, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
 };
 
 // Base class for all expressions
 struct Expr {
     virtual ~Expr() = default;
-    virtual std::any accept(ExprVisitor& visitor) const = 0;
+    virtual std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const = 0;
 };
 
 // Visitor for Statements
 class StmtVisitor {
 public:
-    virtual std::any visitBlockStmt(const BlockStmt& stmt) = 0;
-    virtual std::any visitExpressionStmt(const ExpressionStmt& stmt) = 0;
-    virtual std::any visitFunctionStmt(const FunctionStmt& stmt) = 0;
-    virtual std::any visitIfStmt(const IfStmt& stmt) = 0;
-    virtual std::any visitVarStmt(const VarStmt& stmt) = 0;
-    virtual std::any visitWhileStmt(const WhileStmt& stmt) = 0;
-    virtual std::any visitForStmt(const ForStmt& stmt) = 0;
-    virtual std::any visitReturnStmt(const ReturnStmt& stmt) = 0;
-    virtual std::any visitStructStmt(const StructStmt& stmt) = 0;
-    virtual std::any visitImportStmt(const ImportStmt& stmt) = 0;
-    virtual std::any visitSwitchStmt(const SwitchStmt& stmt) = 0;
-    virtual std::any visitCaseStmt(const CaseStmt& stmt) = 0;
-    virtual std::any visitBreakStmt(const BreakStmt& stmt) = 0;
-    virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt) = 0;
-    virtual std::any visitEnumStmt(const EnumStmt& stmt) = 0;
-    virtual std::any visitTraitStmt(const TraitStmt& stmt) = 0;
+    virtual std::any visitBlockStmt(const BlockStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitExpressionStmt(const ExpressionStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitFunctionStmt(const FunctionStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitIfStmt(const IfStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitVarStmt(const VarStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitWhileStmt(const WhileStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitForStmt(const ForStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitReturnStmt(const ReturnStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitStructStmt(const StructStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitImportStmt(const ImportStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitSwitchStmt(const SwitchStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitCaseStmt(const CaseStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitBreakStmt(const BreakStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitFallthroughStmt(const FallthroughStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitEnumStmt(const EnumStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+    virtual std::any visitTraitStmt(const TraitStmt& stmt, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) = 0;
+};
+
+// Visitor for Type Expressions
+class TypeExprVisitor {
+public:
+    virtual std::any visitBaseTypeExpr(const BaseTypeExpr& type) = 0;
+    virtual std::any visitArrayTypeExpr(const ArrayTypeExpr& type) = 0;
+    virtual std::any visitFunctionTypeExpr(const FunctionTypeExpr& type) = 0;
+    virtual std::any visitGenericTypeExpr(const GenericTypeExpr& type) = 0;
+    virtual std::any visitBorrowTypeExpr(const BorrowTypeExpr& type) = 0;
 };
 
 // Base class for all statements
@@ -107,7 +117,7 @@ enum class Access { PUBLIC, PRIVATE };
 
 struct Stmt {
     virtual ~Stmt() = default;
-    virtual std::any accept(StmtVisitor& visitor) const = 0;
+    virtual std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const = 0;
 };
 
 // Concrete Expression Nodes
@@ -117,7 +127,7 @@ struct BinaryExpr : Expr {
     std::unique_ptr<Expr> right;
     BinaryExpr(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
         : left(std::move(left)), op(std::move(op)), right(std::move(right)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitBinaryExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitBinaryExpr(*this, structs, enums); }
 };
 
 struct UnaryExpr : Expr {
@@ -126,25 +136,25 @@ struct UnaryExpr : Expr {
     bool is_postfix;
     UnaryExpr(Token op, std::unique_ptr<Expr> right, bool is_postfix = false)
         : op(std::move(op)), right(std::move(right)), is_postfix(is_postfix) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitUnaryExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitUnaryExpr(*this, structs, enums); }
 };
 
 struct LiteralExpr : Expr {
     std::variant<std::nullptr_t, std::string, double, long long, bool, char> value;
     explicit LiteralExpr(std::variant<std::nullptr_t, std::string, double, long long, bool, char> value) : value(std::move(value)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitLiteralExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitLiteralExpr(*this, structs, enums); }
 };
 
 struct GroupingExpr : Expr {
     std::unique_ptr<Expr> expression;
     explicit GroupingExpr(std::unique_ptr<Expr> expression) : expression(std::move(expression)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitGroupingExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitGroupingExpr(*this, structs, enums); }
 };
 
 struct VariableExpr : Expr {
     Token name;
     explicit VariableExpr(Token name) : name(std::move(name)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitVariableExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitVariableExpr(*this, structs, enums); }
 };
 
 struct AssignExpr : Expr {
@@ -152,7 +162,7 @@ struct AssignExpr : Expr {
     std::unique_ptr<Expr> value;
     AssignExpr(Token name, std::unique_ptr<Expr> value)
         : name(std::move(name)), value(std::move(value)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitAssignExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitAssignExpr(*this, structs, enums); }
 };
 
 struct CallExpr : Expr {
@@ -162,7 +172,7 @@ struct CallExpr : Expr {
     std::vector<std::unique_ptr<Expr>> arguments;
     CallExpr(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<TypeExpr>> generic_args, std::vector<std::unique_ptr<Expr>> arguments)
         : callee(std::move(callee)), paren(std::move(paren)), generic_args(std::move(generic_args)), arguments(std::move(arguments)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitCallExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitCallExpr(*this, structs, enums); }
 };
 
 struct LambdaExpr : Expr {
@@ -171,7 +181,7 @@ struct LambdaExpr : Expr {
     std::unique_ptr<Stmt> body;
     LambdaExpr(std::vector<Token> params, std::unique_ptr<Stmt> body)
         : params(std::move(params)), body(std::move(body)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitLambdaExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitLambdaExpr(*this, structs, enums); }
 };
 
 struct GetExpr : Expr {
@@ -179,7 +189,7 @@ struct GetExpr : Expr {
     Token name;
     GetExpr(std::unique_ptr<Expr> object, Token name)
         : object(std::move(object)), name(std::move(name)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitGetExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitGetExpr(*this, structs, enums); }
 };
 
 struct SetExpr : Expr {
@@ -188,13 +198,13 @@ struct SetExpr : Expr {
     std::unique_ptr<Expr> value;
     SetExpr(std::unique_ptr<Expr> object, Token name, std::unique_ptr<Expr> value)
         : object(std::move(object)), name(std::move(name)), value(std::move(value)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitSetExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitSetExpr(*this, structs, enums); }
 };
 
 struct SelfExpr : Expr {
     Token keyword;
     explicit SelfExpr(Token keyword) : keyword(std::move(keyword)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitSelfExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitSelfExpr(*this, structs, enums); }
 };
 
 struct BorrowExpr : Expr {
@@ -202,14 +212,14 @@ struct BorrowExpr : Expr {
     bool isMutable;
     BorrowExpr(std::unique_ptr<Expr> expression, bool isMutable)
         : expression(std::move(expression)), isMutable(isMutable) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitBorrowExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitBorrowExpr(*this, structs, enums); }
 };
 
 struct DerefExpr : Expr {
     std::unique_ptr<Expr> expression;
     explicit DerefExpr(std::unique_ptr<Expr> expression)
         : expression(std::move(expression)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitDerefExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitDerefExpr(*this, structs, enums); }
 };
 
 struct StructLiteralExpr : Expr {
@@ -217,14 +227,14 @@ struct StructLiteralExpr : Expr {
     std::map<std::string, std::unique_ptr<Expr>> fields;
     StructLiteralExpr(Token name, std::map<std::string, std::unique_ptr<Expr>> fields)
         : name(std::move(name)), fields(std::move(fields)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitStructLiteralExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitStructLiteralExpr(*this, structs, enums); }
 };
 
 struct ArrayLiteralExpr : Expr {
     std::vector<std::unique_ptr<Expr>> elements;
     explicit ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> elements)
         : elements(std::move(elements)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitArrayLiteralExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitArrayLiteralExpr(*this, structs, enums); }
 };
 
 struct TypeCastExpr : Expr {
@@ -232,7 +242,7 @@ struct TypeCastExpr : Expr {
     std::unique_ptr<Expr> expression;
     TypeCastExpr(std::unique_ptr<TypeExpr> type, std::unique_ptr<Expr> expression)
         : type(std::move(type)), expression(std::move(expression)) {}
-    std::any accept(ExprVisitor& visitor) const override { return visitor.visitTypeCastExpr(*this); }
+    std::any accept(ExprVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitTypeCastExpr(*this, structs, enums); }
 };
 
 
@@ -240,13 +250,13 @@ struct TypeCastExpr : Expr {
 struct BlockStmt : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
     explicit BlockStmt(std::vector<std::unique_ptr<Stmt>> statements) : statements(std::move(statements)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitBlockStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitBlockStmt(*this, structs, enums); }
 };
 
 struct ExpressionStmt : Stmt {
     std::unique_ptr<Expr> expression;
     explicit ExpressionStmt(std::unique_ptr<Expr> expression) : expression(std::move(expression)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitExpressionStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitExpressionStmt(*this, structs, enums); }
 };
 
 struct FunctionStmt : Stmt {
@@ -261,7 +271,7 @@ struct FunctionStmt : Stmt {
     std::unique_ptr<TypeExpr> trait_impl; // For internal `impl Trait` on methods
     FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC, std::unique_ptr<TypeExpr> trait_impl = nullptr)
         : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access), trait_impl(std::move(trait_impl)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitFunctionStmt(*this, structs, enums); }
 };
 
 struct IfStmt : Stmt {
@@ -270,7 +280,7 @@ struct IfStmt : Stmt {
     std::unique_ptr<Stmt> elseBranch;
     IfStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
         : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitIfStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitIfStmt(*this, structs, enums); }
 };
 
 struct VarStmt : Stmt {
@@ -281,7 +291,7 @@ struct VarStmt : Stmt {
     Access access;
     VarStmt(Token name, std::unique_ptr<TypeExpr> type, std::unique_ptr<Expr> initializer, bool isMutable, Access access = Access::PUBLIC)
         : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable), access(access) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitVarStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitVarStmt(*this, structs, enums); }
 };
 
 struct WhileStmt : Stmt {
@@ -289,7 +299,7 @@ struct WhileStmt : Stmt {
     std::unique_ptr<Stmt> body;
     WhileStmt(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
         : condition(std::move(condition)), body(std::move(body)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitWhileStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitWhileStmt(*this, structs, enums); }
 };
 
 struct ForStmt : Stmt {
@@ -299,7 +309,7 @@ struct ForStmt : Stmt {
     std::unique_ptr<Stmt> body;
     ForStmt(std::unique_ptr<Stmt> initializer, std::unique_ptr<Expr> condition, std::unique_ptr<Expr> increment, std::unique_ptr<Stmt> body)
         : initializer(std::move(initializer)), condition(std::move(condition)), increment(std::move(increment)), body(std::move(body)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitForStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitForStmt(*this, structs, enums); }
 };
 
 struct ReturnStmt : Stmt {
@@ -307,7 +317,7 @@ struct ReturnStmt : Stmt {
     std::unique_ptr<Expr> value;
     ReturnStmt(Token keyword, std::unique_ptr<Expr> value)
         : keyword(std::move(keyword)), value(std::move(value)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitReturnStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitReturnStmt(*this, structs, enums); }
 };
 
 struct StructStmt : Stmt {
@@ -319,7 +329,7 @@ struct StructStmt : Stmt {
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     StructStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<std::unique_ptr<Expr>> traits, std::vector<std::unique_ptr<VarStmt>> fields, std::vector<std::unique_ptr<FunctionStmt>> methods)
         : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), traits(std::move(traits)), fields(std::move(fields)), methods(std::move(methods)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitStructStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitStructStmt(*this, structs, enums); }
 };
 
 struct ImportStmt : Stmt {
@@ -327,7 +337,7 @@ struct ImportStmt : Stmt {
     std::variant<std::string, Token> path; // string for file path, Token for module
     ImportStmt(Token keyword, std::variant<std::string, Token> path)
         : keyword(std::move(keyword)), path(std::move(path)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitImportStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitImportStmt(*this, structs, enums); }
 };
 
 struct SwitchStmt : Stmt {
@@ -335,7 +345,7 @@ struct SwitchStmt : Stmt {
     std::vector<std::unique_ptr<CaseStmt>> cases;
     SwitchStmt(std::unique_ptr<Expr> expression, std::vector<std::unique_ptr<CaseStmt>> cases)
         : expression(std::move(expression)), cases(std::move(cases)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitSwitchStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitSwitchStmt(*this, structs, enums); }
 };
 
 struct CaseStmt : Stmt {
@@ -343,19 +353,19 @@ struct CaseStmt : Stmt {
     std::unique_ptr<Stmt> body;
     CaseStmt(std::unique_ptr<Expr> value, std::unique_ptr<Stmt> body)
         : value(std::move(value)), body(std::move(body)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitCaseStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitCaseStmt(*this, structs, enums); }
 };
 
 struct BreakStmt : Stmt {
     Token keyword;
     explicit BreakStmt(Token keyword) : keyword(std::move(keyword)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitBreakStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitBreakStmt(*this, structs, enums); }
 };
 
 struct FallthroughStmt : Stmt {
     Token keyword;
     explicit FallthroughStmt(Token keyword) : keyword(std::move(keyword)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitFallthroughStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitFallthroughStmt(*this, structs, enums); }
 };
 
 struct EnumStmt : Stmt {
@@ -363,7 +373,7 @@ struct EnumStmt : Stmt {
     std::vector<Token> members;
     EnumStmt(Token name, std::vector<Token> members)
         : name(std::move(name)), members(std::move(members)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitEnumStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitEnumStmt(*this, structs, enums); }
 };
 
 struct TraitStmt : Stmt {
@@ -371,18 +381,20 @@ struct TraitStmt : Stmt {
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     TraitStmt(Token name, std::vector<std::unique_ptr<FunctionStmt>> methods)
         : name(std::move(name)), methods(std::move(methods)) {}
-    std::any accept(StmtVisitor& visitor) const override { return visitor.visitTraitStmt(*this); }
+    std::any accept(StmtVisitor& visitor, std::map<std::string, const StructStmt*>& structs, std::map<std::string, const EnumStmt*>& enums) const override { return visitor.visitTraitStmt(*this, structs, enums); }
 };
 
 
 // Type Expression Nodes
 struct TypeExpr {
     virtual ~TypeExpr() = default;
+    virtual std::any accept(TypeExprVisitor& visitor) const = 0;
 };
 
 struct BaseTypeExpr : TypeExpr {
     Token type;
     explicit BaseTypeExpr(Token type) : type(std::move(type)) {}
+    std::any accept(TypeExprVisitor& visitor) const override { return visitor.visitBaseTypeExpr(*this); }
 };
 
 struct ArrayTypeExpr : TypeExpr {
@@ -390,6 +402,7 @@ struct ArrayTypeExpr : TypeExpr {
     std::unique_ptr<Expr> size; // optional
     ArrayTypeExpr(std::unique_ptr<TypeExpr> element_type, std::unique_ptr<Expr> size)
         : element_type(std::move(element_type)), size(std::move(size)) {}
+    std::any accept(TypeExprVisitor& visitor) const override { return visitor.visitArrayTypeExpr(*this); }
 };
 
 struct FunctionTypeExpr : TypeExpr {
@@ -397,6 +410,7 @@ struct FunctionTypeExpr : TypeExpr {
     std::unique_ptr<TypeExpr> return_type;
     FunctionTypeExpr(std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type)
         : param_types(std::move(param_types)), return_type(std::move(return_type)) {}
+    std::any accept(TypeExprVisitor& visitor) const override { return visitor.visitFunctionTypeExpr(*this); }
 };
 
 struct GenericTypeExpr : TypeExpr {
@@ -404,6 +418,7 @@ struct GenericTypeExpr : TypeExpr {
     std::vector<std::unique_ptr<TypeExpr>> generic_args;
     GenericTypeExpr(Token base_type, std::vector<std::unique_ptr<TypeExpr>> generic_args)
         : base_type(std::move(base_type)), generic_args(std::move(generic_args)) {}
+    std::any accept(TypeExprVisitor& visitor) const override { return visitor.visitGenericTypeExpr(*this); }
 };
 
 struct BorrowTypeExpr : TypeExpr {
@@ -411,6 +426,7 @@ struct BorrowTypeExpr : TypeExpr {
     bool isMutable;
     BorrowTypeExpr(std::unique_ptr<TypeExpr> element_type, bool isMutable)
         : element_type(std::move(element_type)), isMutable(isMutable) {}
+    std::any accept(TypeExprVisitor& visitor) const override { return visitor.visitBorrowTypeExpr(*this); }
 };
 
 } // namespace chtholly

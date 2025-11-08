@@ -13,7 +13,9 @@ std::string parseAndPrint(const std::string& source) {
     Parser parser(tokens);
     std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
     AstPrinter printer;
-    return printer.print(statements);
+    std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const EnumStmt*> enums;
+    return printer.print(statements, structs, enums);
 }
 
 TEST(ParserTest, BasicExpression) {
@@ -36,7 +38,7 @@ TEST(ParserTest, TraitDeclaration) {
 
 TEST(ParserTest, StructWithMultipleTraits) {
     std::string source = "struct Point impl operator::add, operator::sub { let x: int; }";
-    std::string expected = "(struct Point (impl (. operator add) (. operator sub)) (let x))";
+    std::string expected = "(struct Point (impl (. operator add) (. operator sub)) (field x: int))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
@@ -126,20 +128,20 @@ TEST(ParserTest, FunctionDeclaration) {
 
 TEST(ParserTest, StructDeclaration) {
     std::string source = "struct Point { let x: int; let y: int; }";
-    std::string expected = "(struct Point (let x) (let y))";
+    std::string expected = "(struct Point (field x: int) (field y: int))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
 TEST(ParserTest, StructWithTrait) {
     std::string source = "struct Point impl operator::add { let x: int; }";
-    std::string expected = "(struct Point (impl (. operator add)) (let x))";
+    std::string expected = "(struct Point (impl (. operator add)) (field x: int))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
 TEST(ParserTest, StructDeclarationWithAndWithoutSemicolon) {
     std::string source_with_semicolon = "struct Point { x: int; };";
     std::string source_without_semicolon = "struct Point { x: int; }";
-    std::string expected = "(struct Point (let x))";
+    std::string expected = "(struct Point (field x: int))";
     EXPECT_EQ(parseAndPrint(source_with_semicolon), expected);
     EXPECT_EQ(parseAndPrint(source_without_semicolon), expected);
 }

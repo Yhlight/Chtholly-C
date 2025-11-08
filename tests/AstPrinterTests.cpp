@@ -23,6 +23,8 @@ TEST(AstPrinterTest, BasicPrint) {
     );
 
     AstPrinter printer;
-    std::string result = std::any_cast<std::string>(expr->accept(printer));
+    std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const EnumStmt*> enums;
+    std::string result = std::any_cast<std::string>(expr->accept(printer, structs, enums));
     EXPECT_EQ(result, "(* (- 2) (group (+ 4 3)))");
 }

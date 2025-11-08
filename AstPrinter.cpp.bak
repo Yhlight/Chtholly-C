@@ -1,0 +1,328 @@
+#include "AstPrinter.h"
+#include <sstream>
+
+namespace chtholly {
+
+std::string TypePrinter::print(const TypeExpr& type) {
+    return std::any_cast<std::string>(type.accept(*this));
+}
+
+std::any TypePrinter::visitBaseTypeExpr(const BaseTypeExpr& type) {
+    return type.type.lexeme;
+}
+
+std::any TypePrinter::visitGenericTypeExpr(const GenericTypeExpr& type) {
+    std::stringstream out;
+    out << type.base_type.lexeme << "<";
+    for (size_t i = 0; i < type.generic_args.size(); ++i) {
+        out << print(*type.generic_args[i]);
+        if (i < type.generic_args.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << ">";
+    return out.str();
+}
+
+std::any TypePrinter::visitArrayTypeExpr(const ArrayTypeExpr& type) {
+    std::stringstream out;
+    out << "array<" << print(*type.element_type);
+    if (type.size) {
+        AstPrinter printer;
+        out << "; " << std::any_cast<std::string>(type.size->accept(printer));
+    }
+    out << ">";
+    return out.str();
+}
+
+std::any TypePrinter::visitBorrowTypeExpr(const BorrowTypeExpr& type) {
+    return (type.isMutable ? "&mut " : "&") + print(*type.element_type);
+}
+
+std::any TypePrinter::visitFunctionTypeExpr(const FunctionTypeExpr& type) {
+    std::stringstream out;
+    out << "func(";
+    for (size_t i = 0; i < type.param_types.size(); ++i) {
+        out << print(*type.param_types[i]);
+        if (i < type.param_types.size() - 1) {
+            out << ", ";
+        }
+    }
+    out << ") -> " << print(*type.return_type);
+    return out.str();
+}
+
+template<typename... Args>
+std::string AstPrinter::parenthesize(const std::string& name, Args... args) {
+    std::stringstream out;
+    out << "(" << name;
+    std::vector<std::string> arg_strings;
+    ((arg_strings.push_back(std::any_cast<std::string>(args->accept(*this)))), ...);
+    for (const auto& s : arg_strings) {
+        out << " " << s;
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitTraitStmt(const TraitStmt& stmt) {
+    std::stringstream out;
+    out << "(trait " << stmt.name.lexeme;
+    for (const auto& method : stmt.methods) {
+        out << " " << std::any_cast<std::string>(method->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
+    std::stringstream out;
+    out << "(array";
+    for (const auto& element : expr.elements) {
+        out << " " << std::any_cast<std::string>(element->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitTypeCastExpr(const TypeCastExpr& expr) {
+    return parenthesize("type_cast <type>", expr.expression.get());
+}
+
+std::string AstPrinter::print(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    std::stringstream out;
+    for (const auto& stmt : statements) {
+        out << std::any_cast<std::string>(stmt->accept(*this));
+    }
+    return out.str();
+}
+
+std::any AstPrinter::visitBinaryExpr(const BinaryExpr& expr) {
+    return parenthesize(expr.op.lexeme, expr.left.get(), expr.right.get());
+}
+
+std::any AstPrinter::visitUnaryExpr(const UnaryExpr& expr) {
+    return parenthesize(expr.op.lexeme, expr.right.get());
+}
+
+std::any AstPrinter::visitLiteralExpr(const LiteralExpr& expr) {
+    if (std::holds_alternative<std::nullptr_t>(expr.value)) {
+        return std::string("none");
+    }
+    if (std::holds_alternative<std::string>(expr.value)) {
+        return std::get<std::string>(expr.value);
+    }
+    if (std::holds_alternative<double>(expr.value)) {
+        return std::to_string(std::get<double>(expr.value));
+    }
+    if (std::holds_alternative<long long>(expr.value)) {
+        return std::to_string(std::get<long long>(expr.value));
+    }
+    if (std::holds_alternative<bool>(expr.value)) {
+        return std::get<bool>(expr.value) ? "true" : "false";
+    }
+    if (std::holds_alternative<char>(expr.value)) {
+        return std::string(1, std::get<char>(expr.value));
+    }
+    return std::string("unknown literal");
+}
+
+std::any AstPrinter::visitGroupingExpr(const GroupingExpr& expr) {
+    return parenthesize("group", expr.expression.get());
+}
+
+std::any AstPrinter::visitVariableExpr(const VariableExpr& expr) {
+    return expr.name.lexeme;
+}
+
+std::any AstPrinter::visitAssignExpr(const AssignExpr& expr) {
+    return parenthesize("= " + expr.name.lexeme, expr.value.get());
+}
+
+std::any AstPrinter::visitCallExpr(const CallExpr& expr) {
+    std::stringstream out;
+    out << "(call " << std::any_cast<std::string>(expr.callee->accept(*this));
+    for (const auto& arg : expr.arguments) {
+        out << " " << std::any_cast<std::string>(arg->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitLambdaExpr(const LambdaExpr& expr) {
+    return std::string("(lambda)");
+}
+
+std::any AstPrinter::visitGetExpr(const GetExpr& expr) {
+    auto temp_var = std::make_unique<VariableExpr>(expr.name);
+    return parenthesize(".", expr.object.get(), temp_var.get());
+}
+
+std::any AstPrinter::visitSetExpr(const SetExpr& expr) {
+    return parenthesize("= ." + expr.name.lexeme, expr.object.get(), expr.value.get());
+}
+
+std::any AstPrinter::visitSelfExpr(const SelfExpr& expr) {
+    return std::string("this");
+}
+
+std::any AstPrinter::visitBorrowExpr(const BorrowExpr& expr) {
+    return parenthesize(expr.isMutable ? "&mut" : "&", expr.expression.get());
+}
+
+std::any AstPrinter::visitDerefExpr(const DerefExpr& expr) {
+    return parenthesize("*", expr.expression.get());
+}
+
+std::any AstPrinter::visitStructLiteralExpr(const StructLiteralExpr& expr) {
+    std::stringstream out;
+    out << "(struct_literal " << expr.name.lexeme;
+    for (const auto& [name, value] : expr.fields) {
+        out << " (:= " << name << " " << std::any_cast<std::string>(value->accept(*this)) << ")";
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitBlockStmt(const BlockStmt& stmt) {
+    std::stringstream out;
+    out << "(block";
+    for (const auto& s : stmt.statements) {
+        out << " " << std::any_cast<std::string>(s->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitExpressionStmt(const ExpressionStmt& stmt) {
+    return parenthesize(";", stmt.expression.get());
+}
+
+std::any AstPrinter::visitFunctionStmt(const FunctionStmt& stmt) {
+    std::stringstream out;
+    out << "(func " << stmt.name.lexeme;
+
+    if (!stmt.generic_params.empty()) {
+        out << " <";
+        for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
+            out << stmt.generic_params[i].lexeme;
+            if (stmt.generic_constraints.count(stmt.generic_params[i].lexeme)) {
+                out << " ? ";
+                // This part is simplified for brevity. A real implementation
+                // would need to print the type expressions of the constraints.
+                out << stmt.generic_constraints.at(stmt.generic_params[i].lexeme).size() << "_constraints";
+            }
+            if (i < stmt.generic_params.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ">";
+    }
+
+    if (stmt.body) {
+        out << " " << std::any_cast<std::string>(stmt.body->accept(*this));
+    }
+
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitIfStmt(const IfStmt& stmt) {
+    if (stmt.elseBranch) {
+        return parenthesize("if-else", stmt.condition.get(), stmt.thenBranch.get(), stmt.elseBranch.get());
+    }
+    return parenthesize("if", stmt.condition.get(), stmt.thenBranch.get());
+}
+
+std::any AstPrinter::visitVarStmt(const VarStmt& stmt) {
+    if (stmt.initializer) {
+        return parenthesize((stmt.isMutable ? "mut " : "let ") + stmt.name.lexeme, stmt.initializer.get());
+    }
+    return "(" + std::string(stmt.isMutable ? "mut " : "let ") + stmt.name.lexeme + ")";
+}
+
+std::any AstPrinter::visitWhileStmt(const WhileStmt& stmt) {
+    return parenthesize("while", stmt.condition.get(), stmt.body.get());
+}
+
+std::any AstPrinter::visitForStmt(const ForStmt& stmt) {
+    std::stringstream out;
+    out << "(for";
+    out << " " << (stmt.initializer ? std::any_cast<std::string>(stmt.initializer->accept(*this)) : "null");
+    out << " " << (stmt.condition ? std::any_cast<std::string>(stmt.condition->accept(*this)) : "null");
+    out << " " << (stmt.increment ? std::any_cast<std::string>(stmt.increment->accept(*this)) : "null");
+    out << " " << std::any_cast<std::string>(stmt.body->accept(*this));
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitReturnStmt(const ReturnStmt& stmt) {
+    if (stmt.value) {
+        return parenthesize("return", stmt.value.get());
+    }
+    return std::string("(return)");
+}
+
+std::any AstPrinter::visitStructStmt(const StructStmt& stmt) {
+    std::stringstream out;
+    out << "(struct " << stmt.name.lexeme;
+    if (!stmt.traits.empty()) {
+        out << " (impl";
+        for (const auto& trait : stmt.traits) {
+            out << " " << std::any_cast<std::string>(trait->accept(*this));
+        }
+        out << ")";
+    }
+    TypePrinter type_printer;
+    for (const auto& field : stmt.fields) {
+        out << " (field " << field->name.lexeme << ": " << (field->type ? type_printer.print(*field->type) : "auto") << ")";
+    }
+    for (const auto& method : stmt.methods) {
+        out << " " << std::any_cast<std::string>(method->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitImportStmt(const ImportStmt& stmt) {
+    if (std::holds_alternative<std::string>(stmt.path)) {
+        auto literal = std::make_unique<LiteralExpr>(std::get<std::string>(stmt.path));
+        return parenthesize("import", literal.get());
+    }
+    auto var = std::make_unique<VariableExpr>(std::get<Token>(stmt.path));
+    return parenthesize("import", var.get());
+}
+
+std::any AstPrinter::visitSwitchStmt(const SwitchStmt& stmt) {
+    std::stringstream out;
+    out << "(switch";
+    for (const auto& c : stmt.cases) {
+        out << " " << std::any_cast<std::string>(c->accept(*this));
+    }
+    out << ")";
+    return out.str();
+}
+
+std::any AstPrinter::visitCaseStmt(const CaseStmt& stmt) {
+    return parenthesize("case", stmt.value.get(), stmt.body.get());
+}
+
+std::any AstPrinter::visitBreakStmt(const BreakStmt& stmt) {
+    return std::string("(break)");
+}
+
+std::any AstPrinter::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    return std::string("(fallthrough)");
+}
+
+std::any AstPrinter::visitEnumStmt(const EnumStmt& stmt) {
+    std::stringstream out;
+    out << "(enum " << stmt.name.lexeme;
+    for (const auto& member : stmt.members) {
+        out << " " << member.lexeme;
+    }
+    out << ")";
+    return out.str();
+}
+
+} // namespace chtholly
