@@ -16,7 +16,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
-        if (match(TokenType::FUNC)) return functionDeclaration("function", true, Access::PUBLIC);
+        if (match(TokenType::FUNC)) return functionDeclaration("function", true, Access::PUBLIC, nullptr);
         if (match(TokenType::STRUCT)) return structDeclaration();
         if (match(TokenType::ENUM)) return enumDeclaration();
         if (match(TokenType::TRAIT)) return traitDeclaration();
@@ -176,7 +176,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
-std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access) {
+std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access, std::unique_ptr<TypeExpr> trait_impl) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
     std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
@@ -241,7 +241,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
         consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
     }
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access);
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access, std::move(trait_impl));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -285,22 +285,23 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
             current_access = Access::PRIVATE;
         }
 
-        match(TokenType::FUNC); // Optional func keyword
-        if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
-            methods.push_back(functionDeclaration("method", true, current_access));
-        } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
-            // This is a field declaration.
-            Token name = consume(TokenType::IDENTIFIER, "Expect field name.");
-            consume(TokenType::COLON, "Expect ':' after field name.");
-            auto type_expr = type();
-            std::unique_ptr<Expr> initializer = nullptr;
-            if (match(TokenType::EQUAL)) {
-                initializer = expression();
-            }
-            consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
-            fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false, current_access));
+        std::unique_ptr<TypeExpr> trait_impl = nullptr;
+        if (match(TokenType::IMPL)) {
+            trait_impl = type();
         }
-         else {
+
+        bool is_method = match(TokenType::FUNC) || (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) || trait_impl != nullptr;
+
+        if (is_method) {
+            if (trait_impl) {
+                if (auto base_type = dynamic_cast<BaseTypeExpr*>(trait_impl.get())) {
+                    traits.push_back(std::make_unique<VariableExpr>(base_type->type));
+                }
+            }
+            methods.push_back(functionDeclaration("method", true, current_access, std::move(trait_impl)));
+        } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
+            fields.push_back(varDeclaration(true, current_access));
+        } else {
             error(peek(), "Expect field or method in struct body.");
             advance();
         }

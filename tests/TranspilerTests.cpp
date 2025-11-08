@@ -127,7 +127,7 @@ TEST(TranspilerTest, StructDeclaration) {
 }
 
 TEST(TranspilerTest, StructWithMethod) {
-    std::string source = "struct Point { public: x: int; func move(dx: int) -> void { x = x + dx; } }";
+    std::string source = "struct Point { public: x: int; public: func move(dx: int) -> void { x = x + dx; } }";
     std::string expected = "struct Point {\npublic:\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
@@ -254,5 +254,17 @@ TEST(TranspilerTest, StructAccessModifiers) {
         }
     )";
     std::string expected = "struct Test {\npublic:\nint x;\nvoid foo() {\n}\nprivate:\nint y;\nvoid bar() {\n}\n};\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, InternalTraitImplementation) {
+    std::string source = R"(
+        trait MyTrait { func foo(); }
+        struct MyStruct {
+            public:
+            impl MyTrait func foo() {}
+        }
+    )";
+    std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n};\nstruct MyStruct : public MyTrait {\npublic:\nvoid foo() override {\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }

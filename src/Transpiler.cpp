@@ -4,7 +4,6 @@
 #include <map>
 #include "Token.h"
 #include <fstream>
-#include <sstream>
 #include "Lexer.h"
 #include "Parser.h"
 
@@ -146,11 +145,14 @@ public:
     std::map<std::string, const EnumStmt*> enums;
 };
 
-Transpiler::Transpiler() : transpiled_files(new std::set<std::string>()), owns_transpiled_files(true) {
+Transpiler::Transpiler() {
     enterScope(); // Global scope
+    transpiled_files = new std::set<std::string>();
+    owns_transpiled_files = true;
 }
 
-Transpiler::Transpiler(std::set<std::string>* transpiled_files) : transpiled_files(transpiled_files), owns_transpiled_files(false) {
+Transpiler::Transpiler(std::set<std::string>* transpiled_files)
+    : transpiled_files(transpiled_files), owns_transpiled_files(false) {
     enterScope(); // Global scope
 }
 
@@ -214,7 +216,15 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         TypeInfo left_type = get_type(*binary_expr->left);
         TypeInfo right_type = get_type(*binary_expr->right);
 
-        // First, check for operator overloading
+        // Simple type inference for primitive types
+        if (left_type.name == "int" && right_type.name == "int") {
+            return TypeInfo{"int"};
+        }
+        if (left_type.name == "double" || right_type.name == "double") {
+            return TypeInfo{"double"};
+        }
+
+
         static const std::map<TokenType, std::string> binary_op_traits = {
             {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
             {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
@@ -232,27 +242,6 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     }
                 }
             }
-        }
-
-        // Handle primitive types
-        switch (binary_expr->op.type) {
-            case TokenType::PLUS:
-            case TokenType::MINUS:
-            case TokenType::STAR:
-            case TokenType::SLASH:
-            case TokenType::PERCENT:
-                if (left_type.name == "double" || right_type.name == "double") return TypeInfo{"double"};
-                if (left_type.name == "int" && right_type.name == "int") return TypeInfo{"int"};
-                break;
-            case TokenType::GREATER:
-            case TokenType::GREATER_EQUAL:
-            case TokenType::LESS:
-            case TokenType::LESS_EQUAL:
-            case TokenType::EQUAL_EQUAL:
-            case TokenType::BANG_EQUAL:
-                return TypeInfo{"bool"};
-            default:
-                break;
         }
     }
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
@@ -971,16 +960,6 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << ";\n";
     return nullptr;
 }
-std::string readFile(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open file: " + path);
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (std::holds_alternative<Token>(stmt.path)) {
         std::string module_name = std::get<Token>(stmt.path).lexeme;
@@ -988,29 +967,38 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     } else if (std::holds_alternative<std::string>(stmt.path)) {
         std::string file_path = std::get<std::string>(stmt.path);
 
-        if (transpiled_files->find(file_path) == transpiled_files->end()) {
-            transpiled_files->insert(file_path);
-            std::string source = readFile(file_path);
-
-            Lexer lexer(source);
-            std::vector<Token> tokens = lexer.scanTokens();
-            Parser parser(tokens);
-            std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
-
-            Transpiler import_transpiler(transpiled_files);
-            out << import_transpiler.transpile(statements);
+        if (transpiled_files->count(file_path)) {
+            return nullptr; // Already transpiled
         }
+        transpiled_files->insert(file_path);
+
+        std::ifstream file(file_path);
+        if (!file.is_open()) {
+            // In a real compiler, we'd report a file not found error.
+            return nullptr;
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::string file_content = buffer.str();
+
+        Lexer lexer(file_content);
+        std::vector<Token> tokens = lexer.scanTokens();
+        Parser parser(tokens);
+        std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
+
+        // Use a new transpiler instance to handle the imported file
+        // This is a simplified approach. A real compiler would manage symbols across files.
+        Transpiler file_transpiler(transpiled_files);
+        out << file_transpiler.transpile(statements);
     }
     return nullptr;
 }
 std::any Transpiler::visitSwitchStmt(const SwitchStmt& stmt) {
-    is_in_switch = true;
     out << "switch (" << std::any_cast<std::string>(stmt.expression->accept(*this)) << ") {\n";
     for (const auto& case_stmt : stmt.cases) {
         case_stmt->accept(*this);
     }
     out << "}\n";
-    is_in_switch = false;
     return nullptr;
 }
 std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
@@ -1020,22 +1008,22 @@ std::any Transpiler::visitCaseStmt(const CaseStmt& stmt) {
         out << "default:\n";
     }
     stmt.body->accept(*this);
-
-    // Add implicit break if there's no fallthrough, break, or return.
-    bool has_terminator = false;
-    if (const auto* block = dynamic_cast<const BlockStmt*>(stmt.body.get())) {
-        if (!block->statements.empty()) {
-            const auto& last_stmt = block->statements.back();
-            if (dynamic_cast<const FallthroughStmt*>(last_stmt.get()) ||
-                dynamic_cast<const BreakStmt*>(last_stmt.get()) ||
-                dynamic_cast<const ReturnStmt*>(last_stmt.get())) {
-                has_terminator = true;
+    if (auto block = dynamic_cast<const BlockStmt*>(stmt.body.get())) {
+        bool has_fallthrough = false;
+        bool has_break = false;
+        for (const auto& s : block->statements) {
+            if (dynamic_cast<const FallthroughStmt*>(s.get())) {
+                has_fallthrough = true;
+                break;
+            }
+            if (dynamic_cast<const BreakStmt*>(s.get())) {
+                has_break = true;
+                break;
             }
         }
-    }
-
-    if (!has_terminator) {
-        out << "break;\n";
+        if (!has_fallthrough && !has_break) {
+            out << "break;\n";
+        }
     }
     return nullptr;
 }
@@ -1148,16 +1136,39 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         }
         out << ">\n";
     }
-    out << "struct " << stmt.name.lexeme << " {\n";
+    out << "struct " << stmt.name.lexeme;
 
-    Access current_access = Access::PRIVATE; // Default to private for safety
+    std::set<std::string> inherited_traits;
+    for (const auto& method : stmt.methods) {
+        if (method->trait_impl) {
+            if (auto* type_expr = dynamic_cast<TypeExpr*>(method->trait_impl.get())) {
+                inherited_traits.insert(transpileType(*type_expr));
+            }
+        }
+    }
 
-    // Group fields and methods by access modifier to generate clean code
+    for (const auto& trait : stmt.traits) {
+         if (auto* type_expr = dynamic_cast<TypeExpr*>(trait.get())) {
+            inherited_traits.insert(transpileType(*type_expr));
+        }
+    }
+
+    if (!inherited_traits.empty()) {
+        out << " : ";
+        bool first = true;
+        for (const auto& trait : inherited_traits) {
+            if (!first) {
+                out << ", ";
+            }
+            out << "public " << trait;
+            first = false;
+        }
+    }
+
+    out << " {\n";
+
     std::vector<const VarStmt*> public_fields;
     std::vector<const VarStmt*> private_fields;
-    std::vector<const FunctionStmt*> public_methods;
-    std::vector<const FunctionStmt*> private_methods;
-
     for (const auto& field : stmt.fields) {
         if (field->access == Access::PUBLIC) {
             public_fields.push_back(field.get());
@@ -1165,6 +1176,9 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             private_fields.push_back(field.get());
         }
     }
+
+    std::vector<const FunctionStmt*> public_methods;
+    std::vector<const FunctionStmt*> private_methods;
     for (const auto& method : stmt.methods) {
         if (method->access == Access::PUBLIC) {
             public_methods.push_back(method.get());
@@ -1175,29 +1189,65 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
 
     if (!public_fields.empty() || !public_methods.empty()) {
         out << "public:\n";
-        for (const auto* field : public_fields) {
+        for (const auto& field : public_fields) {
             out << transpileType(*field->type) << " " << field->name.lexeme;
             if (field->initializer) {
                 out << " = " << std::any_cast<std::string>(field->initializer->accept(*this));
             }
             out << ";\n";
         }
-        for (const auto* method : public_methods) {
-            visitFunctionStmt(*method);
+        for (const auto& method : public_methods) {
+            is_in_method = true;
+            out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
+            bool first_param = true;
+            for (size_t i = 0; i < method->params.size(); ++i) {
+                if (method->params[i].lexeme == "self") continue;
+                if (!first_param) out << ", ";
+                first_param = false;
+                out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
+            }
+            out << ") ";
+            if (method->trait_impl) {
+                out << "override ";
+            }
+            if (method->body) {
+                method->body->accept(*this);
+            } else {
+                out << ";\n";
+            }
+            is_in_method = false;
         }
     }
 
     if (!private_fields.empty() || !private_methods.empty()) {
         out << "private:\n";
-        for (const auto* field : private_fields) {
+        for (const auto& field : private_fields) {
             out << transpileType(*field->type) << " " << field->name.lexeme;
             if (field->initializer) {
                 out << " = " << std::any_cast<std::string>(field->initializer->accept(*this));
             }
             out << ";\n";
         }
-        for (const auto* method : private_methods) {
-            visitFunctionStmt(*method);
+        for (const auto& method : private_methods) {
+            is_in_method = true;
+            out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
+            bool first_param = true;
+            for (size_t i = 0; i < method->params.size(); ++i) {
+                if (method->params[i].lexeme == "self") continue;
+                if (!first_param) out << ", ";
+                first_param = false;
+                out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
+            }
+            out << ") ";
+            if (method->trait_impl) {
+                out << "override ";
+            }
+            if (method->body) {
+                method->body->accept(*this);
+            } else {
+                out << ";\n";
+            }
+            is_in_method = false;
         }
     }
 

@@ -258,8 +258,9 @@ struct FunctionStmt : Stmt {
     std::unique_ptr<TypeExpr> return_type;
     std::unique_ptr<BlockStmt> body;
     Access access;
-    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC)
-        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access) {}
+    std::unique_ptr<TypeExpr> trait_impl; // For internal `impl Trait` on methods
+    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC, std::unique_ptr<TypeExpr> trait_impl = nullptr)
+        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access), trait_impl(std::move(trait_impl)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
 };
 

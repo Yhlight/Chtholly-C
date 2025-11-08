@@ -22,11 +22,12 @@ def build_project():
     run_command(['cmake', '..'], build_dir)
     run_command(['cmake', '--build', '.'], build_dir)
 
-def test_project():
+def test_project(ctest_args):
     """Tests the Chtholly project."""
     build_project()
     build_dir = 'build'
-    run_command(['ctest', '--output-on-failure'], build_dir)
+    command = ['ctest', '--output-on-failure'] + ctest_args
+    run_command(command, build_dir)
 
 def run_project(args):
     """Builds and runs the Chtholly project."""
@@ -69,7 +70,8 @@ def main():
     subparsers = parser.add_subparsers(dest='action', required=True)
 
     subparsers.add_parser('build', help="Build the project")
-    subparsers.add_parser('test', help="Build and run tests")
+    test_parser = subparsers.add_parser('test', help="Build and run tests")
+    test_parser.add_argument('ctest_args', nargs=argparse.REMAINDER, help="Arguments to pass to ctest")
     run_parser = subparsers.add_parser('run', help="Build and run the project")
     run_parser.add_argument('args', nargs=argparse.REMAINDER, help="Arguments to pass to the executable")
     subparsers.add_parser('clean', help="Clean the build directory")
@@ -79,7 +81,7 @@ def main():
     if args.action == 'build':
         build_project()
     elif args.action == 'test':
-        test_project()
+        test_project(args.ctest_args)
     elif args.action == 'run':
         run_project(args.args)
     elif args.action == 'clean':
