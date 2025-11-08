@@ -744,6 +744,15 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     }
 
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        if (var_expr->name.lexeme == "option") {
+            optional_used = true;
+            if (!expr.generic_args.empty()) {
+                // option<T>(value)
+                return "std::optional<" + transpileType(*expr.generic_args[0]) + ">(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+            }
+            // option(value)
+            return "std::make_optional(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+        }
         if (var_expr->name.lexeme == "print") {
             if (imported_modules.find("iostream") == imported_modules.end()) {
                 return std::string("/* ERROR: 'print' function called without importing 'iostream' */");

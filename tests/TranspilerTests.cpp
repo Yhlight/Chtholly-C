@@ -268,3 +268,15 @@ TEST(TranspilerTest, InternalTraitImplementation) {
     std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n};\nstruct MyStruct : public MyTrait {\npublic:\nvoid foo() override {\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, OptionConstructor) {
+    std::string source = "let a = option(20);";
+    std::string expected = "#include <optional>\nconst auto a = std::make_optional(20);\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, OptionConstructorWithGeneric) {
+    std::string source = "let a = option<int>(20);";
+    std::string expected = "#include <optional>\nconst auto a = std::optional<int>(20);\n";
+    EXPECT_EQ(transpile(source), expected);
+}
