@@ -211,6 +211,10 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         return TypeInfo{"std::vector<" + element_type.name + ">"};
     }
     if (auto binary_expr = dynamic_cast<const BinaryExpr*>(&expr)) {
+        TypeInfo left_type = get_type(*binary_expr->left);
+        TypeInfo right_type = get_type(*binary_expr->right);
+
+        // First, check for operator overloading
         static const std::map<TokenType, std::string> binary_op_traits = {
             {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
             {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
@@ -220,7 +224,6 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         };
         auto it = binary_op_traits.find(binary_expr->op.type);
         if (it != binary_op_traits.end()) {
-            TypeInfo left_type = get_type(*binary_expr->left);
             if (has_trait(left_type.name, "operator", it->second)) {
                 const StructStmt* s = structs[left_type.name];
                 for (const auto& method : s->methods) {
@@ -229,6 +232,27 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     }
                 }
             }
+        }
+
+        // Handle primitive types
+        switch (binary_expr->op.type) {
+            case TokenType::PLUS:
+            case TokenType::MINUS:
+            case TokenType::STAR:
+            case TokenType::SLASH:
+            case TokenType::PERCENT:
+                if (left_type.name == "double" || right_type.name == "double") return TypeInfo{"double"};
+                if (left_type.name == "int" && right_type.name == "int") return TypeInfo{"int"};
+                break;
+            case TokenType::GREATER:
+            case TokenType::GREATER_EQUAL:
+            case TokenType::LESS:
+            case TokenType::LESS_EQUAL:
+            case TokenType::EQUAL_EQUAL:
+            case TokenType::BANG_EQUAL:
+                return TypeInfo{"bool"};
+            default:
+                break;
         }
     }
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {

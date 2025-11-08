@@ -131,13 +131,20 @@ TEST(MetaTest, IsString) {
 
 TEST(MetaTest, IsStruct) {
     std::string source = R"(
-        struct Point { x: int; y: int; }
+        struct Point { public: x: int; y: int; }
         let p: Point = Point{x: 1, y: 2};
         let x: int = 10;
         let is_p_struct = meta::is_struct(p);
         let is_x_struct = meta::is_struct(x);
     )";
     std::string expected = "const bool is_p_struct = true;\nconst bool is_x_struct = false;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
+TEST(MetaTest, IsIntExpression) {
+    std::string source = "let is_expr_int = meta::is_int(1 + 2);";
+    std::string expected = "const bool is_expr_int = true;";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
