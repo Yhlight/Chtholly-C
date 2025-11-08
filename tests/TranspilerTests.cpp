@@ -121,14 +121,14 @@ TEST(TranspilerTest, FunctionDeclaration) {
 }
 
 TEST(TranspilerTest, StructDeclaration) {
-    std::string source = "struct Point { x: int; y: int; }";
-    std::string expected = "struct Point {\nint x;\nint y;\n};\n";
+    std::string source = "struct Point { public: x: int; y: int; }";
+    std::string expected = "struct Point {\npublic:\nint x;\nint y;\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 TEST(TranspilerTest, StructWithMethod) {
-    std::string source = "struct Point { x: int; move(dx: int) -> void { x = x + dx; } }";
-    std::string expected = "struct Point {\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
+    std::string source = "struct Point { public: x: int; func move(dx: int) -> void { x = x + dx; } }";
+    std::string expected = "struct Point {\npublic:\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
@@ -239,5 +239,20 @@ TEST(TranspilerTest, FileImport) {
     std::filesystem::path module_path = current_path.parent_path() / "test_module.cns";
     std::string source = "import \"" + module_path.string() + "\"; let x = add(1, 2);";
     std::string expected = "int add(int a, int b) {\nreturn a + b;\n}\nconst auto x = add(1, 2);\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, StructAccessModifiers) {
+    std::string source = R"(
+        struct Test {
+            public:
+                x: int;
+                func foo() {}
+            private:
+                y: int;
+                func bar() {}
+        }
+    )";
+    std::string expected = "struct Test {\npublic:\nint x;\nvoid foo() {\n}\nprivate:\nint y;\nvoid bar() {\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }

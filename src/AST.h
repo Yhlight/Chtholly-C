@@ -103,6 +103,8 @@ public:
 };
 
 // Base class for all statements
+enum class Access { PUBLIC, PRIVATE };
+
 struct Stmt {
     virtual ~Stmt() = default;
     virtual std::any accept(StmtVisitor& visitor) const = 0;
@@ -255,8 +257,9 @@ struct FunctionStmt : Stmt {
     std::vector<std::unique_ptr<TypeExpr>> param_types;
     std::unique_ptr<TypeExpr> return_type;
     std::unique_ptr<BlockStmt> body;
-    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body)
-        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)) {}
+    Access access;
+    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC)
+        : name(std::move(name)), generic_params(std::move(generic_params)), generic_constraints(std::move(generic_constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
 };
 
@@ -274,8 +277,9 @@ struct VarStmt : Stmt {
     std::unique_ptr<TypeExpr> type;
     std::unique_ptr<Expr> initializer;
     bool isMutable;
-    VarStmt(Token name, std::unique_ptr<TypeExpr> type, std::unique_ptr<Expr> initializer, bool isMutable)
-        : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable) {}
+    Access access;
+    VarStmt(Token name, std::unique_ptr<TypeExpr> type, std::unique_ptr<Expr> initializer, bool isMutable, Access access = Access::PUBLIC)
+        : name(std::move(name)), type(std::move(type)), initializer(std::move(initializer)), isMutable(isMutable), access(access) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitVarStmt(*this); }
 };
 

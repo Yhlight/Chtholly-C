@@ -24,7 +24,7 @@ private:
 
     // Grammar rules
     std::unique_ptr<Stmt> declaration();
-    std::unique_ptr<VarStmt> varDeclaration(bool consume_semicolon = true);
+    std::unique_ptr<VarStmt> varDeclaration(bool consume_semicolon = true, Access access = Access::PUBLIC);
     std::unique_ptr<Stmt> statement();
     std::unique_ptr<Stmt> expressionStatement();
     std::unique_ptr<Stmt> ifStatement();
@@ -36,7 +36,7 @@ private:
     std::unique_ptr<Stmt> breakStatement();
     std::unique_ptr<Stmt> fallthroughStatement();
     std::unique_ptr<Stmt> importStatement();
-    std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind, bool has_body = true);
+    std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind, bool has_body = true, Access access = Access::PUBLIC);
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> enumDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();

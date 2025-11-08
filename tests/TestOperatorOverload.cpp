@@ -5,11 +5,12 @@ TEST(TestOperatorOverload, Add) {
     std::string source = R"(
         import operator;
         struct Point impl operator::add {
-            x: int;
-            y: int;
-            add(other: Point) -> Point {
-                return Point{x: self.x + other.x, y: self.y + other.y};
-            }
+            public:
+                x: int;
+                y: int;
+                add(other: Point) -> Point {
+                    return Point{x: self.x + other.x, y: self.y + other.y};
+                }
         }
         func main() {
             let p1 = Point{x: 1, y: 2};
@@ -18,6 +19,7 @@ TEST(TestOperatorOverload, Add) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 Point add(Point other) {
@@ -37,6 +39,7 @@ TEST(TestOperatorOverload, PrefixAdd) {
     std::string source = R"(
         import operator;
         struct Point impl operator::prefix_add {
+            public:
             x: int;
             y: int;
             prefix_add(&mut self) {
@@ -50,6 +53,7 @@ TEST(TestOperatorOverload, PrefixAdd) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void prefix_add() {
@@ -69,6 +73,7 @@ TEST(TestOperatorOverload, PostfixAdd) {
     std::string source = R"(
         import operator;
         struct Point impl operator::postfix_add {
+            public:
             x: int;
             y: int;
             postfix_add(&mut self) {
@@ -82,6 +87,7 @@ TEST(TestOperatorOverload, PostfixAdd) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void postfix_add() {
@@ -101,6 +107,7 @@ TEST(TestOperatorOverload, PrefixSub) {
     std::string source = R"(
         import operator;
         struct Point impl operator::prefix_sub {
+            public:
             x: int;
             y: int;
             prefix_sub(&mut self) {
@@ -114,6 +121,7 @@ TEST(TestOperatorOverload, PrefixSub) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void prefix_sub() {
@@ -133,6 +141,7 @@ TEST(TestOperatorOverload, PostfixSub) {
     std::string source = R"(
         import operator;
         struct Point impl operator::postfix_sub {
+            public:
             x: int;
             y: int;
             postfix_sub(&mut self) {
@@ -146,6 +155,7 @@ TEST(TestOperatorOverload, PostfixSub) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void postfix_sub() {
@@ -165,6 +175,7 @@ TEST(TestOperatorOverload, CompoundSubtract) {
     std::string source = R"(
         import operator;
         struct Point impl operator::assign_sub {
+            public:
             x: int;
             y: int;
             assign_sub(&mut self, other: Point) {
@@ -179,6 +190,7 @@ TEST(TestOperatorOverload, CompoundSubtract) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void assign_sub(Point other) {
@@ -199,6 +211,7 @@ TEST(TestOperatorOverload, CompoundMultiply) {
     std::string source = R"(
         import operator;
         struct Point impl operator::assign_mul {
+            public:
             x: int;
             y: int;
             assign_mul(&mut self, other: Point) {
@@ -213,6 +226,7 @@ TEST(TestOperatorOverload, CompoundMultiply) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void assign_mul(Point other) {
@@ -233,6 +247,7 @@ TEST(TestOperatorOverload, CompoundDivision) {
     std::string source = R"(
         import operator;
         struct Point impl operator::assign_div {
+            public:
             x: int;
             y: int;
             assign_div(&mut self, other: Point) {
@@ -247,6 +262,7 @@ TEST(TestOperatorOverload, CompoundDivision) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void assign_div(Point other) {
@@ -267,6 +283,7 @@ TEST(TestOperatorOverload, CompoundModulo) {
     std::string source = R"(
         import operator;
         struct Point impl operator::assign_mod {
+            public:
             x: int;
             y: int;
             assign_mod(&mut self, other: Point) {
@@ -281,6 +298,7 @@ TEST(TestOperatorOverload, CompoundModulo) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void assign_mod(Point other) {
@@ -301,6 +319,7 @@ TEST(TestOperatorOverload, CompoundAdd) {
     std::string source = R"(
         import operator;
         struct Point impl operator::assign_add {
+            public:
             x: int;
             y: int;
             assign_add(&mut self, other: Point) {
@@ -315,6 +334,7 @@ TEST(TestOperatorOverload, CompoundAdd) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 void assign_add(Point other) {
@@ -335,6 +355,7 @@ TEST(TestOperatorOverload, Subtract) {
     std::string source = R"(
         import operator;
         struct Point impl operator::sub {
+            public:
             x: int;
             y: int;
             sub(other: Point) -> Point {
@@ -348,6 +369,7 @@ TEST(TestOperatorOverload, Subtract) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 Point sub(Point other) {
@@ -367,6 +389,7 @@ TEST(TestOperatorOverload, Multiply) {
     std::string source = R"(
         import operator;
         struct Point impl operator::mul {
+            public:
             x: int;
             y: int;
             mul(other: Point) -> Point {
@@ -380,6 +403,7 @@ TEST(TestOperatorOverload, Multiply) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 Point mul(Point other) {
@@ -399,6 +423,7 @@ TEST(TestOperatorOverload, Division) {
     std::string source = R"(
         import operator;
         struct Point impl operator::div {
+            public:
             x: int;
             y: int;
             div(other: Point) -> Point {
@@ -412,6 +437,7 @@ TEST(TestOperatorOverload, Division) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 Point div(Point other) {
@@ -431,6 +457,7 @@ TEST(TestOperatorOverload, Comparison) {
     std::string source = R"(
         import operator;
         struct Point impl operator::less, operator::greater {
+            public:
             x: int;
             y: int;
             less(other: Point) -> bool {
@@ -448,6 +475,7 @@ TEST(TestOperatorOverload, Comparison) {
         }
     )";
     std::string expected = R"(struct Point {
+public:
 int x;
 int y;
 bool less(Point other) {

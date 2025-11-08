@@ -23,6 +23,7 @@ TEST(TestGenerics, GenericFunction) {
 TEST(TestGenerics, GenericStruct) {
     std::string source = R"(
         struct Point<T> {
+            public:
             x: T;
             y: T;
         }
@@ -30,6 +31,7 @@ TEST(TestGenerics, GenericStruct) {
     std::string expected = R"(
         template <typename T>
         struct Point {
+            public:
             T x;
             T y;
         };

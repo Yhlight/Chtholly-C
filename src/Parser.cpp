@@ -16,7 +16,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 
 std::unique_ptr<Stmt> Parser::declaration() {
     try {
-        if (match(TokenType::FUNC)) return functionDeclaration("function");
+        if (match(TokenType::FUNC)) return functionDeclaration("function", true, Access::PUBLIC);
         if (match(TokenType::STRUCT)) return structDeclaration();
         if (match(TokenType::ENUM)) return enumDeclaration();
         if (match(TokenType::TRAIT)) return traitDeclaration();
@@ -28,7 +28,7 @@ std::unique_ptr<Stmt> Parser::declaration() {
     }
 }
 
-std::unique_ptr<VarStmt> Parser::varDeclaration(bool consume_semicolon) {
+std::unique_ptr<VarStmt> Parser::varDeclaration(bool consume_semicolon, Access access) {
     Token keyword = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     std::unique_ptr<TypeExpr> type_expr = nullptr;
@@ -42,7 +42,7 @@ std::unique_ptr<VarStmt> Parser::varDeclaration(bool consume_semicolon) {
     if (consume_semicolon) {
         consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
     }
-    return std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), keyword.type == TokenType::MUT);
+    return std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), keyword.type == TokenType::MUT, access);
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
@@ -91,7 +91,7 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     if (match(TokenType::SEMICOLON)) {
         initializer = nullptr;
     } else if (match(TokenType::LET, TokenType::MUT)) {
-        initializer = varDeclaration(false);
+        initializer = varDeclaration(false, Access::PUBLIC);
     } else {
         initializer = expressionStatement();
     }
@@ -176,7 +176,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
-std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body) {
+std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
     std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> generic_constraints;
@@ -241,7 +241,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
         consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
     }
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body));
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access);
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -274,10 +274,20 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     consume(TokenType::LEFT_BRACE, "Expect '{' before struct body.");
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
+    Access current_access = Access::PUBLIC; // Default to public
+
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match(TokenType::PUBLIC)) {
+            consume(TokenType::COLON, "Expect ':' after 'public'.");
+            current_access = Access::PUBLIC;
+        } else if (match(TokenType::PRIVATE)) {
+            consume(TokenType::COLON, "Expect ':' after 'private'.");
+            current_access = Access::PRIVATE;
+        }
+
         match(TokenType::FUNC); // Optional func keyword
         if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
-            methods.push_back(functionDeclaration("method"));
+            methods.push_back(functionDeclaration("method", true, current_access));
         } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
             // This is a field declaration.
             Token name = consume(TokenType::IDENTIFIER, "Expect field name.");
@@ -288,12 +298,9 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
                 initializer = expression();
             }
             consume(TokenType::SEMICOLON, "Expect ';' after struct field.");
-            // We use a dummy token for the keyword, since struct fields don't have one.
-            fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false));
+            fields.push_back(std::make_unique<VarStmt>(std::move(name), std::move(type_expr), std::move(initializer), false, current_access));
         }
          else {
-            // If it's not a method or a field, it's an error.
-            // We advance to avoid an infinite loop.
             error(peek(), "Expect field or method in struct body.");
             advance();
         }

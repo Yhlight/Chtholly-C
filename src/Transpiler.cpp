@@ -1125,35 +1125,58 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         out << ">\n";
     }
     out << "struct " << stmt.name.lexeme << " {\n";
+
+    Access current_access = Access::PRIVATE; // Default to private for safety
+
+    // Group fields and methods by access modifier to generate clean code
+    std::vector<const VarStmt*> public_fields;
+    std::vector<const VarStmt*> private_fields;
+    std::vector<const FunctionStmt*> public_methods;
+    std::vector<const FunctionStmt*> private_methods;
+
     for (const auto& field : stmt.fields) {
-        // This reuses the VarStmt logic, but we need to adapt it slightly for fields.
-        out << transpileType(*field->type) << " " << field->name.lexeme;
-        if (field->initializer) {
-            out << " = " << std::any_cast<std::string>(field->initializer->accept(*this));
+        if (field->access == Access::PUBLIC) {
+            public_fields.push_back(field.get());
+        } else {
+            private_fields.push_back(field.get());
         }
-        out << ";\n";
+    }
+    for (const auto& method : stmt.methods) {
+        if (method->access == Access::PUBLIC) {
+            public_methods.push_back(method.get());
+        } else {
+            private_methods.push_back(method.get());
+        }
     }
 
-    for (const auto& method : stmt.methods) {
-        // Re-using visitFunctionStmt logic here would be ideal, but for now, a direct implementation.
-        is_in_method = true;
-        out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
-
-        bool first_param = true;
-        for (size_t i = 0; i < method->params.size(); ++i) {
-            if (method->params[i].lexeme == "self") continue;
-            if (!first_param) out << ", ";
-            first_param = false;
-            out << transpileType(*method->param_types[i]) << " " << method->params[i].lexeme;
-        }
-        out << ") ";
-        if (method->body) {
-            method->body->accept(*this);
-        } else {
+    if (!public_fields.empty() || !public_methods.empty()) {
+        out << "public:\n";
+        for (const auto* field : public_fields) {
+            out << transpileType(*field->type) << " " << field->name.lexeme;
+            if (field->initializer) {
+                out << " = " << std::any_cast<std::string>(field->initializer->accept(*this));
+            }
             out << ";\n";
         }
-        is_in_method = false;
+        for (const auto* method : public_methods) {
+            visitFunctionStmt(*method);
+        }
     }
+
+    if (!private_fields.empty() || !private_methods.empty()) {
+        out << "private:\n";
+        for (const auto* field : private_fields) {
+            out << transpileType(*field->type) << " " << field->name.lexeme;
+            if (field->initializer) {
+                out << " = " << std::any_cast<std::string>(field->initializer->accept(*this));
+            }
+            out << ";\n";
+        }
+        for (const auto* method : private_methods) {
+            visitFunctionStmt(*method);
+        }
+    }
+
     out << "};\n";
     return nullptr;
 }
