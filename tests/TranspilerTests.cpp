@@ -235,11 +235,21 @@ TEST(TranspilerTest, TraitDeclaration) {
 }
 
 TEST(TranspilerTest, FileImport) {
-    std::filesystem::path current_path = __FILE__;
-    std::filesystem::path module_path = current_path.parent_path() / "test_module.cns";
+    // Create the module file
+    std::string module_content = "func add(a: int, b: int) -> int { return a + b; }";
+    std::ofstream module_file("test_module.cns");
+    module_file << module_content;
+    module_file.close();
+
+    // Get absolute path to the module
+    std::filesystem::path module_path = std::filesystem::absolute("test_module.cns");
+
     std::string source = "import \"" + module_path.string() + "\"; let x = add(1, 2);";
     std::string expected = "int add(int a, int b) {\nreturn a + b;\n}\nconst auto x = add(1, 2);\n";
     EXPECT_EQ(transpile(source), expected);
+
+    // Clean up
+    std::filesystem::remove("test_module.cns");
 }
 
 TEST(TranspilerTest, StructAccessModifiers) {
