@@ -14,11 +14,11 @@ namespace chtholly {
 class DeclarationScanner : public StmtVisitor, public ExprVisitor {
 public:
     std::any visitStructStmt(const StructStmt& stmt) override {
-        structs[stmt.name.lexeme] = &stmt;
+        (*structs)[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
     std::any visitEnumStmt(const EnumStmt& stmt) override {
-        enums[stmt.name.lexeme] = &stmt;
+        (*enums)[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
 
@@ -141,45 +141,66 @@ public:
         return nullptr;
     }
 
+    DeclarationScanner(
+        std::map<std::string, const StructStmt*>* structs,
+        std::map<std::string, const EnumStmt*>* enums
+    ) : structs(structs), enums(enums) {}
 
-    std::map<std::string, const StructStmt*> structs;
-    std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const StructStmt*>* structs;
+    std::map<std::string, const EnumStmt*>* enums;
 };
 
-Transpiler::Transpiler() {
-    enterScope(); // Global scope
-    transpiled_files = new std::set<std::string>();
-    owns_transpiled_files = true;
+Transpiler::Transpiler() : Transpiler(
+    new std::set<std::string>(),
+    new std::vector<std::map<std::string, TypeInfo>>(),
+    new std::map<std::string, const StructStmt*>(),
+    new std::map<std::string, const EnumStmt*>(),
+    new std::set<std::string>()
+) {
+    owns_context = true;
+    enterScope();
 }
 
-Transpiler::Transpiler(std::set<std::string>* transpiled_files)
-    : transpiled_files(transpiled_files), owns_transpiled_files(false) {
-    enterScope(); // Global scope
-}
+Transpiler::Transpiler(
+    std::set<std::string>* transpiled_files,
+    std::vector<std::map<std::string, TypeInfo>>* scopes,
+    std::map<std::string, const StructStmt*>* structs,
+    std::map<std::string, const EnumStmt*>* enums,
+    std::set<std::string>* imported_modules
+) : transpiled_files(transpiled_files),
+    scopes(scopes),
+    structs(structs),
+    enums(enums),
+    imported_modules(imported_modules),
+    owns_context(false) {}
 
 Transpiler::~Transpiler() {
-    if (owns_transpiled_files) {
+    if (owns_context) {
         delete transpiled_files;
+        delete scopes;
+        delete structs;
+        delete enums;
+        delete imported_modules;
     }
 }
 
 void Transpiler::enterScope() {
-    scopes.emplace_back();
+    scopes->emplace_back();
 }
 
 void Transpiler::exitScope() {
-    scopes.pop_back();
+    scopes->pop_back();
 }
 
 void Transpiler::define(const std::string& name, const TypeInfo& type) {
-    if (scopes.empty()) {
+    if (scopes->empty()) {
         enterScope();
     }
-    scopes.back()[name] = type;
+    scopes->back()[name] = type;
 }
 
 TypeInfo Transpiler::lookup(const std::string& name) {
-    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
+    for (auto it = scopes->rbegin(); it != scopes->rend(); ++it) {
         auto found = it->find(name);
         if (found != it->end()) {
             return found->second;
@@ -236,7 +257,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         auto it = binary_op_traits.find(binary_expr->op.type);
         if (it != binary_op_traits.end()) {
             if (has_trait(left_type.name, "operator", it->second)) {
-                const StructStmt* s = structs[left_type.name];
+                const StructStmt* s = (*structs)[left_type.name];
                 for (const auto& method : s->methods) {
                     if (method->name.lexeme == it->second) {
                         return typeExprToTypeInfo(method->return_type.get());
@@ -308,8 +329,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                         return TypeInfo{"auto"};
                     }
                     TypeInfo object_type = get_type(*call_expr->arguments[0]);
-                    if (structs.count(object_type.name)) {
-                        const StructStmt* s = structs[object_type.name];
+                    if (structs->count(object_type.name)) {
+                        const StructStmt* s = (*structs)[object_type.name];
                         if (auto field_name_literal = dynamic_cast<const LiteralExpr*>(call_expr->arguments[1].get())) {
                             if (std::holds_alternative<std::string>(field_name_literal->value)) {
                                 std::string field_name = std::get<std::string>(field_name_literal->value);
@@ -331,8 +352,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
             }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
-            if (structs.count(callee_type.name)) {
-                const StructStmt* s = structs[callee_type.name];
+            if (structs->count(callee_type.name)) {
+                const StructStmt* s = (*structs)[callee_type.name];
                 for (const auto& method : s->methods) {
                     if (method->name.lexeme == get_expr->name.lexeme) {
                         return typeExprToTypeInfo(method->return_type.get());
@@ -371,19 +392,17 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
     // Pre-scan for struct and enum definitions.
-    DeclarationScanner scanner;
+    DeclarationScanner scanner(this->structs, this->enums);
     for (const auto& statement : statements) {
         statement->accept(scanner);
     }
-    this->structs = scanner.structs;
-    this->enums = scanner.enums;
 
     for (const auto& statement : statements) {
         statement->accept(*this);
     }
 
     std::stringstream final_code;
-    if (imported_modules.count("iostream")) {
+    if (imported_modules->count("iostream")) {
         final_code << "#include <iostream>\n";
         if (input_used) {
             final_code << "#include <string>\n";
@@ -396,7 +415,7 @@ std::string input() {
 )";
         }
     }
-    if (imported_modules.count("filesystem")) {
+    if (imported_modules->count("filesystem")) {
         final_code << "#include <fstream>\n";
         final_code << "#include <sstream>\n";
         final_code << R"(
@@ -457,8 +476,8 @@ std::string Transpiler::getTypeString(const TypeInfo& type) {
 
 // Helper function to check if a struct implements a specific trait.
 bool Transpiler::has_trait(const std::string& struct_name, const std::string& module_name, const std::string& trait_name) {
-    if (structs.count(struct_name)) {
-        const StructStmt* s = structs[struct_name];
+    if (structs->count(struct_name)) {
+        const StructStmt* s = (*structs)[struct_name];
         for (const auto& trait : s->traits) {
             if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
                 if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
@@ -600,7 +619,7 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
         return std::string(arg_type.name == "std::string" ? "true" : "false");
     }
     if (function_name == "is_struct") {
-        return std::string(structs.count(arg_type.name) ? "true" : "false");
+        return std::string(structs->count(arg_type.name) ? "true" : "false");
     }
     if (function_name == "is_array") {
         return std::string(arg_type.name.rfind("std::vector", 0) == 0 || arg_type.name.rfind("std::array", 0) == 0 ? "true" : "false");
@@ -634,16 +653,16 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
     TypeInfo arg_type = get_type(*expr.arguments[0]);
 
     if (function_name == "get_field_count") {
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
+        if (structs->count(arg_type.name)) {
+            const StructStmt* s = (*structs)[arg_type.name];
             return std::to_string(s->fields.size());
         } else {
             return std::string("0"); // Return 0 if not a struct
         }
     }
     if (function_name == "get_method_count") {
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
+        if (structs->count(arg_type.name)) {
+            const StructStmt* s = (*structs)[arg_type.name];
             return std::to_string(s->methods.size());
         } else {
             return std::string("0"); // Return 0 if not a struct
@@ -651,8 +670,8 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
     }
     if (function_name == "get_fields") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
+        if (structs->count(arg_type.name)) {
+            const StructStmt* s = (*structs)[arg_type.name];
             std::stringstream ss;
             ss << "std::vector<chtholly_field>{";
             for (size_t i = 0; i < s->fields.size(); ++i) {
@@ -669,8 +688,8 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
     }
     if (function_name == "get_methods") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
+        if (structs->count(arg_type.name)) {
+            const StructStmt* s = (*structs)[arg_type.name];
             std::stringstream ss;
             ss << "std::vector<chtholly_method>{";
             for (size_t i = 0; i < s->methods.size(); ++i) {
@@ -787,7 +806,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             return "std::make_optional(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
         }
         if (var_expr->name.lexeme == "print") {
-            if (imported_modules.find("iostream") == imported_modules.end()) {
+            if (imported_modules->find("iostream") == imported_modules->end()) {
                 return std::string("/* ERROR: 'print' function called without importing 'iostream' */");
             }
             std::stringstream out;
@@ -802,21 +821,21 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             return out.str();
         }
         if (var_expr->name.lexeme == "input") {
-            if (imported_modules.find("iostream") == imported_modules.end()) {
+            if (imported_modules->find("iostream") == imported_modules->end()) {
                 return std::string("/* ERROR: 'input' function called without importing 'iostream' */");
             }
             input_used = true;
             return std::string("input()");
         }
         if (var_expr->name.lexeme == "fs_read") {
-            if (imported_modules.find("filesystem") == imported_modules.end()) {
+            if (imported_modules->find("filesystem") == imported_modules->end()) {
                 return std::string("/* ERROR: 'fs_read' function called without importing 'filesystem' */");
             }
             // Simplified: assumes one argument, the filename.
             return "fs_read(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
         }
         if (var_expr->name.lexeme == "fs_write") {
-            if (imported_modules.find("filesystem") == imported_modules.end()) {
+            if (imported_modules->find("filesystem") == imported_modules->end()) {
                 return std::string("/* ERROR: 'fs_write' function called without importing 'filesystem' */");
             }
             // Simplified: assumes two arguments, filename and content.
@@ -841,7 +860,7 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) { return nullptr; }
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
     std::string separator = ".";
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
-        if (enums.count(var_expr->name.lexeme)) {
+        if (enums->count(var_expr->name.lexeme)) {
             separator = "::";
         }
     } else if (dynamic_cast<const SelfExpr*>(expr.object.get())) {
@@ -1005,7 +1024,7 @@ std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
 std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
     if (std::holds_alternative<Token>(stmt.path)) {
         std::string module_name = std::get<Token>(stmt.path).lexeme;
-        imported_modules.insert(module_name);
+        imported_modules->insert(module_name);
     } else if (std::holds_alternative<std::string>(stmt.path)) {
         std::string file_path = std::get<std::string>(stmt.path);
 
@@ -1030,7 +1049,12 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
 
         // Use a new transpiler instance to handle the imported file
         // This is a simplified approach. A real compiler would manage symbols across files.
-        Transpiler file_transpiler(transpiled_files);
+        DeclarationScanner scanner(this->structs, this->enums);
+        for (const auto& statement : statements) {
+            statement->accept(scanner);
+        }
+
+        Transpiler file_transpiler(transpiled_files, scopes, structs, enums, imported_modules);
         out << file_transpiler.transpile(statements);
     }
     return nullptr;
@@ -1142,7 +1166,14 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
         out << ">\n";
     }
 
-    out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
+    std::string return_type = "void";
+    if (stmt.name.lexeme == "main") {
+        return_type = "int";
+    } else if (stmt.return_type) {
+        return_type = transpileType(*stmt.return_type);
+    }
+
+    out << return_type << " " << stmt.name.lexeme << "(";
 
     enterScope();
     bool first_param = true;
@@ -1158,7 +1189,16 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     out << ") ";
 
     if (stmt.body) {
-        visitBlockStmt(*stmt.body, false);
+        if (stmt.name.lexeme == "main") {
+            out << "{\n";
+            for (const auto& statement : stmt.body->statements) {
+                statement->accept(*this);
+            }
+            out << "return 0;\n";
+            out << "}\n";
+        } else {
+            visitBlockStmt(*stmt.body, false);
+        }
     } else {
         out << ";\n";
     }

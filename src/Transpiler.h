@@ -15,8 +15,15 @@ namespace chtholly {
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
     Transpiler();
-    Transpiler(std::set<std::string>* transpiled_files);
     ~Transpiler();
+
+    Transpiler(
+        std::set<std::string>* transpiled_files,
+        std::vector<std::map<std::string, TypeInfo>>* scopes,
+        std::map<std::string, const StructStmt*>* structs,
+        std::map<std::string, const EnumStmt*>* enums,
+        std::set<std::string>* imported_modules
+    );
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
     std::any visitBinaryExpr(const BinaryExpr& expr) override;
@@ -70,10 +77,10 @@ private:
     TypeInfo lookup(const std::string& name);
 
     std::stringstream out;
-    std::set<std::string> imported_modules;
-    std::vector<std::map<std::string, TypeInfo>> scopes;
-    std::map<std::string, const StructStmt*> structs;
-    std::map<std::string, const EnumStmt*> enums;
+    std::set<std::string>* imported_modules;
+    std::vector<std::map<std::string, TypeInfo>>* scopes;
+    std::map<std::string, const StructStmt*>* structs;
+    std::map<std::string, const EnumStmt*>* enums;
     std::map<std::string, const TraitStmt*> traits;
     bool is_in_switch = false;
     bool is_in_method = false;
@@ -85,7 +92,7 @@ private:
     bool result_used = false;
     TypeInfo contextual_type;
     std::set<std::string>* transpiled_files;
-    bool owns_transpiled_files = false;
+    bool owns_context = false;
 };
 
 } // namespace chtholly

@@ -4,6 +4,7 @@
 #include "Transpiler.h"
 #include <algorithm>
 #include <cctype>
+#include <fstream>
 
 #include "AST.h"
 #include "Transpiler.h"
@@ -14,13 +15,18 @@ namespace chtholly {
 class DeclarationScanner : public StmtVisitor, public ExprVisitor {
 public:
     std::any visitStructStmt(const StructStmt& stmt) override {
-        structs[stmt.name.lexeme] = &stmt;
+        (*structs)[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
     std::any visitEnumStmt(const EnumStmt& stmt) override {
-        enums[stmt.name.lexeme] = &stmt;
+        (*enums)[stmt.name.lexeme] = &stmt;
         return nullptr;
     }
+
+    DeclarationScanner(
+        std::map<std::string, const StructStmt*>* structs,
+        std::map<std::string, const EnumStmt*>* enums
+    ) : structs(structs), enums(enums) {}
     // Implement other visitor methods as needed, similar to Transpiler.cpp
     std::any visitBlockStmt(const BlockStmt& stmt) override { for (const auto& s : stmt.statements) s->accept(*this); return nullptr; }
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override { stmt.expression->accept(*this); return nullptr; }
@@ -53,8 +59,8 @@ public:
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override { for (const auto& element : expr.elements) element->accept(*this); return nullptr; }
     std::any visitTypeCastExpr(const TypeCastExpr& expr) override { expr.expression->accept(*this); return nullptr; }
 
-    std::map<std::string, const StructStmt*> structs;
-    std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const StructStmt*>* structs;
+    std::map<std::string, const EnumStmt*>* enums;
 };
 }
 
@@ -65,7 +71,9 @@ std::string compile(const std::string& source) {
     std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
 
     // Manually run the declaration scanner
-    chtholly::DeclarationScanner scanner;
+    std::map<std::string, const chtholly::StructStmt*> structs;
+    std::map<std::string, const chtholly::EnumStmt*> enums;
+    chtholly::DeclarationScanner scanner(&structs, &enums);
     for (const auto& stmt : statements) {
         if (stmt) stmt->accept(scanner);
     }
@@ -84,14 +92,48 @@ std::string compile(const std::string& source) {
     size_t pos = result.find("/*Declarations*/");
     if (pos != std::string::npos) {
         std::stringstream declarations;
-        for (auto const& [name, val] : scanner.structs) {
+        for (auto const& [name, val] : *scanner.structs) {
             declarations << "struct " << name << ";\n";
         }
-        for (auto const& [name, val] : scanner.enums) {
+        for (auto const& [name, val] : *scanner.enums) {
             declarations << "enum class " << name << ";\n";
         }
         result.replace(pos, 16, declarations.str());
     }
+
+    return result;
+}
+
+std::string compile_and_run(const std::string& source) {
+    std::string cpp_code = compile(source);
+
+    // Write to a temporary file
+    std::ofstream out("temp.cpp");
+    out << cpp_code;
+    out.close();
+
+    // Compile the C++ code
+    int compile_result = system("g++ temp.cpp -o temp_executable");
+    if (compile_result != 0) {
+        return "Compilation failed";
+    }
+
+    // Run the executable and capture output
+    std::string run_command = "./temp_executable";
+    FILE* pipe = popen(run_command.c_str(), "r");
+    if (!pipe) {
+        return "Failed to run command";
+    }
+    char buffer[128];
+    std::string result = "";
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        result += buffer;
+    }
+    pclose(pipe);
+
+    // Clean up
+    remove("temp.cpp");
+    remove("temp_executable");
 
     return result;
 }

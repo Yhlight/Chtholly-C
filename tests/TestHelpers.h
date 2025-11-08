@@ -6,6 +6,9 @@
 // Transpiles a string of Chtholly source code to C++.
 std::string compile(const std::string& source);
 
+// Compiles and runs a string of Chtholly source code, returning the output.
+std::string compile_and_run(const std::string& source);
+
 // Removes whitespace and newlines to allow for more flexible string comparison.
 std::string normalize(const std::string& s);
 
