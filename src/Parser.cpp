@@ -455,13 +455,23 @@ std::unique_ptr<Expr> Parser::term() {
 }
 
 std::unique_ptr<Expr> Parser::factor() {
-    auto expr = unary();
+    auto expr = power();
     while (match(TokenType::SLASH, TokenType::STAR, TokenType::PERCENT)) {
         Token op = previous();
-        auto right = unary();
+        auto right = power();
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
     }
     return expr;
+}
+
+std::unique_ptr<Expr> Parser::power() {
+	auto expr = unary();
+	while (match(TokenType::STAR_STAR)) {
+		Token op = previous();
+		auto right = unary();
+		expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+	}
+	return expr;
 }
 
 std::unique_ptr<Expr> Parser::unary() {

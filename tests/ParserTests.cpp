@@ -178,3 +178,9 @@ TEST(ParserTest, ComprehensiveTest) {
     std::string expected = "(func main (block (let x 10) (if-else (> x 5) (block (; (= x (- x 1)))) (block (; (= x 0)))) (while (> x 0) (block (; (= x (- x 1))))) (return x)))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, CustomBinaryOperator) {
+    std::string source = "2 ** 3 * 4;";
+    std::string expected = "(; (* (** 2 3) 4))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}

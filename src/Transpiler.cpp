@@ -471,6 +471,15 @@ bool Transpiler::has_trait(const std::string& struct_name, const std::string& mo
 }
 
 std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
+    if (expr.op.type == TokenType::STAR_STAR) {
+        TypeInfo left_type = get_type(*expr.left);
+        if (has_trait(left_type.name, "operator", "binary")) {
+            return std::any_cast<std::string>(expr.left->accept(*this)) + ".binary(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
+        }
+        // C++ has no native ** operator, so if the trait is not implemented, it's an error.
+        return "/* ERROR: operator '**' is not defined for type '" + left_type.name + "' */";
+    }
+
     static const std::map<TokenType, std::string> binary_op_traits = {
         {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
         {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},

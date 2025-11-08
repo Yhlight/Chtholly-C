@@ -304,3 +304,24 @@ TEST(TranspilerTest, LambdaExpressionWithReferenceCapture) {
 	std::string expected = "int x = 10;\nconst auto add_x = [&x](int a) -> int {\nreturn a + x;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, CustomBinaryOperator) {
+    std::string source = R"(
+        import operator;
+        struct MyNumber impl operator::binary {
+            public: val: int;
+            public: func binary(other: MyNumber) -> MyNumber {
+                return MyNumber{val: self.val + other.val};
+            }
+        }
+        func main() {
+            let a = MyNumber{val: 10};
+            let b = MyNumber{val: 3};
+            let c = a ** b;
+        }
+    )";
+    std::string expected_transpilation = "const auto c = a.binary(b);\n";
+    std::string transpiled_code = transpile(source);
+    // Check if the expected line exists in the transpiled code
+    EXPECT_NE(transpiled_code.find(expected_transpilation), std::string::npos);
+}

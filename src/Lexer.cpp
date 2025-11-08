@@ -54,7 +54,10 @@ void Lexer::scanToken() {
         case ';': addToken(TokenType::SEMICOLON); break;
         case '?': addToken(TokenType::QUESTION); break;
         case '%': addToken(match('=') ? TokenType::PERCENT_EQUAL : TokenType::PERCENT); break;
-        case '*': addToken(match('=') ? TokenType::STAR_EQUAL : TokenType::STAR); break;
+        case '*':
+            if (match('*')) { addToken(TokenType::STAR_STAR); }
+            else { addToken(match('=') ? TokenType::STAR_EQUAL : TokenType::STAR); }
+            break;
         case '!': addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG); break;
         case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL); break;
         case '<': addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS); break;
