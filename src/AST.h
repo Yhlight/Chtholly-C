@@ -8,6 +8,7 @@
 #include <any>
 #include <utility>
 #include <map>
+#include <optional>
 
 namespace chtholly {
 
@@ -267,8 +268,9 @@ struct FunctionStmt : Stmt {
     std::unique_ptr<BlockStmt> body;
     Access access;
     bool is_mut_method;
-    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::unique_ptr<TypeExpr>> generic_defaults, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC, bool is_mut_method = false)
-        : name(std::move(name)), generic_params(std::move(generic_params)), generic_defaults(std::move(generic_defaults)), constraints(std::move(constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access), is_mut_method(is_mut_method) {}
+    std::optional<std::unique_ptr<TypeExpr>> impl_trait;
+    FunctionStmt(Token name, std::vector<Token> generic_params, std::map<std::string, std::unique_ptr<TypeExpr>> generic_defaults, std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>> constraints, std::vector<Token> params, std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type, std::unique_ptr<BlockStmt> body, Access access = Access::PUBLIC, bool is_mut_method = false, std::optional<std::unique_ptr<TypeExpr>> impl_trait = std::nullopt)
+        : name(std::move(name)), generic_params(std::move(generic_params)), generic_defaults(std::move(generic_defaults)), constraints(std::move(constraints)), params(std::move(params)), param_types(std::move(param_types)), return_type(std::move(return_type)), body(std::move(body)), access(access), is_mut_method(is_mut_method), impl_trait(std::move(impl_trait)) {}
     std::any accept(StmtVisitor& visitor) const override { return visitor.visitFunctionStmt(*this); }
 };
 

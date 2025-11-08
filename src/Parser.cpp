@@ -176,7 +176,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     return std::make_unique<ImportStmt>(std::move(keyword), std::move(path));
 }
 
-std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access) {
+std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kind, bool has_body, Access access, std::optional<std::unique_ptr<TypeExpr>> impl_trait) {
     Token name = consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
     std::vector<Token> generic_params;
     std::map<std::string, std::unique_ptr<TypeExpr>> generic_defaults;
@@ -249,7 +249,7 @@ std::unique_ptr<FunctionStmt> Parser::functionDeclaration(const std::string& kin
         consume(TokenType::SEMICOLON, "Expect ';' after method signature.");
     }
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_defaults), std::move(constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access, is_mut_method);
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(generic_params), std::move(generic_defaults), std::move(constraints), std::move(parameters), std::move(param_types), std::move(returnType), std::move(body), access, is_mut_method, std::move(impl_trait));
 }
 
 std::unique_ptr<Stmt> Parser::structDeclaration() {
@@ -283,6 +283,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     std::vector<std::unique_ptr<VarStmt>> fields;
     std::vector<std::unique_ptr<FunctionStmt>> methods;
     Access current_access = Access::PUBLIC; // Default to public
+    std::optional<std::unique_ptr<TypeExpr>> current_impl_trait = std::nullopt;
 
     while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
         if (match(TokenType::PUBLIC)) {
@@ -291,11 +292,18 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
         } else if (match(TokenType::PRIVATE)) {
             consume(TokenType::COLON, "Expect ':' after 'private'.");
             current_access = Access::PRIVATE;
+        } else if (match(TokenType::IMPL)) {
+            current_impl_trait = type();
         }
 
         match(TokenType::FUNC); // Optional func keyword
         if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::LEFT_PAREN) {
-            methods.push_back(functionDeclaration("method", true, current_access));
+            auto func = functionDeclaration("method", true, current_access);
+            if (current_impl_trait.has_value()) {
+                func->impl_trait = std::move(current_impl_trait.value());
+                current_impl_trait = std::nullopt;
+            }
+            methods.push_back(std::move(func));
         } else if (peek().type == TokenType::IDENTIFIER && lookahead().type == TokenType::COLON) {
             // This is a field declaration.
             Token name = consume(TokenType::IDENTIFIER, "Expect field name.");

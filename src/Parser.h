@@ -36,7 +36,7 @@ private:
     std::unique_ptr<Stmt> breakStatement();
     std::unique_ptr<Stmt> fallthroughStatement();
     std::unique_ptr<Stmt> importStatement();
-    std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind, bool has_body = true, Access access = Access::PUBLIC);
+    std::unique_ptr<FunctionStmt> functionDeclaration(const std::string& kind, bool has_body = true, Access access = Access::PUBLIC, std::optional<std::unique_ptr<TypeExpr>> impl_trait = std::nullopt);
     std::unique_ptr<Stmt> structDeclaration();
     std::unique_ptr<Stmt> enumDeclaration();
     std::unique_ptr<Stmt> traitDeclaration();
