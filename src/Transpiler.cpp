@@ -316,6 +316,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "get_traits") {
                     return TypeInfo{"std::vector<chtholly_trait>"};
                 }
+                if (get_expr->name.lexeme == "get_trait") {
+                    return TypeInfo{"chtholly_trait"};
+                }
             }
             if (var_expr->name.lexeme == "util") {
                 if (get_expr->name.lexeme == "string_cast") {
@@ -797,6 +800,34 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             return ss.str();
         } else {
             return std::string("std::vector<chtholly_trait>{}");
+        }
+    }
+    if (function_name == "get_trait") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            if (expr.arguments.size() < 2) {
+                return std::string("/* ERROR: get_trait requires two arguments */");
+            }
+            auto trait_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+            if (!trait_name_expr || !std::holds_alternative<std::string>(trait_name_expr->value)) {
+                return std::string("/* ERROR: get_trait second argument must be a string literal */");
+            }
+            std::string trait_name = std::get<std::string>(trait_name_expr->value);
+            for (const auto& trait : s->traits) {
+                std::string current_trait_name;
+                if (auto var_expr = dynamic_cast<const VariableExpr*>(trait.get())) {
+                    current_trait_name = var_expr->name.lexeme;
+                } else if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
+                    current_trait_name = std::any_cast<std::string>(get_expr->object->accept(*this)) + "::" + get_expr->name.lexeme;
+                }
+                if (current_trait_name == trait_name) {
+                    return "{\"" + current_trait_name + "\"}";
+                }
+            }
+            return std::string("/* ERROR: trait not found */");
+        } else {
+            return std::string("/* ERROR: get_trait called on non-struct type */");
         }
     }
 

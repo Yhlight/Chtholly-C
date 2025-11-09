@@ -15,6 +15,23 @@ TEST(ReflectionTest, GetFieldCount) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(ReflectionTest, GetTrait) {
+    std::string source = R"(
+        import reflect;
+        import operator;
+        trait MyTrait {}
+        struct Point impl operator::add, MyTrait {
+            x: int;
+            y: int;
+        }
+        let p: Point = Point{x: 1, y: 2};
+        let my_trait = reflect::get_trait(p, "MyTrait");
+    )";
+    std::string expected = "const chtholly_trait my_trait = {\"MyTrait\"};";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(ReflectionTest, GetMethod) {
     std::string source = R"(
         import reflect;
