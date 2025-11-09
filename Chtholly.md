@@ -647,6 +647,39 @@ import string;
   let pos2 = string::find(s, "galaxy"); // pos2 将是 none
   ```
 
+### Array Module
+Chtholly 的标准库 `array` 模块提供了一系列用于操作动态数组的函数。要使用这些函数，您必须首先导入 `array` 模块。
+
+```Chtholly
+import array;
+```
+
+#### 函数
+
+- **`array::length(arr: &array[T]) -> int`**
+  返回数组 `arr` 中元素的数量。
+
+  ```Chtholly
+  let arr = [1, 2, 3];
+  let len = array::length(arr); // len 将是 3
+  ```
+
+- **`array::push(arr: &mut array[T], value: T)`**
+  在数组 `arr` 的末尾添加一个元素 `value`。该函数要求数组是可变的。
+
+  ```Chtholly
+  mut arr = [1, 2];
+  array::push(arr, 3); // arr 现在是 [1, 2, 3]
+  ```
+
+- **`array::pop(arr: &mut array[T]) -> T`**
+  移除并返回数组 `arr` 的最后一个元素。该函数要求数组是可变的。
+
+  ```Chtholly
+  mut arr = [1, 2, 3];
+  let last = array::pop(arr); // last 将是 3, arr 现在是 [1, 2]
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  

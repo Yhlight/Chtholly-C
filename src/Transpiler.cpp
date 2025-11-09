@@ -371,6 +371,29 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"std::optional<int>"};
                 }
             }
+            if (var_expr->name.lexeme == "array") {
+                if (get_expr->name.lexeme == "length") {
+                    return TypeInfo{"int"};
+                }
+                if (get_expr->name.lexeme == "pop") {
+                    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
+                        if (call_expr->arguments.empty()) {
+                            return TypeInfo{"auto"};
+                        }
+                        TypeInfo arr_type = get_type(*call_expr->arguments[0]);
+                        // arr_type.name will be "std::vector<T>" or "std::array<T, N>"
+                    size_t start = arr_type.name.find('<') + 1;
+                    size_t end = arr_type.name.rfind('>');
+                    if (arr_type.name.find(',') != std::string::npos) {
+                        end = arr_type.name.find(',');
+                    }
+                    if (start != std::string::npos && end != std::string::npos) {
+                        return TypeInfo{arr_type.name.substr(start, end - start)};
+                    }
+                    return TypeInfo{"auto"};
+                }
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -1025,6 +1048,34 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
     return "/* ERROR: Unknown string function call */";
 }
 
+std::any Transpiler::handleArrayFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "length") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: length requires one argument */";
+        }
+        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".size()";
+    }
+    if (function_name == "push") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: push requires two arguments */";
+        }
+        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".push_back(" +
+               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+    if (function_name == "pop") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: pop requires one argument */";
+        }
+        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "[&]() { auto val = " + arr + ".back(); " + arr + ".pop_back(); return val; }()";
+    }
+
+    return "/* ERROR: Unknown array function call */";
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1094,6 +1145,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "string") {
                 return handleStringFunction(expr);
+            }
+            if (var_expr->name.lexeme == "array") {
+                return handleArrayFunction(expr);
             }
         }
     }
