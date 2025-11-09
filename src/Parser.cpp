@@ -643,16 +643,32 @@ std::unique_ptr<Expr> Parser::lambdaExpression() {
 std::unique_ptr<Expr> Parser::structLiteral() {
     Token name = previous();
     consume(TokenType::LEFT_BRACE, "Expect '{' after struct name.");
-    std::map<std::string, std::unique_ptr<Expr>> fields;
-    if (!check(TokenType::RIGHT_BRACE)) {
+
+    if (check(TokenType::RIGHT_BRACE)) {
+        consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+        return std::make_unique<StructLiteralExpr>(std::move(name), std::vector<std::unique_ptr<Expr>>{});
+    }
+
+    // Look ahead to see if it's named or positional
+    if (lookahead().type == TokenType::COLON) {
+        // Named fields
+        std::map<std::string, std::unique_ptr<Expr>> fields;
         do {
             Token field_name = consume(TokenType::IDENTIFIER, "Expect field name.");
             consume(TokenType::COLON, "Expect ':' after field name.");
             fields[field_name.lexeme] = expression();
         } while (match(TokenType::COMMA));
+        consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+        return std::make_unique<StructLiteralExpr>(std::move(name), std::move(fields));
+    } else {
+        // Positional fields
+        std::vector<std::unique_ptr<Expr>> values;
+        do {
+            values.push_back(expression());
+        } while (match(TokenType::COMMA));
+        consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
+        return std::make_unique<StructLiteralExpr>(std::move(name), std::move(values));
     }
-    consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
-    return std::make_unique<StructLiteralExpr>(std::move(name), std::move(fields));
 }
 
 std::unique_ptr<Expr> Parser::qualifiedName() {

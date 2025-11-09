@@ -126,10 +126,23 @@ public:
         expr.expression->accept(*this);
         return nullptr;
     }
+#include <variant>
+
+// ... (other includes)
+
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override {
-        for (const auto& [name, value] : expr.fields) {
-            value->accept(*this);
-        }
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::map<std::string, std::unique_ptr<Expr>>>) {
+                for (const auto& [name, value] : arg) {
+                    value->accept(*this);
+                }
+            } else if constexpr (std::is_same_v<T, std::vector<std::unique_ptr<Expr>>>) {
+                for (const auto& value : arg) {
+                    value->accept(*this);
+                }
+            }
+        }, expr.initializers);
         return nullptr;
     }
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override {
@@ -1173,17 +1186,39 @@ std::any Transpiler::visitDerefExpr(const DerefExpr& expr) {
     return "*" + std::any_cast<std::string>(expr.expression->accept(*this));
 }
 
+#include <variant>
+
+// ... (other includes)
+
 std::any Transpiler::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     std::stringstream out;
     out << expr.name.lexeme << "{";
-    bool first = true;
-    for (const auto& [name, value] : expr.fields) {
-        if (!first) {
-            out << ", ";
+
+    std::visit([&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::map<std::string, std::unique_ptr<Expr>>>) {
+            // Named fields
+            bool first = true;
+            for (const auto& [name, value] : arg) {
+                if (!first) {
+                    out << ", ";
+                }
+                first = false;
+                out << "." << name << " = " << std::any_cast<std::string>(value->accept(*this));
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<std::unique_ptr<Expr>>>) {
+            // Positional fields
+            bool first = true;
+            for (const auto& value : arg) {
+                if (!first) {
+                    out << ", ";
+                }
+                first = false;
+                out << std::any_cast<std::string>(value->accept(*this));
+            }
         }
-        first = false;
-        out << "." << name << " = " << std::any_cast<std::string>(value->accept(*this));
-    }
+    }, expr.initializers);
+
     out << "}";
     return out.str();
 }

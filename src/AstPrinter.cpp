@@ -141,12 +141,29 @@ std::any AstPrinter::visitDerefExpr(const DerefExpr& expr) {
     return parenthesize("*", expr.expression.get());
 }
 
+#include <variant>
+
+// ... (other includes)
+
 std::any AstPrinter::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     std::stringstream out;
     out << "(struct_literal " << expr.name.lexeme;
-    for (const auto& [name, value] : expr.fields) {
-        out << " (:= " << name << " " << std::any_cast<std::string>(value->accept(*this)) << ")";
-    }
+
+    std::visit([&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::map<std::string, std::unique_ptr<Expr>>>) {
+            // Named fields
+            for (const auto& [name, value] : arg) {
+                out << " (:= " << name << " " << std::any_cast<std::string>(value->accept(*this)) << ")";
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<std::unique_ptr<Expr>>>) {
+            // Positional fields
+            for (const auto& value : arg) {
+                out << " " << std::any_cast<std::string>(value->accept(*this));
+            }
+        }
+    }, expr.initializers);
+
     out << ")";
     return out.str();
 }

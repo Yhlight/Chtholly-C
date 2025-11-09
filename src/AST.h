@@ -218,9 +218,12 @@ struct DerefExpr : Expr {
 
 struct StructLiteralExpr : Expr {
     Token name;
-    std::map<std::string, std::unique_ptr<Expr>> fields;
-    StructLiteralExpr(Token name, std::map<std::string, std::unique_ptr<Expr>> fields)
-        : name(std::move(name)), fields(std::move(fields)) {}
+    std::variant<
+        std::map<std::string, std::unique_ptr<Expr>>, // Named fields
+        std::vector<std::unique_ptr<Expr>>           // Positional fields
+    > initializers;
+    StructLiteralExpr(Token name, std::variant<std::map<std::string, std::unique_ptr<Expr>>, std::vector<std::unique_ptr<Expr>>> initializers)
+        : name(std::move(name)), initializers(std::move(initializers)) {}
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitStructLiteralExpr(*this); }
 };
 

@@ -9,89 +9,92 @@
 
 using namespace chtholly;
 
-std::string transpile(const std::string& source) {
-    Lexer lexer(source);
-    std::vector<Token> tokens = lexer.scanTokens();
-    Parser parser(tokens);
-    std::vector<std::unique_ptr<Stmt>> statements = parser.parse();
-    Transpiler transpiler;
-    return transpiler.transpile(statements);
-}
+class TranspilerTest : public ::testing::Test {
+protected:
+    std::string transpile(const std::string& source) {
+        Lexer lexer(source);
+        std::vector<Token> tokens = lexer.scanTokens();
+        Parser parser(tokens);
+        auto statements = parser.parse();
+        Transpiler transpiler;
+        return transpiler.transpile(statements);
+    }
+};
 
-TEST(TranspilerTest, VariableDeclaration) {
+TEST_F(TranspilerTest, VariableDeclaration) {
     std::string source = "let x = 10;";
     std::string expected = "const int x = 10;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, MutableVariableDeclaration) {
+TEST_F(TranspilerTest, MutableVariableDeclaration) {
     std::string source = "mut y = \"hello\";";
     std::string expected = "std::string y = \"hello\";\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, ExpressionStatement) {
+TEST_F(TranspilerTest, ExpressionStatement) {
     std::string source = "1 + 2 * 3;";
     std::string expected = "1 + 2 * 3;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, BlockStatement) {
+TEST_F(TranspilerTest, BlockStatement) {
     std::string source = "{ let a = 1; mut b = 2; }";
     std::string expected = "{\nconst int a = 1;\nint b = 2;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, IfStatement) {
+TEST_F(TranspilerTest, IfStatement) {
     std::string source = "if (x > 0) { x = x - 1; }";
     std::string expected = "if (x > 0) {\nx = x - 1;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, IfElseStatement) {
+TEST_F(TranspilerTest, IfElseStatement) {
     std::string source = "if (x > 0) { x = 1; } else { x = 2; }";
     std::string expected = "if (x > 0) {\nx = 1;\n}\nelse {\nx = 2;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, WhileStatement) {
+TEST_F(TranspilerTest, WhileStatement) {
     std::string source = "while (x > 0) { x = x - 1; }";
     std::string expected = "while (x > 0) {\nx = x - 1;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, ForStatement) {
+TEST_F(TranspilerTest, ForStatement) {
     std::string source = "for (let i = 0; i < 10; i = i + 1) { }";
     std::string expected = "for (const int i = 0; i < 10; i = i + 1) {\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, OptionType) {
+TEST_F(TranspilerTest, OptionType) {
     std::string source = "let x: option<int> = none;";
     std::string expected = "#include <optional>\nconst std::optional<int> x = nullptr;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, OptionUnwarp) {
+TEST_F(TranspilerTest, OptionUnwarp) {
     std::string source = "let x: option<int> = 10; let y = x.unwarp();";
     std::string expected = "#include <optional>\nconst std::optional<int> x = 10;\nconst auto y = x.value();\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, OptionUnwarpOr) {
+TEST_F(TranspilerTest, OptionUnwarpOr) {
     std::string source = "let x: option<int> = none; let y = x.unwarp_or(5);";
     std::string expected = "#include <optional>\nconst std::optional<int> x = nullptr;\nconst int y = x.value_or(5);\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, TypeCastExpression) {
+TEST_F(TranspilerTest, TypeCastExpression) {
     std::string source = "let x = type_cast<int>(10);";
     std::string expected = "const int x = static_cast<int>(10);\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
 
-TEST(TranspilerTest, SwitchStatement) {
+TEST_F(TranspilerTest, SwitchStatement) {
     std::string source = R"(
         switch (x) {
             case 1: {
@@ -114,37 +117,37 @@ TEST(TranspilerTest, SwitchStatement) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, FunctionDeclaration) {
+TEST_F(TranspilerTest, FunctionDeclaration) {
     std::string source = "func add(a: int, b: int) -> int { return a + b; }";
     std::string expected = "int add(int a, int b) {\nreturn a + b;\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, StructDeclaration) {
+TEST_F(TranspilerTest, StructDeclaration) {
     std::string source = "struct Point { public: x: int; y: int; }";
     std::string expected = "struct Point {\npublic:\nint x;\nint y;\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, StructWithMethod) {
+TEST_F(TranspilerTest, StructWithMethod) {
     std::string source = "struct Point { public: x: int; public: func move(dx: int) -> void { self.x = self.x + dx; } }";
     std::string expected = "struct Point {\npublic:\nint x;\nvoid move(int dx) {\nthis->x = this->x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, PrintStatement) {
+TEST_F(TranspilerTest, PrintStatement) {
     std::string source = "import iostream; print(\"Hello, World!\");";
     std::string expected = "#include <iostream>\nstd::cout << \"Hello, World!\" << std::endl;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, PrintWithoutImport) {
+TEST_F(TranspilerTest, PrintWithoutImport) {
     std::string source = "print(\"Hello, World!\");";
     std::string expected = "/* ERROR: 'print' function called without importing 'iostream' */;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, FilesystemReadWrite) {
+TEST_F(TranspilerTest, FilesystemReadWrite) {
     // Create a temporary file to read from
     std::ofstream outfile("test_read.txt");
     outfile << "Hello from file!";
@@ -169,7 +172,7 @@ TEST(TranspilerTest, FilesystemReadWrite) {
     EXPECT_NE(transpiled_code.find(expected_write), std::string::npos);
 }
 
-TEST(TranspilerTest, FilesystemWithoutImport) {
+TEST_F(TranspilerTest, FilesystemWithoutImport) {
     std::string source = R"(
         let content = fs_read("test.txt");
         fs_write("test.txt", "hello");
@@ -183,7 +186,7 @@ TEST(TranspilerTest, FilesystemWithoutImport) {
     EXPECT_NE(transpiled_code.find(expected_write_error), std::string::npos);
 }
 
-TEST(TranspilerTest, MetaIsInt) {
+TEST_F(TranspilerTest, MetaIsInt) {
     std::string source = R"(
         let x: int = 10;
         let y: string = "hello";
@@ -194,7 +197,7 @@ TEST(TranspilerTest, MetaIsInt) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, OperatorOverloading) {
+TEST_F(TranspilerTest, OperatorOverloading) {
     std::string source = R"(
         import operator;
         struct Point impl operator::add {
@@ -215,26 +218,26 @@ TEST(TranspilerTest, OperatorOverloading) {
     EXPECT_NE(transpiled_code.find(expected), std::string::npos);
 }
 
-TEST(TranspilerTest, InputStatement) {
+TEST_F(TranspilerTest, InputStatement) {
     std::string source = "import iostream; let name = input();";
     std::string expected = "const std::string name = input();\n";
     EXPECT_NE(transpile(source).find(expected), std::string::npos);
 }
 
-TEST(TranspilerTest, InputWithoutImport) {
+TEST_F(TranspilerTest, InputWithoutImport) {
     std::string source = "let name = input();";
     std::string expected_error = "/* ERROR: 'input' function called without importing 'iostream' */";
     std::string transpiled_code = transpile(source);
     EXPECT_NE(transpiled_code.find(expected_error), std::string::npos);
 }
 
-TEST(TranspilerTest, TraitDeclaration) {
+TEST_F(TranspilerTest, TraitDeclaration) {
     std::string source = "trait MyTrait { func foo(); func bar(a: int) -> bool; }";
     std::string expected = "struct MyTrait {\n    virtual ~MyTrait() = default;\n    virtual void foo() = 0;\n    virtual bool bar(int a) = 0;\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, FileImport) {
+TEST_F(TranspilerTest, FileImport) {
     // Create the module file
     std::string module_content = "func add(a: int, b: int) -> int { return a + b; }";
     std::ofstream module_file("test_module.cns");
@@ -252,7 +255,7 @@ TEST(TranspilerTest, FileImport) {
     std::filesystem::remove("test_module.cns");
 }
 
-TEST(TranspilerTest, StructAccessModifiers) {
+TEST_F(TranspilerTest, StructAccessModifiers) {
     std::string source = R"(
         struct Test {
             public:
@@ -267,7 +270,7 @@ TEST(TranspilerTest, StructAccessModifiers) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, InternalTraitImplementation) {
+TEST_F(TranspilerTest, InternalTraitImplementation) {
     std::string source = R"(
         trait MyTrait { func foo(); }
         struct MyStruct {
@@ -279,43 +282,43 @@ TEST(TranspilerTest, InternalTraitImplementation) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, LambdaExpression) {
+TEST_F(TranspilerTest, LambdaExpression) {
     std::string source = "let add = [](a: int, b: int) -> int { return a + b; };";
     std::string expected = "const auto add = [](int a, int b) -> int {\nreturn a + b;\n}\n;\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, LambdaExpressionNoParams) {
+TEST_F(TranspilerTest, LambdaExpressionNoParams) {
 	std::string source = "let get_five = []() -> int { return 5; };";
 	std::string expected = "const auto get_five = []() -> int {\nreturn 5;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, LambdaExpressionWithCapture) {
+TEST_F(TranspilerTest, LambdaExpressionWithCapture) {
 	std::string source = "let x = 10; let add_x = [x](a: int) -> int { return a + x; };";
 	std::string expected = "const int x = 10;\nconst auto add_x = [x](int a) -> int {\nreturn a + x;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, LambdaExpressionWithMultipleCaptures) {
+TEST_F(TranspilerTest, LambdaExpressionWithMultipleCaptures) {
 	std::string source = "let x = 10; let y = 20; let add_xy = [x, y](a: int) -> int { return a + x + y; };";
 	std::string expected = "const int x = 10;\nconst int y = 20;\nconst auto add_xy = [x, y](int a) -> int {\nreturn a + x + y;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, FunctionType) {
+TEST_F(TranspilerTest, FunctionType) {
 	std::string source = "let my_func: function(int, int) -> int = add;";
 	std::string expected = "#include <functional>\nconst std::function<int(int, int)> my_func = add;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, LambdaExpressionWithReferenceCapture) {
+TEST_F(TranspilerTest, LambdaExpressionWithReferenceCapture) {
 	std::string source = "mut x = 10; let add_x = [&x](a: int) -> int { return a + x; };";
 	std::string expected = "int x = 10;\nconst auto add_x = [&x](int a) -> int {\nreturn a + x;\n}\n;\n";
 	EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, CustomBinaryOperator) {
+TEST_F(TranspilerTest, CustomBinaryOperator) {
     std::string source = R"(
         import operator;
         struct MyNumber impl operator::binary {
@@ -336,7 +339,7 @@ TEST(TranspilerTest, CustomBinaryOperator) {
     EXPECT_NE(transpiled_code.find(expected_transpilation), std::string::npos);
 }
 
-TEST(TranspilerTest, EnforceExplicitSelf) {
+TEST_F(TranspilerTest, EnforceExplicitSelf) {
     std::string source = R"(
         struct Test {
             public:
@@ -357,7 +360,7 @@ TEST(TranspilerTest, EnforceExplicitSelf) {
     EXPECT_NE(transpiled_code.find(expected_method_error), std::string::npos);
 }
 
-TEST(TranspilerTest, BorrowImmutable) {
+TEST_F(TranspilerTest, BorrowImmutable) {
     std::string source = R"(
         let a = 10;
         let b = &a;
@@ -366,7 +369,7 @@ TEST(TranspilerTest, BorrowImmutable) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, BorrowMutableAndModify) {
+TEST_F(TranspilerTest, BorrowMutableAndModify) {
     std::string source = R"(
         mut a = 10;
         mut b = &mut a;
@@ -376,7 +379,7 @@ TEST(TranspilerTest, BorrowMutableAndModify) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, ReferenceAsFunctionParameter) {
+TEST_F(TranspilerTest, ReferenceAsFunctionParameter) {
     std::string source = R"(
         func increment(x: &mut int) {
             *x = *x + 1;
@@ -390,7 +393,7 @@ TEST(TranspilerTest, ReferenceAsFunctionParameter) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST(TranspilerTest, OptionConstructor) {
+TEST_F(TranspilerTest, OptionConstructor) {
     std::string source = "let x = option(20);";
     std::string expected = "#include <optional>\nconst std::optional<int> x = std::optional<int>(20);\n";
     EXPECT_EQ(transpile(source), expected);

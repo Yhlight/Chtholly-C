@@ -121,6 +121,9 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Variable capture `[var]`
 - [x] Function types
   - [x] `function(T, U) -> R` syntax for type annotations
+- [x] Struct Initialization
+  - [x] Named field initialization `MyStruct{ field: value }`
+  - [x] Positional field initialization `MyStruct{ value1, value2 }`
 
 ## Phase 6: Traits and Constraints
 - [x] Trait declaration parsing

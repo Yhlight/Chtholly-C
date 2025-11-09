@@ -243,6 +243,9 @@ func main(args: array[string])
         id: 18
     };
 
+    // 第三种创建方式，按位置初始化
+    let test3 = Test{"xxx", 18};
+
     print(test2.name);
 }
 ```
