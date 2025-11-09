@@ -1,5 +1,5 @@
 add_library(chtholly_lib STATIC
-    chtholly.cpp
+    Chtholly.cpp
     Lexer.cpp
     AstPrinter.cpp
     Parser.cpp
