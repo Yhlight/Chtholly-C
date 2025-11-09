@@ -307,6 +307,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "get_methods") {
                     return TypeInfo{"std::vector<chtholly_method>"};
                 }
+                if (get_expr->name.lexeme == "get_method") {
+                    return TypeInfo{"chtholly_method"};
+                }
                 if (get_expr->name.lexeme == "get_trait_count") {
                     return TypeInfo{"int"};
                 }
@@ -732,6 +735,37 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             return ss.str();
         } else {
             return std::string("std::vector<chtholly_method>{}");
+        }
+    }
+    if (function_name == "get_method") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            if (expr.arguments.size() < 2) {
+                return std::string("/* ERROR: get_method requires two arguments */");
+            }
+            auto method_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+            if (!method_name_expr || !std::holds_alternative<std::string>(method_name_expr->value)) {
+                return std::string("/* ERROR: get_method second argument must be a string literal */");
+            }
+            std::string method_name = std::get<std::string>(method_name_expr->value);
+            for (const auto& method : s->methods) {
+                if (method->name.lexeme == method_name) {
+                    std::stringstream ss;
+                    ss << "{\"" << method->name.lexeme << "\", \"" << (method->return_type ? transpileType(*method->return_type) : "void") << "\", {";
+                    for (size_t j = 0; j < method->params.size(); ++j) {
+                        ss << "{\"" << method->params[j].lexeme << "\", \"" << transpileType(*method->param_types[j]) << "\"}";
+                        if (j < method->params.size() - 1) {
+                            ss << ", ";
+                        }
+                    }
+                    ss << "}}";
+                    return ss.str();
+                }
+            }
+            return std::string("/* ERROR: method not found */");
+        } else {
+            return std::string("/* ERROR: get_method called on non-struct type */");
         }
     }
     if (function_name == "get_trait_count") {

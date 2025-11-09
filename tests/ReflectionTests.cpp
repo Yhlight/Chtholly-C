@@ -15,6 +15,22 @@ TEST(ReflectionTest, GetFieldCount) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(ReflectionTest, GetMethod) {
+    std::string source = R"(
+        import reflect;
+        struct Point {
+            x: int;
+            y: int;
+            func move(dx: int, dy: string) -> void {}
+        }
+        let p: Point = Point{x: 1, y: 2};
+        let method = reflect::get_method(p, "move");
+    )";
+    std::string expected = "const chtholly_method method = {\"move\", \"void\", {{\"dx\", \"int\"}, {\"dy\", \"std::string\"}}};";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(ReflectionTest, GetField) {
     std::string source = R"(
         import reflect;
