@@ -1013,16 +1013,20 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
         }
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "result") {
-                if (get_expr->name.lexeme == "pass") {
-                    TypeInfo type = contextual_type.name.empty() ? get_type(expr) : contextual_type;
-                    if (expr.arguments.empty()) {
-                        return type.name + "::pass({})";
+                if (get_expr->name.lexeme == "pass" || get_expr->name.lexeme == "fail") {
+                    std::string type_name = "auto";
+                    if (!contextual_type.name.empty()) {
+                        type_name = contextual_type.name;
+                    } else if (current_function_return_type) {
+                        type_name = transpileType(*current_function_return_type);
+                    } else {
+                        type_name = get_type(expr).name;
                     }
-                    return type.name + "::pass(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-                }
-                if (get_expr->name.lexeme == "fail") {
-                    TypeInfo type = contextual_type.name.empty() ? get_type(expr) : contextual_type;
-                    return type.name + "::fail(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+
+                    if (expr.arguments.empty()) {
+                        return type_name + "::" + get_expr->name.lexeme + "({})";
+                    }
+                    return type_name + "::" + get_expr->name.lexeme + "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
                 }
                 if (get_expr->name.lexeme == "is_pass") {
                     result_static_check_used = true;
@@ -1552,6 +1556,9 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
 }
 
 std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
+    auto old_return_type = current_function_return_type;
+    current_function_return_type = stmt.return_type.get();
+
     if (!stmt.generic_params.empty()) {
         out << "template <";
         for (size_t i = 0; i < stmt.generic_params.size(); ++i) {
@@ -1584,6 +1591,7 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     transpile_function_body(stmt.body.get(), stmt.generic_constraints);
 
     exitScope();
+    current_function_return_type = old_return_type;
     return nullptr;
 }
 

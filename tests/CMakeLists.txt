@@ -24,6 +24,7 @@ add_executable(chtholly_tests
     TestCustomOperator.cpp
     TestHelpers.cpp
     TestExecution.cpp
+    TestResult.cpp
 )
 
 add_dependencies(chtholly_tests chtholly)

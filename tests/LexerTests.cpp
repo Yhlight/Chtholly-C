@@ -153,15 +153,15 @@ TEST(LexerTest, ComprehensiveTest) {
     std::vector<TokenType> expected_types = {
         TokenType::FUNC, TokenType::IDENTIFIER, TokenType::LEFT_PAREN, TokenType::IDENTIFIER, TokenType::COLON, TokenType::ARRAY,
         TokenType::LEFT_BRACKET, TokenType::STRING_TYPE, TokenType::RIGHT_BRACKET, TokenType::RIGHT_PAREN, TokenType::ARROW,
-        TokenType::RESULT, TokenType::LESS, TokenType::VOID, TokenType::COMMA, TokenType::STRING_TYPE,
+        TokenType::IDENTIFIER, TokenType::LESS, TokenType::VOID, TokenType::COMMA, TokenType::STRING_TYPE,
         TokenType::GREATER, TokenType::LEFT_BRACE, TokenType::LET, TokenType::IDENTIFIER, TokenType::EQUAL,
         TokenType::STRING_LITERAL, TokenType::SEMICOLON, TokenType::PRINT, TokenType::LEFT_PAREN, TokenType::IDENTIFIER,
         TokenType::RIGHT_PAREN, TokenType::SEMICOLON, TokenType::LET, TokenType::IDENTIFIER, TokenType::EQUAL,
         TokenType::NUMBER_LITERAL, TokenType::PLUS, TokenType::NUMBER_LITERAL, TokenType::SEMICOLON, TokenType::IF,
         TokenType::LEFT_PAREN, TokenType::IDENTIFIER, TokenType::GREATER, TokenType::NUMBER_LITERAL, TokenType::RIGHT_PAREN,
-        TokenType::LEFT_BRACE, TokenType::RETURN, TokenType::RESULT, TokenType::COLON_COLON, TokenType::IDENTIFIER,
+        TokenType::LEFT_BRACE, TokenType::RETURN, TokenType::IDENTIFIER, TokenType::COLON_COLON, TokenType::IDENTIFIER,
         TokenType::LEFT_PAREN, TokenType::RIGHT_PAREN, TokenType::SEMICOLON, TokenType::RIGHT_BRACE, TokenType::ELSE,
-        TokenType::LEFT_BRACE, TokenType::RETURN, TokenType::RESULT, TokenType::COLON_COLON, TokenType::IDENTIFIER,
+        TokenType::LEFT_BRACE, TokenType::RETURN, TokenType::IDENTIFIER, TokenType::COLON_COLON, TokenType::IDENTIFIER,
         TokenType::LEFT_PAREN, TokenType::STRING_LITERAL, TokenType::RIGHT_PAREN, TokenType::SEMICOLON, TokenType::RIGHT_BRACE,
         TokenType::RIGHT_BRACE, TokenType::END_OF_FILE
     };

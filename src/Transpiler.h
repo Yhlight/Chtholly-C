@@ -92,6 +92,7 @@ private:
     bool string_used = false;
     bool type_traits_used = false;
     TypeInfo contextual_type;
+    const TypeExpr* current_function_return_type = nullptr;
     std::set<std::string>* transpiled_files;
     bool owns_transpiled_files = false;
     bool is_main_file = false;

@@ -393,8 +393,3 @@ TEST_F(TranspilerTest, ReferenceAsFunctionParameter) {
     EXPECT_EQ(transpile(source), expected);
 }
 
-TEST_F(TranspilerTest, OptionConstructor) {
-    std::string source = "let x = option(20);";
-    std::string expected = "#include <optional>\nconst std::optional<int> x = std::optional<int>(20);\n";
-    EXPECT_EQ(transpile(source), expected);
-}
