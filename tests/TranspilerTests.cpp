@@ -356,3 +356,36 @@ TEST(TranspilerTest, EnforceExplicitSelf) {
     EXPECT_NE(transpiled_code.find(expected_field_error), std::string::npos);
     EXPECT_NE(transpiled_code.find(expected_method_error), std::string::npos);
 }
+
+TEST(TranspilerTest, BorrowImmutable) {
+    std::string source = R"(
+        let a = 10;
+        let b = &a;
+    )";
+    std::string expected = "const int a = 10;\nconst int& b = a;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, BorrowMutableAndModify) {
+    std::string source = R"(
+        mut a = 10;
+        mut b = &mut a;
+        *b = 20;
+    )";
+    std::string expected = "int a = 10;\nint& b = a;\n*b = 20;\n";
+    EXPECT_EQ(transpile(source), expected);
+}
+
+TEST(TranspilerTest, ReferenceAsFunctionParameter) {
+    std::string source = R"(
+        func increment(x: &mut int) {
+            *x = *x + 1;
+        }
+        func main() {
+            mut val = 10;
+            increment(&mut val);
+        }
+    )";
+    std::string expected = "void increment(int& x) {\n*x = *x + 1;\n}\nvoid main() {\nint val = 10;\nincrement(val);\n}\n";
+    EXPECT_EQ(transpile(source), expected);
+}

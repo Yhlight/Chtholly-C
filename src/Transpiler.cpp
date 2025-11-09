@@ -1034,7 +1034,11 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     std::stringstream out;
     out << std::any_cast<std::string>(expr.callee->accept(*this)) << "(";
     for (size_t i = 0; i < expr.arguments.size(); ++i) {
-        out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+        if (auto borrow_expr = dynamic_cast<const BorrowExpr*>(expr.arguments[i].get())) {
+            out << std::any_cast<std::string>(borrow_expr->expression->accept(*this));
+        } else {
+            out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+        }
         if (i < expr.arguments.size() - 1) {
             out << ", ";
         }
@@ -1182,7 +1186,16 @@ std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
     if (stmt.initializer) {
         TypeInfo old_context = contextual_type;
         contextual_type = type;
-        out << " = " << std::any_cast<std::string>(stmt.initializer->accept(*this));
+        out << " = ";
+        if (type.is_ref) {
+            if (auto borrow_expr = dynamic_cast<const BorrowExpr*>(stmt.initializer.get())) {
+                out << std::any_cast<std::string>(borrow_expr->expression->accept(*this));
+            } else {
+                out << std::any_cast<std::string>(stmt.initializer->accept(*this));
+            }
+        } else {
+            out << std::any_cast<std::string>(stmt.initializer->accept(*this));
+        }
         contextual_type = old_context;
     }
     out << ";\n";

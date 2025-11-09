@@ -650,6 +650,8 @@ struct Point impl operator::add  // +
                 return pow(self.x, other.x);  // 举个例子
         }
 }
+
+在实现操作符重载函数时，除了第一个 `self` 参数外，第二个参数（通常命名为 `other`）的类型非常灵活。它可以是值类型 (`T`)、不可变引用 (`&T`) 或可变引用 (`&mut T`)，只要能满足您的逻辑需求即可。这同样适用于 `binary` 函数的 `other` 参数。
 ```
 
 ## 类型转换
@@ -713,7 +715,7 @@ Chtholly支持静态反射，由模块`reflect`提供静态反射功能。
 
 #### 类型修饰
 - meta::is_let(T)  判断T是否为let类型  
-- meta.is_mut(T)  判断T是否为mut类型
+- meta::is_mut(T)  判断T是否为mut类型
 - meta::is_borrow(T) 判断T是否是借用，而不是移动  
 - meta::is_borrow_mut(T) 判断T是否为可变借用  
 - meta::is_move(T) 判断T是否为移动  
