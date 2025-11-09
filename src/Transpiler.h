@@ -65,6 +65,7 @@ private:
     std::any handleMetaFunction(const CallExpr& expr);
     std::any handleReflectFunction(const CallExpr& expr);
     std::any handleUtilFunction(const CallExpr& expr);
+    std::any handleMathFunction(const CallExpr& expr);
     void enterScope();
     void exitScope();
     void define(const std::string& name, const TypeInfo& type);

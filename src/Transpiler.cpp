@@ -325,6 +325,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"std::string"};
                 }
             }
+            if (var_expr->name.lexeme == "math") {
+                return TypeInfo{"double"};
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -417,6 +420,9 @@ std::string fs_read(const std::string& path) {
     return buffer.str();
 }
 )";
+    }
+    if (imported_modules.count("math")) {
+        final_code << "#include <cmath>\n";
     }
     if (vector_used) {
         final_code << "#include <vector>\n";
@@ -571,7 +577,14 @@ std::any Transpiler::visitLiteralExpr(const LiteralExpr& expr) {
         return "\"" + std::get<std::string>(expr.value) + "\"";
     }
     if (std::holds_alternative<double>(expr.value)) {
-        return std::to_string(std::get<double>(expr.value));
+        std::stringstream ss;
+        ss << std::fixed << std::get<double>(expr.value);
+        std::string s = ss.str();
+        s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+        if (s.back() == '.') {
+            s.push_back('0');
+        }
+        return s;
     }
     if (std::holds_alternative<long long>(expr.value)) {
         return std::to_string(std::get<long long>(expr.value));
@@ -854,6 +867,33 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown util function call */");
 }
 
+std::any Transpiler::handleMathFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    // Functions with one argument
+    if (function_name == "sqrt" || function_name == "sin" || function_name == "cos" ||
+        function_name == "tan" || function_name == "log" || function_name == "log10" ||
+        function_name == "abs") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: " + function_name + " requires one argument */";
+        }
+        return "std::" + function_name + "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+
+    // Functions with two arguments
+    if (function_name == "pow") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: pow requires two arguments */";
+        }
+        return "std::pow(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
+               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+
+    return "/* ERROR: Unknown math function call */";
+}
+
+
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         TypeInfo object_type = get_type(*get_expr->object);
@@ -898,6 +938,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "util") {
                 return handleUtilFunction(expr);
+            }
+            if (var_expr->name.lexeme == "math") {
+                return handleMathFunction(expr);
             }
         }
     }

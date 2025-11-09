@@ -20,6 +20,7 @@ add_executable(chtholly_tests
     TestGenerics.cpp
     TestArray.cpp
     TestEnum.cpp
+    TestMath.cpp
     TestHelpers.cpp
 )
 
