@@ -245,6 +245,16 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
             }
         }
+        if (binary_expr->op.type == TokenType::STAR_STAR) {
+            if (has_trait(left_type.name, "operator", "binary")) {
+                const StructStmt* s = structs[left_type.name];
+                for (const auto& method : s->methods) {
+                    if (method->name.lexeme == "binary") {
+                        return typeExprToTypeInfo(method->return_type.get());
+                    }
+                }
+            }
+        }
     }
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
         return typeExprToTypeInfo(type_cast_expr->type.get());
@@ -439,6 +449,9 @@ std::string fs_read(const std::string& path) {
     if (function_used) {
         final_code << "#include <functional>\n";
     }
+    if (string_used) {
+        final_code << "#include <string>\n";
+    }
     if (reflect_used) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
@@ -499,7 +512,8 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
     if (expr.op.type == TokenType::STAR_STAR) {
         TypeInfo left_type = get_type(*expr.left);
         if (has_trait(left_type.name, "operator", "binary")) {
-            return std::any_cast<std::string>(expr.left->accept(*this)) + ".binary(" + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
+            string_used = true;
+            return std::any_cast<std::string>(expr.left->accept(*this)) + ".binary(\"**\", " + std::any_cast<std::string>(expr.right->accept(*this)) + ")";
         }
         // C++ has no native ** operator, so if the trait is not implemented, it's an error.
         return "/* ERROR: operator '**' is not defined for type '" + left_type.name + "' */";

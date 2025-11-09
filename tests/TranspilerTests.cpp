@@ -320,17 +320,17 @@ TEST(TranspilerTest, CustomBinaryOperator) {
         import operator;
         struct MyNumber impl operator::binary {
             public: val: int;
-            public: func binary(other: MyNumber) -> MyNumber {
+            public: func binary(op: string, other: MyNumber) -> MyNumber {
                 return MyNumber{val: self.val + other.val};
             }
         }
         func main() {
             let a = MyNumber{val: 10};
             let b = MyNumber{val: 3};
-            let c = a ** b;
+            let c: MyNumber = a ** b;
         }
     )";
-    std::string expected_transpilation = "const auto c = a.binary(b);\n";
+    std::string expected_transpilation = "const MyNumber c = a.binary(\"**\", b);\n";
     std::string transpiled_code = transpile(source);
     // Check if the expected line exists in the transpiled code
     EXPECT_NE(transpiled_code.find(expected_transpilation), std::string::npos);

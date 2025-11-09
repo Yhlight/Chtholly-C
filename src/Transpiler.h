@@ -64,6 +64,7 @@ private:
     TypeInfo get_type(const Expr& expr);
     std::any handleMetaFunction(const CallExpr& expr);
     std::any handleReflectFunction(const CallExpr& expr);
+    std::any handleOperatorFunction(const CallExpr& expr);
     std::any handleUtilFunction(const CallExpr& expr);
     std::any handleMathFunction(const CallExpr& expr);
     void enterScope();
@@ -86,6 +87,7 @@ private:
     bool optional_used = false;
     bool result_used = false;
     bool function_used = false;
+    bool string_used = false;
     TypeInfo contextual_type;
     std::set<std::string>* transpiled_files;
     bool owns_transpiled_files = false;

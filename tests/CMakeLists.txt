@@ -21,6 +21,7 @@ add_executable(chtholly_tests
     TestArray.cpp
     TestEnum.cpp
     TestMath.cpp
+    TestCustomOperator.cpp
     TestHelpers.cpp
 )
 
