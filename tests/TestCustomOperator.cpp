@@ -10,7 +10,7 @@ TEST(TestCustomOperator, BinaryOperator) {
                 x: int;
                 y: int;
 
-                binary(op: string, other: Vector) -> int {
+                binary(&self, op: string, other: Vector) -> int {
                     if (op == "**") {
                         return self.x * other.x + self.y * other.y;
                     }

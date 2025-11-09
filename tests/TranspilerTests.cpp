@@ -320,7 +320,7 @@ TEST(TranspilerTest, CustomBinaryOperator) {
         import operator;
         struct MyNumber impl operator::binary {
             public: val: int;
-            public: func binary(op: string, other: MyNumber) -> MyNumber {
+            public: func binary(&self, op: string, other: MyNumber) -> MyNumber {
                 return MyNumber{val: self.val + other.val};
             }
         }

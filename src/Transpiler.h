@@ -64,7 +64,6 @@ private:
     TypeInfo get_type(const Expr& expr);
     std::any handleMetaFunction(const CallExpr& expr);
     std::any handleReflectFunction(const CallExpr& expr);
-    std::any handleOperatorFunction(const CallExpr& expr);
     std::any handleUtilFunction(const CallExpr& expr);
     std::any handleMathFunction(const CallExpr& expr);
     void enterScope();
