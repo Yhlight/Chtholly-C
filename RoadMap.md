@@ -27,7 +27,7 @@ This document outlines the development progress and future goals for the Chtholl
 
 ## Phase 4: Transpiler
 
-- [ ] Implement the Transpiler to convert the AST to C++ code.
+- [x] Implement the Transpiler to convert the AST to C++ code.
   - [x] Expression and basic statement transpilation
 - [x] Implement visitors for all AST node types.
 - [x] Add support for all language features, including generics, traits, and modules.
@@ -39,12 +39,12 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Generic functions
   - [x] Generic structs
 
-- [ ] Implement the standard library (`iostream`, `filesystem`, etc.).
+- [x] Implement the standard library (`iostream`, `filesystem`, etc.).
   - [x] Basic module import system
   - [x] `iostream` module with `print` function
   - [x] `iostream` module with `input` function
   - [x] `filesystem` module with `fs_read` and `fs_write`
-- [ ] Implement static reflection and metaprogramming features.
+- [x] Implement static reflection and metaprogramming features.
   - [x] Symbol table and basic type analysis engine
   - [x] `meta` module with `is_int`
   - [x] `meta` module with `is_uint`
