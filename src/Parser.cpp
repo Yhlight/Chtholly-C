@@ -9,7 +9,14 @@ Parser::Parser(std::vector<Token> tokens) : tokens(std::move(tokens)) {}
 std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     std::vector<std::unique_ptr<Stmt>> statements;
     while (!isAtEnd()) {
-        statements.push_back(declaration());
+        try {
+            auto stmt = declaration();
+            if (stmt) {
+                statements.push_back(std::move(stmt));
+            }
+        } catch (ParseError& error) {
+            synchronize();
+        }
     }
     return statements;
 }
@@ -376,7 +383,7 @@ std::unique_ptr<TypeExpr> Parser::type() {
         }
         return std::make_unique<FunctionTypeExpr>(std::move(param_types), std::move(return_type));
     }
-    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION)) {
+    if (match(TokenType::IDENTIFIER, TokenType::INT, TokenType::UINT, TokenType::STRING_TYPE, TokenType::BOOL, TokenType::VOID, TokenType::DOUBLE, TokenType::CHAR_TYPE, TokenType::REFLECT, TokenType::OPTION, TokenType::RESULT)) {
         Token base_type = previous();
         if (match(TokenType::LESS)) {
             std::vector<std::unique_ptr<TypeExpr>> generic_args;

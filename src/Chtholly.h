@@ -6,11 +6,11 @@
 namespace chtholly {
     class Chtholly {
     public:
-        void runFile(const std::string &path);
+        int runFile(const std::string &path);
         void runPrompt();
 
     private:
-        void run(const std::string &source);
+        int run(const std::string &source);
     };
 }
 

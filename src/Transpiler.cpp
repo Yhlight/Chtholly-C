@@ -148,14 +148,14 @@ public:
     std::map<std::string, const EnumStmt*> enums;
 };
 
-Transpiler::Transpiler() {
+Transpiler::Transpiler(bool is_main_file) : is_main_file(is_main_file) {
     enterScope(); // Global scope
     transpiled_files = new std::set<std::string>();
     owns_transpiled_files = true;
 }
 
-Transpiler::Transpiler(std::set<std::string>* transpiled_files)
-    : transpiled_files(transpiled_files), owns_transpiled_files(false) {
+Transpiler::Transpiler(std::set<std::string>* transpiled_files, bool is_main_file)
+    : transpiled_files(transpiled_files), owns_transpiled_files(false), is_main_file(is_main_file) {
     enterScope(); // Global scope
 }
 
@@ -1002,6 +1002,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             if (var_expr->name.lexeme == "result") {
                 if (get_expr->name.lexeme == "pass") {
                     TypeInfo type = contextual_type.name.empty() ? get_type(expr) : contextual_type;
+                    if (expr.arguments.empty()) {
+                        return type.name + "::pass({})";
+                    }
                     return type.name + "::pass(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
                 }
                 if (get_expr->name.lexeme == "fail") {
@@ -1525,7 +1528,11 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
         out << ">\n";
     }
 
-    out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << stmt.name.lexeme << "(";
+    std::string function_name = stmt.name.lexeme;
+    if (is_main_file && function_name == "main") {
+        function_name = "chtholly_main";
+    }
+    out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << function_name << "(";
 
     enterScope();
     bool first_param = true;

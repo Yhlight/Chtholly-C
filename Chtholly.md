@@ -107,8 +107,8 @@ let a : option<int> = none;
 print(a.unwarp());  // 如果a为none，程序终止
 a.unwarp_or(20);  // 如果a为none，则使用20替代这个值
 
-let b = option(20);  // 创建option对象
-let c = option<int>(20);  // option本质是一个泛型结构体，由于自动推断的存在，因此可以省略泛型
+let b = option{ value: 20 };  // 创建option对象
+let c = option<int>{ value: 20 };  // option本质是一个泛型结构体，由于自动推断的存在，因此可以省略泛型
 let d = option<int>{
     value: 20
 };

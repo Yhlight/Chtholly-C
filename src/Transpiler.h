@@ -15,8 +15,8 @@ namespace chtholly {
 
 class Transpiler : public ExprVisitor, public StmtVisitor {
 public:
-    Transpiler();
-    Transpiler(std::set<std::string>* transpiled_files);
+    Transpiler(bool is_main_file = false);
+    Transpiler(std::set<std::string>* transpiled_files, bool is_main_file = false);
     ~Transpiler();
     std::string transpile(const std::vector<std::unique_ptr<Stmt>>& statements);
 
@@ -94,6 +94,7 @@ private:
     TypeInfo contextual_type;
     std::set<std::string>* transpiled_files;
     bool owns_transpiled_files = false;
+    bool is_main_file = false;
 };
 
 } // namespace chtholly

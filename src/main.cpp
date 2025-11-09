@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: chtholly [script]" << std::endl;
         return 64;
     } else if (argc == 2) {
-        chtholly.runFile(argv[1]);
+        return chtholly.runFile(argv[1]);
     } else {
         chtholly.runPrompt();
     }

@@ -23,7 +23,10 @@ add_executable(chtholly_tests
     TestMath.cpp
     TestCustomOperator.cpp
     TestHelpers.cpp
+    TestExecution.cpp
 )
+
+add_dependencies(chtholly_tests chtholly)
 
 target_link_libraries(chtholly_tests PRIVATE chtholly_lib GTest::gtest_main)
 
