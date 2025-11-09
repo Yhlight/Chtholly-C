@@ -447,32 +447,32 @@ Chtholly使用`?`符号来为泛型参数指定约束。
 
 ```Chtholly
 // 假设 Comparable 特性已定义，它要求实现一个 gt(大于) 方法
-trait Comparable
+trait Comparable<T>
 {
     // 也支持泛型函数
-    func gt(&self, other: &self) -> bool;
+    func gt(&self, other: &T) -> bool;
 }
 
 // 定义一个泛型结构体 value，并实现 Comparable 约束
-struct value<T> impl Comparable
+struct value<T> impl Comparable<value<T>>
 {
     value: T;
 
     public:
-        func gt(&self, other: &self) -> bool
+        func gt(&self, other: &value<T>) -> bool
         {
             return self.value > other.value;
         }
 }
 
 // 泛型特例化操作以及实现多个约束
-struct value<int> impl Comparable, OtherTrait
+struct value<int> impl Comparable<value<int>>, OtherTrait
 {
     value: int;
 
     // 针对int类型的value进行具体化规则
     public:
-        func gt(&self, other: &self) -> bool
+        func gt(&self, other: &value<int>) -> bool
         {
             return self.value > other.value;
         }
@@ -513,7 +513,7 @@ struct Point<T>
 {
     impl Comparable
     public:
-        gt(&self, other: &self) -> bool
+        gt(&self, other: &Point<T>) -> bool
         {
 
         }
@@ -713,7 +713,7 @@ Chtholly支持静态反射，由模块`reflect`提供静态反射功能。
 
 #### 类型修饰
 - meta::is_let(T)  判断T是否为let类型  
-- meta::is_mut(T)  判断T是否为mut类型  
+- meta.is_mut(T)  判断T是否为mut类型
 - meta::is_borrow(T) 判断T是否是借用，而不是移动  
 - meta::is_borrow_mut(T) 判断T是否为可变借用  
 - meta::is_move(T) 判断T是否为移动  
