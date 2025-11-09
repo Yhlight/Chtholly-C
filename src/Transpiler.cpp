@@ -311,16 +311,28 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "unwarp_err") {
                     return TypeInfo{"auto"};
                 }
+                if (get_expr->name.lexeme == "is_pass" || get_expr->name.lexeme == "is_fail") {
+                    return TypeInfo{"bool"};
+                }
             }
              if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
                 if (var_expr->name.lexeme == "result") {
                     if (get_expr->name.lexeme == "pass") {
+                        if (!contextual_type.name.empty()) {
+                            return contextual_type;
+                        }
                         TypeInfo type_arg = get_type(*call_expr->arguments[0]);
                         return TypeInfo{"result<" + type_arg.name + ", auto>"};
                     }
                     if (get_expr->name.lexeme == "fail") {
+                        if (!contextual_type.name.empty()) {
+                            return contextual_type;
+                        }
                         TypeInfo type_arg = get_type(*call_expr->arguments[0]);
                         return TypeInfo{"result<auto, " + type_arg.name + ">"};
+                    }
+                    if (get_expr->name.lexeme == "is_pass" || get_expr->name.lexeme == "is_fail") {
+                        return TypeInfo{"bool"};
                     }
                 }
                 if (var_expr->name.lexeme == "meta") {
@@ -1343,7 +1355,10 @@ std::any Transpiler::visitForStmt(const ForStmt& stmt) {
 std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
     out << "return";
     if (stmt.value) {
+        TypeInfo old_context = contextual_type;
+        contextual_type = current_function_return_type;
         out << " " << std::any_cast<std::string>(stmt.value->accept(*this));
+        contextual_type = old_context;
     }
     out << ";\n";
     return nullptr;
@@ -1581,8 +1596,13 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
         out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
     }
     out << ") ";
+
+    TypeInfo old_return_type = current_function_return_type;
+    current_function_return_type = typeExprToTypeInfo(stmt.return_type.get());
+
     transpile_function_body(stmt.body.get(), stmt.generic_constraints);
 
+    current_function_return_type = old_return_type;
     exitScope();
     return nullptr;
 }
