@@ -301,6 +301,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "get_fields") {
                     return TypeInfo{"std::vector<chtholly_field>"};
                 }
+                if (get_expr->name.lexeme == "get_field") {
+                    return TypeInfo{"chtholly_field"};
+                }
                 if (get_expr->name.lexeme == "get_methods") {
                     return TypeInfo{"std::vector<chtholly_method>"};
                 }
@@ -682,6 +685,28 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             return ss.str();
         } else {
             return std::string("std::vector<chtholly_field>{}");
+        }
+    }
+    if (function_name == "get_field") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            if (expr.arguments.size() < 2) {
+                return std::string("/* ERROR: get_field requires two arguments */");
+            }
+            auto field_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+            if (!field_name_expr || !std::holds_alternative<std::string>(field_name_expr->value)) {
+                return std::string("/* ERROR: get_field second argument must be a string literal */");
+            }
+            std::string field_name = std::get<std::string>(field_name_expr->value);
+            for (const auto& field : s->fields) {
+                if (field->name.lexeme == field_name) {
+                    return "{\"" + field->name.lexeme + "\", \"" + transpileType(*field->type) + "\"}";
+                }
+            }
+            return std::string("/* ERROR: field not found */");
+        } else {
+            return std::string("/* ERROR: get_field called on non-struct type */");
         }
     }
     if (function_name == "get_methods") {
