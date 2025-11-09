@@ -126,9 +126,6 @@ public:
         expr.expression->accept(*this);
         return nullptr;
     }
-#include <variant>
-
-// ... (other includes)
 
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override {
         std::visit([&](auto&& arg) {
@@ -293,6 +290,17 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 return TypeInfo{"std::string"};
             }
         }
+    }
+    if (auto get_expr = dynamic_cast<const GetExpr*>(&expr)) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+            if (var_expr->name.lexeme == "math") {
+                if (get_expr->name.lexeme == "PI" || get_expr->name.lexeme == "E") {
+                    return TypeInfo{"double"};
+                }
+            }
+        }
+    }
+    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto get_expr = dynamic_cast<const GetExpr*>(call_expr->callee.get())) {
             TypeInfo object_type = get_type(*get_expr->object);
             if (object_type.name.rfind("std::optional", 0) == 0) {
@@ -997,7 +1005,8 @@ std::any Transpiler::handleMathFunction(const CallExpr& expr) {
     // Functions with one argument
     if (function_name == "sqrt" || function_name == "sin" || function_name == "cos" ||
         function_name == "tan" || function_name == "log" || function_name == "log10" ||
-        function_name == "abs") {
+        function_name == "abs" || function_name == "ceil" || function_name == "floor" ||
+        function_name == "round") {
         if (expr.arguments.size() != 1) {
             return "/* ERROR: " + function_name + " requires one argument */";
         }
@@ -1258,6 +1267,17 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
     return ss.str();
 }
 std::any Transpiler::visitGetExpr(const GetExpr& expr) {
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        if (var_expr->name.lexeme == "math") {
+            if (expr.name.lexeme == "PI") {
+                return std::string("M_PI");
+            }
+            if (expr.name.lexeme == "E") {
+                return std::string("M_E");
+            }
+        }
+    }
+
     std::string separator = ".";
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
         if (enums.count(var_expr->name.lexeme)) {

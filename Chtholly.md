@@ -613,6 +613,32 @@ print(content);
 fs_write("my_file.txt", "Hello, Chtholly!");
 ```
 
+### Math Module
+Chtholly 的标准库 `math` 模块提供了常用的数学函数和常数。要使用这些功能，您必须首先导入 `math` 模块。
+
+```Chtholly
+import math;
+```
+
+#### 函数
+
+- **`math::sqrt(x: double) -> double`**: 返回 `x` 的平方根。
+- **`math::pow(base: double, exp: double) -> double`**: 返回 `base` 的 `exp` 次幂。
+- **`math::sin(x: double) -> double`**: 返回 `x` 的正弦值。
+- **`math::cos(x: double) -> double`**: 返回 `x` 的余弦值。
+- **`math::tan(x: double) -> double`**: 返回 `x` 的正切值。
+- **`math::log(x: double) -> double`**: 返回 `x` 的自然对数。
+- **`math::log10(x: double) -> double`**: 返回 `x` 的以10为底的对数。
+- **`math::abs(x: double) -> double`**: 返回 `x` 的绝对值。
+- **`math::ceil(x: double) -> double`**: 返回不小于 `x` 的最小整数值。
+- **`math::floor(x: double) -> double`**: 返回不大于 `x` 的最大整数值。
+- **`math::round(x: double) -> double`**: 返回与 `x` 最接近的整数值。
+
+#### 常数
+
+- **`math::PI`**: 圆周率 π (约 3.14159)。
+- **`math::E`**: 自然对数的底 e (约 2.71828)。
+
 ### String Module
 Chtholly 的标准库 `string` 模块提供了一系列用于操作字符串的函数。要使用这些函数，您必须首先导入 `string` 模块。
 

@@ -44,7 +44,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `iostream` module with `print` function
   - [x] `iostream` module with `input` function
   - [x] `filesystem` module with `fs_read` and `fs_write`
-  - [x] `math` module with basic math functions
+  - [x] `math` module with functions and constants
   - [x] `string` module with `length`, `substr`, and `find`
   - [x] `array` module with `length`, `push`, and `pop`
 - [x] Implement static reflection and metaprogramming features.
