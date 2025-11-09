@@ -13,6 +13,22 @@ TEST(MetaTest, IsInt) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(MetaTest, TypeName) {
+    std::string source = R"(
+        struct MyStruct {}
+        let a: int = 10;
+        let b: string = "hello";
+        let c: MyStruct = MyStruct{};
+
+        let name_a = meta::type_name(a);
+        let name_b = meta::type_name(b);
+        let name_c = meta::type_name(c);
+    )";
+    std::string expected = "const std::string name_a = \"int\";\nconst std::string name_b = \"string\";\nconst std::string name_c = \"MyStruct\";";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(MetaTest, IsLetAndIsMut) {
     std::string source = R"(
         let x: int = 10;

@@ -690,7 +690,8 @@ Chtholly支持静态反射，由模块`reflect`提供静态反射功能。
 - meta::is_bool(T) 判断T是否为bool类型  
 - meta::is_string(T) 判断T是否为string类型  
 - meta::is_array(T) 判断T是否为array类型  
-- meta::is_struct(T) 判断T是否为struct类型  
+- meta::is_struct(T) 判断T是否为struct类型
+- meta::type_name(T) 返回T类型的名称字符串
 
 #### 类型修饰
 - meta::is_let(T)  判断T是否为let类型  

@@ -292,6 +292,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     }
                 }
                 if (var_expr->name.lexeme == "meta") {
+                    if (get_expr->name.lexeme == "type_name") {
+                        return TypeInfo{"std::string"};
+                    }
                     return TypeInfo{"bool"};
                 }
             if (var_expr->name.lexeme == "reflect") {
@@ -655,6 +658,13 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
     }
     if (function_name == "is_move") {
         return std::string(!arg_type.is_ref ? "true" : "false");
+    }
+    if (function_name == "type_name") {
+        std::string typeName = arg_type.name;
+        if (typeName == "std::string") {
+            typeName = "string";
+        }
+        return "\"" + typeName + "\"";
     }
 
     return std::string("/* ERROR: Unknown meta function call */");

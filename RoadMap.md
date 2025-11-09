@@ -60,6 +60,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `meta` module with `is_borrow`
   - [x] `meta` module with `is_borrow_mut`
   - [x] `meta` module with `is_move`
+  - [x] `meta` module with `type_name`
   - [x] `reflect` module with `get_field_count`
   - [x] `reflect` module with `get_fields`
   - [x] `reflect` module with `get_field`
