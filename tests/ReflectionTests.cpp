@@ -8,7 +8,7 @@ TEST(ReflectionTest, GetFieldCount) {
             y: int;
         }
         let p: Point = Point{x: 1, y: 2};
-        let count = reflect::get_field_count(p);
+        let count = reflect.get_field_count(p);
     )";
     std::string expected = "const int count = 2;";
     std::string transpiled = compile(source);
@@ -25,9 +25,9 @@ TEST(ReflectionTest, GetTrait) {
             y: int;
         }
         let p: Point = Point{x: 1, y: 2};
-        let my_trait = reflect::get_trait(p, "MyTrait");
+        let my_trait = reflect.get_trait(p, "MyTrait");
     )";
-    std::string expected = "const chtholly_trait my_trait = {\"MyTrait\"};";
+    std::string expected = "const Trait my_trait = {\"MyTrait\"};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
@@ -41,9 +41,9 @@ TEST(ReflectionTest, GetMethod) {
             func move(dx: int, dy: string) -> void {}
         }
         let p: Point = Point{x: 1, y: 2};
-        let method = reflect::get_method(p, "move");
+        let method = reflect.get_method(p, "move");
     )";
-    std::string expected = "const chtholly_method method = {\"move\", \"void\", {{\"dx\", \"int\"}, {\"dy\", \"std::string\"}}};";
+    std::string expected = "const Method method = {\"move\", \"void\", {{\"dx\", \"int\"}, {\"dy\", \"std::string\"}}};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
@@ -56,9 +56,9 @@ TEST(ReflectionTest, GetField) {
             y: string;
         }
         let p: Point = Point{x: 1, y: "hello"};
-        let field = reflect::get_field(p, "x");
+        let field = reflect.get_field(p, "x");
     )";
-    std::string expected = "const chtholly_field field = {\"x\", \"int\"};";
+    std::string expected = "const Field field = {\"x\", \"int\"};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
@@ -72,7 +72,7 @@ TEST(ReflectionTest, GetTraitCount) {
             y: int;
         }
         let p: Point = Point{x: 1, y: 2};
-        let count = reflect::get_trait_count(p);
+        let count = reflect.get_trait_count(p);
     )";
     std::string expected = "const int count = 2;";
     std::string transpiled = compile(source);
@@ -89,9 +89,9 @@ TEST(ReflectionTest, GetTraits) {
             y: int;
         }
         let p: Point = Point{x: 1, y: 2};
-        let traits = reflect::get_traits(p);
+        let traits = reflect.get_traits(p);
     )";
-    std::string expected = "const std::vector<chtholly_trait> traits = std::vector<chtholly_trait>{{\"operator::add\"}, {\"MyTrait\"}};";
+    std::string expected = "const std::vector<Trait> traits = std::vector<Trait>{{\"operator::add\"}, {\"MyTrait\"}};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
@@ -104,7 +104,7 @@ TEST(ReflectionTest, GetMethodCount) {
             func move(dx: int, dy: int) -> void {}
         }
         let p: Point = Point{x: 1, y: 2};
-        let count = reflect::get_method_count(p);
+        let count = reflect.get_method_count(p);
     )";
     std::string expected = "const int count = 1;";
     std::string transpiled = compile(source);
@@ -120,9 +120,9 @@ TEST(ReflectionTest, GetMethods) {
             func move(dx: int, dy: string) -> void {}
         }
         let p: Point = Point{x: 1, y: 2};
-        let methods = reflect::get_methods(p);
+        let methods = reflect.get_methods(p);
     )";
-    std::string expected = "const std::vector<chtholly_method> methods = std::vector<chtholly_method>{{\"move\", \"void\", {{\"dx\", \"int\"}, {\"dy\", \"std::string\"}}}};";
+    std::string expected = "const std::vector<Method> methods = std::vector<Method>{{\"move\", \"void\", {{\"dx\", \"int\"}, {\"dy\", \"std::string\"}}}};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
@@ -135,9 +135,9 @@ TEST(ReflectionTest, GetFields) {
             y: string;
         }
         let p: Point = Point{x: 1, y: "hello"};
-        let fields = reflect::get_fields(p);
+        let fields = reflect.get_fields(p);
     )";
-    std::string expected = "const std::vector<chtholly_field> fields = std::vector<chtholly_field>{{\"x\", \"int\"}, {\"y\", \"std::string\"}};";
+    std::string expected = "const std::vector<Field> fields = std::vector<Field>{{\"x\", \"int\"}, {\"y\", \"std::string\"}};";
     std::string transpiled = compile(source);
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }

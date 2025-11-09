@@ -643,50 +643,38 @@ let a: int8 = type_cast<int8>(10.5);
 ```
 
 ### 静态反射
-Chtholly支持静态反射，由模块reflect提供静态反射  
+Chtholly支持静态反射，由模块`reflect`提供静态反射功能。
 
-#### field
-你可以通过reflect::field类获取结构体的字段  
+`reflect`模块提供了一系列函数，用于在编译期获取类型信息。它还定义了几个结构体，`Field`，`Method`和`Trait`，用于封装反射数据。
 
-##### 常用方法
-- get_name() 获取字段名  
-- get_type() 获取字段类型  
-- get_value() 获取字段值  
-- set_value() 设置字段值  
-- get_fields() 获取结构体的所有字段  
-- get_field() 获取结构体的指定字段  
-- get_field_value() 获取结构体的指定字段的值  
-- set_field_value() 设置结构体的指定字段的值  
-- get_field_type() 获取结构体的指定字段的类型  
-- get_field_index() 获取结构体的指定字段的索引  
-- get_field_by_index() 获取结构体的指定索引的字段  
-- get_field_count() 获取结构体的字段数量  
-...更多方法待补充  
+#### 函数
+- `reflect.get_field_count(T)`: 获取结构体 `T` 的字段数量。
+- `reflect.get_fields(T)`: 获取一个包含 `Field` 结构体的数组，每个结构体代表 `T` 的一个字段。
+- `reflect.get_field(T, "field_name")`: 获取一个代表 `T` 特定字段的 `Field` 结构体。
+- `reflect.get_method_count(T)`: 获取结构体 `T` 的方法数量。
+- `reflect.get_methods(T)`: 获取一个包含 `Method` 结构体的数组，每个结构体代表 `T` 的一个方法。
+- `reflect.get_method(T, "method_name")`: 获取一个代表 `T` 特定方法的 `Method` 结构体。
+- `reflect.get_trait_count(T)`: 获取结构体 `T` 实现的特性数量。
+- `reflect.get_traits(T)`: 获取一个包含 `Trait` 结构体的数组，每个结构体代表 `T` 实现的一个特性。
+- `reflect.get_trait(T, "trait_name")`: 获取一个代表 `T` 特定实现的 `Trait` 结构体。
 
-#### method
-你可以通过reflect::method类获取结构体的方法  
+#### 结构体
 
-##### 常用方法
-- get_name() 获取方法名  
-- get_return_type() 获取方法返回值类型  
-- get_parameters() 获取方法参数  
-- get_parameter_count() 获取方法参数数量  
-- get_methods() 获取结构体的所有方法  
-- get_method() 获取结构体的指定方法  
-...更多方法待补充  
+##### `Field`
+- `name`: 字段名 (string)
+- `type`: 字段类型名 (string)
 
-#### tarit
-你可以通过reflect::trait类获取结构体的特性  
+##### `Method`
+- `name`: 方法名 (string)
+- `return_type`: 返回类型名 (string)
+- `parameters`: 一个包含 `Parameter` 结构体的数组
 
-##### 常用方法
-- get_name() 获取特性名  
-- get_traits() 获取结构体的所有特性
-- get_trait() 获取结构体的指定特性
-- get_trait_count() 获取结构体的特性数量
-- get_return_type() 获取特征返回值类型  
-- get_parameters() 获取特征参数  
-- get_parameter_count() 获取特征参数数量  
-...更多方法待补充  
+##### `Parameter`
+- `name`: 参数名 (string)
+- `type`: 参数类型名 (string)
+
+##### `Trait`
+- `name`: 特性名 (string)
 
 ### 元编程
 元编程由meta模块提供  

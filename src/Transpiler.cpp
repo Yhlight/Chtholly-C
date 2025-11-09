@@ -295,29 +295,26 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"bool"};
                 }
             if (var_expr->name.lexeme == "reflect") {
-                if (get_expr->name.lexeme == "get_field_count" || get_expr->name.lexeme == "get_method_count") {
+                if (get_expr->name.lexeme == "get_field_count" || get_expr->name.lexeme == "get_method_count" || get_expr->name.lexeme == "get_trait_count") {
                     return TypeInfo{"int"};
                 }
                 if (get_expr->name.lexeme == "get_fields") {
-                    return TypeInfo{"std::vector<chtholly_field>"};
+                    return TypeInfo{"std::vector<Field>"};
                 }
                 if (get_expr->name.lexeme == "get_field") {
-                    return TypeInfo{"chtholly_field"};
+                    return TypeInfo{"Field"};
                 }
                 if (get_expr->name.lexeme == "get_methods") {
-                    return TypeInfo{"std::vector<chtholly_method>"};
+                    return TypeInfo{"std::vector<Method>"};
                 }
                 if (get_expr->name.lexeme == "get_method") {
-                    return TypeInfo{"chtholly_method"};
-                }
-                if (get_expr->name.lexeme == "get_trait_count") {
-                    return TypeInfo{"int"};
+                    return TypeInfo{"Method"};
                 }
                 if (get_expr->name.lexeme == "get_traits") {
-                    return TypeInfo{"std::vector<chtholly_trait>"};
+                    return TypeInfo{"std::vector<Trait>"};
                 }
                 if (get_expr->name.lexeme == "get_trait") {
-                    return TypeInfo{"chtholly_trait"};
+                    return TypeInfo{"Trait"};
                 }
             }
             if (var_expr->name.lexeme == "util") {
@@ -443,23 +440,23 @@ std::string fs_read(const std::string& path) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
         final_code << R"(
-struct chtholly_field {
+struct Field {
     std::string name;
     std::string type;
 };
 
-struct chtholly_parameter {
+struct Parameter {
     std::string name;
     std::string type;
 };
 
-struct chtholly_method {
+struct Method {
     std::string name;
     std::string return_type;
-    std::vector<chtholly_parameter> parameters;
+    std::vector<Parameter> parameters;
 };
 
-struct chtholly_trait {
+struct Trait {
     std::string name;
 };
 )";
@@ -693,7 +690,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
         if (structs.count(arg_type.name)) {
             const StructStmt* s = structs[arg_type.name];
             std::stringstream ss;
-            ss << "std::vector<chtholly_field>{";
+            ss << "std::vector<Field>{";
             for (size_t i = 0; i < s->fields.size(); ++i) {
                 ss << "{\"" << s->fields[i]->name.lexeme << "\", \"" << transpileType(*s->fields[i]->type) << "\"}";
                 if (i < s->fields.size() - 1) {
@@ -703,7 +700,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             ss << "}";
             return ss.str();
         } else {
-            return std::string("std::vector<chtholly_field>{}");
+            return std::string("std::vector<Field>{}");
         }
     }
     if (function_name == "get_field") {
@@ -733,7 +730,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
         if (structs.count(arg_type.name)) {
             const StructStmt* s = structs[arg_type.name];
             std::stringstream ss;
-            ss << "std::vector<chtholly_method>{";
+            ss << "std::vector<Method>{";
             for (size_t i = 0; i < s->methods.size(); ++i) {
                 ss << "{\"" << s->methods[i]->name.lexeme << "\", \"" << (s->methods[i]->return_type ? transpileType(*s->methods[i]->return_type) : "void") << "\", {";
                 for (size_t j = 0; j < s->methods[i]->params.size(); ++j) {
@@ -750,7 +747,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             ss << "}";
             return ss.str();
         } else {
-            return std::string("std::vector<chtholly_method>{}");
+            return std::string("std::vector<Method>{}");
         }
     }
     if (function_name == "get_method") {
@@ -797,7 +794,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
         if (structs.count(arg_type.name)) {
             const StructStmt* s = structs[arg_type.name];
             std::stringstream ss;
-            ss << "std::vector<chtholly_trait>{";
+            ss << "std::vector<Trait>{";
             for (size_t i = 0; i < s->traits.size(); ++i) {
                 // This is a simplification. We'd need a way to pretty-print the trait expression.
                 if (auto var_expr = dynamic_cast<const VariableExpr*>(s->traits[i].get())) {
@@ -812,7 +809,7 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             ss << "}";
             return ss.str();
         } else {
-            return std::string("std::vector<chtholly_trait>{}");
+            return std::string("std::vector<Trait>{}");
         }
     }
     if (function_name == "get_trait") {
