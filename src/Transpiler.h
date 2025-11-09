@@ -2,7 +2,7 @@
 #define CHTHOLLY_TRANSPILER_H
 
 #include "AST.h"
-#include "Result.h"
+#include "result.h"
 #include <functional>
 #include <string>
 #include <vector>
@@ -77,6 +77,7 @@ private:
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const EnumStmt*> enums;
     std::map<std::string, const TraitStmt*> traits;
+    const StructStmt* current_struct = nullptr;
     bool is_in_switch = false;
     bool is_in_method = false;
     bool input_used = false;

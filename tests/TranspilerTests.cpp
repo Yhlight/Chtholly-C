@@ -127,8 +127,8 @@ TEST(TranspilerTest, StructDeclaration) {
 }
 
 TEST(TranspilerTest, StructWithMethod) {
-    std::string source = "struct Point { public: x: int; public: func move(dx: int) -> void { x = x + dx; } }";
-    std::string expected = "struct Point {\npublic:\nint x;\nvoid move(int dx) {\nx = x + dx;\n}\n};\n";
+    std::string source = "struct Point { public: x: int; public: func move(dx: int) -> void { self.x = self.x + dx; } }";
+    std::string expected = "struct Point {\npublic:\nint x;\nvoid move(int dx) {\nthis->x = this->x + dx;\n}\n};\n";
     EXPECT_EQ(transpile(source), expected);
 }
 
@@ -334,4 +334,25 @@ TEST(TranspilerTest, CustomBinaryOperator) {
     std::string transpiled_code = transpile(source);
     // Check if the expected line exists in the transpiled code
     EXPECT_NE(transpiled_code.find(expected_transpilation), std::string::npos);
+}
+
+TEST(TranspilerTest, EnforceExplicitSelf) {
+    std::string source = R"(
+        struct Test {
+            public:
+                x: int;
+                func bar() {}
+                func foo() {
+                    x = 1;
+                    bar();
+                }
+        }
+    )";
+    std::string expected_field_error = "/* ERROR: Member 'x' cannot be accessed without 'self.'. */";
+    std::string expected_method_error = "/* ERROR: Method 'bar' cannot be called without 'self.'. */";
+
+    std::string transpiled_code = transpile(source);
+
+    EXPECT_NE(transpiled_code.find(expected_field_error), std::string::npos);
+    EXPECT_NE(transpiled_code.find(expected_method_error), std::string::npos);
 }

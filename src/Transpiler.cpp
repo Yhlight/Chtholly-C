@@ -8,6 +8,7 @@
 #include <filesystem>
 #include "Lexer.h"
 #include "Parser.h"
+#include "result.h"
 
 namespace chtholly {
 
@@ -282,7 +283,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return get_type(*call_expr->arguments[0]);
                 }
             }
-            if (object_type.name.rfind("Result", 0) == 0) {
+            if (object_type.name.rfind("result", 0) == 0) {
                 if (get_expr->name.lexeme == "unwarp") {
                     return TypeInfo{"auto"};
                 }
@@ -294,11 +295,11 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (var_expr->name.lexeme == "result") {
                     if (get_expr->name.lexeme == "pass") {
                         TypeInfo type_arg = get_type(*call_expr->arguments[0]);
-                        return TypeInfo{"Result<" + type_arg.name + ", auto>"};
+                        return TypeInfo{"result<" + type_arg.name + ", auto>"};
                     }
                     if (get_expr->name.lexeme == "fail") {
                         TypeInfo type_arg = get_type(*call_expr->arguments[0]);
-                        return TypeInfo{"Result<auto, " + type_arg.name + ">"};
+                        return TypeInfo{"result<auto, " + type_arg.name + ">"};
                     }
                 }
                 if (var_expr->name.lexeme == "meta") {
@@ -444,7 +445,7 @@ std::string fs_read(const std::string& path) {
         final_code << "#include <optional>\n";
     }
     if (result_used) {
-        final_code << "#include \"Result.h\"\n";
+        final_code << "#include \"result.h\"\n";
     }
     if (function_used) {
         final_code << "#include <functional>\n";
@@ -617,10 +618,24 @@ std::any Transpiler::visitGroupingExpr(const GroupingExpr& expr) {
 }
 
 std::any Transpiler::visitVariableExpr(const VariableExpr& expr) {
+    if (is_in_method && current_struct) {
+        for (const auto& field : current_struct->fields) {
+            if (field->name.lexeme == expr.name.lexeme) {
+                return "/* ERROR: Member '" + expr.name.lexeme + "' cannot be accessed without 'self.'. */";
+            }
+        }
+    }
     return expr.name.lexeme;
 }
 
 std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
+    if (is_in_method && current_struct) {
+        for (const auto& field : current_struct->fields) {
+            if (field->name.lexeme == expr.name.lexeme) {
+                return "/* ERROR: Member '" + expr.name.lexeme + "' cannot be accessed without 'self.'. */";
+            }
+        }
+    }
     return expr.name.lexeme + " = " + std::any_cast<std::string>(expr.value->accept(*this));
 }
 
@@ -916,6 +931,15 @@ std::any Transpiler::handleMathFunction(const CallExpr& expr) {
 
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
+    if (is_in_method && current_struct) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+            for (const auto& method : current_struct->methods) {
+                if (method->name.lexeme == var_expr->name.lexeme) {
+                    return "/* ERROR: Method '" + var_expr->name.lexeme + "' cannot be called without 'self.'. */";
+                }
+            }
+        }
+    }
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         TypeInfo object_type = get_type(*get_expr->object);
         if (object_type.name.rfind("std::optional", 0) == 0) {
@@ -926,7 +950,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value_or(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
             }
         }
-        if (object_type.name.rfind("Result", 0) == 0) {
+        if (object_type.name.rfind("result", 0) == 0) {
             if (get_expr->name.lexeme == "is_pass") {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".is_pass()";
             }
@@ -1331,7 +1355,7 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
         }
         if (baseType->type.lexeme == "result") {
             result_used = true;
-            return "Result";
+            return "result";
         }
         if (baseType->type.lexeme == "int") return "int";
         if (baseType->type.lexeme == "uint") return "unsigned int";
@@ -1348,7 +1372,7 @@ std::string Transpiler::transpileType(const TypeExpr& type) {
         }
         if (base_name == "result") {
             result_used = true;
-            base_name = "Result";
+            base_name = "result";
         }
         std::string s = base_name + "<";
         for (size_t i = 0; i < genericType->generic_args.size(); ++i) {
@@ -1499,6 +1523,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         }
         for (const auto& method : public_methods) {
             is_in_method = true;
+            current_struct = &stmt;
             out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
             bool first_param = true;
             for (size_t i = 0; i < method->params.size(); ++i) {
@@ -1517,6 +1542,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
                 out << ";\n";
             }
             is_in_method = false;
+            current_struct = nullptr;
         }
     }
 
@@ -1531,6 +1557,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
         }
         for (const auto& method : private_methods) {
             is_in_method = true;
+            current_struct = &stmt;
             out << (method->return_type ? transpileType(*method->return_type) : "void") << " " << method->name.lexeme << "(";
             bool first_param = true;
             for (size_t i = 0; i < method->params.size(); ++i) {
@@ -1549,6 +1576,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
                 out << ";\n";
             }
             is_in_method = false;
+            current_struct = nullptr;
         }
     }
 

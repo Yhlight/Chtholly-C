@@ -78,13 +78,18 @@ mut a2 = 10;
 你可以使用&创建对应的引用变量
 默认情况下属于不可变引用，即let&
 
+所有权与引用规则如下：
+- `T`: 值类型，表示所有权转移 (move)。
+- `&T`: 不可变引用 (borrow)。
+- `&mut T`: 可变引用 (mutable borrow)。
+
 ```Chtholly
 let a = 20;
-let b = &a;
+let b = &a; // b 是对 a 的不可变引用
 
 mut a2 = 30;
-let b2 = &a2;
-mut c2 = &mut a2;
+let b2 = &a2; // b2 是对 a2 的不可变引用
+mut c2 = &mut a2; // c2 是对 a2 的可变引用
 ```
 
 #### 空值消除
@@ -174,6 +179,7 @@ func add(x: int, y: int) -> int
 {
     return x + y;
 }
+```
 
 #### lambda函数
 Chtholly的lambda函数使用与C++完全一致的语法
@@ -190,14 +196,6 @@ Chtholly使用`function`关键字来表示函数类型，可以用于变量的�
 let my_func: function(int, int) -> int = add;
 ```
 
-#### lambda函数
-Chtholly的lambda函数使用与C++完全一致的语法  
-默认情况下，捕获属于不可变引用  
-
-```Chtholly
-let add = [](a: int, b: int) -> int { return a + b; };
-```
-
 #### 参数所有权
 和Rust很类似
 
@@ -206,7 +204,7 @@ func test(x: string, x2: &string, x3: &mut string) -> int
 {
     // x: string，表示接管所有权
     // x2: &string，表示不可变引用
-    // x3: mut& string，表示可变引用，对于mut的变量
+    // x3: &mut string，表示可变引用
 }
 ```
 
@@ -218,70 +216,77 @@ let arr2 : array[string ; 5];  // 指定类型并指定长度
 ```
 
 ### struct结构体
-在Chtholly之中，使用struct创建结构体
-不支持继承语法，可以使用组合式继承，具有public，private两种权限，默认公开
+在Chtholly之中，使用struct创建结构体。不支持继承语法，可以使用组合式继承。
+使用 `public:` 和 `private:` 标签来控制成员的访问权限，标签下的所有成员都将应用该权限，直到下一个标签出现。默认权限为公开（public）。
+所有成员变量的声明都必须以分号结尾。
 
 ```Chtholly
 struct Test
 {
-    private name: string,  // 可以赋予默认值
-    private id: int,
+    private:
+        name: string;  // 可以赋予默认值
+        id: int;
 
-    public add(x, y) -> int  // 结构体内的函数不需要写func
-    {
-        return x + y;
-    }
+    public:
+        // 结构体内的函数不需要写func
+        add(x: int, y: int) -> int
+        {
+            return x + y;
+        }
 }
 
 func main(args: array[string])
 {
-    let test = Test();  // 第一种创建方式
+    let test = Test{};  // 第一种创建方式
     let test2 = Test{  // 第二种
         name: "xxx",
         id: 18
-    }
+    };
 
     print(test2.name);
 }
 ```
 
 #### self关键字与对象关联
-在Chtholly中，可以使用self表示自引用
-共有三种权限
-self  所有权
-&self  只读
-&mut self  可写
+在Chtholly中，可以使用self表示对实例自身的引用。
+共有三种形式：
+- `self`: 表示获取实例的所有权 (move)。
+- `&self`: 表示对实例的不可变引用 (borrow)。
+- `&mut self`: 表示对实例的可变引用 (mutable borrow)。
 
-通常情况下，带有self参数的函数，需要明确的对象调用
-而对于那些没有self参数的函数，则不需要明确的对象调用，类似其他语言的静态函数
-使用结构体::函数名称进行调用
+通常情况下，带有self参数的函数，需要由明确的对象实例来调用。
+而对于那些没有self参数的函数，则不需要明确的对象实例调用，类似其他语言的静态函数，使用 `结构体::函数名称` 进行调用。
+
+**在方法内部，访问实例自身的字段或调用其他实例方法时，必须显式使用 `self.` 前缀，不允许隐式调用。**
 
 ```Chtholly
 struct Test
 {
-    private name: string,
-    private age: int,
+    private:
+        name: string;
+        age: int;
 
-    public test(self)
-    {
-        return self.name;
-    }
+    public:
+        test(self)
+        {
+            return self.name; // 必须使用 self.
+        }
 
-    public test2(&mut self)
-    {
-        self.name = "HelloWolrd";
-        return self.name;
-    }
+        test2(&mut self)
+        {
+            self.name = "HelloWolrd"; // 必须使用 self.
+        }
 
-    public test3()  // 参数没有self，与本身无关系
-    {
+        // 参数没有self，与本身无关系
+        test3()
+        {
 
-    }
+        }
 }
 
 func main(args: array[string])
 {
-    let test = Test();
+    let test = Test{};
     test.test();
 
     Test::test3();
@@ -295,19 +300,24 @@ func main(args: array[string])
 与C++一致
 
 ### 选择结构和循环结构
-与C++一致，不同的是switch的case允许使用任意类型的变量作为判断依据，也能使用表达式
+与C++一致。
+Chtholly的`switch`行为与C++不同，为了防止意外的穿透，每个`case`块在执行完毕后会自动中断（implicit break）。如果您确实需要穿透到下一个`case`，必须显式使用 `fallthrough` 关键字。
 
 ```Chtholly
 switch(任意类型的变量 / 表达式)
 {
-    case 值1: {  // C语言缺陷，现代化编程语言最好强制要求{ }
-        break;  // break现在不是防止穿透，而是跳出匹配
+    case 值1: {
+        // 执行代码，然后自动中断
     }
     case 表达式: {
-        break;
+        // 执行代码，然后自动中断
     }
     case 表达式2: {
-        fallthrough;  // 如果需要穿透，请使用fallthrough
+        // ...
+        fallthrough;  // 使用 fallthrough 来继续执行下一个 case
+    }
+    case 表达式3: {
+        // 表达式2的代码执行完后会进入这里
     }
 }
 ```
@@ -329,7 +339,7 @@ func swap_values<string>(a: &mut string, b: &mut string)  // 特例化操作
 
 }
 
-func main(args: array[string]) -> Result<void, string>
+func main(args: array[string]) -> result<void, string>
 {
     mut num1 = 100;
     mut num2 = 200;
@@ -341,7 +351,7 @@ func main(args: array[string]) -> Result<void, string>
     swap_values<string>(&mut s1, &mut s2); // 显式指定 T 为 string
     // s1 现在是 "Beta", s2 现在是 "Alpha"
 
-    return Result::pass();
+    return result::pass();
 }
 ```
 
@@ -350,20 +360,21 @@ func main(args: array[string]) -> Result<void, string>
 // 定义一个泛型结构体 Point，它接受一个类型参数 T
 struct Point<T>  // 这个T可以写默认值，使用<T = int>即可指定默认值，同理，也具有特例化操作，例如<int>
 {
-    x: T,
-    y: T,
+    x: T;
+    y: T;
 
     // 结构体内的函数也可以使用泛型 T
-    public swap(&mut self)
-    {
-        // 交换 x 和 y 的值
-        let temp = self.x;
-        self.x = self.y;
-        self.y = temp;
-    }
+    public:
+        swap(&mut self)
+        {
+            // 交换 x 和 y 的值
+            let temp = self.x;
+            self.x = self.y;
+            self.y = temp;
+        }
 }
 
-func main(args: array[string]) -> Result<void, string>
+func main(args: array[string]) -> result<void, string>
 {
     // 实例化 Point<int>
     let p1 = Point{ x: 10, y: 20 };
@@ -382,7 +393,7 @@ func main(args: array[string]) -> Result<void, string>
         y: "World"
     };
 
-    return Result::pass();
+    return result::pass();
 }
 ```
 
@@ -394,9 +405,10 @@ func main(args: array[string]) -> Result<void, string>
 // 一个常规的、非泛型的结构体
 struct Printer {
     // 拥有一个泛型方法，可以打印任何类型的值
-    func print<T>(self, value: T) {
-        // ... 具体的打印逻辑
-    }
+    public:
+        print<T>(self, value: T) {
+            // ... 具体的打印逻辑
+        }
 }
 
 func main() {
@@ -411,21 +423,22 @@ func main() {
 ```Chtholly
 struct Point<T>
 {
-  // 方法的泛型参数 K, F 与结构体的泛型参数 T 是独立的
-  func test<K, F>(self) // 需要对象调用
-  {}
+  public:
+      // 方法的泛型参数 K, F 与结构体的泛型参数 T 是独立的
+      test<K, F>(self) // 需要对象调用
+      {}
 
-  func test2<K, F>() // 不需要对象调用 (静态方法)
-  {}
-  // 和前面是一样的，默认类型，类型特例化，都得到支持
+      test2<K, F>() // 不需要对象调用 (静态方法)
+      {}
+      // 和前面是一样的，默认类型，类型特例化，都得到支持
 }
 
-func main(args: array[string]) -> Result<void, string>
+func main(args: array[string]) -> result<void, string>
 {
     let t: Point<string> = Point{};
     t.test<int, bool>();
     Point::test2<char, string>();
-    return Result::pass();
+    return result::pass();
 }
 ```
 
@@ -443,24 +456,26 @@ trait Comparable
 // 定义一个泛型结构体 value，并实现 Comparable 约束
 struct value<T> impl Comparable
 {
-    value: T,
+    value: T;
 
-    func gt(&self, other: &self) -> bool
-    {
-        return self.value > other.value;
-    }
+    public:
+        func gt(&self, other: &self) -> bool
+        {
+            return self.value > other.value;
+        }
 }
 
 // 泛型特例化操作以及实现多个约束
 struct value<int> impl Comparable, OtherTrait
 {
-    value: int,
+    value: int;
 
     // 针对int类型的value进行具体化规则
-    func gt(&self, other: &self) -> bool
-    {
-        return self.value > other.value;
-    }
+    public:
+        func gt(&self, other: &self) -> bool
+        {
+            return self.value > other.value;
+        }
 }
 
 // 泛型约束：只接受实现了 Comparable 特性的类型 T
@@ -476,7 +491,7 @@ func get_greater<T ? Comparable>(val1: &T, val2: &T) -> &T
     }
 }
 
-func main(args: array[string]) -> Result<void, string>
+func main(args: array[string]) -> result<void, string>
 {
     let val1 = value{ value: 10 };
     get_greater(&val1, &value{ value: 5 });
@@ -497,16 +512,18 @@ struct Point<T> impl Comparable
 struct Point<T>
 {
     impl Comparable
-    public gt(&self, other: &self) -> bool
-    {
+    public:
+        gt(&self, other: &self) -> bool
+        {
 
-    }
+        }
 
     impl OtherTrait
-    public other_method(&self) -> void
-    {
+    public:
+        other_method(&self) -> void
+        {
 
-    }
+        }
 }
 ```
 
@@ -626,11 +643,12 @@ struct Point impl operator::add  // +
 // 更多待补充...
 {
     // 这里只演示自定义操作符的使用
-    public binary(self, operator: string, other: Point)
-    {
-        if(operator == "**")
-            return pow(self.x, other.x);  // 举个例子
-    }
+    public:
+        binary(self, operator: string, other: Point)
+        {
+            if(operator == "**")
+                return pow(self.x, other.x);  // 举个例子
+        }
 }
 ```
 
@@ -725,4 +743,4 @@ func print_any<T ? util::to_string>(T value) -> void
 使用阻塞式CLI
 
 ## 自举
-Chtholly的定位是MIT开源的社区项目，不应该进行自举，这会增加维护的难度，而是尽可能维护C++版本的编译器  
+Chtholly的定位是MIT开源的社区项目，不应该进行自举，这会增加维护的难度，而是尽可能维护C++版本的编译器
