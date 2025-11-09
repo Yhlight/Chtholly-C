@@ -548,6 +548,17 @@ std::unique_ptr<Expr> Parser::primary() {
         consume(TokenType::RIGHT_PAREN, "Expect ')' after expression in type_cast.");
         return type_cast_expr;
     }
+    if (match(TokenType::OPTION)) {
+        if (peek().type == TokenType::LEFT_PAREN) {
+            std::unique_ptr<Expr> callee = std::make_unique<VariableExpr>(previous());
+            advance();
+            return finishCall(std::move(callee), {});
+        }
+        else {
+            current--;
+        }
+    }
+
 
     if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL)) {
         if (peek().type == TokenType::LEFT_BRACE) {

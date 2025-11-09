@@ -86,6 +86,7 @@ private:
     bool array_used = false;
     bool optional_used = false;
     bool result_used = false;
+    bool result_static_check_used = false;
     bool function_used = false;
     bool string_used = false;
     TypeInfo contextual_type;

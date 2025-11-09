@@ -389,3 +389,9 @@ TEST(TranspilerTest, ReferenceAsFunctionParameter) {
     std::string expected = "void increment(int& x) {\n*x = *x + 1;\n}\nvoid main() {\nint val = 10;\nincrement(val);\n}\n";
     EXPECT_EQ(transpile(source), expected);
 }
+
+TEST(TranspilerTest, OptionConstructor) {
+    std::string source = "let x = option(20);";
+    std::string expected = "#include <optional>\nconst std::optional<int> x = std::optional<int>(20);\n";
+    EXPECT_EQ(transpile(source), expected);
+}

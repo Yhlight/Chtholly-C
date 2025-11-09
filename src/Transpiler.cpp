@@ -268,6 +268,14 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
+            if (var_expr->name.lexeme == "option") {
+                optional_used = true;
+                if (call_expr->arguments.empty()) {
+                    return TypeInfo{"std::optional<auto>"};
+                }
+                TypeInfo arg_type = get_type(*call_expr->arguments[0]);
+                return TypeInfo{"std::optional<" + arg_type.name + ">"};
+            }
             if (var_expr->name.lexeme == "input") {
                 return TypeInfo{"std::string"};
             }
@@ -446,6 +454,35 @@ std::string fs_read(const std::string& path) {
     }
     if (result_used) {
         final_code << "#include \"result.h\"\n";
+    }
+    if (result_static_check_used) {
+        final_code << R"(
+#include <type_traits>
+
+template<class>
+struct is_result : std::false_type {};
+
+template<class T, class E>
+struct is_result<result<T, E>> : std::true_type {};
+
+template<typename T>
+constexpr bool chtholly_is_pass(const T& value) {
+    if constexpr (is_result<T>::value) {
+        return value.is_pass();
+    } else {
+        return false;
+    }
+}
+
+template<typename T>
+constexpr bool chtholly_is_fail(const T& value) {
+    if constexpr (is_result<T>::value) {
+        return value.is_fail();
+    } else {
+        return false;
+    }
+}
+)";
     }
     if (function_used) {
         final_code << "#include <functional>\n";
@@ -969,10 +1006,12 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                     return type.name + "::fail(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
                 }
                 if (get_expr->name.lexeme == "is_pass") {
-                    return "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ").is_pass()";
+                    result_static_check_used = true;
+                    return "chtholly_is_pass(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
                 }
                 if (get_expr->name.lexeme == "is_fail") {
-                    return "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ").is_fail()";
+                    result_static_check_used = true;
+                    return "chtholly_is_fail(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
                 }
             }
             if (var_expr->name.lexeme == "meta") {
@@ -991,6 +1030,14 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     }
 
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        if (var_expr->name.lexeme == "option") {
+            optional_used = true;
+            if (expr.arguments.size() != 1) {
+                return std::string("/* ERROR: option() constructor expects exactly one argument */");
+            }
+            TypeInfo arg_type = get_type(*expr.arguments[0]);
+            return "std::optional<" + arg_type.name + ">(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+        }
         if (var_expr->name.lexeme == "print") {
             if (imported_modules.find("iostream") == imported_modules.end()) {
                 return std::string("/* ERROR: 'print' function called without importing 'iostream' */");
