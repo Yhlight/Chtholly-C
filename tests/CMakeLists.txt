@@ -25,6 +25,7 @@ add_executable(chtholly_tests
     TestHelpers.cpp
     TestExecution.cpp
     TestResult.cpp
+    TestString.cpp
 )
 
 add_dependencies(chtholly_tests chtholly)

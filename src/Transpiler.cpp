@@ -360,6 +360,17 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
             if (var_expr->name.lexeme == "math") {
                 return TypeInfo{"double"};
             }
+            if (var_expr->name.lexeme == "string") {
+                if (get_expr->name.lexeme == "len") {
+                    return TypeInfo{"int"};
+                }
+                if (get_expr->name.lexeme == "substr") {
+                    return TypeInfo{"std::string"};
+                }
+                if (get_expr->name.lexeme == "find") {
+                    return TypeInfo{"std::optional<int>"};
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -982,6 +993,38 @@ std::any Transpiler::handleMathFunction(const CallExpr& expr) {
     return "/* ERROR: Unknown math function call */";
 }
 
+std::any Transpiler::handleStringFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "len") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: len requires one argument */";
+        }
+        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".length()";
+    }
+    if (function_name == "substr") {
+        if (expr.arguments.size() != 3) {
+            return "/* ERROR: substr requires three arguments */";
+        }
+        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".substr(" +
+               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ", " +
+               std::any_cast<std::string>(expr.arguments[2]->accept(*this)) + ")";
+    }
+    if (function_name == "find") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: find requires two arguments */";
+        }
+        optional_used = true;
+        string_used = true; // For std::string::npos
+        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string sub = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "(" + s + ".find(" + sub + ") == std::string::npos) ? std::nullopt : std::optional<int>(" + s + ".find(" + sub + "))";
+    }
+
+    return "/* ERROR: Unknown string function call */";
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1048,6 +1091,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "math") {
                 return handleMathFunction(expr);
+            }
+            if (var_expr->name.lexeme == "string") {
+                return handleStringFunction(expr);
             }
         }
     }

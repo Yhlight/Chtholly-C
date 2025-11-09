@@ -611,6 +611,40 @@ print(content);
 fs_write("my_file.txt", "Hello, Chtholly!");
 ```
 
+### String Module
+Chtholly 的标准库 `string` 模块提供了一系列用于操作字符串的函数。要使用这些函数，您必须首先导入 `string` 模块。
+
+```Chtholly
+import string;
+```
+
+#### 函数
+
+- **`string::len(s: string) -> int`**
+  返回字符串 `s` 的长度。
+
+  ```Chtholly
+  let s = "hello";
+  let length = string::len(s); // length 将是 5
+  ```
+
+- **`string::substr(s: string, start: int, count: int) -> string`**
+  返回一个从索引 `start` 开始，长度为 `count` 的新子字符串。
+
+  ```Chtholly
+  let s = "hello world";
+  let sub = string::substr(s, 6, 5); // sub 将是 "world"
+  ```
+
+- **`string::find(s: string, sub: string) -> option<int>`**
+  在字符串 `s` 中查找子字符串 `sub`。如果找到，则返回一个包含起始索引的 `option<int>`；如果未找到，则返回 `none`。
+
+  ```Chtholly
+  let s = "hello world";
+  let pos1 = string::find(s, "world"); // pos1 将是 option{value: 6}
+  let pos2 = string::find(s, "galaxy"); // pos2 将是 none
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  
