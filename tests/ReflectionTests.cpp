@@ -15,6 +15,39 @@ TEST(ReflectionTest, GetFieldCount) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(ReflectionTest, GetTraitCount) {
+    std::string source = R"(
+        import operator;
+        trait MyTrait {}
+        struct Point impl operator::add, MyTrait {
+            x: int;
+            y: int;
+        }
+        let p: Point = Point{x: 1, y: 2};
+        let count = reflect::get_trait_count(p);
+    )";
+    std::string expected = "const int count = 2;";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
+TEST(ReflectionTest, GetTraits) {
+    std::string source = R"(
+        import reflect;
+        import operator;
+        trait MyTrait {}
+        struct Point impl operator::add, MyTrait {
+            x: int;
+            y: int;
+        }
+        let p: Point = Point{x: 1, y: 2};
+        let traits = reflect::get_traits(p);
+    )";
+    std::string expected = "const std::vector<chtholly_trait> traits = std::vector<chtholly_trait>{{\"operator::add\"}, {\"MyTrait\"}};";
+    std::string transpiled = compile(source);
+    ASSERT_NE(transpiled.find(expected), std::string::npos);
+}
+
 TEST(ReflectionTest, GetMethodCount) {
     std::string source = R"(
         struct Point {

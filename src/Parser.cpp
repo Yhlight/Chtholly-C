@@ -267,7 +267,7 @@ std::unique_ptr<Stmt> Parser::structDeclaration() {
     std::vector<std::unique_ptr<Expr>> traits;
     if (match(TokenType::IMPL)) {
         do {
-            traits.push_back(expression());
+            traits.push_back(qualifiedName());
         } while (match(TokenType::COMMA));
     }
 
@@ -635,6 +635,17 @@ std::unique_ptr<Expr> Parser::structLiteral() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after struct fields.");
     return std::make_unique<StructLiteralExpr>(std::move(name), std::move(fields));
+}
+
+std::unique_ptr<Expr> Parser::qualifiedName() {
+    Token name_token = consume(peek().type, "Expect trait name.");
+    std::unique_ptr<Expr> expr = std::make_unique<VariableExpr>(name_token);
+
+    while (match(TokenType::COLON_COLON)) {
+        Token name = consume(TokenType::IDENTIFIER, "Expect identifier after '::'.");
+        expr = std::make_unique<GetExpr>(std::move(expr), std::move(name));
+    }
+    return expr;
 }
 
 // Helper method implementations

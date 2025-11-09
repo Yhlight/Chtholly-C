@@ -304,6 +304,12 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "get_methods") {
                     return TypeInfo{"std::vector<chtholly_method>"};
                 }
+                if (get_expr->name.lexeme == "get_trait_count") {
+                    return TypeInfo{"int"};
+                }
+                if (get_expr->name.lexeme == "get_traits") {
+                    return TypeInfo{"std::vector<chtholly_trait>"};
+                }
             }
             if (var_expr->name.lexeme == "util") {
                 if (get_expr->name.lexeme == "string_cast") {
@@ -436,6 +442,10 @@ struct chtholly_method {
     std::string name;
     std::string return_type;
     std::vector<chtholly_parameter> parameters;
+};
+
+struct chtholly_trait {
+    std::string name;
 };
 )";
     }
@@ -697,6 +707,37 @@ std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
             return ss.str();
         } else {
             return std::string("std::vector<chtholly_method>{}");
+        }
+    }
+    if (function_name == "get_trait_count") {
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            return std::to_string(s->traits.size());
+        } else {
+            return std::string("0");
+        }
+    }
+    if (function_name == "get_traits") {
+        reflect_used = true;
+        if (structs.count(arg_type.name)) {
+            const StructStmt* s = structs[arg_type.name];
+            std::stringstream ss;
+            ss << "std::vector<chtholly_trait>{";
+            for (size_t i = 0; i < s->traits.size(); ++i) {
+                // This is a simplification. We'd need a way to pretty-print the trait expression.
+                if (auto var_expr = dynamic_cast<const VariableExpr*>(s->traits[i].get())) {
+                    ss << "{\"" << var_expr->name.lexeme << "\"}";
+                } else if (auto get_expr = dynamic_cast<const GetExpr*>(s->traits[i].get())) {
+                    ss << "{\"" << std::any_cast<std::string>(get_expr->object->accept(*this)) << "::" << get_expr->name.lexeme << "\"}";
+                }
+                if (i < s->traits.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << "}";
+            return ss.str();
+        } else {
+            return std::string("std::vector<chtholly_trait>{}");
         }
     }
 

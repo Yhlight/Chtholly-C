@@ -57,6 +57,7 @@ private:
     std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<TypeExpr>> generic_args);
     std::unique_ptr<Expr> structLiteral();
     std::unique_ptr<Expr> lambdaExpression();
+    std::unique_ptr<Expr> qualifiedName();
 
     // Helper methods
     bool isLambdaExpressionAhead();

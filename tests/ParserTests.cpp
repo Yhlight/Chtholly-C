@@ -136,6 +136,12 @@ TEST(ParserTest, StructWithTrait) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, StructWithNamespacedTrait) {
+    std::string source = "struct Point impl my_module::MyTrait { let x: int; }";
+    std::string expected = "(struct Point (impl (. my_module MyTrait)) (let x))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, ReturnStatement) {
     std::string source = "return 1;";
     std::string expected = "(return 1)";
