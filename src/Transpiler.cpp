@@ -490,6 +490,9 @@ constexpr bool chtholly_is_fail(const T& value) {
     if (string_used) {
         final_code << "#include <string>\n";
     }
+    if (type_traits_used) {
+        final_code << "#include <type_traits>\n";
+    }
     if (reflect_used) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
@@ -1407,6 +1410,43 @@ std::any Transpiler::visitFallthroughStmt(const FallthroughStmt& stmt) {
     return nullptr;
 }
 
+void Transpiler::transpile_function_body(const BlockStmt* body, const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints) {
+    if (!body) {
+        out << ";\n";
+        return;
+    }
+
+    out << "{\n";
+    transpile_generic_constraints(constraints);
+
+    // Temporarily redirect 'out' to capture the block's content
+    std::stringstream body_out;
+    std::swap(out, body_out);
+
+    for (const auto& statement : body->statements) {
+        statement->accept(*this);
+    }
+
+    std::swap(out, body_out); // Restore original 'out'
+    out << body_out.str() << "}\n";
+}
+
+
+void Transpiler::transpile_generic_constraints(const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints) {
+    if (constraints.empty()) {
+        return;
+    }
+
+    type_traits_used = true;
+    for (const auto& [generic_param, traits] : constraints) {
+        for (const auto& trait : traits) {
+            std::string trait_name = transpileType(*trait);
+            out << "static_assert(std::is_base_of<" << trait_name << ", " << generic_param << ">::value, "
+                << "\"" << generic_param << " must implement " << trait_name << "\");\n";
+        }
+    }
+}
+
 std::string Transpiler::transpileType(const TypeExpr& type) {
     if (auto baseType = dynamic_cast<const BaseTypeExpr*>(&type)) {
         if (baseType->type.lexeme == "option") {
@@ -1499,12 +1539,7 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
         out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
     }
     out << ") ";
-
-    if (stmt.body) {
-        visitBlockStmt(*stmt.body, false);
-    } else {
-        out << ";\n";
-    }
+    transpile_function_body(stmt.body.get(), stmt.generic_constraints);
 
     exitScope();
     return nullptr;
@@ -1596,11 +1631,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             if (method->trait_impl) {
                 out << "override ";
             }
-            if (method->body) {
-                method->body->accept(*this);
-            } else {
-                out << ";\n";
-            }
+            transpile_function_body(method->body.get(), method->generic_constraints);
             is_in_method = false;
             current_struct = nullptr;
         }
@@ -1630,11 +1661,7 @@ std::any Transpiler::visitStructStmt(const StructStmt& stmt) {
             if (method->trait_impl) {
                 out << "override ";
             }
-            if (method->body) {
-                method->body->accept(*this);
-            } else {
-                out << ";\n";
-            }
+            transpile_function_body(method->body.get(), method->generic_constraints);
             is_in_method = false;
             current_struct = nullptr;
         }

@@ -20,6 +20,24 @@ TEST(TestGenerics, GenericFunction) {
     ASSERT_EQ(normalize(compile(source)), normalize(expected));
 }
 
+TEST(TestGenerics, GenericFunctionWithConstraints) {
+    std::string source = R"(
+        trait MyTrait {}
+        func my_func<T ? MyTrait>(arg: T) {}
+    )";
+    std::string expected = R"(
+        #include <type_traits>
+        struct MyTrait {
+            virtual ~MyTrait() = default;
+        };
+        template <typename T>
+        void my_func(T arg) {
+            static_assert(std::is_base_of<MyTrait, T>::value, "T must implement MyTrait");
+        }
+    )";
+    ASSERT_EQ(normalize(compile(source)), normalize(expected));
+}
+
 TEST(TestGenerics, GenericStruct) {
     std::string source = R"(
         struct Point<T> {

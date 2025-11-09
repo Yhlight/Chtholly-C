@@ -127,7 +127,7 @@ This document outlines the development progress and future goals for the Chtholl
 - [x] Struct `impl` clause parsing
 - [x] Generic constraints parsing
 - [x] Trait method transpilation
-- [ ] Implement transpilation for generic constraints
+- [x] Implement transpilation for generic constraints
 
 ## Phase 7: Architectural Issues and Long-Term Goals
 

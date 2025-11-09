@@ -56,6 +56,7 @@ public:
     std::any visitTraitStmt(const TraitStmt& stmt) override;
 
 private:
+    void transpile_function_body(const BlockStmt* body, const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints);
     void transpile_generic_constraints(const std::map<std::string, std::vector<std::unique_ptr<TypeExpr>>>& constraints);
     std::string transpileType(const TypeExpr& type);
     std::string getTypeString(const TypeInfo& type);
@@ -89,6 +90,7 @@ private:
     bool result_static_check_used = false;
     bool function_used = false;
     bool string_used = false;
+    bool type_traits_used = false;
     TypeInfo contextual_type;
     std::set<std::string>* transpiled_files;
     bool owns_transpiled_files = false;
