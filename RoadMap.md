@@ -67,7 +67,6 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `reflect` module with `get_method`
   - [x] `reflect` module with `get_trait_count`
   - [x] `reflect` module with `get_traits`
-  - [x] `reflect` module with `get_trait`
   - [x] `util` module with `string_cast` and `to_string` trait
 - [x] Implement operator overloading.
   - [x] `operator::add`
@@ -125,6 +124,3 @@ This document outlines the development progress and future goals for the Chtholl
 - [x] Generic constraints parsing
 - [x] Trait method transpilation
 - [x] Generic constraints with traits
-
-## Phase 7: Command-Line Interface
-- [x] Implement REPL (Read-Eval-Print Loop)
