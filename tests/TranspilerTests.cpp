@@ -246,8 +246,12 @@ TEST_F(TranspilerTest, FileImport) {
 
     // Get absolute path to the module
     std::filesystem::path module_path = std::filesystem::absolute("test_module.cns");
+    std::string module_path_str = module_path.string();
+    // On Windows, std::filesystem::path::string() uses backslashes, which are escape characters in C++.
+    // We need to replace them with forward slashes for cross-platform compatibility in the import statement.
+    std::replace(module_path_str.begin(), module_path_str.end(), '\\', '/');
 
-    std::string source = "import \"" + module_path.string() + "\"; let x = add(1, 2);";
+    std::string source = "import \"" + module_path_str + "\"; let x = add(1, 2);";
     std::string expected = "int add(int a, int b) {\nreturn a + b;\n}\nconst auto x = add(1, 2);\n";
     EXPECT_EQ(transpile(source), expected);
 

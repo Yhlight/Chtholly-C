@@ -3,11 +3,11 @@
 
 class TestString : public ::testing::Test {};
 
-TEST_F(TestString, LenFunction) {
+TEST_F(TestString, LengthFunction) {
     std::string source = R"(
         import string;
         let s = "hello";
-        let len = string::len(s);
+        let len = string::length(s);
     )";
     std::string expected = "const int len = s.length();";
     std::string transpiled = compile(source);

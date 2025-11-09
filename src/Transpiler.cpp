@@ -361,7 +361,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 return TypeInfo{"double"};
             }
             if (var_expr->name.lexeme == "string") {
-                if (get_expr->name.lexeme == "len") {
+                if (get_expr->name.lexeme == "length") {
                     return TypeInfo{"int"};
                 }
                 if (get_expr->name.lexeme == "substr") {
@@ -997,9 +997,9 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
 
-    if (function_name == "len") {
+    if (function_name == "length") {
         if (expr.arguments.size() != 1) {
-            return "/* ERROR: len requires one argument */";
+            return "/* ERROR: length requires one argument */";
         }
         return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".length()";
     }

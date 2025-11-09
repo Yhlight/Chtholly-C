@@ -65,7 +65,12 @@ int main(int argc, char* argv[]) {
             out_file.close();
 
             // Compile the C++ code.
-            int compile_status = system("g++ _temp.cpp -o _temp.out -std=c++17");
+#ifdef _WIN32
+            std::string command = std::string(CXX_COMPILER) + " _temp.cpp -o _temp.out.exe -std=c++17";
+#else
+            std::string command = std::string(CXX_COMPILER) + " _temp.cpp -o _temp.out -std=c++17";
+#endif
+            int compile_status = system(command.c_str());
             if (compile_status != 0) {
                 std::cerr << "C++ compilation failed." << std::endl;
                 remove("_temp.cpp");
@@ -73,13 +78,19 @@ int main(int argc, char* argv[]) {
             }
 
             // Execute the compiled program.
+#ifdef _WIN32
+            int exit_code = system("_temp.out.exe");
+            // Clean up temporary files.
+            remove("_temp.cpp");
+            remove("_temp.out.exe");
+            return exit_code;
+#else
             int exit_code = system("./_temp.out");
-
             // Clean up temporary files.
             remove("_temp.cpp");
             remove("_temp.out");
-
             return WEXITSTATUS(exit_code);
+#endif
 
         } catch (const std::exception& e) {
             std::cerr << "An error occurred: " << e.what() << std::endl;

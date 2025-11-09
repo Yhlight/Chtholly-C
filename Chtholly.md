@@ -546,6 +546,8 @@ import "path/to/your_module.cns";
 import iostream;
 ```
 
+为了获得最佳的跨平台兼容性，建议在文件路径中使用正斜杠 (`/`) 作为分隔符。
+
 #### 行为
 当您导入一个文件时，其所有的顶级定义（例如函数、结构体和 trait）在包含 `import` 语句的文件中都将变为可直接访问。这有助于代码重用和项目组织。
 
@@ -620,12 +622,12 @@ import string;
 
 #### 函数
 
-- **`string::len(s: string) -> int`**
+- **`string::length(s: string) -> int`**
   返回字符串 `s` 的长度。
 
   ```Chtholly
   let s = "hello";
-  let length = string::len(s); // length 将是 5
+  let length = string::length(s); // length 将是 5
   ```
 
 - **`string::substr(s: string, start: int, count: int) -> string`**
