@@ -375,7 +375,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "length") {
                     return TypeInfo{"int"};
                 }
-                if (get_expr->name.lexeme == "substr") {
+                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim" || get_expr->name.lexeme == "join") {
                     return TypeInfo{"std::string"};
                 }
                 if (get_expr->name.lexeme == "find") {
@@ -385,8 +385,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     vector_used = true;
                     return TypeInfo{"std::vector<std::string>"};
                 }
-                if (get_expr->name.lexeme == "join") {
-                    return TypeInfo{"std::string"};
+                if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with") {
+                    return TypeInfo{"bool"};
                 }
             }
             if (var_expr->name.lexeme == "array") {
@@ -535,6 +535,9 @@ std::string input() {
     if (imported_modules.count("algorithm")) {
         final_code << "#include <algorithm>\n";
     }
+    if (imported_modules.count("cctype")) {
+        final_code << "#include <cctype>\n";
+    }
     if (imported_modules.count("chrono")) {
         final_code << "#include <chrono>\n";
     }
@@ -589,6 +592,8 @@ constexpr bool chtholly_is_fail(const T& value) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
         final_code << "#include <sstream>\n";
+        final_code << "#include <algorithm>\n";
+        final_code << "#include <cctype>\n";
         final_code << R"(
 std::vector<std::string> chtholly_string_split(const std::string& s, const std::string& delimiter) {
     std::vector<std::string> tokens;
@@ -612,6 +617,28 @@ std::string chtholly_string_join(const std::vector<std::string>& elements, const
         }
     }
     return ss.str();
+}
+
+std::string chtholly_string_to_upper(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::toupper(c); });
+    return s;
+}
+
+std::string chtholly_string_to_lower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
+
+std::string chtholly_string_trim(std::string s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+    return s;
 }
 )";
     } else if (string_used) {
@@ -1154,6 +1181,46 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
         }
         string_used = true;
         return "chtholly_string_join(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+    if (function_name == "to_upper") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: to_upper requires one argument */";
+        }
+        imported_modules.insert("algorithm");
+        imported_modules.insert("cctype");
+        return "chtholly_string_to_upper(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "to_lower") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: to_lower requires one argument */";
+        }
+        imported_modules.insert("algorithm");
+        imported_modules.insert("cctype");
+        return "chtholly_string_to_lower(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "trim") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: trim requires one argument */";
+        }
+        imported_modules.insert("algorithm");
+        imported_modules.insert("cctype");
+        return "chtholly_string_trim(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "starts_with") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: starts_with requires two arguments */";
+        }
+        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string prefix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "([&](const std::string& str, const std::string& p) { return str.rfind(p, 0) == 0; })(" + s + ", " + prefix + ")";
+    }
+    if (function_name == "ends_with") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: ends_with requires two arguments */";
+        }
+        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string suffix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "([&](const std::string& str, const std::string& suff) { return str.size() >= suff.size() && str.compare(str.size() - suff.size(), suff.size(), suff) == 0; })(" + s + ", " + suffix + ")";
     }
 
     return "/* ERROR: Unknown string function call */";

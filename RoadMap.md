@@ -45,7 +45,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `iostream` module with `input` function
   - [x] Refactor `filesystem` module (`read`, `write`, `list_dir`, `is_file`, `is_dir`, `remove`)
   - [x] `math` module with functions and constants
-  - [x] `string` module with `length`, `substr`, `find`, `split`, and `join`
+  - [x] `string` module with `length`, `substr`, `find`, `split`, `join`, `to_upper`, `to_lower`, `trim`, `starts_with`, and `ends_with`
   - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
   - [x] `os` module with `exit` and `env`
   - [x] `time` module with `now`

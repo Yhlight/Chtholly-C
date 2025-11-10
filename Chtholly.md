@@ -726,6 +726,46 @@ import string;
   let s = string::join(arr, ","); // s 将是 "hello,world,chtholly"
   ```
 
+- **`string::to_upper(s: string) -> string`**
+  将字符串 `s` 中的所有字符转换为大写。
+
+  ```Chtholly
+  let s = "hello";
+  let upper = string::to_upper(s); // upper 将是 "HELLO"
+  ```
+
+- **`string::to_lower(s: string) -> string`**
+  将字符串 `s` 中的所有字符转换为小写。
+
+  ```Chtholly
+  let s = "HELLO";
+  let lower = string::to_lower(s); // lower 将是 "hello"
+  ```
+
+- **`string::trim(s: string) -> string`**
+  移除字符串 `s` 两端的空白字符。
+
+  ```Chtholly
+  let s = "  hello  ";
+  let trimmed = string::trim(s); // trimmed 将是 "hello"
+  ```
+
+- **`string::starts_with(s: string, prefix: string) -> bool`**
+  检查字符串 `s` 是否以 `prefix` 开头。
+
+  ```Chtholly
+  let s = "hello world";
+  let starts = string::starts_with(s, "hello"); // starts 将是 true
+  ```
+
+- **`string::ends_with(s: string, suffix: string) -> bool`**
+  检查字符串 `s` 是否以 `suffix` 结尾。
+
+  ```Chtholly
+  let s = "hello world";
+  let ends = string::ends_with(s, "world"); // ends 将是 true
+  ```
+
 ### Array Module
 Chtholly 的标准库 `array` 模块提供了一系列用于操作动态数组的函数。要使用这些函数，您必须首先导入 `array` 模块。
 

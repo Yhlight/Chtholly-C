@@ -16,6 +16,83 @@ TEST_F(StringTest, LengthFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST_F(StringTest, ToUpperFunction) {
+    std::string source = R"(
+        import string;
+        import iostream;
+        func main() -> int {
+            let s = "Hello World!";
+            print(string::to_upper(s));
+            return 0;
+        }
+    )";
+    RunResult result = run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "HELLO WORLD!\n");
+}
+
+TEST_F(StringTest, ToLowerFunction) {
+    std::string source = R"(
+        import string;
+        import iostream;
+        func main() -> int {
+            let s = "Hello World!";
+            print(string::to_lower(s));
+            return 0;
+        }
+    )";
+    RunResult result = run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "hello world!\n");
+}
+
+TEST_F(StringTest, TrimFunction) {
+    std::string source = R"(
+        import string;
+        import iostream;
+        func main() -> int {
+            let s = "  \t Hello World! \n  ";
+            print(string::trim(s));
+            return 0;
+        }
+    )";
+    RunResult result = run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "Hello World!\n");
+}
+
+TEST_F(StringTest, StartsWithFunction) {
+    std::string source = R"(
+        import string;
+        import iostream;
+        func main() -> int {
+            let s = "Hello World!";
+            print(string::starts_with(s, "Hello"));
+            print(string::starts_with(s, "World"));
+            return 0;
+        }
+    )";
+    RunResult result = run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\n");
+}
+
+TEST_F(StringTest, EndsWithFunction) {
+    std::string source = R"(
+        import string;
+        import iostream;
+        func main() -> int {
+            let s = "Hello World!";
+            print(string::ends_with(s, "World!"));
+            print(string::ends_with(s, "Hello"));
+            return 0;
+        }
+    )";
+    RunResult result = run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\n");
+}
+
 TEST_F(StringTest, SplitFunction) {
     std::string source = R"(
         import string;
