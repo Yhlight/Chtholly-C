@@ -864,6 +864,7 @@ util模块是工具模块，主要用于提供一些工具函数
 
 **函数**
 - util::string_cast(T) 将T转换为string，通常会调用自定义类型的to_string方法  
+- util::panic(message: string) 打印错误信息并立即终止程序
 
 ```Chtholly
 import util;

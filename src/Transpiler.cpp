@@ -364,6 +364,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "string_cast") {
                     return TypeInfo{"std::string"};
                 }
+                if (get_expr->name.lexeme == "panic") {
+                    return TypeInfo{"void"};
+                }
             }
             if (var_expr->name.lexeme == "math") {
                 return TypeInfo{"double"};
@@ -1002,6 +1005,14 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
         if (has_trait(arg_type.name, "util", "to_string")) {
             return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".to_string()";
         }
+    }
+    if (function_name == "panic") {
+        if (expr.arguments.empty()) {
+            return std::string("/* ERROR: panic requires one argument */");
+        }
+        imported_modules.insert("iostream");
+        imported_modules.insert("cstdlib");
+        return "std::cerr << \"Panic: \" << " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + " << std::endl; std::exit(1);";
     }
 
     return std::string("/* ERROR: Unknown util function call */");

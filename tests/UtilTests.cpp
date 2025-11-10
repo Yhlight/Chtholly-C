@@ -12,6 +12,19 @@ TEST(UtilTest, StringCastInt) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST(UtilTest, PanicFunction) {
+    std::string source = R"(
+        import util;
+        func main() -> int {
+            util::panic("This is a test panic.");
+            return 0; // Should not be reached
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_NE(result.exit_code, 0);
+    ASSERT_EQ(result.stderr_output, "Panic: This is a test panic.\n");
+}
+
 TEST(UtilTest, StringCastDouble) {
     std::string source = R"(
         import util;

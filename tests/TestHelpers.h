@@ -14,6 +14,12 @@ void compile_and_expect_error(const std::string& source, const std::string& expe
 
 namespace chtholly {
     int run(const std::string& source, bool is_main_file = true);
+    struct RunResult {
+        int exit_code;
+        std::string stderr_output;
+        std::string stdout_output;
+    };
+    RunResult run_and_capture(const std::string& source, bool is_main_file = true);
 }
 
 #endif // CHTHOLLY_TEST_HELPERS_H

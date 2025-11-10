@@ -74,6 +74,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `reflect` module with `get_traits`
   - [x] Refactor `reflect` module to use built-in structs
   - [x] `util` module with `string_cast` and `to_string` trait
+  - [x] `util` module with `panic`
 - [x] Implement operator overloading.
   - [x] `operator::add`
   - [x] `operator::sub`

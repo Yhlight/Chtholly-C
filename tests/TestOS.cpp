@@ -96,10 +96,10 @@ TEST_F(OSTest, EnvFunctionFound) {
         }
     )";
 
-    std::string cpp_code = compile(source);
-    std::string output = compile_and_run_cpp(cpp_code, "test_env_found");
-
-    ASSERT_EQ(output, "HelloWorld\n");
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stderr_output, "");
+    ASSERT_EQ(result.stdout_output, "HelloWorld\n");
 
     unset_test_env("CHTHOLLY_TEST_VAR");
 }
@@ -117,8 +117,8 @@ TEST_F(OSTest, EnvFunctionNotFound) {
         }
     )";
 
-    std::string cpp_code = compile(source);
-    std::string output = compile_and_run_cpp(cpp_code, "test_env_not_found");
-
-    ASSERT_EQ(output, "DEFAULT_VALUE\n");
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stderr_output, "");
+    ASSERT_EQ(result.stdout_output, "DEFAULT_VALUE\n");
 }
