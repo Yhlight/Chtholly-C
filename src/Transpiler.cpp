@@ -526,6 +526,9 @@ std::string fs_read(const std::string& path) {
     if (imported_modules.count("algorithm")) {
         final_code << "#include <algorithm>\n";
     }
+    if (imported_modules.count("chrono")) {
+        final_code << "#include <chrono>\n";
+    }
     if (vector_used) {
         final_code << "#include <vector>\n";
     }
@@ -1213,6 +1216,21 @@ std::any Transpiler::handleOSFunction(const CallExpr& expr) {
     return "/* ERROR: Unknown os function call */";
 }
 
+std::any Transpiler::handleTimeFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "now") {
+        if (!expr.arguments.empty()) {
+            return std::string("/* ERROR: time::now does not take any arguments */");
+        }
+        imported_modules.insert("chrono");
+        return std::string("std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()");
+    }
+
+    return std::string("/* ERROR: Unknown time function call */");
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1288,6 +1306,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "os") {
                 return handleOSFunction(expr);
+            }
+            if (var_expr->name.lexeme == "time") {
+                return handleTimeFunction(expr);
             }
         }
     }

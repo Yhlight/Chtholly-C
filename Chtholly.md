@@ -773,6 +773,29 @@ import os;
   }
   ```
 
+### Time Module
+Chtholly 的标准库 `time` 模块提供了与时间相关的功能。要使用这些函数，您必须首先导入 `time` 模块。
+
+```Chtholly
+import time;
+```
+
+#### 函数
+
+- **`time::now() -> int`**
+  返回当前的 Unix 时间戳（自 1970-01-01 00:00:00 UTC 以来的秒数）。
+
+  ```Chtholly
+  import time;
+  import iostream;
+
+  func main() -> int {
+      let current_time = time::now();
+      print(current_time);
+      return 0;
+  }
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  

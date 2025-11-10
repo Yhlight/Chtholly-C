@@ -44,6 +44,7 @@ enum class TokenType {
 
     // Module names and their functions
     OS,
+    TIME,
     IOSTREAM,
     FILESYSTEM, FS_READ, FS_WRITE,
     OPERATOR, REFLECT, UTIL,

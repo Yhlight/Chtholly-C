@@ -48,6 +48,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `string` module with `length`, `substr`, `find`, `split`, and `join`
   - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
   - [x] `os` module with `exit` and `env`
+  - [x] `time` module with `now`
 - [x] Implement static reflection and metaprogramming features.
   - [x] Symbol table and basic type analysis engine
   - [x] `meta` module with `is_int`
