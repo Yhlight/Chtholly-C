@@ -381,6 +381,13 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "find") {
                     return TypeInfo{"std::optional<int>"};
                 }
+                if (get_expr->name.lexeme == "split") {
+                    vector_used = true;
+                    return TypeInfo{"std::vector<std::string>"};
+                }
+                if (get_expr->name.lexeme == "join") {
+                    return TypeInfo{"std::string"};
+                }
             }
             if (var_expr->name.lexeme == "array") {
                 if (get_expr->name.lexeme == "length") {
@@ -554,9 +561,39 @@ constexpr bool chtholly_is_fail(const T& value) {
     if (function_used) {
         final_code << "#include <functional>\n";
     }
-    if (string_used) {
+    if (imported_modules.count("string")) {
+        final_code << "#include <string>\n";
+        final_code << "#include <vector>\n";
+        final_code << "#include <sstream>\n";
+        final_code << R"(
+std::vector<std::string> chtholly_string_split(const std::string& s, const std::string& delimiter) {
+    std::vector<std::string> tokens;
+    std::string::size_type start = 0;
+    std::string::size_type end = s.find(delimiter);
+    while (end != std::string::npos) {
+        tokens.push_back(s.substr(start, end - start));
+        start = end + delimiter.length();
+        end = s.find(delimiter, start);
+    }
+    tokens.push_back(s.substr(start));
+    return tokens;
+}
+
+std::string chtholly_string_join(const std::vector<std::string>& elements, const std::string& separator) {
+    std::stringstream ss;
+    for (size_t i = 0; i < elements.size(); ++i) {
+        ss << elements[i];
+        if (i < elements.size() - 1) {
+            ss << separator;
+        }
+    }
+    return ss.str();
+}
+)";
+    } else if (string_used) {
         final_code << "#include <string>\n";
     }
+
     if (type_traits_used) {
         final_code << "#include <type_traits>\n";
     }
@@ -1073,6 +1110,22 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
         std::string sub = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
         return "(" + s + ".find(" + sub + ") == std::string::npos) ? std::nullopt : std::optional<int>(" + s + ".find(" + sub + "))";
     }
+    if (function_name == "split") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: split requires two arguments */";
+        }
+        vector_used = true;
+        string_used = true;
+        imported_modules.insert("sstream");
+        return "chtholly_string_split(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+    if (function_name == "join") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: join requires two arguments */";
+        }
+        string_used = true;
+        return "chtholly_string_join(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
 
     return "/* ERROR: Unknown string function call */";
 }
@@ -1478,6 +1531,18 @@ std::any Transpiler::visitWhileStmt(const WhileStmt& stmt) {
 }
 
 std::any Transpiler::visitForStmt(const ForStmt& stmt) {
+    // Check for for-in loop (simplified check)
+    if (stmt.initializer && stmt.condition && !stmt.increment) { // condition holds the iterable
+        if (auto* varStmt = dynamic_cast<VarStmt*>(stmt.initializer.get())) {
+            enterScope();
+            std::string iterable_name = std::any_cast<std::string>(stmt.condition->accept(*this));
+            out << "for (const auto& " << varStmt->name.lexeme << " : " << iterable_name << ") ";
+            stmt.body->accept(*this);
+            exitScope();
+            return nullptr;
+        }
+    }
+
     enterScope();
     out << "for (";
     if (stmt.initializer) {

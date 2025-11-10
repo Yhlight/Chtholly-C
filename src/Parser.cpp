@@ -95,6 +95,25 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
 
     std::unique_ptr<Stmt> initializer;
+    if (match(TokenType::LET)) {
+        Token name = consume(TokenType::IDENTIFIER, "Expect variable name in for loop.");
+        if (match(TokenType::IDENTIFIER) && previous().lexeme == "in") {
+            auto iterable = expression();
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.");
+            auto body = statement();
+            // This is a simplified representation of a for-in loop.
+            // A full implementation would require desugaring into a while loop.
+            // For now, we'll just parse it and the transpiler will handle it.
+            return std::make_unique<ForStmt>(
+                std::make_unique<VarStmt>(name, nullptr, nullptr, false, Access::PUBLIC),
+                std::move(iterable),
+                nullptr,
+                std::move(body)
+            );
+        }
+        current -= 2; // backtrack
+    }
+
     if (match(TokenType::SEMICOLON)) {
         initializer = nullptr;
     } else if (match(TokenType::LET, TokenType::MUT)) {

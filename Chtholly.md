@@ -673,6 +673,22 @@ import string;
   let pos2 = string::find(s, "galaxy"); // pos2 将是 none
   ```
 
+- **`string::split(s: string, delimiter: string) -> array[string]`**
+  使用 `delimiter` 将字符串 `s` 分割成一个字符串数组。
+
+  ```Chtholly
+  let s = "hello,world,chtholly";
+  let parts = string::split(s, ","); // parts 将是 ["hello", "world", "chtholly"]
+  ```
+
+- **`string::join(arr: array[string], separator: string) -> string`**
+  使用 `separator` 将一个字符串数组 `arr` 连接成单个字符串。
+
+  ```Chtholly
+  let arr = ["hello", "world", "chtholly"];
+  let s = string::join(arr, ","); // s 将是 "hello,world,chtholly"
+  ```
+
 ### Array Module
 Chtholly 的标准库 `array` 模块提供了一系列用于操作动态数组的函数。要使用这些函数，您必须首先导入 `array` 模块。
 
