@@ -706,6 +706,41 @@ import array;
   let last = array::pop(arr); // last 将是 3, arr 现在是 [1, 2]
   ```
 
+### OS Module
+Chtholly 的标准库 `os` 模块提供了与操作系统交互的功能，例如控制进程或访问环境变量。要使用这些功能，您必须首先导入 `os` 模块。
+
+```Chtholly
+import os;
+```
+
+#### 函数
+
+- **`os::exit(code: int)`**
+  以给定的状态码 `code` 终止程序。这对于在程序的特定点上指示成功（通常为 `0`）或失败（非零值）非常有用。
+
+  ```Chtholly
+  import os;
+
+  func main() -> int {
+      // ... do some work
+      os::exit(0); // 成功退出
+  }
+  ```
+
+- **`os::env(name: string) -> option<string>`**
+  获取名为 `name` 的环境变量的值。如果环境变量存在，则返回一个包含其值的 `option<string>`；如果不存在，则返回 `none`。
+
+  ```Chtholly
+  import os;
+  import iostream;
+
+  func main() -> int {
+      let shell = os::env("SHELL");
+      print(shell.unwarp_or("SHELL not found"));
+      return 0;
+  }
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  

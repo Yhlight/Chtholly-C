@@ -21,7 +21,8 @@ const std::map<std::string, TokenType> Lexer::keywords = {
     {"int64", TokenType::INT64}, {"uint", TokenType::UINT}, {"uint8", TokenType::UINT8}, {"uint16", TokenType::UINT16}, {"uint32", TokenType::UINT32},
     {"uint64", TokenType::UINT64}, {"char", TokenType::CHAR_TYPE}, {"double", TokenType::DOUBLE}, {"float", TokenType::FLOAT},
     {"long", TokenType::LONG_DOUBLE}, {"void", TokenType::VOID}, {"bool", TokenType::BOOL}, {"string", TokenType::STRING_TYPE},
-    {"array", TokenType::ARRAY}, {"function", TokenType::FUNCTION}, {"option", TokenType::OPTION}
+    {"array", TokenType::ARRAY}, {"function", TokenType::FUNCTION}, {"option", TokenType::OPTION},
+    {"os", TokenType::OS}
 };
 
 Lexer::Lexer(std::string source) : source(std::move(source)) {}

@@ -39,6 +39,7 @@ enum class TokenType {
     PRINT, INPUT, TYPE_CAST,
 
     // Module names and their functions
+    OS,
     IOSTREAM,
     FILESYSTEM, FS_READ, FS_WRITE,
     OPERATOR, REFLECT, UTIL,

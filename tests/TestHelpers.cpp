@@ -5,16 +5,26 @@
 #include <algorithm>
 #include <cctype>
 
-std::string compile(const std::string& source) {
+std::string compile(const std::string& source, bool is_main_file) {
     chtholly::Lexer lexer(source);
     std::vector<chtholly::Token> tokens = lexer.scanTokens();
     chtholly::Parser parser(tokens);
     std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
-    chtholly::Transpiler transpiler;
+    chtholly::Transpiler transpiler(is_main_file);
     return transpiler.transpile(statements);
 }
 
 #include <gtest/gtest.h>
+#include <fstream>
+#include <cstdio>
+#include <cstdlib>
+#include "TestHelpers.h"
+
+#ifdef _WIN32
+// No extra include needed on Windows for system() exit code handling
+#else
+#include <sys/wait.h> // For WEXITSTATUS
+#endif
 
 std::string normalize(const std::string& s) {
     std::string result = s;
@@ -33,5 +43,40 @@ void compile_and_expect_error(const std::string& source, const std::string& expe
         ASSERT_TRUE(error_message.find(expected_error_message) != std::string::npos)
             << "Expected error message to contain: " << expected_error_message
             << "\nBut got: " << error_message;
+    }
+}
+
+namespace chtholly {
+    int run(const std::string& source, bool is_main_file) {
+        std::string cpp_code = ::compile(source);
+
+        std::string temp_cpp_file = "temp_executable.cpp";
+        std::ofstream out_cpp(temp_cpp_file);
+        out_cpp << cpp_code;
+        out_cpp.close();
+
+        std::string executable_name = "temp_executable";
+#ifdef _WIN32
+        executable_name += ".exe";
+#endif
+        std::string compile_command = CXX_COMPILER;
+        compile_command += " -std=c++17 " + temp_cpp_file + " -o " + executable_name;
+        int compile_result = system(compile_command.c_str());
+
+        if (compile_result != 0) {
+            remove(temp_cpp_file.c_str());
+            return -1;
+        }
+
+        int run_result = system(("./" + executable_name).c_str());
+
+        remove(temp_cpp_file.c_str());
+        remove(executable_name.c_str());
+
+#ifdef _WIN32
+        return run_result;
+#else
+        return WEXITSTATUS(run_result);
+#endif
     }
 }

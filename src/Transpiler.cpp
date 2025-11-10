@@ -402,6 +402,12 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
                 }
             }
+            if (var_expr->name.lexeme == "os") {
+                if (get_expr->name.lexeme == "env") {
+                    optional_used = true;
+                    return TypeInfo{"std::optional<std::string>"};
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -497,6 +503,9 @@ std::string fs_read(const std::string& path) {
     }
     if (imported_modules.count("math")) {
         final_code << "#include <cmath>\n";
+    }
+    if (imported_modules.count("cstdlib")) {
+        final_code << "#include <cstdlib>\n";
     }
     if (vector_used) {
         final_code << "#include <vector>\n";
@@ -1085,6 +1094,30 @@ std::any Transpiler::handleArrayFunction(const CallExpr& expr) {
     return "/* ERROR: Unknown array function call */";
 }
 
+std::any Transpiler::handleOSFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "exit") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: os::exit requires one argument */");
+        }
+        imported_modules.insert("cstdlib");
+        return "std::exit(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "env") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: os::env requires one argument */");
+        }
+        imported_modules.insert("cstdlib");
+        optional_used = true;
+        std::string var_name = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "(std::getenv(" + var_name + ") ? std::optional<std::string>(std::getenv(" + var_name + ")) : std::nullopt)";
+    }
+
+    return "/* ERROR: Unknown os function call */";
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1157,6 +1190,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "array") {
                 return handleArrayFunction(expr);
+            }
+            if (var_expr->name.lexeme == "os") {
+                return handleOSFunction(expr);
             }
         }
     }

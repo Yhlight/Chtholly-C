@@ -69,6 +69,7 @@ private:
     std::any handleMathFunction(const CallExpr& expr);
     std::any handleStringFunction(const CallExpr& expr);
     std::any handleArrayFunction(const CallExpr& expr);
+    std::any handleOSFunction(const CallExpr& expr);
     void enterScope();
     void exitScope();
     void define(const std::string& name, const TypeInfo& type);
