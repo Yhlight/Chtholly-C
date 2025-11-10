@@ -375,7 +375,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "length") {
                     return TypeInfo{"int"};
                 }
-                if (get_expr->name.lexeme == "substr") {
+                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim") {
                     return TypeInfo{"std::string"};
                 }
                 if (get_expr->name.lexeme == "find") {
@@ -387,6 +387,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
                 if (get_expr->name.lexeme == "join") {
                     return TypeInfo{"std::string"};
+                }
+                if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with") {
+                    return TypeInfo{"bool"};
                 }
             }
             if (var_expr->name.lexeme == "array") {
@@ -582,6 +585,8 @@ constexpr bool chtholly_is_fail(const T& value) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
         final_code << "#include <sstream>\n";
+        final_code << "#include <algorithm>\n";
+        final_code << "#include <cctype>\n";
         final_code << R"(
 std::vector<std::string> chtholly_string_split(const std::string& s, const std::string& delimiter) {
     std::vector<std::string> tokens;
@@ -605,6 +610,30 @@ std::string chtholly_string_join(const std::vector<std::string>& elements, const
         }
     }
     return ss.str();
+}
+
+std::string chtholly_string_to_upper(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::toupper(c); });
+    return s;
+}
+
+std::string chtholly_string_to_lower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
+
+std::string chtholly_string_trim(const std::string& s) {
+    auto start = s.begin();
+    while (start != s.end() && std::isspace(*start)) {
+        start++;
+    }
+    auto end = s.end();
+    do {
+        end--;
+    } while (std::distance(start, end) > 0 && std::isspace(*end));
+    return std::string(start, end + 1);
 }
 )";
     } else if (string_used) {
@@ -1161,6 +1190,30 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
         }
         string_used = true;
         return "chtholly_string_join(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+    if (function_name == "to_upper") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: to_upper requires one argument */"; }
+        return "chtholly_string_to_upper(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "to_lower") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: to_lower requires one argument */"; }
+        return "chtholly_string_to_lower(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "trim") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: trim requires one argument */"; }
+        return "chtholly_string_trim(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "starts_with") {
+        if (expr.arguments.size() != 2) { return "/* ERROR: starts_with requires two arguments */"; }
+        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string prefix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "([&]() { std::string s_val = " + s + "; std::string p_val = " + prefix + "; return s_val.rfind(p_val, 0) == 0; }())";
+    }
+    if (function_name == "ends_with") {
+        if (expr.arguments.size() != 2) { return "/* ERROR: ends_with requires two arguments */"; }
+        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string suffix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "([&]() { std::string s_val = " + s + "; std::string suf_val = " + suffix + "; return s_val.size() >= suf_val.size() && s_val.compare(s_val.size() - suf_val.size(), suf_val.size(), suf_val) == 0; }())";
     }
 
     return "/* ERROR: Unknown string function call */";
