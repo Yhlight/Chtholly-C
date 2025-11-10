@@ -440,7 +440,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     vector_used = true;
                     return TypeInfo{ "std::vector<std::string>" };
                 }
-                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with" || get_expr->name.lexeme == "is_empty") {
+                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with" || get_expr->name.lexeme == "is_empty" || get_expr->name.lexeme == "contains") {
                     return TypeInfo{ "bool" };
                 }
             }
@@ -1273,6 +1273,12 @@ std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr&
         std::string from = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         std::string to = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
         return "chtholly_string_replace_all(" + object_str + ", " + from + ", " + to + ")";
+    }
+    if (function_name == "contains") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: contains requires one argument */"; }
+        string_used = true;
+        std::string sub = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "(" + cpp_object + ".find(" + sub + ") != std::string::npos)";
     }
 
     return "/* ERROR: Unknown string method call */";

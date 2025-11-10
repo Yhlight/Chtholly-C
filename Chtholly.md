@@ -735,6 +735,15 @@ Chtholly 的 `string` 类型提供了一系列内置方法来执行常见的字�
   let replaced = s.replace("hello", "hi"); // replaced 将是 "hi world, hi"
   ```
 
+- **`contains(sub: string) -> bool`**
+  检查字符串是否包含子字符串 `sub`。
+
+  ```Chtholly
+  let s = "hello world";
+  let has_world = s.contains("world"); // has_world 将是 true
+  let has_galaxy = s.contains("galaxy"); // has_galaxy 将是 false
+  ```
+
 #### 静态函数
 部分与字符串相关的函数仍然以静态形式提供，需要通过 `string::` 前缀调用。
 

@@ -153,6 +153,23 @@ TEST_F(TestString, StartsWithFunction) {
     ASSERT_EQ(result.stdout_output, "true\nfalse\ntrue\nfalse\ntrue\ntrue\n");
 }
 
+TEST_F(TestString, ContainsFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            let s = "hello world";
+            print(s.contains("world"));
+            print(s.contains("galaxy"));
+            print(s.contains(""));
+            print("".contains("a"));
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\ntrue\nfalse\n");
+}
+
 TEST_F(TestString, IsEmptyFunction) {
     std::string source = R"(
         import iostream;
