@@ -220,7 +220,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     if (auto array_literal = dynamic_cast<const ArrayLiteralExpr*>(&expr)) {
         vector_used = true;
         if (array_literal->elements.empty()) {
-            return TypeInfo{"std::vector<auto>"};
+            return TypeInfo{"std::vector<int>"}; // Default to int for empty arrays
         }
         TypeInfo element_type = get_type(*array_literal->elements[0]);
         return TypeInfo{"std::vector<" + element_type.name + ">"};
@@ -460,6 +460,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"auto"};
                 }
                 if (get_expr->name.lexeme == "contains") {
+                    return TypeInfo{"bool"};
+                }
+                if (get_expr->name.lexeme == "is_empty") {
                     return TypeInfo{"bool"};
                 }
             }
@@ -1281,6 +1284,19 @@ std::any Transpiler::handleArrayMethodCall(const CallExpr& expr, const GetExpr& 
         if (!expr.arguments.empty()) { return "/* ERROR: reverse takes no arguments */"; }
         imported_modules.insert("algorithm");
         return "std::reverse(" + object_str + ".begin(), " + object_str + ".end())";
+    }
+    if (function_name == "is_empty") {
+        if (!expr.arguments.empty()) { return "/* ERROR: is_empty takes no arguments */"; }
+        return object_str + ".empty()";
+    }
+    if (function_name == "clear") {
+        if (!expr.arguments.empty()) { return "/* ERROR: clear takes no arguments */"; }
+        return object_str + ".clear()";
+    }
+    if (function_name == "sort") {
+        if (!expr.arguments.empty()) { return "/* ERROR: sort takes no arguments */"; }
+        imported_modules.insert("algorithm");
+        return "std::sort(" + object_str + ".begin(), " + object_str + ".end())";
     }
 
     return "/* ERROR: Unknown array method call */";

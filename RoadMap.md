@@ -48,7 +48,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `filesystem` module with `fs_read` and `fs_write`
   - [x] `math` module with functions and constants
   - [x] `string` module with `length`, `substr`, `find`, `split`, and `join`
-  - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
+  - [x] `array` module with `length`, `push`, `pop`, `contains`, `reverse`, `is_empty`, `clear`, and `sort`
   - [x] `os` module with `exit` and `env`
   - [x] `random` module with `rand` and `randint`
   - [x] `time` module with `now`

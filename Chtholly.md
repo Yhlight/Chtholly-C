@@ -774,6 +774,32 @@ Chtholly 的 `array` 类型提供了一系列内置方法来操作动态数组�
   arr.reverse(); // arr 现在是 [3, 2, 1]
   ```
 
+- **`is_empty() -> bool`**
+  检查数组是否为空。
+
+  ```Chtholly
+  let arr1 = [];
+  let empty1 = arr1.is_empty(); // empty1 将是 true
+  let arr2 = [1];
+  let empty2 = arr2.is_empty(); // empty2 将是 false
+  ```
+
+- **`clear()`**
+  清空数组，移除所有元素。此方法要求数组是可变的。
+
+  ```Chtholly
+  mut arr = [1, 2, 3];
+  arr.clear(); // arr 现在是 []
+  ```
+
+- **`sort()`**
+  对数组进行原地排序。此方法要求数组是可变的。
+
+  ```Chtholly
+  mut arr = [3, 1, 4, 1, 5];
+  arr.sort(); // arr 现在是 [1, 1, 3, 4, 5]
+  ```
+
 ### OS Module
 Chtholly 的标准库 `os` 模块提供了与操作系统交互的功能，例如控制进程或访问环境变量。要使用这些功能，您必须首先导入 `os` 模块。
 

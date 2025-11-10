@@ -15,6 +15,54 @@ TEST_F(TestArrayStdLib, LengthFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST_F(TestArrayStdLib, IsEmptyFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            let arr1 = [];
+            print(arr1.is_empty());
+            let arr2 = [1, 2, 3];
+            print(arr2.is_empty());
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\n");
+}
+
+TEST_F(TestArrayStdLib, ClearFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            mut arr = [1, 2, 3];
+            arr.clear();
+            print(arr.length());
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "0\n");
+}
+
+TEST_F(TestArrayStdLib, SortFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            mut arr = [3, 1, 4, 1, 5, 9, 2, 6];
+            arr.sort();
+            for (let i in arr) {
+                print(i);
+            }
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "1\n1\n2\n3\n4\n5\n6\n9\n");
+}
+
 TEST_F(TestArrayStdLib, ContainsFunction) {
     std::string source = R"(
         import iostream;
