@@ -16,6 +16,40 @@ TEST_F(TestArrayStdLib, LengthFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
+TEST_F(TestArrayStdLib, ContainsFunction) {
+    std::string source = R"(
+        import array;
+        import iostream;
+        func main() -> int {
+            let arr = [1, 2, 3];
+            print(array::contains(arr, 2));
+            print(array::contains(arr, 4));
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\n");
+}
+
+TEST_F(TestArrayStdLib, ReverseFunction) {
+    std::string source = R"(
+        import array;
+        import iostream;
+        func main() -> int {
+            mut arr = [1, 2, 3];
+            array::reverse(arr);
+            for (let i in arr) {
+                print(i);
+            }
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "3\n2\n1\n");
+}
+
 TEST_F(TestArrayStdLib, PopFunction) {
     std::string source = R"(
         import array;

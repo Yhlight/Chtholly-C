@@ -722,6 +722,22 @@ import array;
   let last = array::pop(arr); // last 将是 3, arr 现在是 [1, 2]
   ```
 
+- **`array::contains(arr: &array[T], value: T) -> bool`**
+  检查数组 `arr` 是否包含 `value`。
+
+  ```Chtholly
+  let arr = [1, 2, 3];
+  let has_two = array::contains(arr, 2); // has_two 将是 true
+  ```
+
+- **`array::reverse(arr: &mut array[T])`**
+  反转数组 `arr` 中元素的顺序。该函数要求数组是可变的。
+
+  ```Chtholly
+  mut arr = [1, 2, 3];
+  array::reverse(arr); // arr 现在是 [3, 2, 1]
+  ```
+
 ### OS Module
 Chtholly 的标准库 `os` 模块提供了与操作系统交互的功能，例如控制进程或访问环境变量。要使用这些功能，您必须首先导入 `os` 模块。
 

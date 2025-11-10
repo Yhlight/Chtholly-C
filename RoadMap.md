@@ -46,7 +46,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `filesystem` module with `fs_read` and `fs_write`
   - [x] `math` module with functions and constants
   - [x] `string` module with `length`, `substr`, `find`, `split`, and `join`
-  - [x] `array` module with `length`, `push`, and `pop`
+  - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
   - [x] `os` module with `exit` and `env`
 - [x] Implement static reflection and metaprogramming features.
   - [x] Symbol table and basic type analysis engine

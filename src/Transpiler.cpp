@@ -411,6 +411,12 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"auto"};
                 }
                 }
+                if (get_expr->name.lexeme == "contains") {
+                    return TypeInfo{"bool"};
+                }
+                if (get_expr->name.lexeme == "reverse") {
+                    return TypeInfo{"void"};
+                }
             }
             if (var_expr->name.lexeme == "os") {
                 if (get_expr->name.lexeme == "env") {
@@ -516,6 +522,9 @@ std::string fs_read(const std::string& path) {
     }
     if (imported_modules.count("cstdlib")) {
         final_code << "#include <cstdlib>\n";
+    }
+    if (imported_modules.count("algorithm")) {
+        final_code << "#include <algorithm>\n";
     }
     if (vector_used) {
         final_code << "#include <vector>\n";
@@ -1154,6 +1163,23 @@ std::any Transpiler::handleArrayFunction(const CallExpr& expr) {
         std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "[&]() { auto val = " + arr + ".back(); " + arr + ".pop_back(); return val; }()";
     }
+    if (function_name == "contains") {
+        if (expr.arguments.size() != 2) {
+            return "/* ERROR: contains requires two arguments */";
+        }
+        imported_modules.insert("algorithm");
+        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string val = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "(std::find(" + arr + ".begin(), " + arr + ".end(), " + val + ") != " + arr + ".end())";
+    }
+    if (function_name == "reverse") {
+        if (expr.arguments.size() != 1) {
+            return "/* ERROR: reverse requires one argument */";
+        }
+        imported_modules.insert("algorithm");
+        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "std::reverse(" + arr + ".begin(), " + arr + ".end())";
+    }
 
     return "/* ERROR: Unknown array function call */";
 }
@@ -1277,7 +1303,12 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             std::stringstream out;
             out << "std::cout << ";
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
-                out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+                TypeInfo arg_type = get_type(*expr.arguments[i]);
+                if (arg_type.name == "bool") {
+                    out << "(" << std::any_cast<std::string>(expr.arguments[i]->accept(*this)) << " ? \"true\" : \"false\")";
+                } else {
+                    out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+                }
                 if (i < expr.arguments.size() - 1) {
                     out << " << ";
                 }
