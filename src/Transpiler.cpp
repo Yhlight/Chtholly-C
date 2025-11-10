@@ -680,7 +680,11 @@ std::any Transpiler::visitBinaryExpr(const BinaryExpr& expr) {
         {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
         {TokenType::AND, "and"}, {TokenType::OR, "or"},
         {TokenType::PLUS_EQUAL, "assign_add"}, {TokenType::MINUS_EQUAL, "assign_sub"}, {TokenType::STAR_EQUAL, "assign_mul"},
-        {TokenType::SLASH_EQUAL, "assign_div"}, {TokenType::PERCENT_EQUAL, "assign_mod"}
+        {TokenType::SLASH_EQUAL, "assign_div"}, {TokenType::PERCENT_EQUAL, "assign_mod"},
+        {TokenType::AMPERSAND, "bit_and"}, {TokenType::PIPE, "bit_or"}, {TokenType::CARET, "bit_xor"},
+        {TokenType::LESS_LESS, "shl"}, {TokenType::GREATER_GREATER, "shr"},
+        {TokenType::AMPERSAND_EQUAL, "assign_bit_and"}, {TokenType::PIPE_EQUAL, "assign_bit_or"}, {TokenType::CARET_EQUAL, "assign_bit_xor"},
+        {TokenType::LESS_LESS_EQUAL, "assign_shl"}, {TokenType::GREATER_GREATER_EQUAL, "assign_shr"}
     };
 
     auto it = binary_op_traits.find(expr.op.type);
@@ -704,7 +708,8 @@ std::any Transpiler::visitUnaryExpr(const UnaryExpr& expr) {
         {TokenType::MINUS_MINUS, "postfix_sub"}
     };
     static const std::map<TokenType, std::string> other_unary_op_traits = {
-        {TokenType::BANG, "not"}
+        {TokenType::BANG, "not"},
+        {TokenType::TILDE, "bit_not"}
     };
 
 

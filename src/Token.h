@@ -20,9 +20,13 @@ enum class TokenType {
     LESS, LESS_EQUAL,
     AMPERSAND, AND, // & and &&
     PIPE, OR,      // | and ||
+    CARET, TILDE,   // ^ and ~
+    LESS_LESS, GREATER_GREATER, // << and >>
 
     // Compound assignment operators
     PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL,
+    AMPERSAND_EQUAL, PIPE_EQUAL, CARET_EQUAL, // &=, |=, ^=
+    LESS_LESS_EQUAL, GREATER_GREATER_EQUAL, // <<=, >>=
 
     // Other multi-character tokens
     ARROW, COLON_COLON, PLUS_PLUS, MINUS_MINUS,

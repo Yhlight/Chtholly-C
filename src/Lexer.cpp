@@ -61,10 +61,20 @@ void Lexer::scanToken() {
             break;
         case '!': addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG); break;
         case '=': addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL); break;
-        case '<': addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS); break;
-        case '>': addToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER); break;
-        case '&': addToken(match('&') ? TokenType::AND : TokenType::AMPERSAND); break;
-        case '|': addToken(match('|') ? TokenType::OR : TokenType::PIPE); break;
+        case '<':
+            if (match('=')) { addToken(TokenType::LESS_EQUAL); }
+            else if (match('<')) { addToken(match('=') ? TokenType::LESS_LESS_EQUAL : TokenType::LESS_LESS); }
+            else { addToken(TokenType::LESS); }
+            break;
+        case '>':
+            if (match('=')) { addToken(TokenType::GREATER_EQUAL); }
+            else if (match('>')) { addToken(match('=') ? TokenType::GREATER_GREATER_EQUAL : TokenType::GREATER_GREATER); }
+            else { addToken(TokenType::GREATER); }
+            break;
+        case '&': addToken(match('&') ? TokenType::AND : (match('=') ? TokenType::AMPERSAND_EQUAL : TokenType::AMPERSAND)); break;
+        case '|': addToken(match('|') ? TokenType::OR : (match('=') ? TokenType::PIPE_EQUAL : TokenType::PIPE)); break;
+        case '^': addToken(match('=') ? TokenType::CARET_EQUAL : TokenType::CARET); break;
+        case '~': addToken(TokenType::TILDE); break;
 
         case '+':
             if (match('=')) { addToken(TokenType::PLUS_EQUAL); }

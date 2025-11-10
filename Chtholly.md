@@ -804,6 +804,12 @@ struct Point impl operator::add  // +
 , operator::and  // &&
 , operator::or  // ||
 , operator::not  // !
+, operator::bit_and // &
+, operator::bit_or // |
+, operator::bit_xor // ^
+, operator::bit_not // ~
+, operator::shl // <<
+, operator::shr // >>
 , operator::binary  // 自定义二元操作符，暂时不考虑三元
 // 更多待补充...
 {

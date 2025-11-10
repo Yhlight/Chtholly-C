@@ -99,6 +99,12 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `operator::prefix_sub`
   - [x] `operator::postfix_add`
   - [x] `operator::postfix_sub`
+  - [x] `operator::bit_and`
+  - [x] `operator::bit_or`
+  - [x] `operator::bit_xor`
+  - [x] `operator::bit_not`
+  - [x] `operator::shl`
+  - [x] `operator::shr`
   - [x] `operator::binary` (custom binary operators)
 - [x] Arrays
   - [x] Dynamic arrays (`array[T]`)
