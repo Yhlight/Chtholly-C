@@ -5,9 +5,8 @@ class TestString : public ::testing::Test {};
 
 TEST_F(TestString, LengthFunction) {
     std::string source = R"(
-        import string;
         let s = "hello";
-        let len = string::length(s);
+        let len = s.length();
     )";
     std::string expected = "const int len = s.length();";
     std::string transpiled = compile(source);
@@ -18,11 +17,10 @@ TEST_F(TestString, LengthFunction) {
 
 TEST_F(TestString, SplitFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
             let s = "hello,world,chtholly";
-            let parts = string::split(s, ",");
+            let parts = s.split(",");
             for (let part in parts) {
                 print(part);
             }
@@ -52,9 +50,8 @@ TEST_F(TestString, JoinFunction) {
 
 TEST_F(TestString, FindFunctionFound) {
     std::string source = R"(
-        import string;
         let s = "hello world";
-        let pos = string::find(s, "world");
+        let pos = s.find("world");
     )";
     std::string expected = "const std::optional<int> pos = (s.find(\"world\") == std::string::npos) ? std::nullopt : std::optional<int>(s.find(\"world\"));";
     std::string transpiled = compile(source);
@@ -65,9 +62,8 @@ TEST_F(TestString, FindFunctionFound) {
 
 TEST_F(TestString, FindFunctionNotFound) {
     std::string source = R"(
-        import string;
         let s = "hello world";
-        let pos = string::find(s, "galaxy");
+        let pos = s.find("galaxy");
     )";
     std::string expected = "const std::optional<int> pos = (s.find(\"galaxy\") == std::string::npos) ? std::nullopt : std::optional<int>(s.find(\"galaxy\"));";
     std::string transpiled = compile(source);
@@ -78,9 +74,8 @@ TEST_F(TestString, FindFunctionNotFound) {
 
 TEST_F(TestString, SubstrFunction) {
     std::string source = R"(
-        import string;
         let s = "hello world";
-        let sub = string::substr(s, 6, 5);
+        let sub = s.substr(6, 5);
     )";
     std::string expected = "const std::string sub = s.substr(6, 5);";
     std::string transpiled = compile(source);
@@ -91,12 +86,12 @@ TEST_F(TestString, SubstrFunction) {
 
 TEST_F(TestString, ToUpperFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
-            print(string::to_upper("hello world"));
-            print(string::to_upper(""));
-            print(string::to_upper("ALREADY UPPER"));
+            print("hello world".to_upper());
+            print("".to_upper());
+            let s = "ALREADY UPPER";
+            print(s.to_upper());
             return 0;
         }
     )";
@@ -107,12 +102,12 @@ TEST_F(TestString, ToUpperFunction) {
 
 TEST_F(TestString, ToLowerFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
-            print(string::to_lower("HELLO WORLD"));
-            print(string::to_lower(""));
-            print(string::to_lower("already lower"));
+            print("HELLO WORLD".to_lower());
+            print("".to_lower());
+            let s = "already lower";
+            print(s.to_lower());
             return 0;
         }
     )";
@@ -123,15 +118,14 @@ TEST_F(TestString, ToLowerFunction) {
 
 TEST_F(TestString, TrimFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
-            print(string::trim("  hello world  "));
-            print(string::trim("no spaces"));
-            print(string::trim(""));
-            print(string::trim("   "));
-            print(string::trim(" leading"));
-            print(string::trim("trailing  "));
+            print("  hello world  ".trim());
+            print("no spaces".trim());
+            print("".trim());
+            print("   ".trim());
+            print(" leading".trim());
+            print("trailing  ".trim());
             return 0;
         }
     )";
@@ -142,16 +136,15 @@ TEST_F(TestString, TrimFunction) {
 
 TEST_F(TestString, StartsWithFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
             let s = "hello world";
-            print(string::starts_with(s, "hello"));
-            print(string::starts_with(s, "world"));
-            print(string::starts_with(s, ""));
-            print(string::starts_with("", "a"));
-            print(string::starts_with("", ""));
-            print(string::starts_with(s, "hello world"));
+            print(s.starts_with("hello"));
+            print(s.starts_with("world"));
+            print(s.starts_with(""));
+            print("".starts_with("a"));
+            print("".starts_with(""));
+            print(s.starts_with("hello world"));
             return 0;
         }
     )";
@@ -162,16 +155,15 @@ TEST_F(TestString, StartsWithFunction) {
 
 TEST_F(TestString, EndsWithFunction) {
     std::string source = R"(
-        import string;
         import iostream;
         func main() -> int {
             let s = "hello world";
-            print(string::ends_with(s, "world"));
-            print(string::ends_with(s, "hello"));
-            print(string::ends_with(s, ""));
-            print(string::ends_with("", "a"));
-            print(string::ends_with("", ""));
-            print(string::ends_with(s, "hello world"));
+            print(s.ends_with("world"));
+            print(s.ends_with("hello"));
+            print(s.ends_with(""));
+            print("".ends_with("a"));
+            print("".ends_with(""));
+            print(s.ends_with("hello world"));
             return 0;
         }
     )";

@@ -67,6 +67,7 @@ private:
     std::any handleReflectFunction(const CallExpr& expr);
     std::any handleUtilFunction(const CallExpr& expr);
     std::any handleMathFunction(const CallExpr& expr);
+    std::any handleStringMethodCall(const CallExpr& expr, const GetExpr& get_expr);
     std::any handleStringFunction(const CallExpr& expr);
     std::any handleArrayFunction(const CallExpr& expr);
     std::any handleOSFunction(const CallExpr& expr);
@@ -95,6 +96,7 @@ private:
     bool result_static_check_used = false;
     bool function_used = false;
     bool string_used = false;
+    bool string_helpers_used = false;
     bool type_traits_used = false;
     TypeInfo contextual_type;
     const TypeExpr* current_function_return_type = nullptr;

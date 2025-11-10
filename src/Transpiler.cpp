@@ -372,24 +372,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 return TypeInfo{"double"};
             }
             if (var_expr->name.lexeme == "string") {
-                if (get_expr->name.lexeme == "length") {
-                    return TypeInfo{"int"};
-                }
-                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim") {
-                    return TypeInfo{"std::string"};
-                }
-                if (get_expr->name.lexeme == "find") {
-                    return TypeInfo{"std::optional<int>"};
-                }
-                if (get_expr->name.lexeme == "split") {
-                    vector_used = true;
-                    return TypeInfo{"std::vector<std::string>"};
-                }
                 if (get_expr->name.lexeme == "join") {
                     return TypeInfo{"std::string"};
-                }
-                if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with") {
-                    return TypeInfo{"bool"};
                 }
             }
             if (var_expr->name.lexeme == "array") {
@@ -440,6 +424,25 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"int"};
                 }
             }
+            }
+            if (object_type.name == "std::string") {
+                if (get_expr->name.lexeme == "length") {
+                    return TypeInfo{ "int" };
+                }
+                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim") {
+                    return TypeInfo{ "std::string" };
+                }
+                if (get_expr->name.lexeme == "find") {
+                    optional_used = true;
+                    return TypeInfo{ "std::optional<int>" };
+                }
+                if (get_expr->name.lexeme == "split") {
+                    vector_used = true;
+                    return TypeInfo{ "std::vector<std::string>" };
+                }
+                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with") {
+                    return TypeInfo{ "bool" };
+                }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -592,7 +595,7 @@ constexpr bool chtholly_is_fail(const T& value) {
     if (function_used) {
         final_code << "#include <functional>\n";
     }
-    if (imported_modules.count("string")) {
+    if (string_helpers_used) {
         final_code << "#include <string>\n";
         final_code << "#include <vector>\n";
         final_code << "#include <sstream>\n";
@@ -1158,73 +1161,91 @@ std::any Transpiler::handleMathFunction(const CallExpr& expr) {
     return "/* ERROR: Unknown math function call */";
 }
 
+std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr& get_expr) {
+    std::string object_str = std::any_cast<std::string>(get_expr.object->accept(*this));
+    std::string function_name = get_expr.name.lexeme;
+
+    // Check if the object expression results in a string literal.
+    // This is needed to wrap literals in std::string() for member access.
+    const Expr* base_expr = get_expr.object.get();
+    if (auto group = dynamic_cast<const GroupingExpr*>(base_expr)) {
+        base_expr = group->expression.get();
+    }
+    bool is_string_literal = false;
+    if (auto literal = dynamic_cast<const LiteralExpr*>(base_expr)) {
+        if (std::holds_alternative<std::string>(literal->value)) {
+            is_string_literal = true;
+        }
+    }
+
+    // For direct member calls, wrap literal; for helpers, don't.
+    std::string cpp_object = object_str;
+    if (is_string_literal) {
+        cpp_object = "std::string(" + object_str + ")";
+        string_used = true;
+    }
+
+    if (function_name == "length") {
+        if (!expr.arguments.empty()) { return "/* ERROR: length takes no arguments */"; }
+        return cpp_object + ".length()";
+    }
+    if (function_name == "substr") {
+        if (expr.arguments.size() != 2) { return "/* ERROR: substr requires two arguments */"; }
+        return cpp_object + ".substr(" +
+            std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
+            std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+    }
+    if (function_name == "find") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: find requires one argument */"; }
+        optional_used = true;
+        string_used = true; // For std::string::npos
+        std::string sub = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "(" + cpp_object + ".find(" + sub + ") == std::string::npos) ? std::nullopt : std::optional<int>(" + cpp_object + ".find(" + sub + "))";
+    }
+    if (function_name == "split") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: split requires one argument */"; }
+        string_helpers_used = true;
+        return "chtholly_string_split(" + object_str + ", " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "to_upper") {
+        if (!expr.arguments.empty()) { return "/* ERROR: to_upper takes no arguments */"; }
+        string_helpers_used = true;
+        return "chtholly_string_to_upper(" + object_str + ")";
+    }
+    if (function_name == "to_lower") {
+        if (!expr.arguments.empty()) { return "/* ERROR: to_lower takes no arguments */"; }
+        string_helpers_used = true;
+        return "chtholly_string_to_lower(" + object_str + ")";
+    }
+    if (function_name == "trim") {
+        if (!expr.arguments.empty()) { return "/* ERROR: trim takes no arguments */"; }
+        string_helpers_used = true;
+        return "chtholly_string_trim(" + object_str + ")";
+    }
+    if (function_name == "starts_with") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: starts_with requires one argument */"; }
+        std::string prefix = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "([&]() { std::string s_val = " + cpp_object + "; std::string p_val = " + prefix + "; return s_val.find(p_val, 0) == 0; }())";
+    }
+    if (function_name == "ends_with") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: ends_with requires one argument */"; }
+        std::string suffix = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "([&]() { std::string s_val = " + cpp_object + "; std::string suf_val = " + suffix + "; return s_val.size() >= suf_val.size() && s_val.compare(s_val.size() - suf_val.size(), suf_val.size(), suf_val) == 0; }())";
+    }
+
+    return "/* ERROR: Unknown string method call */";
+}
+
 std::any Transpiler::handleStringFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
 
-    if (function_name == "length") {
-        if (expr.arguments.size() != 1) {
-            return "/* ERROR: length requires one argument */";
-        }
-        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".length()";
-    }
-    if (function_name == "substr") {
-        if (expr.arguments.size() != 3) {
-            return "/* ERROR: substr requires three arguments */";
-        }
-        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".substr(" +
-               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ", " +
-               std::any_cast<std::string>(expr.arguments[2]->accept(*this)) + ")";
-    }
-    if (function_name == "find") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: find requires two arguments */";
-        }
-        optional_used = true;
-        string_used = true; // For std::string::npos
-        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        std::string sub = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
-        return "(" + s + ".find(" + sub + ") == std::string::npos) ? std::nullopt : std::optional<int>(" + s + ".find(" + sub + "))";
-    }
-    if (function_name == "split") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: split requires two arguments */";
-        }
-        vector_used = true;
-        string_used = true;
-        imported_modules.insert("sstream");
-        return "chtholly_string_split(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
-    }
     if (function_name == "join") {
         if (expr.arguments.size() != 2) {
             return "/* ERROR: join requires two arguments */";
         }
-        string_used = true;
+        string_helpers_used = true;
         return "chtholly_string_join(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
-    }
-    if (function_name == "to_upper") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: to_upper requires one argument */"; }
-        return "chtholly_string_to_upper(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    }
-    if (function_name == "to_lower") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: to_lower requires one argument */"; }
-        return "chtholly_string_to_lower(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    }
-    if (function_name == "trim") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: trim requires one argument */"; }
-        return "chtholly_string_trim(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    }
-    if (function_name == "starts_with") {
-        if (expr.arguments.size() != 2) { return "/* ERROR: starts_with requires two arguments */"; }
-        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        std::string prefix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
-        return "([&]() { std::string s_val = " + s + "; std::string p_val = " + prefix + "; return s_val.find(p_val, 0) == 0; }())";
-    }
-    if (function_name == "ends_with") {
-        if (expr.arguments.size() != 2) { return "/* ERROR: ends_with requires two arguments */"; }
-        std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        std::string suffix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
-        return "([&]() { std::string s_val = " + s + "; std::string suf_val = " + suffix + "; return s_val.size() >= suf_val.size() && s_val.compare(s_val.size() - suf_val.size(), suf_val.size(), suf_val) == 0; }())";
     }
 
     return "/* ERROR: Unknown string function call */";
@@ -1364,6 +1385,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             if (get_expr->name.lexeme == "is_fail") {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".is_fail()";
             }
+        }
+        if (object_type.name == "std::string") {
+            return handleStringMethodCall(expr, *get_expr);
         }
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "result") {

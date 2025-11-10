@@ -639,93 +639,94 @@ import math;
 - **`math::PI`**: 圆周率 π (约 3.14159)。
 - **`math::E`**: 自然对数的底 e (约 2.71828)。
 
-### String Module
-Chtholly 的标准库 `string` 模块提供了一系列用于操作字符串的函数。要使用这些函数，您必须首先导入 `string` 模块。
+### String Methods
+Chtholly 的 `string` 类型提供了一系列内置方法来执行常见的字符串操作。这些方法可以直接在任何字符串变量或字面量上调用，无需导入任何模块。
 
-```Chtholly
-import string;
-```
+#### 方法
 
-#### 函数
-
-- **`string::length(s: string) -> int`**
-  返回字符串 `s` 的长度。
+- **`length() -> int`**
+  返回字符串的长度。
 
   ```Chtholly
   let s = "hello";
-  let length = string::length(s); // length 将是 5
+  let length = s.length(); // length 将是 5
   ```
 
-- **`string::substr(s: string, start: int, count: int) -> string`**
+- **`substr(start: int, count: int) -> string`**
   返回一个从索引 `start` 开始，长度为 `count` 的新子字符串。
 
   ```Chtholly
   let s = "hello world";
-  let sub = string::substr(s, 6, 5); // sub 将是 "world"
+  let sub = s.substr(6, 5); // sub 将是 "world"
   ```
 
-- **`string::find(s: string, sub: string) -> option<int>`**
-  在字符串 `s` 中查找子字符串 `sub`。如果找到，则返回一个包含起始索引的 `option<int>`；如果未找到，则返回 `none`。
+- **`find(sub: string) -> option<int>`**
+  在字符串中查找子字符串 `sub`。如果找到，则返回一个包含起始索引的 `option<int>`；如果未找到，则返回 `none`。
 
   ```Chtholly
   let s = "hello world";
-  let pos1 = string::find(s, "world"); // pos1 将是 option{value: 6}
-  let pos2 = string::find(s, "galaxy"); // pos2 将是 none
+  let pos1 = s.find("world"); // pos1 将是 option{value: 6}
+  let pos2 = s.find("galaxy"); // pos2 将是 none
   ```
 
-- **`string::split(s: string, delimiter: string) -> array[string]`**
-  使用 `delimiter` 将字符串 `s` 分割成一个字符串数组。
+- **`split(delimiter: string) -> array[string]`**
+  使用 `delimiter` 将字符串分割成一个字符串数组。
 
   ```Chtholly
   let s = "hello,world,chtholly";
-  let parts = string::split(s, ","); // parts 将是 ["hello", "world", "chtholly"]
+  let parts = s.split(","); // parts 将是 ["hello", "world", "chtholly"]
   ```
+
+- **`to_upper() -> string`**
+  将字符串中的所有字符转换为大写，并返回一个新字符串。
+
+  ```Chtholly
+  let s = "hello world";
+  let upper = s.to_upper(); // upper 将是 "HELLO WORLD"
+  ```
+
+- **`to_lower() -> string`**
+  将字符串中的所有字符转换为小写，并返回一个新字符串。
+
+  ```Chtholly
+  let s = "HELLO WORLD";
+  let lower = s.to_lower(); // lower 将是 "hello world"
+  ```
+
+- **`trim() -> string`**
+  移除字符串两端的空白字符，并返回一个新字符串。
+
+  ```Chtholly
+  let s = "  hello world  ";
+  let trimmed = s.trim(); // trimmed 将是 "hello world"
+  ```
+
+- **`starts_with(prefix: string) -> bool`**
+  检查字符串是否以 `prefix` 开头。
+
+  ```Chtholly
+  let s = "hello world";
+  let starts = s.starts_with("hello"); // starts 将是 true
+  ```
+
+- **`ends_with(suffix: string) -> bool`**
+  检查字符串是否以 `suffix` 结尾。
+
+  ```Chtholly
+  let s = "hello world";
+  let ends = s.ends_with("world"); // ends 将是 true
+  ```
+
+#### 静态函数
+部分与字符串相关的函数仍然以静态形式提供，需要通过 `string::` 前缀调用。
 
 - **`string::join(arr: array[string], separator: string) -> string`**
   使用 `separator` 将一个字符串数组 `arr` 连接成单个字符串。
 
   ```Chtholly
+  import string; // 'join' is a static function and requires importing the 'string' module.
   let arr = ["hello", "world", "chtholly"];
   let s = string::join(arr, ","); // s 将是 "hello,world,chtholly"
-  ```
-- **`string::to_upper(s: string) -> string`**
-  将字符串 `s` 中的所有字符转换为大写，并返回一个新字符串。
-
-  ```Chtholly
-  let s = "hello world";
-  let upper = string::to_upper(s); // upper 将是 "HELLO WORLD"
-  ```
-
-- **`string::to_lower(s: string) -> string`**
-  将字符串 `s` 中的所有字符转换为小写，并返回一个新字符串。
-
-  ```Chtholly
-  let s = "HELLO WORLD";
-  let lower = string::to_lower(s); // lower 将是 "hello world"
-  ```
-
-- **`string::trim(s: string) -> string`**
-  移除字符串 `s` 两端的空白字符，并返回一个新字符串。
-
-  ```Chtholly
-  let s = "  hello world  ";
-  let trimmed = string::trim(s); // trimmed 将是 "hello world"
-  ```
-
-- **`string::starts_with(s: string, prefix: string) -> bool`**
-  检查字符串 `s` 是否以 `prefix` 开头。
-
-  ```Chtholly
-  let s = "hello world";
-  let starts = string::starts_with(s, "hello"); // starts 将是 true
-  ```
-
-- **`string::ends_with(s: string, suffix: string) -> bool`**
-  检查字符串 `s` 是否以 `suffix` 结尾。
-
-  ```Chtholly
-  let s = "hello world";
-  let ends = string::ends_with(s, "world"); // ends 将是 true
   ```
 
 ### Array Module
