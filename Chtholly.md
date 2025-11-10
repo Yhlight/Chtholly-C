@@ -717,6 +717,24 @@ Chtholly 的 `string` 类型提供了一系列内置方法来执行常见的字�
   let ends = s.ends_with("world"); // ends 将是 true
   ```
 
+- **`is_empty() -> bool`**
+  检查字符串是否为空。
+
+  ```Chtholly
+  let s1 = "";
+  let empty1 = s1.is_empty(); // empty1 将是 true
+  let s2 = "hello";
+  let empty2 = s2.is_empty(); // empty2 将是 false
+  ```
+
+- **`replace(from: string, to: string) -> string`**
+  将字符串中所有出现的 `from` 子字符串替换为 `to`，并返回一个新字符串。
+
+  ```Chtholly
+  let s = "hello world, hello";
+  let replaced = s.replace("hello", "hi"); // replaced 将是 "hi world, hi"
+  ```
+
 #### 静态函数
 部分与字符串相关的函数仍然以静态形式提供，需要通过 `string::` 前缀调用。
 

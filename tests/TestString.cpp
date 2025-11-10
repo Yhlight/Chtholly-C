@@ -153,6 +153,43 @@ TEST_F(TestString, StartsWithFunction) {
     ASSERT_EQ(result.stdout_output, "true\nfalse\ntrue\nfalse\ntrue\ntrue\n");
 }
 
+TEST_F(TestString, IsEmptyFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            let s1 = "";
+            print(s1.is_empty());
+            let s2 = "hello";
+            print(s2.is_empty());
+            print("".is_empty());
+            print("  ".is_empty());
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\nfalse\ntrue\nfalse\n");
+}
+
+TEST_F(TestString, ReplaceFunction) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            let s1 = "hello world, hello chtholly";
+            print(s1.replace("hello", "hi"));
+            let s2 = "no change";
+            print(s2.replace("foo", "bar"));
+            let s3 = "aaaaa";
+            print(s3.replace("a", "b"));
+            print("".replace("a", "b"));
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "hi world, hi chtholly\nno change\nbbbbb\n\n");
+}
+
 TEST_F(TestString, EndsWithFunction) {
     std::string source = R"(
         import iostream;

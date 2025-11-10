@@ -429,7 +429,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 if (get_expr->name.lexeme == "length") {
                     return TypeInfo{ "int" };
                 }
-                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim") {
+                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim" || get_expr->name.lexeme == "replace") {
                     return TypeInfo{ "std::string" };
                 }
                 if (get_expr->name.lexeme == "find") {
@@ -440,7 +440,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     vector_used = true;
                     return TypeInfo{ "std::vector<std::string>" };
                 }
-                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with") {
+                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with" || get_expr->name.lexeme == "is_empty") {
                     return TypeInfo{ "bool" };
                 }
             }
@@ -670,6 +670,15 @@ std::string chtholly_string_trim(const std::string& s) {
     }
     auto end = s.find_last_not_of(" \t\n\r");
     return s.substr(start, end - start + 1);
+}
+
+std::string chtholly_string_replace_all(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
 }
 )";
     } else if (string_used) {
@@ -1253,6 +1262,17 @@ std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr&
         if (expr.arguments.size() != 1) { return "/* ERROR: ends_with requires one argument */"; }
         std::string suffix = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "([&]() { std::string s_val = " + cpp_object + "; std::string suf_val = " + suffix + "; return s_val.size() >= suf_val.size() && s_val.compare(s_val.size() - suf_val.size(), suf_val.size(), suf_val) == 0; }())";
+    }
+    if (function_name == "is_empty") {
+        if (!expr.arguments.empty()) { return "/* ERROR: is_empty takes no arguments */"; }
+        return cpp_object + ".empty()";
+    }
+    if (function_name == "replace") {
+        if (expr.arguments.size() != 2) { return "/* ERROR: replace requires two arguments */"; }
+        string_helpers_used = true;
+        std::string from = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string to = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "chtholly_string_replace_all(" + object_str + ", " + from + ", " + to + ")";
     }
 
     return "/* ERROR: Unknown string method call */";
