@@ -28,6 +28,7 @@ add_executable(chtholly_tests
     TestString.cpp
     TestArrayStdLib.cpp
         TestOS.cpp
+    TestTime.cpp
 )
 
 add_dependencies(chtholly_tests chtholly)

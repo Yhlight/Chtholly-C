@@ -193,7 +193,7 @@ std::unique_ptr<Stmt> Parser::importStatement() {
     std::variant<std::string, Token> path;
     if (match(TokenType::STRING_LITERAL)) {
         path = std::get<std::string>(previous().literal);
-    } else if (match(TokenType::IDENTIFIER, TokenType::IOSTREAM, TokenType::FILESYSTEM, TokenType::OPERATOR, TokenType::REFLECT, TokenType::META, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS)) {
+    } else if (match(TokenType::IDENTIFIER, TokenType::IOSTREAM, TokenType::FILESYSTEM, TokenType::OPERATOR, TokenType::REFLECT, TokenType::META, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS, TokenType::TIME)) {
         path = previous();
     } else {
         throw error(peek(), "Expect module name or file path after 'import'.");
@@ -586,7 +586,7 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS, TokenType::TIME)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }
