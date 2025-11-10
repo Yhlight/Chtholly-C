@@ -812,6 +812,29 @@ import os;
   }
   ```
 
+### Random Module
+Chtholly 的标准库 `random` 模块提供了生成随机数的功能。要使用这些函数，您必须首先导入 `random` 模块。
+
+```Chtholly
+import random;
+```
+
+#### 函数
+
+- **`random::rand() -> double`**
+  返回一个介于 0.0 (含) 和 1.0 (不含) 之间的随机浮点数。
+
+  ```Chtholly
+  let r = random::rand(); // r 可能是 0.12345
+  ```
+
+- **`random::randint(min: int, max: int) -> int`**
+  返回一个在 [`min`, `max`] (含) 范围内的随机整数。
+
+  ```Chtholly
+  let num = random::randint(1, 100); // num 将是 1 到 100 之间的一个随机整数
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  

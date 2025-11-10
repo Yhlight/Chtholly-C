@@ -432,6 +432,14 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"long long"};
                 }
             }
+            if (var_expr->name.lexeme == "random") {
+                if (get_expr->name.lexeme == "rand") {
+                    return TypeInfo{"double"};
+                }
+                if (get_expr->name.lexeme == "randint") {
+                    return TypeInfo{"int"};
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -527,6 +535,9 @@ std::string fs_read(const std::string& path) {
     }
     if (imported_modules.count("math")) {
         final_code << "#include <cmath>\n";
+    }
+    if (imported_modules.count("random")) {
+        final_code << "#include <random>\n";
     }
     if (imported_modules.count("cstdlib")) {
         final_code << "#include <cstdlib>\n";
@@ -625,15 +636,15 @@ std::string chtholly_string_to_lower(std::string s) {
 }
 
 std::string chtholly_string_trim(const std::string& s) {
-    auto start = s.begin();
-    while (start != s.end() && std::isspace(*start)) {
-        start++;
+    if (s.empty()) {
+        return "";
     }
-    auto end = s.end();
-    do {
-        end--;
-    } while (std::distance(start, end) > 0 && std::isspace(*end));
-    return std::string(start, end + 1);
+    auto start = s.find_first_not_of(" \t\n\r");
+    if (start == std::string::npos) {
+        return "";
+    }
+    auto end = s.find_last_not_of(" \t\n\r");
+    return s.substr(start, end - start + 1);
 }
 )";
     } else if (string_used) {
@@ -1207,7 +1218,7 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
         if (expr.arguments.size() != 2) { return "/* ERROR: starts_with requires two arguments */"; }
         std::string s = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         std::string prefix = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
-        return "([&]() { std::string s_val = " + s + "; std::string p_val = " + prefix + "; return s_val.rfind(p_val, 0) == 0; }())";
+        return "([&]() { std::string s_val = " + s + "; std::string p_val = " + prefix + "; return s_val.find(p_val, 0) == 0; }())";
     }
     if (function_name == "ends_with") {
         if (expr.arguments.size() != 2) { return "/* ERROR: ends_with requires two arguments */"; }
@@ -1303,6 +1314,28 @@ std::any Transpiler::handleTimeFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown time function call */");
 }
 
+std::any Transpiler::handleRandomFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "rand") {
+        if (!expr.arguments.empty()) {
+            return std::string("/* ERROR: random::rand takes no arguments */");
+        }
+        return std::string("([&]() { std::random_device rd; std::mt19937 gen(rd()); std::uniform_real_distribution<> distrib(0.0, 1.0); return distrib(gen); }())");
+    }
+    if (function_name == "randint") {
+        if (expr.arguments.size() != 2) {
+            return std::string("/* ERROR: random::randint requires two arguments */");
+        }
+        std::string min = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string max = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "([&]() { std::random_device rd; std::mt19937 gen(rd()); std::uniform_int_distribution<> distrib(" + min + ", " + max + "); return distrib(gen); }())";
+    }
+
+    return "/* ERROR: Unknown random function call */";
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1381,6 +1414,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "time") {
                 return handleTimeFunction(expr);
+            }
+            if (var_expr->name.lexeme == "random") {
+                return handleRandomFunction(expr);
             }
         }
     }
