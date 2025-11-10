@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-TEST(TestTime, Now) {
+class TimeTest : public TranspilerTest {};
+
+TEST_F(TimeTest, Now) {
     std::string code = R"(
         import time;
         func main() -> int {
@@ -9,6 +11,6 @@ TEST(TestTime, Now) {
             return t > 0;
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 1);
 }

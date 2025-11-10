@@ -796,6 +796,43 @@ import time;
   }
   ```
 
+### Random Module
+Chtholly 的标准库 `random` 模块提供了生成伪随机数的功能。要使用这些函数，您必须首先导入 `random` 模块。
+
+```Chtholly
+import random;
+```
+
+#### 函数
+
+- **`random::rand() -> double`**
+  返回 `[0.0, 1.0)` 范围内的下一个伪随机浮点数。
+
+  ```Chtholly
+  import random;
+  import iostream;
+
+  func main() -> int {
+      let r = random::rand();
+      print(r);
+      return 0;
+  }
+  ```
+
+- **`random::randint(min: int, max: int) -> int`**
+  返回 `[min, max]` 范围内的下一个伪随机整数。
+
+  ```Chtholly
+  import random;
+  import iostream;
+
+  func main() -> int {
+      let r = random::randint(1, 100);
+      print(r);
+      return 0;
+  }
+  ```
+
 ### operator
 #### 操作符自定义
 Chtholly支持操作符自定义，此功能由模块operator提供  

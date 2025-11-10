@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-class TestString : public ::testing::Test {};
+class StringTest : public TranspilerTest {};
 
-TEST_F(TestString, LengthFunction) {
+TEST_F(StringTest, LengthFunction) {
     std::string source = R"(
         import string;
         let s = "hello";
@@ -16,7 +16,7 @@ TEST_F(TestString, LengthFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST_F(TestString, SplitFunction) {
+TEST_F(StringTest, SplitFunction) {
     std::string source = R"(
         import string;
         import iostream;
@@ -29,12 +29,12 @@ TEST_F(TestString, SplitFunction) {
             return 0;
         }
     )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stdout_output, "hello\nworld\nchtholly\n");
 }
 
-TEST_F(TestString, JoinFunction) {
+TEST_F(StringTest, JoinFunction) {
     std::string source = R"(
         import string;
         import iostream;
@@ -45,12 +45,12 @@ TEST_F(TestString, JoinFunction) {
             return 0;
         }
     )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stdout_output, "hello,world,chtholly\n");
 }
 
-TEST_F(TestString, FindFunctionFound) {
+TEST_F(StringTest, FindFunctionFound) {
     std::string source = R"(
         import string;
         let s = "hello world";
@@ -63,7 +63,7 @@ TEST_F(TestString, FindFunctionFound) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST_F(TestString, FindFunctionNotFound) {
+TEST_F(StringTest, FindFunctionNotFound) {
     std::string source = R"(
         import string;
         let s = "hello world";
@@ -76,7 +76,7 @@ TEST_F(TestString, FindFunctionNotFound) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST_F(TestString, SubstrFunction) {
+TEST_F(StringTest, SubstrFunction) {
     std::string source = R"(
         import string;
         let s = "hello world";

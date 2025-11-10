@@ -529,6 +529,9 @@ std::string fs_read(const std::string& path) {
     if (imported_modules.count("chrono")) {
         final_code << "#include <chrono>\n";
     }
+    if (random_used) {
+        final_code << "#include <random>\n";
+    }
     if (vector_used) {
         final_code << "#include <vector>\n";
     }
@@ -1231,6 +1234,30 @@ std::any Transpiler::handleTimeFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown time function call */");
 }
 
+std::any Transpiler::handleRandomFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "rand") {
+        if (!expr.arguments.empty()) {
+            return std::string("/* ERROR: random::rand does not take any arguments */");
+        }
+        random_used = true;
+        return std::string("[&]() { std::mt19937 gen{std::random_device{}()}; return std::uniform_real_distribution<double>(0.0, 1.0)(gen); }()");
+    }
+    if (function_name == "randint") {
+        if (expr.arguments.size() != 2) {
+            return std::string("/* ERROR: random::randint requires two arguments */");
+        }
+        random_used = true;
+        std::string min = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        std::string max = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
+        return "[&]() { std::mt19937 gen{std::random_device{}()}; return std::uniform_int_distribution<int>(" + min + ", " + max + ")(gen); }()";
+    }
+
+    return std::string("/* ERROR: Unknown random function call */");
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1309,6 +1336,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "time") {
                 return handleTimeFunction(expr);
+            }
+            if (var_expr->name.lexeme == "random") {
+                return handleRandomFunction(expr);
             }
         }
     }

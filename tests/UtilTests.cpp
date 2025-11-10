@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-TEST(UtilTest, StringCastInt) {
+class UtilTest : public TranspilerTest {};
+
+TEST_F(UtilTest, StringCastInt) {
     std::string source = R"(
         import util;
         let x: int = 10;
@@ -12,7 +14,7 @@ TEST(UtilTest, StringCastInt) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST(UtilTest, PanicFunction) {
+TEST_F(UtilTest, PanicFunction) {
     std::string source = R"(
         import util;
         func main() -> int {
@@ -20,12 +22,12 @@ TEST(UtilTest, PanicFunction) {
             return 0; // Should not be reached
         }
     )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_NE(result.exit_code, 0);
     ASSERT_EQ(result.stderr_output, "Panic: This is a test panic.\n");
 }
 
-TEST(UtilTest, StringCastDouble) {
+TEST_F(UtilTest, StringCastDouble) {
     std::string source = R"(
         import util;
         let x: double = 10.5;
@@ -36,7 +38,7 @@ TEST(UtilTest, StringCastDouble) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST(UtilTest, StringCastCustomType) {
+TEST_F(UtilTest, StringCastCustomType) {
     std::string source =
         "import util;"
         "struct Point impl util::to_string {"

@@ -30,6 +30,7 @@ add_executable(chtholly_tests
     TestOS.cpp
     TestBitwiseOperators.cpp
     TestTime.cpp
+    TestRandom.cpp
 )
 
 add_dependencies(chtholly_tests chtholly)

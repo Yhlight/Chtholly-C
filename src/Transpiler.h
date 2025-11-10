@@ -71,6 +71,7 @@ private:
     std::any handleArrayFunction(const CallExpr& expr);
     std::any handleOSFunction(const CallExpr& expr);
     std::any handleTimeFunction(const CallExpr& expr);
+    std::any handleRandomFunction(const CallExpr& expr);
     void enterScope();
     void exitScope();
     void define(const std::string& name, const TypeInfo& type);
@@ -95,6 +96,7 @@ private:
     bool function_used = false;
     bool string_used = false;
     bool type_traits_used = false;
+    bool random_used = false;
     TypeInfo contextual_type;
     const TypeExpr* current_function_return_type = nullptr;
     std::set<std::string>* transpiled_files;

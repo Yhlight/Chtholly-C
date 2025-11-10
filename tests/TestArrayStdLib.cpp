@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-class TestArrayStdLib : public ::testing::Test {};
+class ArrayStdLibTest : public TranspilerTest {};
 
-TEST_F(TestArrayStdLib, LengthFunction) {
+TEST_F(ArrayStdLibTest, LengthFunction) {
     std::string source = R"(
         import array;
         let arr = [1, 2, 3];
@@ -16,7 +16,7 @@ TEST_F(TestArrayStdLib, LengthFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST_F(TestArrayStdLib, ContainsFunction) {
+TEST_F(ArrayStdLibTest, ContainsFunction) {
     std::string source = R"(
         import array;
         import iostream;
@@ -27,12 +27,12 @@ TEST_F(TestArrayStdLib, ContainsFunction) {
             return 0;
         }
     )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stdout_output, "true\nfalse\n");
 }
 
-TEST_F(TestArrayStdLib, ReverseFunction) {
+TEST_F(ArrayStdLibTest, ReverseFunction) {
     std::string source = R"(
         import array;
         import iostream;
@@ -45,12 +45,12 @@ TEST_F(TestArrayStdLib, ReverseFunction) {
             return 0;
         }
     )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stdout_output, "3\n2\n1\n");
 }
 
-TEST_F(TestArrayStdLib, PopFunction) {
+TEST_F(ArrayStdLibTest, PopFunction) {
     std::string source = R"(
         import array;
         mut arr = [1, 2, 3];
@@ -63,7 +63,7 @@ TEST_F(TestArrayStdLib, PopFunction) {
     ASSERT_NE(transpiled.find(expected), std::string::npos);
 }
 
-TEST_F(TestArrayStdLib, PushFunction) {
+TEST_F(ArrayStdLibTest, PushFunction) {
     std::string source = R"(
         import array;
         mut arr = [1, 2, 3];

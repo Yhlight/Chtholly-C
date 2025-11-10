@@ -30,46 +30,7 @@ void unset_test_env(const char* name) {
 #endif
 }
 
-// Helper function to compile and run C++ code, capturing its output.
-std::string compile_and_run_cpp(const std::string& cpp_source, const std::string& test_name) {
-    std::string temp_cpp_file = test_name + ".cpp";
-    std::string temp_executable;
-#ifdef _WIN32
-    temp_executable = test_name + ".exe";
-#else
-    temp_executable = "./" + test_name;
-#endif
-    std::string temp_output_file = test_name + "_output.txt";
-
-    std::ofstream out(temp_cpp_file);
-    out << cpp_source;
-    out.close();
-
-    std::string compile_command = CXX_COMPILER;
-    compile_command += " " + temp_cpp_file + " -o " + temp_executable + " -std=c++17";
-    int compile_result = std::system(compile_command.c_str());
-    if (compile_result != 0) {
-        remove(temp_cpp_file.c_str());
-        return "COMPILATION_FAILED";
-    }
-
-    std::string run_command = temp_executable + " > " + temp_output_file;
-    std::system(run_command.c_str());
-
-    std::ifstream output_file(temp_output_file);
-    std::stringstream buffer;
-    buffer << output_file.rdbuf();
-    output_file.close();
-
-    remove(temp_cpp_file.c_str());
-    remove(temp_executable.c_str());
-    remove(temp_output_file.c_str());
-
-    return buffer.str();
-}
-
-
-class OSTest : public ::testing::Test {};
+class OSTest : public TranspilerTest {};
 
 TEST_F(OSTest, ExitFunction) {
     std::string source = R"(
@@ -79,7 +40,7 @@ TEST_F(OSTest, ExitFunction) {
             return 0; // Should not be reached
         }
     )";
-    int exit_code = chtholly::run(source, true);
+    int exit_code = run(source, true);
     ASSERT_EQ(exit_code, 42);
 }
 
@@ -96,7 +57,7 @@ TEST_F(OSTest, EnvFunctionFound) {
         }
     )";
 
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stderr_output, "");
     ASSERT_EQ(result.stdout_output, "HelloWorld\n");
@@ -117,7 +78,7 @@ TEST_F(OSTest, EnvFunctionNotFound) {
         }
     )";
 
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    RunResult result = run_and_capture(source, true);
     ASSERT_EQ(result.exit_code, 0);
     ASSERT_EQ(result.stderr_output, "");
     ASSERT_EQ(result.stdout_output, "DEFAULT_VALUE\n");

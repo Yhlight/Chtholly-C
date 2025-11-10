@@ -49,6 +49,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
   - [x] `os` module with `exit` and `env`
   - [x] `time` module with `now`
+  - [x] `random` module with `rand` and `randint`
 - [x] Implement static reflection and metaprogramming features.
   - [x] Symbol table and basic type analysis engine
   - [x] `meta` module with `is_int`

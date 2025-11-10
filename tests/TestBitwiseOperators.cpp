@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-TEST(TestBitwiseOperators, BitwiseAnd) {
+class BitwiseOperatorsTest : public TranspilerTest {};
+
+TEST_F(BitwiseOperatorsTest, BitwiseAnd) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::bit_and {
@@ -20,11 +22,11 @@ TEST(TestBitwiseOperators, BitwiseAnd) {
             return c.value; // Expected: 4 (100)
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 4);
 }
 
-TEST(TestBitwiseOperators, BitwiseOr) {
+TEST_F(BitwiseOperatorsTest, BitwiseOr) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::bit_or {
@@ -43,11 +45,11 @@ TEST(TestBitwiseOperators, BitwiseOr) {
             return c.value; // Expected: 7 (111)
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 7);
 }
 
-TEST(TestBitwiseOperators, BitwiseXor) {
+TEST_F(BitwiseOperatorsTest, BitwiseXor) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::bit_xor {
@@ -66,11 +68,11 @@ TEST(TestBitwiseOperators, BitwiseXor) {
             return c.value; // Expected: 3 (011)
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 3);
 }
 
-TEST(TestBitwiseOperators, BitwiseNot) {
+TEST_F(BitwiseOperatorsTest, BitwiseNot) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::bit_not {
@@ -88,11 +90,11 @@ TEST(TestBitwiseOperators, BitwiseNot) {
             return type_cast<uint>(b.value);
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 249);
 }
 
-TEST(TestBitwiseOperators, ShiftLeft) {
+TEST_F(BitwiseOperatorsTest, ShiftLeft) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::shl {
@@ -110,11 +112,11 @@ TEST(TestBitwiseOperators, ShiftLeft) {
             return c.value; // Expected: 24 (11000)
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 24);
 }
 
-TEST(TestBitwiseOperators, ShiftRight) {
+TEST_F(BitwiseOperatorsTest, ShiftRight) {
     std::string code = R"(
         import operator;
         struct BitwiseValue impl operator::shr {
@@ -132,6 +134,6 @@ TEST(TestBitwiseOperators, ShiftRight) {
             return c.value; // Expected: 3 (011)
         }
     )";
-    int result = chtholly::run(code);
+    int result = run(code);
     ASSERT_EQ(result, 3);
 }
