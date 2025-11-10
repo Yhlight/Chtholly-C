@@ -729,53 +729,49 @@ Chtholly 的 `string` 类型提供了一系列内置方法来执行常见的字�
   let s = string::join(arr, ","); // s 将是 "hello,world,chtholly"
   ```
 
-### Array Module
-Chtholly 的标准库 `array` 模块提供了一系列用于操作动态数组的函数。要使用这些函数，您必须首先导入 `array` 模块。
+### Array Methods
+Chtholly 的 `array` 类型提供了一系列内置方法来操作动态数组。这些方法可以直接在任何数组变量上调用，无需导入任何模块。
 
-```Chtholly
-import array;
-```
+#### 方法
 
-#### 函数
-
-- **`array::length(arr: &array[T]) -> int`**
-  返回数组 `arr` 中元素的数量。
+- **`length() -> int`**
+  返回数组中元素的数量。
 
   ```Chtholly
   let arr = [1, 2, 3];
-  let len = array::length(arr); // len 将是 3
+  let len = arr.length(); // len 将是 3
   ```
 
-- **`array::push(arr: &mut array[T], value: T)`**
-  在数组 `arr` 的末尾添加一个元素 `value`。该函数要求数组是可变的。
+- **`push(value: T)`**
+  在数组的末尾添加一个元素 `value`。此方法要求数组是可变的。
 
   ```Chtholly
   mut arr = [1, 2];
-  array::push(arr, 3); // arr 现在是 [1, 2, 3]
+  arr.push(3); // arr 现在是 [1, 2, 3]
   ```
 
-- **`array::pop(arr: &mut array[T]) -> T`**
-  移除并返回数组 `arr` 的最后一个元素。该函数要求数组是可变的。
+- **`pop() -> T`**
+  移除并返回数组的最后一个元素。此方法要求数组是可变的。
 
   ```Chtholly
   mut arr = [1, 2, 3];
-  let last = array::pop(arr); // last 将是 3, arr 现在是 [1, 2]
+  let last = arr.pop(); // last 将是 3, arr 现在是 [1, 2]
   ```
 
-- **`array::contains(arr: &array[T], value: T) -> bool`**
-  检查数组 `arr` 是否包含 `value`。
+- **`contains(value: T) -> bool`**
+  检查数组是否包含 `value`。
 
   ```Chtholly
   let arr = [1, 2, 3];
-  let has_two = array::contains(arr, 2); // has_two 将是 true
+  let has_two = arr.contains(2); // has_two 将是 true
   ```
 
-- **`array::reverse(arr: &mut array[T])`**
-  反转数组 `arr` 中元素的顺序。该函数要求数组是可变的。
+- **`reverse()`**
+  反转数组中元素的顺序。此方法要求数组是可变的。
 
   ```Chtholly
   mut arr = [1, 2, 3];
-  array::reverse(arr); // arr 现在是 [3, 2, 1]
+  arr.reverse(); // arr 现在是 [3, 2, 1]
   ```
 
 ### OS Module

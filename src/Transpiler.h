@@ -68,8 +68,8 @@ private:
     std::any handleUtilFunction(const CallExpr& expr);
     std::any handleMathFunction(const CallExpr& expr);
     std::any handleStringMethodCall(const CallExpr& expr, const GetExpr& get_expr);
+    std::any handleArrayMethodCall(const CallExpr& expr, const GetExpr& get_expr);
     std::any handleStringFunction(const CallExpr& expr);
-    std::any handleArrayFunction(const CallExpr& expr);
     std::any handleOSFunction(const CallExpr& expr);
     std::any handleTimeFunction(const CallExpr& expr);
     std::any handleRandomFunction(const CallExpr& expr);

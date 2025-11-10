@@ -40,6 +40,8 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Generic structs
 
 - [x] Implement the standard library (`iostream`, `filesystem`, etc.).
+  - [x] Refactor `string` module to object-oriented style
+  - [x] Refactor `array` module to object-oriented style
   - [x] Basic module import system
   - [x] `iostream` module with `print` function
   - [x] `iostream` module with `input` function

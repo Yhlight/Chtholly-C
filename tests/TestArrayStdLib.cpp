@@ -5,9 +5,8 @@ class TestArrayStdLib : public ::testing::Test {};
 
 TEST_F(TestArrayStdLib, LengthFunction) {
     std::string source = R"(
-        import array;
         let arr = [1, 2, 3];
-        let len = array::length(arr);
+        let len = arr.length();
     )";
     std::string expected = "const int len = arr.size();";
     std::string transpiled = compile(source);
@@ -18,12 +17,11 @@ TEST_F(TestArrayStdLib, LengthFunction) {
 
 TEST_F(TestArrayStdLib, ContainsFunction) {
     std::string source = R"(
-        import array;
         import iostream;
         func main() -> int {
             let arr = [1, 2, 3];
-            print(array::contains(arr, 2));
-            print(array::contains(arr, 4));
+            print(arr.contains(2));
+            print(arr.contains(4));
             return 0;
         }
     )";
@@ -34,11 +32,10 @@ TEST_F(TestArrayStdLib, ContainsFunction) {
 
 TEST_F(TestArrayStdLib, ReverseFunction) {
     std::string source = R"(
-        import array;
         import iostream;
         func main() -> int {
             mut arr = [1, 2, 3];
-            array::reverse(arr);
+            arr.reverse();
             for (let i in arr) {
                 print(i);
             }
@@ -52,9 +49,8 @@ TEST_F(TestArrayStdLib, ReverseFunction) {
 
 TEST_F(TestArrayStdLib, PopFunction) {
     std::string source = R"(
-        import array;
         mut arr = [1, 2, 3];
-        let last = array::pop(arr);
+        let last = arr.pop();
     )";
     std::string expected = "const int last = [&]() { auto val = arr.back(); arr.pop_back(); return val; }();";
     std::string transpiled = compile(source);
@@ -65,9 +61,8 @@ TEST_F(TestArrayStdLib, PopFunction) {
 
 TEST_F(TestArrayStdLib, PushFunction) {
     std::string source = R"(
-        import array;
         mut arr = [1, 2, 3];
-        array::push(arr, 4);
+        arr.push(4);
     )";
     std::string expected = "arr.push_back(4);";
     std::string transpiled = compile(source);

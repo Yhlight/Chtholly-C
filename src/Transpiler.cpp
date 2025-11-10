@@ -444,6 +444,25 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{ "bool" };
                 }
             }
+            if (object_type.name.rfind("std::vector", 0) == 0 || object_type.name.rfind("std::array", 0) == 0) {
+                if (get_expr->name.lexeme == "length") {
+                    return TypeInfo{"int"};
+                }
+                if (get_expr->name.lexeme == "pop") {
+                    size_t start = object_type.name.find('<') + 1;
+                    size_t end = object_type.name.rfind('>');
+                    if (object_type.name.find(',') != std::string::npos) {
+                        end = object_type.name.find(',');
+                    }
+                    if (start != std::string::npos && end != std::string::npos) {
+                        return TypeInfo{object_type.name.substr(start, end - start)};
+                    }
+                    return TypeInfo{"auto"};
+                }
+                if (get_expr->name.lexeme == "contains") {
+                    return TypeInfo{"bool"};
+                }
+            }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
                 const StructStmt* s = structs[callee_type.name];
@@ -1236,6 +1255,37 @@ std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr&
     return "/* ERROR: Unknown string method call */";
 }
 
+std::any Transpiler::handleArrayMethodCall(const CallExpr& expr, const GetExpr& get_expr) {
+    std::string object_str = std::any_cast<std::string>(get_expr.object->accept(*this));
+    std::string function_name = get_expr.name.lexeme;
+
+    if (function_name == "length") {
+        if (!expr.arguments.empty()) { return "/* ERROR: length takes no arguments */"; }
+        return object_str + ".size()";
+    }
+    if (function_name == "push") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: push requires one argument */"; }
+        return object_str + ".push_back(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "pop") {
+        if (!expr.arguments.empty()) { return "/* ERROR: pop takes no arguments */"; }
+        return "[&]() { auto val = " + object_str + ".back(); " + object_str + ".pop_back(); return val; }()";
+    }
+    if (function_name == "contains") {
+        if (expr.arguments.size() != 1) { return "/* ERROR: contains requires one argument */"; }
+        imported_modules.insert("algorithm");
+        std::string val = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
+        return "(std::find(" + object_str + ".begin(), " + object_str + ".end(), " + val + ") != " + object_str + ".end())";
+    }
+    if (function_name == "reverse") {
+        if (!expr.arguments.empty()) { return "/* ERROR: reverse takes no arguments */"; }
+        imported_modules.insert("algorithm");
+        return "std::reverse(" + object_str + ".begin(), " + object_str + ".end())";
+    }
+
+    return "/* ERROR: Unknown array method call */";
+}
+
 std::any Transpiler::handleStringFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
@@ -1249,51 +1299,6 @@ std::any Transpiler::handleStringFunction(const CallExpr& expr) {
     }
 
     return "/* ERROR: Unknown string function call */";
-}
-
-std::any Transpiler::handleArrayFunction(const CallExpr& expr) {
-    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
-    std::string function_name = get_expr->name.lexeme;
-
-    if (function_name == "length") {
-        if (expr.arguments.size() != 1) {
-            return "/* ERROR: length requires one argument */";
-        }
-        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".size()";
-    }
-    if (function_name == "push") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: push requires two arguments */";
-        }
-        return std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ".push_back(" +
-               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
-    }
-    if (function_name == "pop") {
-        if (expr.arguments.size() != 1) {
-            return "/* ERROR: pop requires one argument */";
-        }
-        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        return "[&]() { auto val = " + arr + ".back(); " + arr + ".pop_back(); return val; }()";
-    }
-    if (function_name == "contains") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: contains requires two arguments */";
-        }
-        imported_modules.insert("algorithm");
-        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        std::string val = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
-        return "(std::find(" + arr + ".begin(), " + arr + ".end(), " + val + ") != " + arr + ".end())";
-    }
-    if (function_name == "reverse") {
-        if (expr.arguments.size() != 1) {
-            return "/* ERROR: reverse requires one argument */";
-        }
-        imported_modules.insert("algorithm");
-        std::string arr = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
-        return "std::reverse(" + arr + ".begin(), " + arr + ".end())";
-    }
-
-    return "/* ERROR: Unknown array function call */";
 }
 
 std::any Transpiler::handleOSFunction(const CallExpr& expr) {
@@ -1389,6 +1394,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
         if (object_type.name == "std::string") {
             return handleStringMethodCall(expr, *get_expr);
         }
+        if (object_type.name.rfind("std::vector", 0) == 0 || object_type.name.rfind("std::array", 0) == 0) {
+            return handleArrayMethodCall(expr, *get_expr);
+        }
         if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
             if (var_expr->name.lexeme == "result") {
                 if (get_expr->name.lexeme == "pass" || get_expr->name.lexeme == "fail") {
@@ -1429,9 +1437,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "string") {
                 return handleStringFunction(expr);
-            }
-            if (var_expr->name.lexeme == "array") {
-                return handleArrayFunction(expr);
             }
             if (var_expr->name.lexeme == "os") {
                 return handleOSFunction(expr);
