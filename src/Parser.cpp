@@ -646,7 +646,7 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
 
-    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::FS_READ, TokenType::FS_WRITE, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS, TokenType::TIME, TokenType::RANDOM)) {
+    if (match(TokenType::IDENTIFIER, TokenType::PRINT, TokenType::INPUT, TokenType::META, TokenType::OPERATOR, TokenType::REFLECT, TokenType::UTIL, TokenType::STRING_TYPE, TokenType::ARRAY, TokenType::OS, TokenType::TIME, TokenType::RANDOM, TokenType::FILESYSTEM)) {
         if (peek().type == TokenType::LEFT_BRACE) {
             return structLiteral();
         }

@@ -47,7 +47,7 @@ enum class TokenType {
     TIME,
     RANDOM,
     IOSTREAM,
-    FILESYSTEM, FS_READ, FS_WRITE,
+    FILESYSTEM,
     OPERATOR, REFLECT, UTIL,
     META,
 

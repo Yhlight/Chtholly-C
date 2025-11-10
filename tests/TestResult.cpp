@@ -77,8 +77,6 @@ std::string tokenTypeToString(chtholly::TokenType type) {
         case chtholly::TokenType::TYPE_CAST: return "TYPE_CAST";
         case chtholly::TokenType::IOSTREAM: return "IOSTREAM";
         case chtholly::TokenType::FILESYSTEM: return "FILESYSTEM";
-        case chtholly::TokenType::FS_READ: return "FS_READ";
-        case chtholly::TokenType::FS_WRITE: return "FS_WRITE";
         case chtholly::TokenType::OPERATOR: return "OPERATOR";
         case chtholly::TokenType::REFLECT: return "REFLECT";
         case chtholly::TokenType::UTIL: return "UTIL";

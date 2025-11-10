@@ -43,7 +43,7 @@ This document outlines the development progress and future goals for the Chtholl
   - [x] Basic module import system
   - [x] `iostream` module with `print` function
   - [x] `iostream` module with `input` function
-  - [x] `filesystem` module with `fs_read` and `fs_write`
+  - [x] Refactor `filesystem` module (`read`, `write`, `list_dir`, `is_file`, `is_dir`, `remove`)
   - [x] `math` module with functions and constants
   - [x] `string` module with `length`, `substr`, `find`, `split`, and `join`
   - [x] `array` module with `length`, `push`, `pop`, `contains`, and `reverse`
@@ -149,4 +149,8 @@ This document outlines the development progress and future goals for the Chtholl
 - [x] Define and implement the program execution model (handling `main`'s return value)
 
 ## Phase 8: Cross-Platform Support
-- [ ] Ensure compiler and generated code are compatible with both Windows and Unix-like systems.
+- [x] Ensure compiler and generated code are compatible with both Windows and Unix-like systems.
+
+## Phase 9: Compiler and Toolchain Enhancements
+- [x] Add `--cxx` flag to specify a custom C++ compiler.
+- [x] Create `Building.md` to document the build process and compiler configuration.

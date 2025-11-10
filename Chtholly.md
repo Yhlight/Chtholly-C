@@ -595,23 +595,60 @@ let name = input();
 print("Hello, " + name);
 ```
 
-### filesystem
-Chtholly 的标准库 `filesystem` 模块提供了基本的文件系统功能。
-
-#### fs_read 函数
-`fs_read` 是一个内置函数，用于读取文件的全部内容，并将其作为字符串返回。
+### Filesystem Module
+Chtholly 的标准库 `filesystem` 模块提供了与文件系统交互的功能。要使用这些函数，您必须首先导入 `filesystem` 模块。
 
 ```Chtholly
-let content = fs_read("my_file.txt");
-print(content);
+import filesystem;
 ```
 
-#### fs_write 函数
-`fs_write` 是一个内置函数，用于将字符串内容写入文件。
+#### 函数
 
-```Chtholly
-fs_write("my_file.txt", "Hello, Chtholly!");
-```
+- **`filesystem::read(path: string) -> string`**
+  读取文件 `path` 的全部内容，并将其作为字符串返回。
+
+  ```Chtholly
+  let content = filesystem::read("my_file.txt");
+  print(content);
+  ```
+
+- **`filesystem::write(path: string, content: string)`**
+  将字符串 `content` 写入到文件 `path` 中。如果文件不存在，则会创建它；如果文件已存在，则会覆盖其内容。
+
+  ```Chtholly
+  filesystem::write("my_file.txt", "Hello, Chtholly!");
+  ```
+
+- **`filesystem::list_dir(path: string) -> array[string]`**
+  返回一个字符串数组，其中包含目录 `path` 下所有条目（文件和子目录）的名称。
+
+  ```Chtholly
+  let entries = filesystem::list_dir(".");
+  for entry in entries {
+      print(entry);
+  }
+  ```
+
+- **`filesystem::is_file(path: string) -> bool`**
+  检查路径 `path` 是否指向一个文件。
+
+  ```Chtholly
+  let is_f = filesystem::is_file("my_file.txt"); // true
+  ```
+
+- **`filesystem::is_dir(path: string) -> bool`**
+  检查路径 `path` 是否指向一个目录。
+
+  ```Chtholly
+  let is_d = filesystem::is_dir("."); // true
+  ```
+
+- **`filesystem::remove(path: string)`**
+  删除文件或空目录 `path`。
+
+  ```Chtholly
+  filesystem::remove("my_file.txt");
+  ```
 
 ### Math Module
 Chtholly 的标准库 `math` 模块提供了常用的数学函数和常数。要使用这些功能，您必须首先导入 `math` 模块。

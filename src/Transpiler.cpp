@@ -424,6 +424,22 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                     return TypeInfo{"std::optional<std::string>"};
                 }
             }
+            if (var_expr->name.lexeme == "filesystem") {
+                if (get_expr->name.lexeme == "read") {
+                    return TypeInfo{"std::string"};
+                }
+                if (get_expr->name.lexeme == "list_dir") {
+                    vector_used = true;
+                    string_used = true;
+                    return TypeInfo{"std::vector<std::string>"};
+                }
+                if (get_expr->name.lexeme == "is_file" || get_expr->name.lexeme == "is_dir") {
+                    return TypeInfo{"bool"};
+                }
+                if (get_expr->name.lexeme == "remove") {
+                    return TypeInfo{"void"};
+                }
+            }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
             if (structs.count(callee_type.name)) {
@@ -506,16 +522,9 @@ std::string input() {
         }
     }
     if (imported_modules.count("filesystem")) {
+        final_code << "#include <filesystem>\n";
         final_code << "#include <fstream>\n";
         final_code << "#include <sstream>\n";
-        final_code << R"(
-std::string fs_read(const std::string& path) {
-    std::ifstream file(path);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-)";
     }
     if (imported_modules.count("math")) {
         final_code << "#include <cmath>\n";
@@ -1258,6 +1267,52 @@ std::any Transpiler::handleRandomFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown random function call */");
 }
 
+std::any Transpiler::handleFilesystemFunction(const CallExpr& expr) {
+    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
+    std::string function_name = get_expr->name.lexeme;
+
+    if (function_name == "read") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: filesystem::read requires one argument */");
+        }
+        return "([&](const std::string& path) { std::ifstream file(path); std::stringstream buffer; buffer << file.rdbuf(); return buffer.str(); })(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "write") {
+        if (expr.arguments.size() != 2) {
+            return std::string("/* ERROR: filesystem::write requires two arguments */");
+        }
+        return "{ std::ofstream file(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + "); file << " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + "; }";
+    }
+    if (function_name == "list_dir") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: filesystem::list_dir requires one argument */");
+        }
+        vector_used = true;
+        string_used = true;
+        return "([&](const std::string& path) { std::vector<std::string> entries; for (const auto& entry : std::filesystem::directory_iterator(path)) entries.push_back(entry.path().string()); return entries; })(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "is_file") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: filesystem::is_file requires one argument */");
+        }
+        return "std::filesystem::is_regular_file(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "is_dir") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: filesystem::is_dir requires one argument */");
+        }
+        return "std::filesystem::is_directory(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+    if (function_name == "remove") {
+        if (expr.arguments.size() != 1) {
+            return std::string("/* ERROR: filesystem::remove requires one argument */");
+        }
+        return "std::filesystem::remove(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+    }
+
+    return std::string("/* ERROR: Unknown filesystem function call */");
+}
+
 
 std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (is_in_method && current_struct) {
@@ -1340,6 +1395,9 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             if (var_expr->name.lexeme == "random") {
                 return handleRandomFunction(expr);
             }
+            if (var_expr->name.lexeme == "filesystem") {
+                return handleFilesystemFunction(expr);
+            }
         }
     }
 
@@ -1378,22 +1436,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             input_used = true;
             return std::string("input()");
-        }
-        if (var_expr->name.lexeme == "fs_read") {
-            if (imported_modules.find("filesystem") == imported_modules.end()) {
-                return std::string("/* ERROR: 'fs_read' function called without importing 'filesystem' */");
-            }
-            // Simplified: assumes one argument, the filename.
-            return "fs_read(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-        }
-        if (var_expr->name.lexeme == "fs_write") {
-            if (imported_modules.find("filesystem") == imported_modules.end()) {
-                return std::string("/* ERROR: 'fs_write' function called without importing 'filesystem' */");
-            }
-            // Simplified: assumes two arguments, filename and content.
-            std::stringstream out;
-            out << "{ std::ofstream file(" << std::any_cast<std::string>(expr.arguments[0]->accept(*this)) << "); file << " << std::any_cast<std::string>(expr.arguments[1]->accept(*this)) << "; }";
-            return out.str();
         }
     }
 
