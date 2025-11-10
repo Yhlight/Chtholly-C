@@ -49,9 +49,6 @@ void compile_and_expect_error(const std::string& source, const std::string& expe
 namespace chtholly {
     int run(const std::string& source, bool is_main_file) {
         std::string cpp_code = ::compile(source, is_main_file);
-        if (is_main_file) {
-            cpp_code += "\nint main() { return chtholly_main(); }";
-        }
 
         std::string temp_base = "temp_executable_" + std::to_string(rand());
         std::string temp_cpp_file = temp_base + ".cpp";
@@ -86,9 +83,6 @@ namespace chtholly {
 
     RunResult run_and_capture(const std::string& source, bool is_main_file) {
         std::string cpp_code = ::compile(source, is_main_file);
-        if (is_main_file) {
-            cpp_code += "\nint main() { return chtholly_main(); }";
-        }
 
         std::string temp_base = "temp_executable_" + std::to_string(rand());
         std::string temp_cpp_file = temp_base + ".cpp";

@@ -139,6 +139,7 @@ This document outlines the development progress and future goals for the Chtholl
 ## Phase 7: Architectural Issues and Long-Term Goals
 
 - [x] Define and implement the program execution model (handling `main`'s return value)
+- [x] **Improved Build and Compilation Process**: Enhance the compiler executable to support multi-file compilation, allow specifying the output file (`-o`), and let users provide a path to a custom C++ compiler (`--cxx`).
 
 ## Phase 8: Cross-Platform Support
 - [ ] Ensure compiler and generated code are compatible with both Windows and Unix-like systems.

@@ -642,6 +642,25 @@ struct Trait {
     // Add other includes here as needed
 
     final_code << out.str();
+
+    if (is_main_file) {
+        final_code << R"(
+#include <vector>
+#include <string>
+
+// Forward declare chtholly_main
+int chtholly_main(std::vector<std::string> args);
+
+int main(int argc, char* argv[]) {
+    std::vector<std::string> args;
+    for (int i = 0; i < argc; ++i) {
+        args.push_back(argv[i]);
+    }
+    return chtholly_main(args);
+}
+)";
+    }
+
     return final_code.str();
 }
 
@@ -1860,21 +1879,29 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
     }
 
     std::string function_name = stmt.name.lexeme;
-    if (is_main_file && function_name == "main") {
+    bool is_chtholly_main = is_main_file && function_name == "main";
+    if (is_chtholly_main) {
         function_name = "chtholly_main";
     }
+
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << function_name << "(";
 
     enterScope();
-    bool first_param = true;
-    for (size_t i = 0; i < stmt.params.size(); ++i) {
-        if (stmt.params[i].lexeme == "self") continue;
-        if (!first_param) out << ", ";
-        first_param = false;
+    if (is_chtholly_main) {
+        out << "std::vector<std::string> args";
+        vector_used = true;
+        string_used = true;
+    } else {
+        bool first_param = true;
+        for (size_t i = 0; i < stmt.params.size(); ++i) {
+            if (stmt.params[i].lexeme == "self") continue;
+            if (!first_param) out << ", ";
+            first_param = false;
 
-        TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
-        define(stmt.params[i].lexeme, paramType);
-        out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
+            TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
+            define(stmt.params[i].lexeme, paramType);
+            out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
+        }
     }
     out << ") ";
     transpile_function_body(stmt.body.get(), stmt.generic_constraints);
