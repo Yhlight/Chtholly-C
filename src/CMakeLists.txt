@@ -14,4 +14,6 @@ add_executable(chtholly
     main.cpp
 )
 
+target_compile_definitions(chtholly PRIVATE CXX_COMPILER="${CMAKE_CXX_COMPILER}")
+
 target_link_libraries(chtholly PRIVATE chtholly_lib)

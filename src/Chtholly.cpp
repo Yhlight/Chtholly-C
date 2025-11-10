@@ -8,8 +8,18 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "Transpiler.h"
+#include <utility>
 
 namespace chtholly {
+
+    Chtholly::Chtholly() : cxx_compiler(CXX_COMPILER) {}
+    Chtholly::Chtholly(std::string cxx_compiler) : cxx_compiler(std::move(cxx_compiler)) {
+        if (this->cxx_compiler.empty()) {
+            this->cxx_compiler = CXX_COMPILER;
+        }
+    }
+
+
     int Chtholly::runFile(const std::string &path) {
         std::ifstream file(path);
         if (!file.is_open()) {
@@ -66,9 +76,9 @@ int main(int argc, char* argv[]) {
 
             // Compile the C++ code.
 #ifdef _WIN32
-            std::string command = std::string(CXX_COMPILER) + " _temp.cpp -o _temp.out.exe -std=c++17";
+            std::string command = this->cxx_compiler + " _temp.cpp -o _temp.out.exe -std=c++17";
 #else
-            std::string command = std::string(CXX_COMPILER) + " _temp.cpp -o _temp.out -std=c++17";
+            std::string command = this->cxx_compiler + " _temp.cpp -o _temp.out -std=c++17";
 #endif
             int compile_status = system(command.c_str());
             if (compile_status != 0) {

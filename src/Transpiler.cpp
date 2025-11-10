@@ -1626,7 +1626,7 @@ std::any Transpiler::visitImportStmt(const ImportStmt& stmt) {
             // In a real compiler, we'd report a file not found error.
             return nullptr;
         }
-        std::string canonical_path = std::filesystem::canonical(file_path);
+        std::string canonical_path = std::filesystem::canonical(file_path).u8string();
 
         if (transpiled_files->count(canonical_path)) {
             return nullptr; // Already transpiled
