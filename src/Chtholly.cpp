@@ -53,6 +53,10 @@ namespace chtholly {
                 chtholly::Resolver resolver;
                 resolver.resolve(statements);
 
+                if (resolver.hadError) {
+                    return 1;
+                }
+
                 bool is_main = false;
                 for (const auto& stmt : statements) {
                     if (auto* func = dynamic_cast<FunctionStmt*>(stmt.get())) {
@@ -140,6 +144,10 @@ namespace chtholly {
 
             chtholly::Resolver resolver;
             resolver.resolve(statements);
+
+            if (resolver.hadError) {
+                return 1;
+            }
 
             chtholly::Transpiler transpiler(true);
             std::string output = transpiler.transpile(statements);

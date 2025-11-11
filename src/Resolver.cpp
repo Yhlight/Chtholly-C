@@ -1,29 +1,56 @@
 #include "Resolver.h"
+#include "TypeSystem.h"
 
 namespace chtholly {
 
-Resolver::Resolver() {
+class Resolver::TypeResolver {
+public:
+    std::shared_ptr<types::Type> resolve(const TypeExpr& type) {
+        if (auto baseType = dynamic_cast<const BaseTypeExpr*>(&type)) {
+            return std::make_shared<types::PrimitiveType>(toPrimitiveKind(baseType->type.lexeme));
+        }
+        // TODO: Handle other types like array, function, etc.
+        return std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
+    }
+private:
+    types::PrimitiveType::Kind toPrimitiveKind(const std::string& lexeme) {
+        if (lexeme == "int") return types::PrimitiveType::Kind::INT;
+        if (lexeme == "uint") return types::PrimitiveType::Kind::UINT;
+        if (lexeme == "double") return types::PrimitiveType::Kind::DOUBLE;
+        if (lexeme == "bool") return types::PrimitiveType::Kind::BOOL;
+        if (lexeme == "char") return types::PrimitiveType::Kind::CHAR;
+        if (lexeme == "string") return types::PrimitiveType::Kind::STRING;
+        if (lexeme == "void") return types::PrimitiveType::Kind::VOID;
+        return types::PrimitiveType::Kind::AUTO;
+    }
+};
+
+
+Resolver::Resolver() : typeResolver(std::make_unique<TypeResolver>()) {
     beginScope(); // Global scope
     // Pre-define all built-in functions and modules
-    scopes.back()["print"] = true;
-    scopes.back()["input"] = true;
-    scopes.back()["fs_read"] = true;
-    scopes.back()["fs_write"] = true;
-    scopes.back()["fs_exists"] = true;
-    scopes.back()["fs_is_file"] = true;
-    scopes.back()["fs_is_dir"] = true;
-    scopes.back()["fs_list_dir"] = true;
-    scopes.back()["fs_remove"] = true;
-    scopes.back()["meta"] = true;
-    scopes.back()["reflect"] = true;
-    scopes.back()["util"] = true;
-    scopes.back()["operator"] = true;
-    scopes.back()["string"] = true;
-    scopes.back()["array"] = true;
-    scopes.back()["os"] = true;
-    scopes.back()["time"] = true;
-    scopes.back()["random"] = true;
+    auto any_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
+    scopes.back()["print"] = any_type;
+    scopes.back()["input"] = any_type;
+    scopes.back()["fs_read"] = any_type;
+    scopes.back()["fs_write"] = any_type;
+    scopes.back()["fs_exists"] = any_type;
+    scopes.back()["fs_is_file"] = any_type;
+    scopes.back()["fs_is_dir"] = any_type;
+    scopes.back()["fs_list_dir"] = any_type;
+    scopes.back()["fs_remove"] = any_type;
+    scopes.back()["meta"] = any_type;
+    scopes.back()["reflect"] = any_type;
+    scopes.back()["util"] = any_type;
+    scopes.back()["operator"] = any_type;
+    scopes.back()["string"] = any_type;
+    scopes.back()["array"] = any_type;
+    scopes.back()["os"] = any_type;
+    scopes.back()["time"] = any_type;
+    scopes.back()["random"] = any_type;
 }
+
+Resolver::~Resolver() = default;
 
 void Resolver::error(const Token& token, const std::string& message) {
     hadError = true;
@@ -38,24 +65,26 @@ void Resolver::error(const Token& token, const std::string& message) {
 
 void Resolver::resolve(const std::vector<std::unique_ptr<Stmt>>& statements) {
     for (const auto& statement : statements) {
-        resolve(*statement);
+        resolveStmt(*statement);
     }
 }
 
-void Resolver::resolve(const Stmt& stmt) {
+void Resolver::resolveStmt(const Stmt& stmt) {
     stmt.accept(*this);
 }
 
-void Resolver::resolve(const Expr& expr) {
-    expr.accept(*this);
+std::any Resolver::resolveExpr(const Expr& expr) {
+    return expr.accept(*this);
 }
 
 void Resolver::beginScope() {
     scopes.push_back({});
+    defined_scopes.push_back({});
 }
 
 void Resolver::endScope() {
     scopes.pop_back();
+    defined_scopes.pop_back();
 }
 
 void Resolver::declare(const Token& name) {
@@ -67,62 +96,90 @@ void Resolver::declare(const Token& name) {
     if (scope.count(name.lexeme)) {
         error(name, "Already a variable with this name in this scope.");
     }
-    scope[name.lexeme] = false;
+    scope[name.lexeme] = nullptr; // Initially null
+    defined_scopes.back()[name.lexeme] = false;
 }
 
-void Resolver::define(const Token& name) {
+void Resolver::define(const Token& name, std::shared_ptr<types::Type> type) {
     if (scopes.empty()) {
         return;
     }
+    scopes.back()[name.lexeme] = type;
+    defined_scopes.back()[name.lexeme] = true;
+}
 
-    scopes.back()[name.lexeme] = true;
+std::shared_ptr<types::Type> Resolver::lookup(const Token& name) {
+    for (int i = scopes.size() - 1; i >= 0; i--) {
+        if (scopes[i].count(name.lexeme)) {
+            return scopes[i][name.lexeme];
+        }
+    }
+    return nullptr;
 }
 
 std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
     beginScope();
-    resolve(stmt.statements);
+    for(const auto& s : stmt.statements) {
+        resolveStmt(*s);
+    }
     endScope();
     return nullptr;
 }
 
 std::any Resolver::visitVarStmt(const VarStmt& stmt) {
     declare(stmt.name);
+    std::shared_ptr<types::Type> varType = nullptr;
+
     if (stmt.initializer) {
-        resolve(*stmt.initializer);
+        varType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*stmt.initializer));
     }
-    define(stmt.name);
+
+    if (stmt.type) {
+        auto declaredType = typeResolver->resolve(*stmt.type);
+        if (varType && declaredType->toString() != "auto" && varType->toString() != "auto" && !declaredType->isEqualTo(*varType)) {
+            error(stmt.name, "Initializer type does not match variable's declared type.");
+        }
+        varType = declaredType;
+    }
+
+    if (!varType) {
+        // This can happen if there's no type annotation and no initializer
+        error(stmt.name, "Cannot infer type for variable with no initializer.");
+        varType = std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
+    }
+
+    define(stmt.name, varType);
     return nullptr;
 }
 
 std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
     if (!scopes.empty()) {
-        auto& scope = scopes.back();
-        auto it = scope.find(expr.name.lexeme);
-        if (it != scope.end() && !it->second) {
+        auto it = defined_scopes.back().find(expr.name.lexeme);
+        if (it != defined_scopes.back().end() && !it->second) {
             error(expr.name, "Can't read local variable in its own initializer.");
-            return nullptr; // Return early after finding an error
         }
     }
 
-    for (int i = scopes.size() - 1; i >= 0; --i) {
-        if (scopes[i].count(expr.name.lexeme)) {
-            // Found the variable, no error.
-            return nullptr;
-        }
+    auto type = lookup(expr.name);
+    if (type == nullptr) {
+        error(expr.name, "Undefined variable.");
     }
-    // If we get here, the variable is not found in any scope.
-    error(expr.name, "Undefined variable.");
-    return nullptr;
+    return type;
 }
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
-    resolve(*expr.value);
-    for (int i = scopes.size() - 1; i >= 0; --i) {
-        if (scopes[i].count(expr.name.lexeme)) {
-            return nullptr;
-        }
+    auto varType = lookup(expr.name);
+    if (varType == nullptr) {
+        error(expr.name, "Undefined variable.");
+        return nullptr;
     }
-    error(expr.name, "Undefined variable.");
+
+    auto valueType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*expr.value));
+
+    if (varType->toString() != "auto" && valueType->toString() != "auto" && !varType->isEqualTo(*valueType)) {
+        error(expr.name, "Type mismatch in assignment.");
+    }
+
     return nullptr;
 }
 
@@ -131,32 +188,39 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
     currentFunction = type;
 
     beginScope();
-    for (const auto& param : function.params) {
-        declare(param);
-        define(param);
+    for (size_t i = 0; i < function.params.size(); ++i) {
+        declare(function.params[i]);
+        define(function.params[i], typeResolver->resolve(*function.param_types[i]));
     }
-    resolve(function.body->statements);
+    for(const auto& s : function.body->statements) {
+        resolveStmt(*s);
+    }
     endScope();
     currentFunction = enclosingFunction;
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
     declare(stmt.name);
-    define(stmt.name);
+    std::shared_ptr<types::Type> type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
+    if (stmt.return_type) {
+        type = typeResolver->resolve(*stmt.return_type);
+    }
+    define(stmt.name, type);
+
     resolveFunction(stmt, FunctionType::FUNCTION);
     return nullptr;
 }
 
 std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
-    stmt.expression->accept(*this);
+    resolveExpr(*stmt.expression);
     return nullptr;
 }
 
 std::any Resolver::visitIfStmt(const IfStmt& stmt) {
-    resolve(*stmt.condition);
-    resolve(*stmt.thenBranch);
+    resolveExpr(*stmt.condition);
+    resolveStmt(*stmt.thenBranch);
     if (stmt.elseBranch) {
-        resolve(*stmt.elseBranch);
+        resolveStmt(*stmt.elseBranch);
     }
     return nullptr;
 }
@@ -167,67 +231,97 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     }
 
     if (stmt.value) {
-        resolve(*stmt.value);
+        resolveExpr(*stmt.value);
     }
     return nullptr;
 }
 
 std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
-    resolve(*stmt.condition);
-    resolve(*stmt.body);
+    resolveExpr(*stmt.condition);
+    resolveStmt(*stmt.body);
     return nullptr;
 }
 
 std::any Resolver::visitForStmt(const ForStmt& stmt) {
     if (stmt.initializer) {
-        resolve(*stmt.initializer);
+        resolveStmt(*stmt.initializer);
     }
     if (stmt.condition) {
-        resolve(*stmt.condition);
+        resolveExpr(*stmt.condition);
     }
     if (stmt.increment) {
-        resolve(*stmt.increment);
+        resolveExpr(*stmt.increment);
     }
-    resolve(*stmt.body);
+    resolveStmt(*stmt.body);
     return nullptr;
 }
 
 std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
-    expr.left->accept(*this);
-    expr.right->accept(*this);
-    return nullptr;
+    auto leftType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*expr.left));
+    auto rightType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*expr.right));
+
+    if (leftType && rightType) {
+        if (auto pLeft = std::dynamic_pointer_cast<types::PrimitiveType>(leftType)) {
+            if (auto pRight = std::dynamic_pointer_cast<types::PrimitiveType>(rightType)) {
+                std::shared_ptr<types::Type> resultType;
+                if (pLeft->kind == types::PrimitiveType::Kind::INT && pRight->kind == types::PrimitiveType::Kind::INT) {
+                    resultType = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::INT);
+                } else if ((pLeft->kind == types::PrimitiveType::Kind::DOUBLE || pLeft->kind == types::PrimitiveType::Kind::INT) &&
+                           (pRight->kind == types::PrimitiveType::Kind::DOUBLE || pRight->kind == types::PrimitiveType::Kind::INT)) {
+                    resultType = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::DOUBLE);
+                } else {
+                    error(expr.op, "Invalid operands for binary expression.");
+                    resultType = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
+                }
+                return resultType;
+            }
+        }
+    }
+    return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
 }
 
 std::any Resolver::visitCallExpr(const CallExpr& expr) {
-    expr.callee->accept(*this);
+    resolveExpr(*expr.callee);
     for (const auto& arg : expr.arguments) {
-        arg->accept(*this);
+        resolveExpr(*arg);
     }
-    return nullptr;
+    return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
 }
 
 std::any Resolver::visitGroupingExpr(const GroupingExpr& expr) {
-    expr.expression->accept(*this);
-    return nullptr;
+    return resolveExpr(*expr.expression);
 }
 
 std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
-    return nullptr;
+    std::shared_ptr<types::Type> type;
+    if (std::holds_alternative<long long>(expr.value)) {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::INT);
+    } else if (std::holds_alternative<double>(expr.value)) {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::DOUBLE);
+    } else if (std::holds_alternative<std::string>(expr.value)) {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::STRING);
+    } else if (std::holds_alternative<bool>(expr.value)) {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::BOOL);
+    } else if (std::holds_alternative<char>(expr.value)) {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::CHAR);
+    } else {
+        type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::VOID);
+    }
+    return type;
 }
 
 std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
-    expr.right->accept(*this);
-    return nullptr;
+    return resolveExpr(*expr.right);
 }
 
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
-    expr.object->accept(*this);
-    return nullptr;
+    resolveExpr(*expr.object);
+    return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
 }
 
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
-    expr.value->accept(*this);
-    expr.object->accept(*this);
+    resolveExpr(*expr.value);
+    resolveExpr(*expr.object);
     return nullptr;
 }
 
@@ -245,10 +339,10 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     currentClass = ClassType::CLASS;
 
     declare(stmt.name);
-    define(stmt.name);
+    define(stmt.name, std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
 
     beginScope();
-    scopes.back()["self"] = true;
+    scopes.back()["self"] = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
 
     for (const auto& method : stmt.methods) {
         FunctionType declaration = FunctionType::FUNCTION;
@@ -259,6 +353,90 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
 
     currentClass = enclosingClass;
     return nullptr;
+}
+std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
+    resolveExpr(*stmt.expression);
+    for (const auto& a_case : stmt.cases) {
+        resolveStmt(*a_case);
+    }
+    return nullptr;
+}
+std::any Resolver::visitCaseStmt(const CaseStmt& stmt) {
+    if (stmt.value) {
+        resolveExpr(*stmt.value);
+    }
+    resolveStmt(*stmt.body);
+    return nullptr;
+}
+std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
+    // TODO: Add validation to ensure break is inside a loop or switch
+    return nullptr;
+}
+std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    // TODO: Add validation to ensure fallthrough is inside a switch
+    return nullptr;
+}
+std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
+    FunctionType enclosingFunction = currentFunction;
+    currentFunction = FunctionType::FUNCTION;
+
+    beginScope();
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        declare(expr.params[i]);
+        define(expr.params[i], typeResolver->resolve(*expr.param_types[i]));
+    }
+    for(const auto& s : expr.body->statements) {
+        resolveStmt(*s);
+    }
+    endScope();
+    currentFunction = enclosingFunction;
+    return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
+}
+std::any Resolver::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
+    if (expr.elements.empty()) {
+        return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
+    }
+    std::shared_ptr<types::Type> firstType = nullptr;
+    for (const auto& element : expr.elements) {
+        auto elementType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*element));
+        if (!firstType) {
+            firstType = elementType;
+        } else {
+            if (firstType->toString() != "auto" && elementType->toString() != "auto" && !firstType->isEqualTo(*elementType)) {
+                // error(expr.elements[0]->start, "Array elements must have the same type.");
+            }
+        }
+    }
+    return firstType;
+}
+
+std::any Resolver::visitImportStmt(const ImportStmt& ) {
+    return nullptr;
+}
+
+std::any Resolver::visitEnumStmt(const EnumStmt& ) {
+    return nullptr;
+}
+
+std::any Resolver::visitTraitStmt(const TraitStmt& ) {
+    return nullptr;
+}
+
+std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
+    return resolveExpr(*expr.expression);
+}
+
+std::any Resolver::visitDerefExpr(const DerefExpr& expr) {
+    return resolveExpr(*expr.expression);
+}
+
+std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& ) {
+    return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
+}
+
+std::any Resolver::visitTypeCastExpr(const TypeCastExpr& expr) {
+    resolveExpr(*expr.expression);
+    return typeResolver->resolve(*expr.type);
 }
 
 } // namespace chtholly

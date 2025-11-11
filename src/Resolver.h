@@ -2,6 +2,7 @@
 #define CHTHOLLY_RESOLVER_H
 
 #include "AST.h"
+#include "TypeSystem.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -12,6 +13,7 @@ namespace chtholly {
 class Resolver : public ExprVisitor, public StmtVisitor {
 public:
     Resolver();
+    ~Resolver();
     bool hadError = false;
 
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
@@ -19,15 +21,20 @@ public:
 private:
     void error(const Token& token, const std::string& message);
 
-    void resolve(const Stmt& stmt);
-    void resolve(const Expr& expr);
+    void resolveStmt(const Stmt& stmt);
+    std::any resolveExpr(const Expr& expr);
 
     void beginScope();
     void endScope();
     void declare(const Token& name);
-    void define(const Token& name);
+    void define(const Token& name, std::shared_ptr<types::Type> type);
+    std::shared_ptr<types::Type> lookup(const Token& name);
 
-    std::vector<std::map<std::string, bool>> scopes;
+    std::vector<std::map<std::string, std::shared_ptr<types::Type>>> scopes;
+    std::vector<std::map<std::string, bool>> defined_scopes;
+    class TypeResolver;
+    std::unique_ptr<TypeResolver> typeResolver;
+
     enum class FunctionType {
         NONE,
         FUNCTION
@@ -61,20 +68,19 @@ private:
     std::any visitSelfExpr(const SelfExpr& expr) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
 
-    // Default implementations for unhandled statements and expressions
-    std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
-    std::any visitSwitchStmt(const SwitchStmt& stmt) override { return nullptr; }
-    std::any visitCaseStmt(const CaseStmt& stmt) override { return nullptr; }
-    std::any visitBreakStmt(const BreakStmt& stmt) override { return nullptr; }
-    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override { return nullptr; }
-    std::any visitEnumStmt(const EnumStmt& stmt) override { return nullptr; }
-    std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
-    std::any visitLambdaExpr(const LambdaExpr& expr) override { return nullptr; }
-    std::any visitBorrowExpr(const BorrowExpr& expr) override { return nullptr; }
-    std::any visitDerefExpr(const DerefExpr& expr) override { return nullptr; }
-    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override { return nullptr; }
-    std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override { return nullptr; }
-    std::any visitTypeCastExpr(const TypeCastExpr& expr) override { return nullptr; }
+    std::any visitImportStmt(const ImportStmt& stmt) override;
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override;
+    std::any visitCaseStmt(const CaseStmt& stmt) override;
+    std::any visitBreakStmt(const BreakStmt& stmt) override;
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
+    std::any visitLambdaExpr(const LambdaExpr& expr) override;
+    std::any visitBorrowExpr(const BorrowExpr& expr) override;
+    std::any visitDerefExpr(const DerefExpr& expr) override;
+    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
+    std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override;
+    std::any visitTypeCastExpr(const TypeCastExpr& expr) override;
 };
 
 } // namespace chtholly

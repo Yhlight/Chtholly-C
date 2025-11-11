@@ -69,3 +69,23 @@ TEST_F(ResolverTest, SelfOutsideOfClass) {
     std::string source = "print(self);";
     ASSERT_TRUE(resolve(source));
 }
+
+TEST_F(ResolverTest, ValidTypeInference) {
+    std::string source = "let a = 1;";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidAssignment) {
+    std::string source = "let a: int = 1; a = 2;";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, TypeMismatchInAssignment) {
+    std::string source = "let a: int = 1; a = \"hello\";";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidOperandsForBinary) {
+    std::string source = "let a = true + false;";
+    ASSERT_TRUE(resolve(source));
+}
