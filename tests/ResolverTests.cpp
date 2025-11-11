@@ -106,3 +106,35 @@ TEST_F(ResolverTest, InvalidUnary) {
     std::string source = "let x = !123; let y = -\"hello\";";
     ASSERT_TRUE(resolve(source));
 }
+
+TEST_F(ResolverTest, ValidFunctionCall) {
+    std::string source = R"(
+        func add(a: int, b: int) -> int { return a + b; }
+        let x = add(1, 2);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, WrongArityFunctionCall) {
+    std::string source = R"(
+        func add(a: int, b: int) -> int { return a + b; }
+        let x = add(1);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, WrongTypeFunctionCall) {
+    std::string source = R"(
+        func add(a: int, b: int) -> int { return a + b; }
+        let x = add(1, "hello");
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, CallNonFunction) {
+    std::string source = R"(
+        let x = 10;
+        let y = x();
+    )";
+    ASSERT_TRUE(resolve(source));
+}

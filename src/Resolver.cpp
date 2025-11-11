@@ -21,7 +21,10 @@ public:
     }
     std::any visitBlockStmt(const BlockStmt& stmt) override { for (const auto& s : stmt.statements) s->accept(*this); return nullptr; }
     std::any visitExpressionStmt(const ExpressionStmt& stmt) override { stmt.expression->accept(*this); return nullptr; }
-    std::any visitFunctionStmt(const FunctionStmt& stmt) override { return nullptr; }
+    std::any visitFunctionStmt(const FunctionStmt& stmt) override {
+        resolver.functions[stmt.name.lexeme] = &stmt;
+        return nullptr;
+    }
     std::any visitIfStmt(const IfStmt& stmt) override { stmt.thenBranch->accept(*this); if (stmt.elseBranch) stmt.elseBranch->accept(*this); return nullptr; }
     std::any visitVarStmt(const VarStmt& stmt) override { if (stmt.initializer) stmt.initializer->accept(*this); return nullptr; }
     std::any visitWhileStmt(const WhileStmt& stmt) override { stmt.body->accept(*this); return nullptr; }
@@ -69,24 +72,26 @@ const std::map<TokenType, std::string> Resolver::op_to_trait = {
 Resolver::Resolver() {
     beginScope(); // Global scope
     // Pre-define all built-in functions and modules
-    scopes.back()["print"] = true;
-    scopes.back()["input"] = true;
-    scopes.back()["fs_read"] = true;
-    scopes.back()["fs_write"] = true;
-    scopes.back()["fs_exists"] = true;
-    scopes.back()["fs_is_file"] = true;
-    scopes.back()["fs_is_dir"] = true;
-    scopes.back()["fs_list_dir"] = true;
-    scopes.back()["fs_remove"] = true;
-    scopes.back()["meta"] = true;
-    scopes.back()["reflect"] = true;
-    scopes.back()["util"] = true;
-    scopes.back()["operator"] = true;
-    scopes.back()["string"] = true;
-    scopes.back()["array"] = true;
-    scopes.back()["os"] = true;
-    scopes.back()["time"] = true;
-    scopes.back()["random"] = true;
+    auto any_type = std::make_shared<BasicType>("any");
+    auto void_type = std::make_shared<BasicType>("void");
+    scopes.back()["print"] = std::make_shared<chtholly::FunctionType>(void_type, std::vector<std::shared_ptr<Type>>{any_type});
+    scopes.back()["input"] = std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{});
+    scopes.back()["fs_read"] = std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")});
+    scopes.back()["fs_write"] = any_type;
+    scopes.back()["fs_exists"] = any_type;
+    scopes.back()["fs_is_file"] = any_type;
+    scopes.back()["fs_is_dir"] = any_type;
+    scopes.back()["fs_list_dir"] = any_type;
+    scopes.back()["fs_remove"] = any_type;
+    scopes.back()["meta"] = any_type;
+    scopes.back()["reflect"] = any_type;
+    scopes.back()["util"] = any_type;
+    scopes.back()["operator"] = any_type;
+    scopes.back()["string"] = any_type;
+    scopes.back()["array"] = any_type;
+    scopes.back()["os"] = any_type;
+    scopes.back()["time"] = any_type;
+    scopes.back()["random"] = any_type;
 }
 
 void Resolver::error(const Token& token, const std::string& message) {
@@ -136,44 +141,44 @@ void Resolver::declare(const Token& name) {
     if (scope.count(name.lexeme)) {
         error(name, "Already a variable with this name in this scope.");
     }
-    scope[name.lexeme] = false;
+    scope[name.lexeme] = nullptr; // Mark as declared but not defined
 }
 
-void Resolver::define(const Token& name) {
+void Resolver::define(const Token& name, std::shared_ptr<Type> type) {
     if (scopes.empty()) {
         return;
     }
 
-    scopes.back()[name.lexeme] = true;
+    scopes.back()[name.lexeme] = type;
 }
 
 std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
     beginScope();
-    resolve(stmt.statements);
+    for (const auto& statement : stmt.statements) {
+        resolve(*statement);
+    }
     endScope();
     return nullptr;
 }
 
 std::any Resolver::visitVarStmt(const VarStmt& stmt) {
     declare(stmt.name);
-    std::shared_ptr<Type> declared_type = nullptr;
-    if (stmt.type) {
-        declared_type = resolveTypeExpr(*stmt.type);
-    }
-
+    std::shared_ptr<Type> value_type = nullptr;
     if (stmt.initializer) {
         resolve(*stmt.initializer);
-        if (declared_type && stmt.initializer->type &&
-            declared_type->to_string() != stmt.initializer->type->to_string()) {
-            error(stmt.name, "Initializer type '" + stmt.initializer->type->to_string() +
-                               "' does not match declared type '" + declared_type->to_string() + "'.");
-        }
-        var_types[stmt.name.lexeme] = stmt.initializer->type;
-    } else if (declared_type) {
-        var_types[stmt.name.lexeme] = declared_type;
+        value_type = stmt.initializer->type;
     }
 
-    define(stmt.name);
+    if (stmt.type) {
+        auto declared_type = resolveTypeExpr(*stmt.type);
+        if (value_type && declared_type && value_type->to_string() != declared_type->to_string()) {
+            error(stmt.name, "Initializer type '" + value_type->to_string() +
+                               "' does not match declared type '" + declared_type->to_string() + "'.");
+        }
+        value_type = declared_type;
+    }
+
+    define(stmt.name, value_type);
     return nullptr;
 }
 
@@ -181,22 +186,19 @@ std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
     if (!scopes.empty()) {
         auto& scope = scopes.back();
         auto it = scope.find(expr.name.lexeme);
-        if (it != scope.end() && !it->second) {
+        if (it != scope.end() && it->second == nullptr) {
             error(expr.name, "Can't read local variable in its own initializer.");
-            return nullptr; // Return early after finding an error
+            return nullptr;
         }
     }
 
     for (int i = scopes.size() - 1; i >= 0; --i) {
         if (scopes[i].count(expr.name.lexeme)) {
-            auto it = var_types.find(expr.name.lexeme);
-            if (it != var_types.end()) {
-                expr.type = it->second;
-            }
+            expr.type = scopes[i][expr.name.lexeme];
             return nullptr;
         }
     }
-    // If we get here, the variable is not found in any scope.
+
     error(expr.name, "Undefined variable.");
     return nullptr;
 }
@@ -252,24 +254,32 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     return nullptr;
 }
 
-void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) {
-    FunctionType enclosingFunction = currentFunction;
+void Resolver::resolveFunction(const FunctionStmt& function, CurrentFunctionType type) {
+    CurrentFunctionType enclosingFunction = currentFunction;
     currentFunction = type;
 
     beginScope();
-    for (const auto& param : function.params) {
-        declare(param);
-        define(param);
+    for (size_t i = 0; i < function.params.size(); ++i) {
+        declare(function.params[i]);
+        auto param_type = resolveTypeExpr(*function.param_types[i]);
+        define(function.params[i], param_type);
     }
-    resolve(function.body->statements);
+    resolve(*function.body);
     endScope();
     currentFunction = enclosingFunction;
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
     declare(stmt.name);
-    define(stmt.name);
-    resolveFunction(stmt, FunctionType::FUNCTION);
+    std::vector<std::shared_ptr<Type>> param_types;
+    for (const auto& param_type_expr : stmt.param_types) {
+        param_types.push_back(resolveTypeExpr(*param_type_expr));
+    }
+    auto return_type = stmt.return_type ? resolveTypeExpr(*stmt.return_type) : std::make_shared<BasicType>("void");
+    auto func_type = std::make_shared<chtholly::FunctionType>(return_type, param_types);
+    define(stmt.name, func_type);
+
+    resolveFunction(stmt, CurrentFunctionType::FUNCTION);
     return nullptr;
 }
 
@@ -288,7 +298,7 @@ std::any Resolver::visitIfStmt(const IfStmt& stmt) {
 }
 
 std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
-    if (currentFunction == FunctionType::NONE) {
+    if (currentFunction == CurrentFunctionType::NONE) {
         error(stmt.keyword, "Can't return from top-level code.");
     }
 
@@ -379,10 +389,53 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
 }
 
 std::any Resolver::visitCallExpr(const CallExpr& expr) {
-    expr.callee->accept(*this);
+    resolve(*expr.callee);
     for (const auto& arg : expr.arguments) {
-        arg->accept(*this);
+        resolve(*arg);
     }
+
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        auto it = functions.find(var_expr->name.lexeme);
+        if (it != functions.end()) {
+            // It's a global function
+            const FunctionStmt* func = it->second;
+            if (expr.arguments.size() != func->params.size()) {
+                error(expr.paren, "Expected " + std::to_string(func->params.size()) +
+                                    " arguments but got " + std::to_string(expr.arguments.size()) + ".");
+                return nullptr;
+            }
+            for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]->type) {
+                    auto param_type = resolveTypeExpr(*func->param_types[i]);
+                    if (param_type && expr.arguments[i]->type->to_string() != param_type->to_string()) {
+                        error(expr.paren, "Argument " + std::to_string(i + 1) + " type mismatch.");
+                    }
+                }
+            }
+            if (func->return_type) {
+                expr.type = resolveTypeExpr(*func->return_type);
+            }
+            return nullptr;
+        }
+    }
+
+    if (expr.callee->type) {
+        if (auto func_type = std::dynamic_pointer_cast<chtholly::FunctionType>(expr.callee->type)) {
+            if (expr.arguments.size() != func_type->get_parameter_types().size()) {
+                 error(expr.paren, "Expected " + std::to_string(func_type->get_parameter_types().size()) +
+                                     " arguments but got " + std::to_string(expr.arguments.size()) + ".");
+            }
+            // Further type checking can be added here
+            expr.type = func_type->get_return_type();
+        } else {
+            error(expr.paren, "Can only call functions and classes.");
+        }
+    } else if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
+        error(var_expr->name, "Attempt to call a non-function variable.");
+    } else {
+        error(expr.paren, "Attempt to call a non-function expression.");
+    }
+
     return nullptr;
 }
 
@@ -451,6 +504,13 @@ std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
         return nullptr;
     }
 
+    for (int i = scopes.size() - 1; i >= 0; --i) {
+        if (scopes[i].count("self")) {
+            expr.type = scopes[i]["self"];
+            return nullptr;
+        }
+    }
+
     return nullptr;
 }
 
@@ -459,13 +519,13 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     currentClass = ClassType::CLASS;
 
     declare(stmt.name);
-    define(stmt.name);
+    define(stmt.name, std::make_shared<StructType>(stmt.name.lexeme));
 
     beginScope();
-    scopes.back()["self"] = true;
+    scopes.back()["self"] = std::make_shared<StructType>(stmt.name.lexeme);
 
     for (const auto& method : stmt.methods) {
-        FunctionType declaration = FunctionType::FUNCTION;
+        CurrentFunctionType declaration = CurrentFunctionType::METHOD;
         resolveFunction(*method, declaration);
     }
 

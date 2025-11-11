@@ -22,6 +22,7 @@ private:
     std::map<std::string, const StructStmt*> structs;
     std::map<std::string, const TraitStmt*> traits;
     std::map<std::string, const EnumStmt*> enums;
+    std::map<std::string, const FunctionStmt*> functions;
 
     void error(const Token& token, const std::string& message);
 
@@ -37,22 +38,22 @@ private:
     void beginScope();
     void endScope();
     void declare(const Token& name);
-    void define(const Token& name);
+    void define(const Token& name, std::shared_ptr<Type> type);
 
-    std::vector<std::map<std::string, bool>> scopes;
-    std::map<std::string, std::shared_ptr<Type>> var_types;
-    enum class FunctionType {
+    std::vector<std::map<std::string, std::shared_ptr<Type>>> scopes;
+    enum class CurrentFunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        METHOD
     };
     enum class ClassType {
         NONE,
         CLASS
     };
-    FunctionType currentFunction = FunctionType::NONE;
+    CurrentFunctionType currentFunction = CurrentFunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
 
-    void resolveFunction(const FunctionStmt& function, FunctionType type);
+    void resolveFunction(const FunctionStmt& function, CurrentFunctionType type);
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitVarStmt(const VarStmt& stmt) override;

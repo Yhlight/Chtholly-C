@@ -33,14 +33,14 @@ private:
 
 class FunctionType : public Type {
 public:
-    FunctionType(std::shared_ptr<Type> return_type, const std::vector<std::shared_ptr<Type>>& params)
-        : return_type(return_type), params(params) {}
+    FunctionType(std::shared_ptr<Type> return_type, const std::vector<std::shared_ptr<Type>>& parameter_types)
+        : return_type(std::move(return_type)), parameter_types(parameter_types) {}
 
     std::string to_string() const override {
         std::string s = "function(";
-        for (size_t i = 0; i < params.size(); ++i) {
-            s += params[i]->to_string();
-            if (i < params.size() - 1) {
+        for (size_t i = 0; i < parameter_types.size(); ++i) {
+            s += parameter_types[i]->to_string();
+            if (i < parameter_types.size() - 1) {
                 s += ", ";
             }
         }
@@ -50,9 +50,12 @@ public:
     }
     TypeKind get_kind() const override { return TypeKind::FUNCTION; }
 
+    const std::shared_ptr<Type>& get_return_type() const { return return_type; }
+    const std::vector<std::shared_ptr<Type>>& get_parameter_types() const { return parameter_types; }
+
 private:
     std::shared_ptr<Type> return_type;
-    std::vector<std::shared_ptr<Type>> params;
+    std::vector<std::shared_ptr<Type>> parameter_types;
 };
 
 class ArrayType : public Type {
