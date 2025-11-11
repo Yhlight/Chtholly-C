@@ -156,12 +156,23 @@ std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
 
 std::any Resolver::visitVarStmt(const VarStmt& stmt) {
     declare(stmt.name);
+    std::shared_ptr<Type> declared_type = nullptr;
+    if (stmt.type) {
+        declared_type = resolveTypeExpr(*stmt.type);
+    }
+
     if (stmt.initializer) {
         resolve(*stmt.initializer);
-        if (stmt.initializer->type) {
-            var_types[stmt.name.lexeme] = stmt.initializer->type;
+        if (declared_type && stmt.initializer->type &&
+            declared_type->to_string() != stmt.initializer->type->to_string()) {
+            error(stmt.name, "Initializer type '" + stmt.initializer->type->to_string() +
+                               "' does not match declared type '" + declared_type->to_string() + "'.");
         }
+        var_types[stmt.name.lexeme] = stmt.initializer->type;
+    } else if (declared_type) {
+        var_types[stmt.name.lexeme] = declared_type;
     }
+
     define(stmt.name);
     return nullptr;
 }
@@ -188,6 +199,46 @@ std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
     // If we get here, the variable is not found in any scope.
     error(expr.name, "Undefined variable.");
     return nullptr;
+}
+
+std::shared_ptr<Type> Resolver::resolveTypeExpr(const TypeExpr& type_expr) {
+    return type_expr.accept(*this);
+}
+
+std::shared_ptr<Type> Resolver::visitBaseTypeExpr(const BaseTypeExpr& expr) {
+    std::string name = expr.type.lexeme;
+    if (name == "int" || name == "double" || name == "string" || name == "bool" || name == "char") {
+        return std::make_shared<BasicType>(name);
+    }
+    auto it = structs.find(name);
+    if (it != structs.end()) {
+        return std::make_shared<StructType>(name);
+    }
+    error(expr.type, "Unknown type name '" + name + "'.");
+    return nullptr;
+}
+
+std::shared_ptr<Type> Resolver::visitArrayTypeExpr(const ArrayTypeExpr& expr) {
+    auto element_type = resolveTypeExpr(*expr.element_type);
+    if (!element_type) {
+        return nullptr;
+    }
+    return std::make_shared<ArrayType>(element_type);
+}
+
+std::shared_ptr<Type> Resolver::visitFunctionTypeExpr(const FunctionTypeExpr& expr) {
+    error(Token(TokenType::FUNCTION, "function", nullptr, 0), "Function types are not yet supported in type annotations.");
+    return std::make_shared<BasicType>("unsupported");
+}
+
+std::shared_ptr<Type> Resolver::visitGenericTypeExpr(const GenericTypeExpr& expr) {
+    error(expr.base_type, "Generic types are not yet supported in type annotations.");
+    return std::make_shared<BasicType>("unsupported");
+}
+
+std::shared_ptr<Type> Resolver::visitBorrowTypeExpr(const BorrowTypeExpr& expr) {
+    error(Token(TokenType::AMPERSAND, "&", nullptr, 0), "Borrow types are not yet supported in type annotations.");
+    return std::make_shared<BasicType>("unsupported");
 }
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {

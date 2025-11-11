@@ -385,20 +385,32 @@ struct TraitStmt : Stmt {
 
 
 // Type Expression Nodes
+class TypeExprVisitor {
+public:
+    virtual std::shared_ptr<Type> visitBaseTypeExpr(const BaseTypeExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visitArrayTypeExpr(const ArrayTypeExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visitFunctionTypeExpr(const FunctionTypeExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visitGenericTypeExpr(const GenericTypeExpr& expr) = 0;
+    virtual std::shared_ptr<Type> visitBorrowTypeExpr(const BorrowTypeExpr& expr) = 0;
+};
+
 struct TypeExpr {
     virtual ~TypeExpr() = default;
+    virtual std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const = 0;
 };
 
 struct BaseTypeExpr : TypeExpr {
     Token type;
     explicit BaseTypeExpr(Token type) : type(std::move(type)) {}
+    std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const override { return visitor.visitBaseTypeExpr(*this); }
 };
 
 struct ArrayTypeExpr : TypeExpr {
     std::unique_ptr<TypeExpr> element_type;
     std::unique_ptr<Expr> size; // optional
-    ArrayTypeExpr(std::unique_ptr<TypeExpr> element_type, std::unique_ptr<Expr> size)
-        : element_type(std::move(element_type)), size(std::move(size)) {}
+    ArrayTypeExpr(std::unique_ptr<TypeExpr> element_type, std::unique_ptr<Expr> sz)
+        : element_type(std::move(element_type)), size(std::move(sz)) {}
+    std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const override { return visitor.visitArrayTypeExpr(*this); }
 };
 
 struct FunctionTypeExpr : TypeExpr {
@@ -406,6 +418,7 @@ struct FunctionTypeExpr : TypeExpr {
     std::unique_ptr<TypeExpr> return_type;
     FunctionTypeExpr(std::vector<std::unique_ptr<TypeExpr>> param_types, std::unique_ptr<TypeExpr> return_type)
         : param_types(std::move(param_types)), return_type(std::move(return_type)) {}
+    std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const override { return visitor.visitFunctionTypeExpr(*this); }
 };
 
 struct GenericTypeExpr : TypeExpr {
@@ -413,6 +426,7 @@ struct GenericTypeExpr : TypeExpr {
     std::vector<std::unique_ptr<TypeExpr>> generic_args;
     GenericTypeExpr(Token base_type, std::vector<std::unique_ptr<TypeExpr>> generic_args)
         : base_type(std::move(base_type)), generic_args(std::move(generic_args)) {}
+    std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const override { return visitor.visitGenericTypeExpr(*this); }
 };
 
 struct BorrowTypeExpr : TypeExpr {
@@ -420,6 +434,7 @@ struct BorrowTypeExpr : TypeExpr {
     bool isMutable;
     BorrowTypeExpr(std::unique_ptr<TypeExpr> element_type, bool isMutable)
         : element_type(std::move(element_type)), isMutable(isMutable) {}
+    std::shared_ptr<Type> accept(TypeExprVisitor& visitor) const override { return visitor.visitBorrowTypeExpr(*this); }
 };
 
 } // namespace chtholly

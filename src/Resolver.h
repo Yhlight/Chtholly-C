@@ -9,7 +9,7 @@
 
 namespace chtholly {
 
-class Resolver : public ExprVisitor, public StmtVisitor {
+class Resolver : public ExprVisitor, public StmtVisitor, public TypeExprVisitor {
 public:
     Resolver();
     bool hadError = false;
@@ -27,6 +27,8 @@ private:
 
     void resolve(const Stmt& stmt);
     void resolve(const Expr& expr);
+
+    std::shared_ptr<Type> resolveTypeExpr(const TypeExpr& type_expr);
 
     bool is_trait_implemented(const std::string& struct_name, const std::string& trait_name);
 
@@ -71,6 +73,13 @@ private:
     std::any visitSetExpr(const SetExpr& expr) override;
     std::any visitSelfExpr(const SelfExpr& expr) override;
     std::any visitStructStmt(const StructStmt& stmt) override;
+
+    // TypeExpr visitors
+    std::shared_ptr<Type> visitBaseTypeExpr(const BaseTypeExpr& expr) override;
+    std::shared_ptr<Type> visitArrayTypeExpr(const ArrayTypeExpr& expr) override;
+    std::shared_ptr<Type> visitFunctionTypeExpr(const FunctionTypeExpr& expr) override;
+    std::shared_ptr<Type> visitGenericTypeExpr(const GenericTypeExpr& expr) override;
+    std::shared_ptr<Type> visitBorrowTypeExpr(const BorrowTypeExpr& expr) override;
 
     // Default implementations for unhandled statements and expressions
     std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }

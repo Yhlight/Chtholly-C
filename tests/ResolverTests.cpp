@@ -78,3 +78,21 @@ TEST_F(ResolverTest, BinaryTypeError) {
     )";
     ASSERT_TRUE(resolve(source));
 }
+
+TEST_F(ResolverTest, ValidTypeAnnotation) {
+    std::string source = "let x: int = 10;";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedTypeAnnotation) {
+    std::string source = "let x: string = 10;";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, StructTypeAnnotation) {
+    std::string source = R"(
+        struct Foo {}
+        let f: Foo = Foo{};
+    )";
+    ASSERT_FALSE(resolve(source));
+}
