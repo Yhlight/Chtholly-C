@@ -3,6 +3,11 @@
 #include <fstream>
 #include <string>
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
+#include <string>
+
 // Helper to create a temporary file
 void create_temp_file(const std::string& filename, const std::string& content) {
     std::ofstream file(filename);
@@ -25,7 +30,11 @@ TEST(TestExecution, MainReturnsZero) {
 
     remove(filename.c_str());
 
+#ifdef _WIN32
+    ASSERT_EQ(exit_code, 0);
+#else
     ASSERT_EQ(WEXITSTATUS(exit_code), 0);
+#endif
 }
 
 TEST(TestExecution, MainReturnsOne) {
@@ -43,5 +52,9 @@ TEST(TestExecution, MainReturnsOne) {
 
     remove(filename.c_str());
 
+#ifdef _WIN32
+    ASSERT_EQ(exit_code, 1);
+#else
     ASSERT_EQ(WEXITSTATUS(exit_code), 1);
+#endif
 }

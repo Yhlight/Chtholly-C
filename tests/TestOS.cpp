@@ -33,11 +33,9 @@ void unset_test_env(const char* name) {
 // Helper function to compile and run C++ code, capturing its output.
 std::string compile_and_run_cpp(const std::string& cpp_source, const std::string& test_name) {
     std::string temp_cpp_file = test_name + ".cpp";
-    std::string temp_executable;
+    std::string temp_executable_name = test_name;
 #ifdef _WIN32
-    temp_executable = test_name + ".exe";
-#else
-    temp_executable = "./" + test_name;
+    temp_executable_name += ".exe";
 #endif
     std::string temp_output_file = test_name + "_output.txt";
 
@@ -46,14 +44,18 @@ std::string compile_and_run_cpp(const std::string& cpp_source, const std::string
     out.close();
 
     std::string compile_command = CXX_COMPILER;
-    compile_command += " " + temp_cpp_file + " -o " + temp_executable + " -std=c++17";
+    compile_command += " " + temp_cpp_file + " -o " + temp_executable_name + " -std=c++17";
     int compile_result = std::system(compile_command.c_str());
     if (compile_result != 0) {
         remove(temp_cpp_file.c_str());
         return "COMPILATION_FAILED";
     }
 
-    std::string run_command = temp_executable + " > " + temp_output_file;
+#ifdef _WIN32
+    std::string run_command = temp_executable_name + " > " + temp_output_file;
+#else
+    std::string run_command = "./" + temp_executable_name + " > " + temp_output_file;
+#endif
     std::system(run_command.c_str());
 
     std::ifstream output_file(temp_output_file);
@@ -62,7 +64,7 @@ std::string compile_and_run_cpp(const std::string& cpp_source, const std::string
     output_file.close();
 
     remove(temp_cpp_file.c_str());
-    remove(temp_executable.c_str());
+    remove(temp_executable_name.c_str());
     remove(temp_output_file.c_str());
 
     return buffer.str();

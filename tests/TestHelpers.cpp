@@ -69,7 +69,11 @@ namespace chtholly {
             return -1;
         }
 
+#ifdef _WIN32
+        int run_result = system(executable_name.c_str());
+#else
         int run_result = system(("./" + executable_name).c_str());
+#endif
 
         remove(temp_cpp_file.c_str());
         remove(executable_name.c_str());
@@ -105,7 +109,11 @@ namespace chtholly {
             return {-1, "COMPILATION_FAILED", ""};
         }
 
+#ifdef _WIN32
+        std::string run_command = executable_name + " > " + stdout_file + " 2> " + stderr_file;
+#else
         std::string run_command = "./" + executable_name + " > " + stdout_file + " 2> " + stderr_file;
+#endif
         int run_result = system(run_command.c_str());
 
         std::ifstream stderr_stream(stderr_file);

@@ -5,6 +5,9 @@
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
 #include "Lexer.h"
 #include "Parser.h"
 #include "Transpiler.h"
@@ -89,7 +92,11 @@ namespace chtholly {
         }
 
         std::string compiler = cxx_compiler_path.empty() ? CXX_COMPILER : cxx_compiler_path;
+#ifdef _WIN32
+        std::string output = output_file.empty() ? "a.exe" : output_file;
+#else
         std::string output = output_file.empty() ? "a.out" : output_file;
+#endif
 
         std::string compile_command = compiler + " -std=c++17 -o " + output;
         for (const auto& temp_file : temp_files) {
@@ -152,11 +159,16 @@ namespace chtholly {
             }
 
             // Execute the compiled program.
+#ifdef _WIN32
+            int exit_code = system(temp_out.c_str());
+#else
             int exit_code = system(("./" + temp_out).c_str());
+#endif
 
             // Clean up temporary files.
             remove(temp_cpp.c_str());
             remove(temp_out.c_str());
+
 #ifdef _WIN32
             return exit_code;
 #else
