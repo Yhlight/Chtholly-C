@@ -16,6 +16,8 @@ const std::map<std::string, TokenType> Lexer::keywords = {
     {"type_cast", TokenType::TYPE_CAST},
     {"iostream", TokenType::IOSTREAM},
     {"filesystem", TokenType::FILESYSTEM}, {"fs_read", TokenType::FS_READ}, {"fs_write", TokenType::FS_WRITE},
+    {"fs_exists", TokenType::FS_EXISTS}, {"fs_is_file", TokenType::FS_IS_FILE}, {"fs_is_dir", TokenType::FS_IS_DIR},
+    {"fs_list_dir", TokenType::FS_LIST_DIR}, {"fs_remove", TokenType::FS_REMOVE},
     {"operator", TokenType::OPERATOR}, {"reflect", TokenType::REFLECT}, {"meta", TokenType::META}, {"util", TokenType::UTIL},
     {"int", TokenType::INT}, {"int8", TokenType::INT8}, {"int16", TokenType::INT16}, {"int32", TokenType::INT32},
     {"int64", TokenType::INT64}, {"uint", TokenType::UINT}, {"uint8", TokenType::UINT8}, {"uint16", TokenType::UINT16}, {"uint32", TokenType::UINT32},

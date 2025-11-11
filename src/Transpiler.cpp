@@ -278,6 +278,16 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
     }
     if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
         if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
+            if (var_expr->name.lexeme == "fs_read") {
+                return TypeInfo{"std::string"};
+            }
+            if (var_expr->name.lexeme == "fs_exists" || var_expr->name.lexeme == "fs_is_file" || var_expr->name.lexeme == "fs_is_dir") {
+                return TypeInfo{"bool"};
+            }
+            if (var_expr->name.lexeme == "fs_list_dir") {
+                vector_used = true;
+                return TypeInfo{"std::vector<std::string>"};
+            }
             if (var_expr->name.lexeme == "option") {
                 optional_used = true;
                 if (call_expr->arguments.empty()) {
@@ -509,6 +519,33 @@ TypeInfo Transpiler::typeExprToTypeInfo(const TypeExpr* type) {
 }
 
 std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& statements) {
+    // Reset state for clean transpilation between runs (especially for tests)
+    out.str("");
+    out.clear();
+    scopes.clear();
+    enterScope();
+    structs.clear();
+    enums.clear();
+    imported_modules.clear();
+    if (owns_transpiled_files) {
+        transpiled_files->clear();
+    }
+    input_used = false;
+    vector_used = false;
+    array_used = false;
+    optional_used = false;
+    result_used = false;
+    result_static_check_used = false;
+    function_used = false;
+    string_helpers_used = false;
+    string_used = false;
+    type_traits_used = false;
+    reflect_used = false;
+    is_in_method = false;
+    current_struct = nullptr;
+    current_function_return_type = nullptr;
+    contextual_type = TypeInfo{};
+
     // First pass: handle all import statements.
     for (const auto& statement : statements) {
         if (dynamic_cast<const ImportStmt*>(statement.get())) {
@@ -549,12 +586,45 @@ std::string input() {
     if (imported_modules.count("filesystem")) {
         final_code << "#include <fstream>\n";
         final_code << "#include <sstream>\n";
+        final_code << "#include <filesystem>\n";
+        final_code << "#include <vector>\n";
+        final_code << "#include <string>\n";
         final_code << R"(
-std::string fs_read(const std::string& path) {
+void chtholly_fs_write(const std::string& path, const std::string& content) {
+    std::ofstream file(path);
+    file << content;
+}
+
+std::string chtholly_fs_read(const std::string& path) {
     std::ifstream file(path);
+    if (!file) return "";
     std::stringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
+}
+
+bool chtholly_fs_exists(const std::string& path) {
+    return std::filesystem::exists(path);
+}
+
+bool chtholly_fs_is_file(const std::string& path) {
+    return std::filesystem::is_regular_file(path);
+}
+
+bool chtholly_fs_is_dir(const std::string& path) {
+    return std::filesystem::is_directory(path);
+}
+
+std::vector<std::string> chtholly_fs_list_dir(const std::string& path) {
+    std::vector<std::string> entries;
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+        entries.push_back(entry.path().u8string());
+    }
+    return entries;
+}
+
+void chtholly_fs_remove(const std::string& path) {
+    std::filesystem::remove_all(path);
 }
 )";
     }
@@ -1528,21 +1598,26 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             input_used = true;
             return std::string("input()");
         }
-        if (var_expr->name.lexeme == "fs_read") {
+        if (var_expr->name.lexeme == "fs_read" || var_expr->name.lexeme == "fs_exists" ||
+            var_expr->name.lexeme == "fs_is_file" || var_expr->name.lexeme == "fs_is_dir" ||
+            var_expr->name.lexeme == "fs_list_dir" || var_expr->name.lexeme == "fs_remove" ||
+            var_expr->name.lexeme == "fs_write") {
             if (imported_modules.find("filesystem") == imported_modules.end()) {
-                return std::string("/* ERROR: 'fs_read' function called without importing 'filesystem' */");
+                return "/* ERROR: Filesystem function '" + var_expr->name.lexeme + "' called without importing 'filesystem' */";
             }
-            // Simplified: assumes one argument, the filename.
-            return "fs_read(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-        }
-        if (var_expr->name.lexeme == "fs_write") {
-            if (imported_modules.find("filesystem") == imported_modules.end()) {
-                return std::string("/* ERROR: 'fs_write' function called without importing 'filesystem' */");
+
+            if (var_expr->name.lexeme == "fs_write") {
+                if (expr.arguments.size() != 2) {
+                    return "/* ERROR: 'fs_write' requires two arguments */";
+                }
+                return "chtholly_fs_write(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
+                       std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+            } else {
+                if (expr.arguments.size() != 1) {
+                    return "/* ERROR: Filesystem function '" + var_expr->name.lexeme + "' expects one argument */";
+                }
+                return "chtholly_" + var_expr->name.lexeme + "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
             }
-            // Simplified: assumes two arguments, filename and content.
-            std::stringstream out;
-            out << "{ std::ofstream file(" << std::any_cast<std::string>(expr.arguments[0]->accept(*this)) << "); file << " << std::any_cast<std::string>(expr.arguments[1]->accept(*this)) << "; }";
-            return out.str();
         }
     }
 

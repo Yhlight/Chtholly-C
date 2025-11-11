@@ -188,13 +188,13 @@ TEST(LexerTest, ModuleAndBuiltinKeywords) {
 }
 
 TEST(LexerTest, FilesystemKeywords) {
-    std::string source = "import filesystem; fs_read(\"test.txt\"); fs_write(\"test.txt\", \"hello\");";
+    std::string source = "import filesystem; fs_read fs_write fs_exists fs_is_file fs_is_dir fs_list_dir fs_remove";
     Lexer lexer(source);
     std::vector<Token> tokens = lexer.scanTokens();
     std::vector<TokenType> expected = {
         TokenType::IMPORT, TokenType::FILESYSTEM, TokenType::SEMICOLON,
-        TokenType::FS_READ, TokenType::LEFT_PAREN, TokenType::STRING_LITERAL, TokenType::RIGHT_PAREN, TokenType::SEMICOLON,
-        TokenType::FS_WRITE, TokenType::LEFT_PAREN, TokenType::STRING_LITERAL, TokenType::COMMA, TokenType::STRING_LITERAL, TokenType::RIGHT_PAREN, TokenType::SEMICOLON,
+        TokenType::FS_READ, TokenType::FS_WRITE, TokenType::FS_EXISTS, TokenType::FS_IS_FILE,
+        TokenType::FS_IS_DIR, TokenType::FS_LIST_DIR, TokenType::FS_REMOVE,
         TokenType::END_OF_FILE
     };
     ASSERT_EQ(tokens.size(), expected.size());

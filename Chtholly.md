@@ -613,6 +613,50 @@ print(content);
 fs_write("my_file.txt", "Hello, Chtholly!");
 ```
 
+#### fs_exists 函数
+`fs_exists` 是一个内置函数，用于检查文件或目录是否存在。
+
+```Chtholly
+if (fs_exists("my_file.txt")) {
+    print("File exists!");
+}
+```
+
+#### fs_is_file 函数
+`fs_is_file` 是一个内置函数，用于检查路径是否指向一个文件。
+
+```Chtholly
+if (fs_is_file("my_file.txt")) {
+    print("It's a file!");
+}
+```
+
+#### fs_is_dir 函数
+`fs_is_dir` 是一个内置函数，用于检查路径是否指向一个目录。
+
+```Chtholly
+if (fs_is_dir("/my_directory")) {
+    print("It's a directory!");
+}
+```
+
+#### fs_list_dir 函数
+`fs_list_dir` 是一个内置函数，用于获取目录中的所有条目，并以字符串数组的形式返回。
+
+```Chtholly
+let entries = fs_list_dir(".");
+for (let entry in entries) {
+    print(entry);
+}
+```
+
+#### fs_remove 函数
+`fs_remove` 是一个内置函数，用于删除文件或目录。
+
+```Chtholly
+fs_remove("my_file.txt");
+```
+
 ### Math Module
 Chtholly 的标准库 `math` 模块提供了常用的数学函数和常数。要使用这些功能，您必须首先导入 `math` 模块。
 

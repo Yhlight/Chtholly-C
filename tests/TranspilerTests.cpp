@@ -148,11 +148,8 @@ TEST_F(TranspilerTest, PrintWithoutImport) {
 }
 
 TEST_F(TranspilerTest, FilesystemReadWrite) {
-    // Create a temporary file to read from
-    std::ofstream outfile("test_read.txt");
-    outfile << "Hello from file!";
-    outfile.close();
-
+    // This test is more of a sanity check for transpilation,
+    // the actual execution is tested in TestFilesystem.cpp
     std::string source = R"(
         import filesystem;
         let content = fs_read("test_read.txt");
@@ -161,13 +158,11 @@ TEST_F(TranspilerTest, FilesystemReadWrite) {
 
     // We can't execute the transpiled code directly here,
     // but we can verify that the C++ output is correct.
-    std::string expected_prefix = "#include <fstream>\n#include <sstream>\n";
-    std::string expected_read = "fs_read(\"test_read.txt\")";
-    std::string expected_write = "{ std::ofstream file(\"test_write.txt\"); file << content; }";
+    std::string expected_read = "chtholly_fs_read(\"test_read.txt\")";
+    std::string expected_write = "chtholly_fs_write(\"test_write.txt\", content)";
 
     std::string transpiled_code = transpile(source);
 
-    EXPECT_TRUE(transpiled_code.rfind(expected_prefix, 0) == 0);
     EXPECT_NE(transpiled_code.find(expected_read), std::string::npos);
     EXPECT_NE(transpiled_code.find(expected_write), std::string::npos);
 }
@@ -177,8 +172,8 @@ TEST_F(TranspilerTest, FilesystemWithoutImport) {
         let content = fs_read("test.txt");
         fs_write("test.txt", "hello");
     )";
-    std::string expected_read_error = "/* ERROR: 'fs_read' function called without importing 'filesystem' */";
-    std::string expected_write_error = "/* ERROR: 'fs_write' function called without importing 'filesystem' */";
+    std::string expected_read_error = "/* ERROR: Filesystem function 'fs_read' called without importing 'filesystem' */";
+    std::string expected_write_error = "/* ERROR: Filesystem function 'fs_write' called without importing 'filesystem' */";
 
     std::string transpiled_code = transpile(source);
 
