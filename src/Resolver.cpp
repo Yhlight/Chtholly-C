@@ -245,12 +245,26 @@ std::shared_ptr<Type> Resolver::visitBorrowTypeExpr(const BorrowTypeExpr& expr) 
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     resolve(*expr.value);
+    auto value_type = expr.value->type;
+
+    std::shared_ptr<Type> var_type = nullptr;
     for (int i = scopes.size() - 1; i >= 0; --i) {
         if (scopes[i].count(expr.name.lexeme)) {
-            return nullptr;
+            var_type = scopes[i][expr.name.lexeme];
+            break;
         }
     }
-    error(expr.name, "Undefined variable.");
+
+    if (!var_type) {
+        error(expr.name, "Undefined variable.");
+        return nullptr;
+    }
+
+    if (value_type && var_type && value_type->to_string() != var_type->to_string()) {
+        error(expr.name, "Type mismatch. Cannot assign value of type '" + value_type->to_string() +
+                           "' to variable of type '" + var_type->to_string() + "'.");
+    }
+
     return nullptr;
 }
 
@@ -352,37 +366,55 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
         return nullptr; // Can't check types if one is missing
     }
 
-    auto it = op_to_trait.find(expr.op.type);
-    if (it != op_to_trait.end()) {
-        const std::string& trait_name = it->second;
-        if (expr.left->type->get_kind() == TypeKind::STRUCT) {
-            if (expr.right->type->get_kind() != TypeKind::STRUCT ||
-                expr.left->type->to_string() != expr.right->type->to_string()) {
-                error(expr.op, "Operands of operator " + expr.op.lexeme + " must be of the same struct type.");
-                return nullptr;
-            }
+    if (expr.left->type->get_kind() != TypeKind::BASIC || expr.right->type->get_kind() != TypeKind::BASIC) {
+        // For now, only handle binary ops on basic types. Structs would use traits.
+        // This is a simplification and might need to be expanded.
+        error(expr.op, "Operator " + expr.op.lexeme + " cannot be applied to non-basic types yet.");
+        return nullptr;
+    }
 
-            auto struct_type = static_cast<const StructType*>(expr.left->type.get());
-            if (!is_trait_implemented(struct_type->get_name(), trait_name)) {
-                error(expr.op, "Struct '" + struct_type->get_name() + "' does not implement trait '" + trait_name + "' for this operator.");
-            } else {
-                expr.type = expr.left->type; // Result type is the same as operands
+    // Type checking for operands
+    const auto& left_type = expr.left->type->to_string();
+    const auto& right_type = expr.right->type->to_string();
+
+    switch (expr.op.type) {
+        case TokenType::GREATER:
+        case TokenType::GREATER_EQUAL:
+        case TokenType::LESS:
+        case TokenType::LESS_EQUAL:
+        case TokenType::BANG_EQUAL:
+        case TokenType::EQUAL_EQUAL:
+            if (!((left_type == "int" || left_type == "double") && (right_type == "int" || right_type == "double"))) {
+                 error(expr.op, "Comparison operators can only be applied to numbers.");
             }
-        } else if (expr.left->type->get_kind() == TypeKind::BASIC && expr.right->type->get_kind() == TypeKind::BASIC) {
-            // Basic type promotion logic (simplified)
-            if (expr.left->type->to_string() == "double" || expr.right->type->to_string() == "double") {
+            expr.type = std::make_shared<BasicType>("bool");
+            break;
+
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+        case TokenType::STAR:
+        case TokenType::SLASH:
+             if (!((left_type == "int" || left_type == "double") && (right_type == "int" || right_type == "double"))) {
+                 error(expr.op, "Arithmetic operators can only be applied to numbers.");
+            }
+            if (left_type == "double" || right_type == "double") {
                 expr.type = std::make_shared<BasicType>("double");
             } else {
                 expr.type = std::make_shared<BasicType>("int");
             }
-        } else {
-            error(expr.op, "Operator " + expr.op.lexeme + " cannot be applied to types '" + expr.left->type->to_string() + "' and '" + expr.right->type->to_string() + "'.");
-        }
-    } else {
-        // Handle non-overloadable operators
-        if (expr.left->type->get_kind() == TypeKind::BASIC && expr.right->type->get_kind() == TypeKind::BASIC) {
-            expr.type = expr.left->type; // Simplistic result type
-        }
+            break;
+
+        case TokenType::AND:
+        case TokenType::OR:
+            if (left_type != "bool" || right_type != "bool") {
+                error(expr.op, "Logical operators can only be applied to booleans.");
+            }
+            expr.type = std::make_shared<BasicType>("bool");
+            break;
+
+        default:
+             error(expr.op, "Unsupported binary operator.");
+            break;
     }
 
     return nullptr;
@@ -571,11 +603,59 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
 
 std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     auto it = structs.find(expr.name.lexeme);
-    if (it != structs.end()) {
-        expr.type = std::make_shared<StructType>(expr.name.lexeme);
-    } else {
+    if (it == structs.end()) {
         error(expr.name, "Undefined struct '" + expr.name.lexeme + "'.");
+        return nullptr;
     }
+
+    const StructStmt* struct_stmt = it->second;
+    expr.type = std::make_shared<StructType>(expr.name.lexeme);
+
+    if (std::holds_alternative<std::map<std::string, std::unique_ptr<Expr>>>(expr.initializers)) {
+        const auto& initializers = std::get<std::map<std::string, std::unique_ptr<Expr>>>(expr.initializers);
+
+        if (initializers.size() != struct_stmt->fields.size()) {
+            error(expr.name, "Expected " + std::to_string(struct_stmt->fields.size()) +
+                               " fields but got " + std::to_string(initializers.size()) + ".");
+            return nullptr;
+        }
+
+        for (const auto& [name, value] : initializers) {
+            resolve(*value);
+        }
+
+        for (const auto& field_def : struct_stmt->fields) {
+            auto init_it = initializers.find(field_def->name.lexeme);
+            if (init_it == initializers.end()) {
+                error(expr.name, "Missing field '" + field_def->name.lexeme + "' in initializer.");
+                continue;
+            }
+
+            auto expected_type = resolveTypeExpr(*field_def->type);
+            auto actual_type = init_it->second->type;
+            if (actual_type && expected_type && expected_type->to_string() != actual_type->to_string()) {
+                error(expr.name, "Type mismatch for field '" + field_def->name.lexeme +
+                                 "'. Expected " + expected_type->to_string() +
+                                 " but got " + actual_type->to_string() + ".");
+            }
+        }
+
+        for (const auto& [name, value] : initializers) {
+            bool found = false;
+            for (const auto& field_def : struct_stmt->fields) {
+                if (field_def->name.lexeme == name) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                error(expr.name, "Undefined field '" + name + "' in initializer.");
+            }
+        }
+    } else {
+        // TODO: Handle positional initializers
+    }
+
     return nullptr;
 }
 

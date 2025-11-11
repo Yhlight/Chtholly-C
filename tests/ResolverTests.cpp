@@ -79,6 +79,65 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ComparisonExpressionHasBooleanType) {
+    std::string source = R"(
+        let b: bool = 1 < 2;
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidStructInitialization) {
+    std::string source = R"(
+        struct Point {
+            x: int;
+            y: int;
+        }
+        let p = Point{x: 1, y: 2};
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedAssignmentType) {
+    std::string source = R"(
+        let x: int = 1;
+        x = "hello";
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, StructInitializationWithUndefinedField) {
+    std::string source = R"(
+        struct Point {
+            x: int;
+            y: int;
+        }
+        let p = Point{x: 1, z: 2};
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, StructInitializationWithMissingField) {
+    std::string source = R"(
+        struct Point {
+            x: int;
+            y: int;
+        }
+        let p = Point{x: 1};
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, StructInitializationWithMismatchedType) {
+    std::string source = R"(
+        struct Point {
+            x: int;
+            y: int;
+        }
+        let p = Point{x: 1, y: "hello"};
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidFieldAccess) {
     std::string source = R"(
         struct Foo {
