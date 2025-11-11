@@ -147,3 +147,28 @@ This document outlines the development progress and future goals for the Chtholl
 
 ## Phase 8: Cross-Platform Support
 - [x] Ensure compiler and generated code are compatible with both Windows and Unix-like systems.
+
+## Phase 9: Compiler Architecture Refactoring (High Priority)
+
+Based on a comprehensive review, the next major focus is to refactor the compiler's architecture to improve robustness, maintainability, and extensibility.
+
+- [ ] **Introduce a Separate Semantic Analysis Phase (Resolver):**
+  - Create a new compiler stage that runs after the Parser and before the Transpiler.
+  - This stage will be responsible for:
+    - [ ] Building a hierarchical symbol table.
+    - [ ] Resolving all variable, function, and type identifiers.
+    - [ ] Performing comprehensive type checking for all expressions and statements.
+  - The goal is to decouple semantic analysis from the code generation process.
+
+- [ ] **Refactor the Transpiler:**
+  - Simplify the `Transpiler` by removing all type inference and semantic validation logic.
+  - The `Transpiler` should assume a semantically correct and type-annotated AST.
+  - Its sole responsibility will be to translate the AST into C++ code.
+
+- [ ] **Enhance the Type System:**
+  - Move away from using `std::string` to represent types within the compiler.
+  - Implement a dedicated class hierarchy for the type system (e.g., `Type`, `IntType`, `StructType`) to enable more robust type comparisons and analysis.
+
+- [ ] **Improve Parser Error Recovery:**
+  - Enhance the `synchronize()` method in the `Parser` to provide more intelligent error recovery.
+  - Implement finer-grained synchronization points (e.g., at the end of blocks `}`) to minimize discarded code and improve the accuracy of subsequent error messages.
