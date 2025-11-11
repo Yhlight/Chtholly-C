@@ -96,3 +96,13 @@ TEST_F(ResolverTest, StructTypeAnnotation) {
     )";
     ASSERT_FALSE(resolve(source));
 }
+
+TEST_F(ResolverTest, ValidUnary) {
+    std::string source = "let x = !true; let y = -10;";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidUnary) {
+    std::string source = "let x = !123; let y = -\"hello\";";
+    ASSERT_TRUE(resolve(source));
+}

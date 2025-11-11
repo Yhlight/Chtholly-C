@@ -407,7 +407,30 @@ std::any Resolver::visitLiteralExpr(const LiteralExpr& expr) {
 }
 
 std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
-    expr.right->accept(*this);
+    resolve(*expr.right);
+
+    if (!expr.right->type) {
+        return nullptr; // Can't check type if it's missing
+    }
+
+    switch (expr.op.type) {
+        case TokenType::BANG:
+            if (expr.right->type->to_string() != "bool") {
+                error(expr.op, "Operand of '!' must be of type 'bool'.");
+            }
+            expr.type = std::make_shared<BasicType>("bool");
+            break;
+        case TokenType::MINUS:
+            if (expr.right->type->to_string() != "int" && expr.right->type->to_string() != "double") {
+                error(expr.op, "Operand of '-' must be a number.");
+            }
+            expr.type = expr.right->type;
+            break;
+        default:
+            // Unreachable
+            break;
+    }
+
     return nullptr;
 }
 
