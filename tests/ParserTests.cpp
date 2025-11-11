@@ -190,3 +190,9 @@ TEST(ParserTest, CustomBinaryOperator) {
     std::string expected = "(; (* (** 2 3) 4))";
     EXPECT_EQ(parseAndPrint(source), expected);
 }
+
+TEST(ParserTest, UnaryOnLiteral) {
+    std::string source = "!10;";
+    std::string expected = "(; (! 10))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
