@@ -79,6 +79,30 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidControlFlowCondition) {
+    std::string source = R"(
+        if (true) {}
+        while (false) {}
+        for (let i = 0; i < 10; i = i + 1) {}
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidIfCondition) {
+    std::string source = "if (10) {}";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidWhileCondition) {
+    std::string source = "while (10) {}";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidForCondition) {
+    std::string source = "for (; 10; ) {}";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidReturnType) {
     std::string source = R"(
         func foo() -> int {

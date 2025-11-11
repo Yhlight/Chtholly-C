@@ -118,10 +118,11 @@ std::unique_ptr<Stmt> Parser::forStatement() {
         initializer = nullptr;
     } else if (match(TokenType::LET, TokenType::MUT)) {
         initializer = varDeclaration(false, Access::PUBLIC);
+        consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
     } else {
         initializer = expressionStatement();
+        // expressionStatement already consumes the semicolon, so we don't need another consume.
     }
-    consume(TokenType::SEMICOLON, "Expect ';' after loop initializer.");
 
     std::unique_ptr<Expr> condition = nullptr;
     if (!check(TokenType::SEMICOLON)) {

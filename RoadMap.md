@@ -157,7 +157,15 @@ Based on a comprehensive review, the next major focus is to refactor the compile
   - This stage will be responsible for:
     - [ ] Building a hierarchical symbol table.
     - [ ] Resolving all variable, function, and type identifiers.
-    - [ ] Performing comprehensive type checking for all expressions and statements.
+    - [x] Performing comprehensive type checking for all expressions and statements.
+      - [x] Variable declarations (`let`, `mut`)
+      - [x] Assignment expressions (`=`)
+      - [x] Unary and binary operators
+      - [x] Function calls
+      - [x] Struct field access
+      - [x] Struct initializers
+      - [x] Return statements
+      - [x] `if`, `while`, and `for` condition statements
   - The goal is to decouple semantic analysis from the code generation process.
 
 - [ ] **Refactor the Transpiler:**

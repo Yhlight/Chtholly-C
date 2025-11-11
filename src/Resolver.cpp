@@ -308,6 +308,11 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
 
 std::any Resolver::visitIfStmt(const IfStmt& stmt) {
     resolve(*stmt.condition);
+    if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+        // Ideally, we'd have a token from the expression to report the error on.
+        // For now, the message is clear enough.
+        error(Token(TokenType::ERROR, "", nullptr, 0), "If condition must be of type bool.");
+    }
     resolve(*stmt.thenBranch);
     if (stmt.elseBranch) {
         resolve(*stmt.elseBranch);
@@ -341,6 +346,9 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
 
 std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
     resolve(*stmt.condition);
+    if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+        error(Token(TokenType::ERROR, "", nullptr, 0), "While condition must be of type bool.");
+    }
     resolve(*stmt.body);
     return nullptr;
 }
@@ -351,6 +359,9 @@ std::any Resolver::visitForStmt(const ForStmt& stmt) {
     }
     if (stmt.condition) {
         resolve(*stmt.condition);
+        if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+            error(Token(TokenType::ERROR, "", nullptr, 0), "For condition must be of type bool.");
+        }
     }
     if (stmt.increment) {
         resolve(*stmt.increment);
