@@ -204,6 +204,14 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
     FunctionType enclosingFunction = currentFunction;
     currentFunction = type;
 
+    auto enclosing_return_type = current_function_return_type;
+    if (function.return_type) {
+        current_function_return_type = typeResolver->resolve(*function.return_type);
+    } else {
+        current_function_return_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::VOID);
+    }
+
+
     beginScope();
     for (size_t i = 0; i < function.params.size(); ++i) {
         declare(function.params[i]);
@@ -213,6 +221,8 @@ void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) 
         resolveStmt(*s);
     }
     endScope();
+
+    current_function_return_type = enclosing_return_type;
     currentFunction = enclosingFunction;
 }
 
@@ -245,11 +255,28 @@ std::any Resolver::visitIfStmt(const IfStmt& stmt) {
 std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     if (currentFunction == FunctionType::NONE) {
         error(stmt.keyword, "Can't return from top-level code.");
+        return nullptr;
     }
 
-    if (stmt.value) {
-        resolveExpr(*stmt.value);
+    if (current_function_return_type) {
+        if (stmt.value) {
+            // Returning a value
+            if (current_function_return_type->toString() == "void") {
+                error(stmt.keyword, "Cannot return a value from a void function.");
+            }
+            auto valueType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*stmt.value));
+            if (valueType && valueType->toString() != "auto" && !current_function_return_type->isEqualTo(*valueType)) {
+                error(stmt.keyword, "Return value type does not match function's declared return type. Expected " +
+                                   current_function_return_type->toString() + " but got " + valueType->toString() + ".");
+            }
+        } else {
+            // Empty return
+            if (current_function_return_type->toString() != "void") {
+                error(stmt.keyword, "A function with a return type must return a value.");
+            }
+        }
     }
+
     return nullptr;
 }
 

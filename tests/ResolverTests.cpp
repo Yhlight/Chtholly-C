@@ -50,8 +50,15 @@ TEST_F(ResolverTest, Shadowing) {
     ASSERT_FALSE(resolve(source));
 }
 
-TEST_F(ResolverTest, ValidFunction) {
+TEST_F(ResolverTest, ReturnValueFromVoidFunctionInOldTest) {
+    // This test is the old ValidFunction test. Now that the resolver is stricter,
+    // this is correctly identified as an error.
     std::string source = "func foo() { return 1; }";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidFunction) {
+    std::string source = "func foo() -> int { return 1; }";
     ASSERT_FALSE(resolve(source));
 }
 
@@ -113,5 +120,31 @@ TEST_F(ResolverTest, IncorrectArgumentType) {
 
 TEST_F(ResolverTest, ValidFunctionCall) {
     std::string source = "let s = input();";
+    ASSERT_FALSE(resolve(source));
+}
+
+// Return Type Tests
+TEST_F(ResolverTest, ReturnValueFromVoidFunction) {
+    std::string source = "func foo() { return 1; }";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReturnTypeMismatch) {
+    std::string source = "func foo() -> int { return \"hello\"; }";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MissingReturnValue) {
+    std::string source = "func foo() -> int { return; }";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidReturnValue) {
+    std::string source = "func foo() -> int { return 1; }";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidVoidReturn) {
+    std::string source = "func foo() { return; }";
     ASSERT_FALSE(resolve(source));
 }
