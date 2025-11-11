@@ -49,3 +49,23 @@ TEST_F(ResolverTest, Shadowing) {
     std::string source = "{ let a = 1; { let a = 2; print(a); } print(a); }";
     ASSERT_FALSE(resolve(source));
 }
+
+TEST_F(ResolverTest, ValidFunction) {
+    std::string source = "func foo() { return 1; }";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReturnAtTopLevel) {
+    std::string source = "return 1;";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidSelf) {
+    std::string source = "struct Foo { func bar() { print(self); } }";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, SelfOutsideOfClass) {
+    std::string source = "print(self);";
+    ASSERT_TRUE(resolve(source));
+}

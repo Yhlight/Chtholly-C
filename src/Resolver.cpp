@@ -126,17 +126,24 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     return nullptr;
 }
 
-std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
-    declare(stmt.name);
-    define(stmt.name);
+void Resolver::resolveFunction(const FunctionStmt& function, FunctionType type) {
+    FunctionType enclosingFunction = currentFunction;
+    currentFunction = type;
 
     beginScope();
-    for (const auto& param : stmt.params) {
+    for (const auto& param : function.params) {
         declare(param);
         define(param);
     }
-    resolve(stmt.body->statements);
+    resolve(function.body->statements);
     endScope();
+    currentFunction = enclosingFunction;
+}
+
+std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
+    declare(stmt.name);
+    define(stmt.name);
+    resolveFunction(stmt, FunctionType::FUNCTION);
     return nullptr;
 }
 
@@ -155,6 +162,10 @@ std::any Resolver::visitIfStmt(const IfStmt& stmt) {
 }
 
 std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
+    if (currentFunction == FunctionType::NONE) {
+        error(stmt.keyword, "Can't return from top-level code.");
+    }
+
     if (stmt.value) {
         resolve(*stmt.value);
     }
@@ -221,13 +232,32 @@ std::any Resolver::visitSetExpr(const SetExpr& expr) {
 }
 
 std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
+    if (currentClass == ClassType::NONE) {
+        error(expr.keyword, "Can't use 'self' outside of a class.");
+        return nullptr;
+    }
+
     return nullptr;
 }
 
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
+    ClassType enclosingClass = currentClass;
+    currentClass = ClassType::CLASS;
+
+    declare(stmt.name);
+    define(stmt.name);
+
+    beginScope();
+    scopes.back()["self"] = true;
+
     for (const auto& method : stmt.methods) {
-        method->accept(*this);
+        FunctionType declaration = FunctionType::FUNCTION;
+        resolveFunction(*method, declaration);
     }
+
+    endScope();
+
+    currentClass = enclosingClass;
     return nullptr;
 }
 

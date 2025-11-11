@@ -28,6 +28,18 @@ private:
     void define(const Token& name);
 
     std::vector<std::map<std::string, bool>> scopes;
+    enum class FunctionType {
+        NONE,
+        FUNCTION
+    };
+    enum class ClassType {
+        NONE,
+        CLASS
+    };
+    FunctionType currentFunction = FunctionType::NONE;
+    ClassType currentClass = ClassType::NONE;
+
+    void resolveFunction(const FunctionStmt& function, FunctionType type);
 
     std::any visitBlockStmt(const BlockStmt& stmt) override;
     std::any visitVarStmt(const VarStmt& stmt) override;
