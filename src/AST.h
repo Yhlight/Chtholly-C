@@ -3,6 +3,7 @@
 
 #include "Token.h"
 #include "TypeInfo.h"
+#include "Type.h"
 #include <vector>
 #include <memory>
 #include <any>
@@ -79,6 +80,7 @@ public:
 struct Expr {
     virtual ~Expr() = default;
     virtual std::any accept(ExprVisitor& visitor) const = 0;
+    mutable std::shared_ptr<Type> type;
 };
 
 // Visitor for Statements

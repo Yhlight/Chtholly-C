@@ -69,3 +69,12 @@ TEST_F(ResolverTest, SelfOutsideOfClass) {
     std::string source = "print(self);";
     ASSERT_TRUE(resolve(source));
 }
+
+TEST_F(ResolverTest, BinaryTypeError) {
+    std::string source = R"(
+        struct Foo {}
+        let a = Foo{};
+        let b = a + a;
+    )";
+    ASSERT_TRUE(resolve(source));
+}

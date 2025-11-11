@@ -17,10 +17,20 @@ public:
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
 
 private:
+    class DeclarationScanner; // Forward declaration
+
+    std::map<std::string, const StructStmt*> structs;
+    std::map<std::string, const TraitStmt*> traits;
+    std::map<std::string, const EnumStmt*> enums;
+
     void error(const Token& token, const std::string& message);
 
     void resolve(const Stmt& stmt);
     void resolve(const Expr& expr);
+
+    bool is_trait_implemented(const std::string& struct_name, const std::string& trait_name);
+
+    static const std::map<TokenType, std::string> op_to_trait;
 
     void beginScope();
     void endScope();
@@ -28,6 +38,7 @@ private:
     void define(const Token& name);
 
     std::vector<std::map<std::string, bool>> scopes;
+    std::map<std::string, std::shared_ptr<Type>> var_types;
     enum class FunctionType {
         NONE,
         FUNCTION
@@ -72,7 +83,7 @@ private:
     std::any visitLambdaExpr(const LambdaExpr& expr) override { return nullptr; }
     std::any visitBorrowExpr(const BorrowExpr& expr) override { return nullptr; }
     std::any visitDerefExpr(const DerefExpr& expr) override { return nullptr; }
-    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override { return nullptr; }
+    std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override { return nullptr; }
     std::any visitTypeCastExpr(const TypeCastExpr& expr) override { return nullptr; }
 };
