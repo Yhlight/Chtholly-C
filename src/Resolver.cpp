@@ -272,6 +272,9 @@ void Resolver::resolveFunction(const FunctionStmt& function, CurrentFunctionType
     CurrentFunctionType enclosingFunction = currentFunction;
     currentFunction = type;
 
+    auto enclosing_return_type = std::move(current_return_type);
+    current_return_type = function.return_type ? resolveTypeExpr(*function.return_type) : std::make_shared<BasicType>("void");
+
     beginScope();
     for (size_t i = 0; i < function.params.size(); ++i) {
         declare(function.params[i]);
@@ -281,6 +284,7 @@ void Resolver::resolveFunction(const FunctionStmt& function, CurrentFunctionType
     resolve(*function.body);
     endScope();
     currentFunction = enclosingFunction;
+    current_return_type = std::move(enclosing_return_type);
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
@@ -317,8 +321,21 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     }
 
     if (stmt.value) {
+        if (current_return_type && current_return_type->to_string() == "void") {
+            error(stmt.keyword, "Cannot return a value from a void function.");
+        }
         resolve(*stmt.value);
+        if (current_return_type && stmt.value->type &&
+            current_return_type->to_string() != stmt.value->type->to_string()) {
+            error(stmt.keyword, "Return type mismatch. Expected " + current_return_type->to_string() +
+                                 " but got " + stmt.value->type->to_string() + ".");
+        }
+    } else {
+        if (current_return_type && current_return_type->to_string() != "void") {
+            error(stmt.keyword, "Non-void function must return a value.");
+        }
     }
+
     return nullptr;
 }
 

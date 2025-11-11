@@ -51,7 +51,7 @@ TEST_F(ResolverTest, Shadowing) {
 }
 
 TEST_F(ResolverTest, ValidFunction) {
-    std::string source = "func foo() { return 1; }";
+    std::string source = "func foo() -> int { return 1; }";
     ASSERT_FALSE(resolve(source));
 }
 
@@ -75,6 +75,42 @@ TEST_F(ResolverTest, BinaryTypeError) {
         struct Foo {}
         let a = Foo{};
         let b = a + a;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidReturnType) {
+    std::string source = R"(
+        func foo() -> int {
+            return 1;
+        }
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReturnValueFromVoidFunction) {
+    std::string source = R"(
+        func foo() {
+            return 1;
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReturnVoidFromNonVoidFunction) {
+    std::string source = R"(
+        func foo() -> int {
+            return;
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedReturnType) {
+    std::string source = R"(
+        func foo() -> int {
+            return "hello";
+        }
     )";
     ASSERT_TRUE(resolve(source));
 }

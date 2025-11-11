@@ -52,6 +52,7 @@ private:
     };
     CurrentFunctionType currentFunction = CurrentFunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
+    std::shared_ptr<Type> current_return_type = nullptr;
 
     void resolveFunction(const FunctionStmt& function, CurrentFunctionType type);
 
