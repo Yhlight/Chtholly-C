@@ -4,6 +4,7 @@ add_library(chtholly_lib STATIC
     AstPrinter.cpp
     Parser.cpp
     Transpiler.cpp
+    Resolver.cpp
 )
 
 target_include_directories(chtholly_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

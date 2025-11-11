@@ -10,6 +10,7 @@
 #endif
 #include "Lexer.h"
 #include "Parser.h"
+#include "Resolver.h"
 #include "Transpiler.h"
 #include <filesystem>
 
@@ -48,6 +49,9 @@ namespace chtholly {
 
                 chtholly::Parser parser(tokens);
                 std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+
+                chtholly::Resolver resolver;
+                resolver.resolve(statements);
 
                 bool is_main = false;
                 for (const auto& stmt : statements) {
@@ -133,6 +137,9 @@ namespace chtholly {
 
             chtholly::Parser parser(tokens);
             std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+
+            chtholly::Resolver resolver;
+            resolver.resolve(statements);
 
             chtholly::Transpiler transpiler(true);
             std::string output = transpiler.transpile(statements);
