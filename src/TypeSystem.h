@@ -36,6 +36,20 @@ public:
     bool isEqualTo(const Type& other) const override;
 };
 
+
+class FunctionType : public Type {
+public:
+    std::shared_ptr<Type> return_type;
+    std::vector<std::shared_ptr<Type>> param_types;
+
+    FunctionType(std::shared_ptr<Type> return_type, std::vector<std::shared_ptr<Type>> param_types)
+        : return_type(std::move(return_type)), param_types(std::move(param_types)) {}
+
+    std::string toString() const override;
+    bool isEqualTo(const Type& other) const override;
+};
+
+
 } // namespace types
 } // namespace chtholly
 

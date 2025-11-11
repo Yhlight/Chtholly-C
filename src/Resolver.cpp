@@ -28,17 +28,34 @@ private:
 
 Resolver::Resolver() : typeResolver(std::make_unique<TypeResolver>()) {
     beginScope(); // Global scope
+
     // Pre-define all built-in functions and modules
+    auto void_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::VOID);
+    auto string_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::STRING);
+    auto bool_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::BOOL);
     auto any_type = std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO);
-    scopes.back()["print"] = any_type;
-    scopes.back()["input"] = any_type;
-    scopes.back()["fs_read"] = any_type;
-    scopes.back()["fs_write"] = any_type;
-    scopes.back()["fs_exists"] = any_type;
-    scopes.back()["fs_is_file"] = any_type;
-    scopes.back()["fs_is_dir"] = any_type;
-    scopes.back()["fs_list_dir"] = any_type;
-    scopes.back()["fs_remove"] = any_type;
+
+    // Built-in functions
+    // print(any) -> void
+    scopes.back()["print"] = std::make_shared<types::FunctionType>(void_type, std::vector<std::shared_ptr<types::Type>>{any_type});
+    // input() -> string
+    scopes.back()["input"] = std::make_shared<types::FunctionType>(string_type, std::vector<std::shared_ptr<types::Type>>{});
+    // fs_read(string) -> string
+    scopes.back()["fs_read"] = std::make_shared<types::FunctionType>(string_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+    // fs_write(string, string) -> void
+    scopes.back()["fs_write"] = std::make_shared<types::FunctionType>(void_type, std::vector<std::shared_ptr<types::Type>>{string_type, string_type});
+    // fs_exists(string) -> bool
+    scopes.back()["fs_exists"] = std::make_shared<types::FunctionType>(bool_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+    // fs_is_file(string) -> bool
+    scopes.back()["fs_is_file"] = std::make_shared<types::FunctionType>(bool_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+    // fs_is_dir(string) -> bool
+    scopes.back()["fs_is_dir"] = std::make_shared<types::FunctionType>(bool_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+    // fs_list_dir(string) -> array<string>  (NOTE: Array type not implemented yet, using AUTO)
+    scopes.back()["fs_list_dir"] = std::make_shared<types::FunctionType>(any_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+    // fs_remove(string) -> void
+    scopes.back()["fs_remove"] = std::make_shared<types::FunctionType>(void_type, std::vector<std::shared_ptr<types::Type>>{string_type});
+
+    // Modules (represented as AUTO for now)
     scopes.back()["meta"] = any_type;
     scopes.back()["reflect"] = any_type;
     scopes.back()["util"] = any_type;
@@ -281,10 +298,50 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
 }
 
 std::any Resolver::visitCallExpr(const CallExpr& expr) {
-    resolveExpr(*expr.callee);
-    for (const auto& arg : expr.arguments) {
-        resolveExpr(*arg);
+    auto calleeTypeAny = resolveExpr(*expr.callee);
+    if (!calleeTypeAny.has_value()) {
+        // Error already reported during callee resolution
+        return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
     }
+    auto calleeType = std::any_cast<std::shared_ptr<types::Type>>(calleeTypeAny);
+
+    if (auto funcType = std::dynamic_pointer_cast<types::FunctionType>(calleeType)) {
+        // Check arity
+        if (expr.arguments.size() != funcType->param_types.size()) {
+            // A special case for print, which can take any number of arguments
+            auto variableExpr = dynamic_cast<const VariableExpr*>(&*expr.callee);
+            if (!variableExpr || variableExpr->name.lexeme != "print") {
+                error(expr.paren, "Expected " + std::to_string(funcType->param_types.size()) +
+                                 " arguments but got " + std::to_string(expr.arguments.size()) + ".");
+            }
+        }
+
+        // Check argument types
+        for (size_t i = 0; i < expr.arguments.size(); ++i) {
+            if (i < funcType->param_types.size()) {
+                auto argType = std::any_cast<std::shared_ptr<types::Type>>(resolveExpr(*expr.arguments[i]));
+                auto paramType = funcType->param_types[i];
+
+                if (paramType->toString() != "auto" && argType->toString() != "auto" && !paramType->isEqualTo(*argType)) {
+                     error(expr.paren, "Argument type mismatch for parameter " + std::to_string(i + 1) +
+                                      ". Expected " + paramType->toString() + " but got " + argType->toString() + ".");
+                }
+            }
+        }
+        return funcType->return_type;
+
+    } else if (std::dynamic_pointer_cast<types::PrimitiveType>(calleeType) &&
+               calleeType->toString() == "auto") {
+        // Callee is a module or something we haven't resolved a concrete type for.
+        // We can't check it, so we just resolve the arguments and assume it's okay.
+        for (const auto& arg : expr.arguments) {
+            resolveExpr(*arg);
+        }
+    }
+    else {
+        error(expr.paren, "Can only call functions and classes.");
+    }
+
     return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
 }
 
@@ -328,10 +385,10 @@ std::any Resolver::visitSetExpr(const SetExpr& expr) {
 std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
     if (currentClass == ClassType::NONE) {
         error(expr.keyword, "Can't use 'self' outside of a class.");
-        return nullptr;
+        return std::shared_ptr<types::Type>(std::make_shared<types::PrimitiveType>(types::PrimitiveType::Kind::AUTO));
     }
 
-    return nullptr;
+    return lookup(expr.keyword);
 }
 
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {

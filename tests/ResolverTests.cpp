@@ -89,3 +89,29 @@ TEST_F(ResolverTest, InvalidOperandsForBinary) {
     std::string source = "let a = true + false;";
     ASSERT_TRUE(resolve(source));
 }
+
+// Function Call Tests
+TEST_F(ResolverTest, CallNonFunction) {
+    std::string source = "let a = 1; a();";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, TooManyArguments) {
+    std::string source = "input(1);";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, TooFewArguments) {
+    std::string source = "fs_read();";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, IncorrectArgumentType) {
+    std::string source = "fs_write(1, 2);";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidFunctionCall) {
+    std::string source = "let s = input();";
+    ASSERT_FALSE(resolve(source));
+}
