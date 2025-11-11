@@ -79,6 +79,38 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidFieldAccess) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        let foo = Foo{bar: 1};
+        foo.bar;
+    )";
+    ASSERT_FALSE(resolve(source));
+    // Here we would ideally also check that the type of `foo.bar` is int.
+    // This requires a more advanced test setup to inspect the AST after resolution.
+}
+
+TEST_F(ResolverTest, InvalidFieldAccess) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        let foo = Foo{bar: 1};
+        foo.baz;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, AccessFieldOnNonStruct) {
+    std::string source = R"(
+        let a = 1;
+        a.foo;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidTypeAnnotation) {
     std::string source = "let x: int = 10;";
     ASSERT_FALSE(resolve(source));

@@ -488,7 +488,41 @@ std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
 }
 
 std::any Resolver::visitGetExpr(const GetExpr& expr) {
-    expr.object->accept(*this);
+    resolve(*expr.object);
+
+    if (!expr.object->type) {
+        return nullptr; // Avoid cascade errors
+    }
+
+    if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
+        auto it = structs.find(struct_type->get_name());
+        if (it != structs.end()) {
+            const StructStmt* struct_stmt = it->second;
+            // Look for a field
+            for (const auto& field : struct_stmt->fields) {
+                if (field->name.lexeme == expr.name.lexeme) {
+                    expr.type = resolveTypeExpr(*field->type);
+                    return nullptr;
+                }
+            }
+            // Look for a method
+            for (const auto& method : struct_stmt->methods) {
+                if (method->name.lexeme == expr.name.lexeme) {
+                    std::vector<std::shared_ptr<Type>> param_types;
+                    for (const auto& param_type_expr : method->param_types) {
+                        param_types.push_back(resolveTypeExpr(*param_type_expr));
+                    }
+                    auto return_type = method->return_type ? resolveTypeExpr(*method->return_type) : std::make_shared<BasicType>("void");
+                    expr.type = std::make_shared<chtholly::FunctionType>(return_type, param_types);
+                    return nullptr;
+                }
+            }
+            error(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
+        }
+    } else {
+        error(expr.name, "Only structs have properties.");
+    }
+
     return nullptr;
 }
 
