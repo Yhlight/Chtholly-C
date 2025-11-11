@@ -381,11 +381,6 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
             if (var_expr->name.lexeme == "math") {
                 return TypeInfo{"double"};
             }
-            if (var_expr->name.lexeme == "string") {
-                if (get_expr->name.lexeme == "join") {
-                    return TypeInfo{"std::string"};
-                }
-            }
             if (var_expr->name.lexeme == "array") {
                 if (get_expr->name.lexeme == "length") {
                     return TypeInfo{"int"};
@@ -474,6 +469,9 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
                 if (get_expr->name.lexeme == "is_empty") {
                     return TypeInfo{"bool"};
+                }
+                if (get_expr->name.lexeme == "join") {
+                    return TypeInfo{"std::string"};
                 }
             }
             TypeInfo callee_type = get_type(*get_expr->object);
@@ -1394,23 +1392,13 @@ std::any Transpiler::handleArrayMethodCall(const CallExpr& expr, const GetExpr& 
         imported_modules.insert("algorithm");
         return "std::sort(" + object_str + ".begin(), " + object_str + ".end())";
     }
-
-    return "/* ERROR: Unknown array method call */";
-}
-
-std::any Transpiler::handleStringFunction(const CallExpr& expr) {
-    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
-    std::string function_name = get_expr->name.lexeme;
-
     if (function_name == "join") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: join requires two arguments */";
-        }
+        if (expr.arguments.size() != 1) { return "/* ERROR: join requires one argument */"; }
         string_helpers_used = true;
-        return "chtholly_string_join(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " + std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
+        return "chtholly_string_join(" + object_str + ", " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }
 
-    return "/* ERROR: Unknown string function call */";
+    return "/* ERROR: Unknown array method call */";
 }
 
 std::any Transpiler::handleOSFunction(const CallExpr& expr) {
@@ -1546,9 +1534,6 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             }
             if (var_expr->name.lexeme == "math") {
                 return handleMathFunction(expr);
-            }
-            if (var_expr->name.lexeme == "string") {
-                return handleStringFunction(expr);
             }
             if (var_expr->name.lexeme == "os") {
                 return handleOSFunction(expr);

@@ -32,21 +32,6 @@ TEST_F(TestString, SplitFunction) {
     ASSERT_EQ(result.stdout_output, "hello\nworld\nchtholly\n");
 }
 
-TEST_F(TestString, JoinFunction) {
-    std::string source = R"(
-        import string;
-        import iostream;
-        func main() -> int {
-            let arr = ["hello", "world", "chtholly"];
-            let s = string::join(arr, ",");
-            print(s);
-            return 0;
-        }
-    )";
-    chtholly::RunResult result = chtholly::run_and_capture(source, true);
-    ASSERT_EQ(result.exit_code, 0);
-    ASSERT_EQ(result.stdout_output, "hello,world,chtholly\n");
-}
 
 TEST_F(TestString, FindFunctionFound) {
     std::string source = R"(

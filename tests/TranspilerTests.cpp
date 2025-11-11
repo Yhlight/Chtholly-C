@@ -392,3 +392,19 @@ TEST_F(TranspilerTest, ReferenceAsFunctionParameter) {
     EXPECT_EQ(transpile(source), expected);
 }
 
+#include <gtest/gtest.h>
+#include "TestHelpers.h"
+
+TEST_F(TranspilerTest, ArrayJoin) {
+    std::string source = R"(
+        import iostream;
+        func main() -> int {
+            let arr = ["hello", "world", "chtholly"];
+            print(arr.join(", "));
+            return 0;
+        }
+    )";
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "hello, world, chtholly\n");
+}

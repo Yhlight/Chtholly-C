@@ -788,18 +788,6 @@ Chtholly 的 `string` 类型提供了一系列内置方法来执行常见的字�
   let has_galaxy = s.contains("galaxy"); // has_galaxy 将是 false
   ```
 
-#### 静态函数
-部分与字符串相关的函数仍然以静态形式提供，需要通过 `string::` 前缀调用。
-
-- **`string::join(arr: array[string], separator: string) -> string`**
-  使用 `separator` 将一个字符串数组 `arr` 连接成单个字符串。
-
-  ```Chtholly
-  import string; // 'join' is a static function and requires importing the 'string' module.
-  let arr = ["hello", "world", "chtholly"];
-  let s = string::join(arr, ","); // s 将是 "hello,world,chtholly"
-  ```
-
 ### Array Methods
 Chtholly 的 `array` 类型提供了一系列内置方法来操作动态数组。这些方法可以直接在任何数组变量上调用，无需导入任何模块。
 
@@ -869,6 +857,13 @@ Chtholly 的 `array` 类型提供了一系列内置方法来操作动态数组�
   ```Chtholly
   mut arr = [3, 1, 4, 1, 5];
   arr.sort(); // arr 现在是 [1, 1, 3, 4, 5]
+  ```
+- **`join(separator: string) -> string`**
+  使用 `separator` 将一个字符串数组连接成单个字符串。
+
+  ```Chtholly
+  let arr = ["hello", "world", "chtholly"];
+  let s = arr.join(","); // s 将是 "hello,world,chtholly"
   ```
 
 ### OS Module
