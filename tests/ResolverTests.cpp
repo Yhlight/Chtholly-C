@@ -79,6 +79,42 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+// OS, Time, Random, Util module tests
+TEST_F(ResolverTest, ValidOsExit) {
+    std::string source = "os::exit(0);";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, OsEnvWrongArgType) {
+    std::string source = "os::env(123);";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, TimeNowWrongArity) {
+    std::string source = "time::now(123);";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidRandomRandint) {
+    std::string source = "let x: int = random::randint(0, 10);";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, RandomRandWrongArity) {
+    std::string source = "random::rand(1);";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidUtilPanic) {
+    std::string source = "util::panic(\"test\");";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, UtilUnknownFunction) {
+    std::string source = "util::unknown();";
+    ASSERT_TRUE(resolve(source));
+}
+
 // Reflect module tests
 TEST_F(ResolverTest, ValidReflectGetFieldCount) {
     std::string source = R"(

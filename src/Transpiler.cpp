@@ -1139,9 +1139,6 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
     std::string function_name = get_expr->name.lexeme;
 
     if (function_name == "string_cast") {
-        if (expr.arguments.empty()) {
-            return std::string("/* ERROR: string_cast requires one argument */");
-        }
         TypeInfo arg_type = get_type(*expr.arguments[0]);
         if (arg_type.name == "int" || arg_type.name == "double" || arg_type.name == "unsigned int") {
             return "std::to_string(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
@@ -1151,9 +1148,6 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
         }
     }
     if (function_name == "panic") {
-        if (expr.arguments.empty()) {
-            return std::string("/* ERROR: panic requires one argument */");
-        }
         imported_modules.insert("iostream");
         imported_modules.insert("cstdlib");
         return "std::cerr << \"Panic: \" << " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + " << std::endl; std::exit(1);";
@@ -1171,17 +1165,11 @@ std::any Transpiler::handleMathFunction(const CallExpr& expr) {
         function_name == "tan" || function_name == "log" || function_name == "log10" ||
         function_name == "abs" || function_name == "ceil" || function_name == "floor" ||
         function_name == "round") {
-        if (expr.arguments.size() != 1) {
-            return "/* ERROR: " + function_name + " requires one argument */";
-        }
         return "std::" + function_name + "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }
 
     // Functions with two arguments
     if (function_name == "pow") {
-        if (expr.arguments.size() != 2) {
-            return "/* ERROR: pow requires two arguments */";
-        }
         return "std::pow(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
                std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
     }
@@ -1335,16 +1323,10 @@ std::any Transpiler::handleOSFunction(const CallExpr& expr) {
     std::string function_name = get_expr->name.lexeme;
 
     if (function_name == "exit") {
-        if (expr.arguments.size() != 1) {
-            return std::string("/* ERROR: os::exit requires one argument */");
-        }
         imported_modules.insert("cstdlib");
         return "std::exit(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }
     if (function_name == "env") {
-        if (expr.arguments.size() != 1) {
-            return std::string("/* ERROR: os::env requires one argument */");
-        }
         imported_modules.insert("cstdlib");
         optional_used = true;
         std::string var_name = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
@@ -1359,9 +1341,6 @@ std::any Transpiler::handleTimeFunction(const CallExpr& expr) {
     std::string function_name = get_expr->name.lexeme;
 
     if (function_name == "now") {
-        if (!expr.arguments.empty()) {
-            return std::string("/* ERROR: time::now takes no arguments */");
-        }
         imported_modules.insert("chrono");
         return std::string("std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()");
     }
@@ -1374,15 +1353,9 @@ std::any Transpiler::handleRandomFunction(const CallExpr& expr) {
     std::string function_name = get_expr->name.lexeme;
 
     if (function_name == "rand") {
-        if (!expr.arguments.empty()) {
-            return std::string("/* ERROR: random::rand takes no arguments */");
-        }
         return std::string("([&]() { std::random_device rd; std::mt19937 gen(rd()); std::uniform_real_distribution<> distrib(0.0, 1.0); return distrib(gen); }())");
     }
     if (function_name == "randint") {
-        if (expr.arguments.size() != 2) {
-            return std::string("/* ERROR: random::randint requires two arguments */");
-        }
         std::string min = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         std::string max = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
         return "([&]() { std::random_device rd; std::mt19937 gen(rd()); std::uniform_int_distribution<> distrib(" + min + ", " + max + "); return distrib(gen); }())";

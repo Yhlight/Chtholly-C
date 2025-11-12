@@ -526,6 +526,87 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
 
                 error(get_expr->name, "Unknown function reflect::" + func_name);
                 return nullptr;
+            } else if (var_expr->name.lexeme == "os") {
+                std::string func_name = get_expr->name.lexeme;
+                if (func_name == "exit") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "os::exit requires 1 argument.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(BasicType("int"))) {
+                        error(get_expr->name, "os::exit requires an integer argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("void");
+                    return nullptr;
+                }
+                if (func_name == "env") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "os::env requires 1 argument.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(BasicType("string"))) {
+                        error(get_expr->name, "os::env requires a string argument.");
+                    }
+                    // This is a simplification. A full implementation would create a GenericType.
+                    expr.type = std::make_shared<StructType>("option");
+                    return nullptr;
+                }
+                error(get_expr->name, "Unknown function os::" + func_name);
+                return nullptr;
+            } else if (var_expr->name.lexeme == "time") {
+                std::string func_name = get_expr->name.lexeme;
+                if (func_name == "now") {
+                    if (expr.arguments.size() != 0) {
+                        error(get_expr->name, "time::now requires 0 arguments.");
+                    }
+                    expr.type = std::make_shared<BasicType>("int"); // Representing long long as int for now
+                    return nullptr;
+                }
+                error(get_expr->name, "Unknown function time::" + func_name);
+                return nullptr;
+            } else if (var_expr->name.lexeme == "random") {
+                std::string func_name = get_expr->name.lexeme;
+                if (func_name == "rand") {
+                    if (expr.arguments.size() != 0) {
+                        error(get_expr->name, "random::rand requires 0 arguments.");
+                    }
+                    expr.type = std::make_shared<BasicType>("double");
+                    return nullptr;
+                }
+                if (func_name == "randint") {
+                    if (expr.arguments.size() != 2) {
+                        error(get_expr->name, "random::randint requires 2 arguments.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(BasicType("int"))) {
+                        error(get_expr->name, "random::randint first argument must be an integer.");
+                    }
+                    if (expr.arguments[1]->type && !expr.arguments[1]->type->equals(BasicType("int"))) {
+                        error(get_expr->name, "random::randint second argument must be an integer.");
+                    }
+                    expr.type = std::make_shared<BasicType>("int");
+                    return nullptr;
+                }
+                error(get_expr->name, "Unknown function random::" + func_name);
+                return nullptr;
+            } else if (var_expr->name.lexeme == "util") {
+                std::string func_name = get_expr->name.lexeme;
+                if (func_name == "panic") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "util::panic requires 1 argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("void");
+                    return nullptr;
+                }
+                if (func_name == "string_cast") {
+                     if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "util::string_cast requires 1 argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("string");
+                    return nullptr;
+                }
+                error(get_expr->name, "Unknown function util::" + func_name);
+                return nullptr;
             }
         }
     }
