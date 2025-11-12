@@ -79,6 +79,39 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+// Meta module tests
+TEST_F(ResolverTest, ValidMetaIsInt) {
+    std::string source = R"(
+        let x = 10;
+        let b: bool = meta::is_int(x);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidMetaTypeName) {
+    std::string source = R"(
+        let x = 10;
+        let s: string = meta::type_name(x);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MetaWrongArity) {
+    std::string source = R"(
+        let x = 10;
+        let b = meta::is_string(x, x);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MetaUnknownFunction) {
+    std::string source = R"(
+        let x = 10;
+        let b = meta::unknown_func(x);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidSwitch) {
     std::string source = R"(
         let x = 1;

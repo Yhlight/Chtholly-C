@@ -965,10 +965,6 @@ std::any Transpiler::visitAssignExpr(const AssignExpr& expr) {
 std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
-
-    if (expr.arguments.empty()) {
-        return std::string("/* ERROR: meta function requires one argument */");
-    }
     TypeInfo arg_type = get_type(*expr.arguments[0]);
 
     if (function_name == "is_int") {

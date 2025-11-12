@@ -427,6 +427,49 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
         resolve(*arg);
     }
 
+    if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
+            if (var_expr->name.lexeme == "meta") {
+                // This is a call to a meta function
+                std::string func_name = get_expr->name.lexeme;
+
+                // List of functions that return bool
+                std::vector<std::string> bool_funcs = {
+                    "is_int", "is_uint", "is_double", "is_char", "is_bool",
+                    "is_string", "is_struct", "is_array", "is_let", "is_mut",
+                    "is_borrow", "is_borrow_mut", "is_move"
+                };
+
+                bool is_bool_func = false;
+                for (const auto& name : bool_funcs) {
+                    if (func_name == name) {
+                        is_bool_func = true;
+                        break;
+                    }
+                }
+
+                if (is_bool_func) {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "meta::" + func_name + " requires 1 argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("bool");
+                    return nullptr;
+                }
+
+                if (func_name == "type_name") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "meta::type_name requires 1 argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("string");
+                    return nullptr;
+                }
+
+                error(get_expr->name, "Unknown function meta::" + func_name);
+                return nullptr;
+            }
+        }
+    }
+
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
         auto it = functions.find(var_expr->name.lexeme);
         if (it != functions.end()) {
@@ -525,6 +568,17 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
 
     if (!expr.object->type) {
         return nullptr; // Avoid cascade errors
+    }
+
+    if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.object.get())) {
+        const std::string& module_name = var_expr->name.lexeme;
+        if (module_name == "meta" || module_name == "reflect" || module_name == "util" ||
+            module_name == "string" || module_name == "array" || module_name == "os" ||
+            module_name == "time" || module_name == "random") {
+            // This is a module access. The actual function type will be determined
+            // in visitCallExpr. We don't assign a type to the GetExpr itself here.
+            return nullptr;
+        }
     }
 
     if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
