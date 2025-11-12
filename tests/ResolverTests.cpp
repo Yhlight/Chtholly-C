@@ -79,6 +79,22 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidBorrow) {
+    std::string source = R"(
+        let x: int = 10;
+        let y: &int = &x;
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedBorrowType) {
+    std::string source = R"(
+        let x: int = 10;
+        let y: &string = &x;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidTypeCast) {
     std::string source = "let x: string = type_cast<string>(10);";
     ASSERT_FALSE(resolve(source));

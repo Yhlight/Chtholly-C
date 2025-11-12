@@ -11,7 +11,8 @@ enum class TypeKind {
     BASIC,
     FUNCTION,
     ARRAY,
-    STRUCT
+    STRUCT,
+    BORROW
 };
 
 class Type {
@@ -123,6 +124,31 @@ public:
 
 private:
     std::string name;
+};
+
+class BorrowType : public Type {
+public:
+    BorrowType(std::shared_ptr<Type> element_type, bool is_mutable)
+        : element_type(std::move(element_type)), is_mutable(is_mutable) {}
+
+    std::string to_string() const override {
+        return std::string("&") + (is_mutable ? "mut " : "") + element_type->to_string();
+    }
+
+    TypeKind get_kind() const override { return TypeKind::BORROW; }
+
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_borrow = static_cast<const BorrowType&>(other);
+        return is_mutable == other_borrow.is_mutable &&
+               element_type->equals(*other_borrow.element_type);
+    }
+
+private:
+    std::shared_ptr<Type> element_type;
+    bool is_mutable;
 };
 
 

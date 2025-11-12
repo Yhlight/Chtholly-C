@@ -89,7 +89,7 @@ private:
     std::any visitEnumStmt(const EnumStmt& stmt) override { return nullptr; }
     std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
     std::any visitLambdaExpr(const LambdaExpr& expr) override { return nullptr; }
-    std::any visitBorrowExpr(const BorrowExpr& expr) override { return nullptr; }
+    std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitDerefExpr(const DerefExpr& expr) override { return nullptr; }
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override;

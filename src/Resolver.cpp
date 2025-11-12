@@ -202,8 +202,11 @@ std::shared_ptr<Type> Resolver::visitGenericTypeExpr(const GenericTypeExpr& expr
 }
 
 std::shared_ptr<Type> Resolver::visitBorrowTypeExpr(const BorrowTypeExpr& expr) {
-    error(Token(TokenType::AMPERSAND, "&", nullptr, 0), "Borrow types are not yet supported in type annotations.");
-    return std::make_shared<BasicType>("unsupported");
+    auto element_type = resolveTypeExpr(*expr.element_type);
+    if (!element_type) {
+        return nullptr;
+    }
+    return std::make_shared<BorrowType>(element_type, expr.isMutable);
 }
 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
@@ -677,6 +680,15 @@ std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& expr) {
         // TODO: Handle positional initializers
     }
 
+    return nullptr;
+}
+
+std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
+    resolve(*expr.expression);
+    if (!expr.expression->type) {
+        return nullptr; // Avoid cascade errors
+    }
+    expr.type = std::make_shared<BorrowType>(expr.expression->type, expr.isMutable);
     return nullptr;
 }
 
