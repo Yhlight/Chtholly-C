@@ -79,6 +79,68 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+// String and Array method tests
+TEST_F(ResolverTest, ValidStringLength) {
+    std::string source = R"(
+        let s = "hello";
+        let len: int = s.length();
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidStringContainsOnLiteral) {
+    std::string source = R"(
+        let b: bool = "hello".contains("e");
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, UnknownStringMethod) {
+    std::string source = R"(
+        let s = "hello";
+        s.foo();
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, StringMethodWrongArity) {
+    std::string source = R"(
+        let s = "hello";
+        s.starts_with();
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidArrayPush) {
+    std::string source = R"(
+        mut a = [1, 2];
+        a.push(3);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidArrayPopOnLiteral) {
+    std::string source = R"(
+        let x: int = [1, 2].pop();
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ArrayPushWrongType) {
+    std::string source = R"(
+        mut a = [1, 2];
+        a.push("3");
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ArrayPopIncompatibleAssignment) {
+    std::string source = R"(
+        let s: string = [1, 2].pop();
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 // OS, Time, Random, Util module tests
 TEST_F(ResolverTest, ValidOsExit) {
     std::string source = "os::exit(0);";

@@ -103,6 +103,8 @@ public:
         return element_type->equals(*other_array.element_type);
     }
 
+    const std::shared_ptr<Type>& get_element_type() const { return element_type; }
+
 private:
     std::shared_ptr<Type> element_type;
 };

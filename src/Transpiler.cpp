@@ -1202,65 +1202,53 @@ std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr&
     }
 
     if (function_name == "length") {
-        if (!expr.arguments.empty()) { return "/* ERROR: length takes no arguments */"; }
         return cpp_object + ".length()";
     }
     if (function_name == "substr") {
-        if (expr.arguments.size() != 2) { return "/* ERROR: substr requires two arguments */"; }
         return cpp_object + ".substr(" +
             std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
             std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
     }
     if (function_name == "find") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: find requires one argument */"; }
         optional_used = true;
         string_used = true; // For std::string::npos
         std::string sub = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "(" + cpp_object + ".find(" + sub + ") == std::string::npos) ? std::nullopt : std::optional<int>(" + cpp_object + ".find(" + sub + "))";
     }
     if (function_name == "split") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: split requires one argument */"; }
         string_helpers_used = true;
         return "chtholly_string_split(" + object_str + ", " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }
     if (function_name == "to_upper") {
-        if (!expr.arguments.empty()) { return "/* ERROR: to_upper takes no arguments */"; }
         string_helpers_used = true;
         return "chtholly_string_to_upper(" + object_str + ")";
     }
     if (function_name == "to_lower") {
-        if (!expr.arguments.empty()) { return "/* ERROR: to_lower takes no arguments */"; }
         string_helpers_used = true;
         return "chtholly_string_to_lower(" + object_str + ")";
     }
     if (function_name == "trim") {
-        if (!expr.arguments.empty()) { return "/* ERROR: trim takes no arguments */"; }
         string_helpers_used = true;
         return "chtholly_string_trim(" + object_str + ")";
     }
     if (function_name == "starts_with") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: starts_with requires one argument */"; }
         std::string prefix = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "([&]() { std::string s_val = " + cpp_object + "; std::string p_val = " + prefix + "; return s_val.find(p_val, 0) == 0; }())";
     }
     if (function_name == "ends_with") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: ends_with requires one argument */"; }
         std::string suffix = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "([&]() { std::string s_val = " + cpp_object + "; std::string suf_val = " + suffix + "; return s_val.size() >= suf_val.size() && s_val.compare(s_val.size() - suf_val.size(), suf_val.size(), suf_val) == 0; }())";
     }
     if (function_name == "is_empty") {
-        if (!expr.arguments.empty()) { return "/* ERROR: is_empty takes no arguments */"; }
         return cpp_object + ".empty()";
     }
     if (function_name == "replace") {
-        if (expr.arguments.size() != 2) { return "/* ERROR: replace requires two arguments */"; }
         string_helpers_used = true;
         std::string from = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         std::string to = std::any_cast<std::string>(expr.arguments[1]->accept(*this));
         return "chtholly_string_replace_all(" + object_str + ", " + from + ", " + to + ")";
     }
     if (function_name == "contains") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: contains requires one argument */"; }
         string_used = true;
         std::string sub = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "(" + cpp_object + ".find(" + sub + ") != std::string::npos)";
@@ -1274,43 +1262,34 @@ std::any Transpiler::handleArrayMethodCall(const CallExpr& expr, const GetExpr& 
     std::string function_name = get_expr.name.lexeme;
 
     if (function_name == "length") {
-        if (!expr.arguments.empty()) { return "/* ERROR: length takes no arguments */"; }
         return object_str + ".size()";
     }
     if (function_name == "push") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: push requires one argument */"; }
         return object_str + ".push_back(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }
     if (function_name == "pop") {
-        if (!expr.arguments.empty()) { return "/* ERROR: pop takes no arguments */"; }
         return "[&]() { auto val = " + object_str + ".back(); " + object_str + ".pop_back(); return val; }()";
     }
     if (function_name == "contains") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: contains requires one argument */"; }
         imported_modules.insert("algorithm");
         std::string val = std::any_cast<std::string>(expr.arguments[0]->accept(*this));
         return "(std::find(" + object_str + ".begin(), " + object_str + ".end(), " + val + ") != " + object_str + ".end())";
     }
     if (function_name == "reverse") {
-        if (!expr.arguments.empty()) { return "/* ERROR: reverse takes no arguments */"; }
         imported_modules.insert("algorithm");
         return "std::reverse(" + object_str + ".begin(), " + object_str + ".end())";
     }
     if (function_name == "is_empty") {
-        if (!expr.arguments.empty()) { return "/* ERROR: is_empty takes no arguments */"; }
         return object_str + ".empty()";
     }
     if (function_name == "clear") {
-        if (!expr.arguments.empty()) { return "/* ERROR: clear takes no arguments */"; }
         return object_str + ".clear()";
     }
     if (function_name == "sort") {
-        if (!expr.arguments.empty()) { return "/* ERROR: sort takes no arguments */"; }
         imported_modules.insert("algorithm");
         return "std::sort(" + object_str + ".begin(), " + object_str + ".end())";
     }
     if (function_name == "join") {
-        if (expr.arguments.size() != 1) { return "/* ERROR: join requires one argument */"; }
         string_helpers_used = true;
         return "chtholly_string_join(" + object_str + ", " + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
     }

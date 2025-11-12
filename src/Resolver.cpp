@@ -1,5 +1,6 @@
 #include "Resolver.h"
 #include "AST.h"
+#include <algorithm>
 
 namespace chtholly {
 
@@ -609,6 +610,59 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                 return nullptr;
             }
         }
+
+        auto object_type = get_expr->object->type;
+        if (object_type) {
+            if (object_type->get_kind() == TypeKind::BASIC && std::dynamic_pointer_cast<BasicType>(object_type)->get_name() == "string") {
+                // String method call
+                std::string method_name = get_expr->name.lexeme;
+                const std::vector<std::string> known_string_methods = {
+                    "length", "is_empty", "contains", "starts_with", "ends_with",
+                    "to_upper", "to_lower", "trim", "replace", "split", "substr", "find"
+                };
+
+                if (std::find(known_string_methods.begin(), known_string_methods.end(), method_name) == known_string_methods.end()) {
+                    error(get_expr->name, "Unknown string method '" + method_name + "'.");
+                    return nullptr;
+                }
+
+                if (method_name == "length" || method_name == "is_empty") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "String method '" + method_name + "' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("int");
+                } else if (method_name == "contains" || method_name == "starts_with" || method_name == "ends_with") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "String method '" + method_name + "' requires 1 argument.");
+                    expr.type = std::make_shared<BasicType>("bool");
+                } else {
+                    // Methods returning string or other types
+                    if (method_name == "find") {
+                        expr.type = std::make_shared<StructType>("option"); // Simplified
+                    } else {
+                        expr.type = std::make_shared<BasicType>("string");
+                    }
+                }
+                return nullptr;
+            } else if (object_type->get_kind() == TypeKind::ARRAY) {
+                // Array method call
+                std::string method_name = get_expr->name.lexeme;
+                auto array_type = std::dynamic_pointer_cast<ArrayType>(object_type);
+
+                if (method_name == "length" || method_name == "is_empty") {
+                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method '" + method_name + "' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("int");
+                } else if (method_name == "pop") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'pop' requires 0 arguments.");
+                    expr.type = array_type->get_element_type();
+                } else if (method_name == "push") {
+                     if (expr.arguments.size() != 1) error(get_expr->name, "Array method 'push' requires 1 argument.");
+                     if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(*array_type->get_element_type())) {
+                         error(get_expr->name, "Argument type does not match array element type.");
+                     }
+                } else {
+                     error(get_expr->name, "Unknown array method '" + method_name + "'.");
+                }
+                return nullptr;
+            }
+        }
     }
 
     if (auto var_expr = dynamic_cast<const VariableExpr*>(expr.callee.get())) {
@@ -722,33 +776,52 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
         }
     }
 
+    if (auto literal_expr = dynamic_cast<const LiteralExpr*>(expr.object.get())) {
+        if (literal_expr->type->get_kind() == TypeKind::BASIC && std::dynamic_pointer_cast<BasicType>(literal_expr->type)->get_name() == "string") {
+             // It's a string literal, we can proceed to method call resolution in visitCallExpr
+            return nullptr;
+        }
+    }
+     if (auto array_literal_expr = dynamic_cast<const ArrayLiteralExpr*>(expr.object.get())) {
+        // It's an array literal, we can proceed to method call resolution in visitCallExpr
+        return nullptr;
+    }
+
     if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
         auto it = structs.find(struct_type->get_name());
         if (it != structs.end()) {
             const StructStmt* struct_stmt = it->second;
-            // Look for a field
-            for (const auto& field : struct_stmt->fields) {
-                if (field->name.lexeme == expr.name.lexeme) {
-                    expr.type = resolveTypeExpr(*field->type);
-                    return nullptr;
-                }
-            }
-            // Look for a method
-            for (const auto& method : struct_stmt->methods) {
-                if (method->name.lexeme == expr.name.lexeme) {
-                    std::vector<std::shared_ptr<Type>> param_types;
-                    for (const auto& param_type_expr : method->param_types) {
-                        param_types.push_back(resolveTypeExpr(*param_type_expr));
+            if (struct_stmt) { // Null check for built-in types like Field
+                // Look for a field
+                for (const auto& field : struct_stmt->fields) {
+                    if (field->name.lexeme == expr.name.lexeme) {
+                        expr.type = resolveTypeExpr(*field->type);
+                        return nullptr;
                     }
-                    auto return_type = method->return_type ? resolveTypeExpr(*method->return_type) : std::make_shared<BasicType>("void");
-                    expr.type = std::make_shared<chtholly::FunctionType>(return_type, param_types);
-                    return nullptr;
+                }
+                // Look for a method
+                for (const auto& method : struct_stmt->methods) {
+                    if (method->name.lexeme == expr.name.lexeme) {
+                        std::vector<std::shared_ptr<Type>> param_types;
+                        for (const auto& param_type_expr : method->param_types) {
+                            param_types.push_back(resolveTypeExpr(*param_type_expr));
+                        }
+                        auto return_type = method->return_type ? resolveTypeExpr(*method->return_type) : std::make_shared<BasicType>("void");
+                        expr.type = std::make_shared<chtholly::FunctionType>(return_type, param_types);
+                        return nullptr;
+                    }
                 }
             }
             error(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
         }
+    } else if (expr.object->type->get_kind() == TypeKind::BASIC && std::dynamic_pointer_cast<BasicType>(expr.object->type)->get_name() == "string") {
+        // Allow method access on strings
+        return nullptr;
+    } else if (expr.object->type->get_kind() == TypeKind::ARRAY) {
+        // Allow method access on arrays
+        return nullptr;
     } else {
-        error(expr.name, "Only structs have properties.");
+        error(expr.name, "Only structs, strings, and arrays have properties.");
     }
 
     return nullptr;
