@@ -91,6 +91,16 @@ Resolver::Resolver() {
     symbols.define("os", any_type);
     symbols.define("time", any_type);
     symbols.define("random", any_type);
+
+    // Pre-define reflect types
+    symbols.define("Field", std::make_shared<StructType>("Field"));
+    symbols.define("Method", std::make_shared<StructType>("Method"));
+    symbols.define("Trait", std::make_shared<StructType>("Trait"));
+
+    // To allow `Resolver` to treat them as valid structs
+    structs["Field"] = nullptr;
+    structs["Method"] = nullptr;
+    structs["Trait"] = nullptr;
 }
 
 void Resolver::error(const Token& token, const std::string& message) {
@@ -465,6 +475,56 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                 }
 
                 error(get_expr->name, "Unknown function meta::" + func_name);
+                return nullptr;
+            } else if (var_expr->name.lexeme == "reflect") {
+                std::string func_name = get_expr->name.lexeme;
+
+                if (func_name == "get_field_count" || func_name == "get_method_count" || func_name == "get_trait_count") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "reflect::" + func_name + " requires 1 argument.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type->get_kind() != TypeKind::STRUCT) {
+                        error(get_expr->name, "reflect::" + func_name + " requires a struct type as an argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("int");
+                    return nullptr;
+                }
+
+                if (func_name == "get_fields" || func_name == "get_methods" || func_name == "get_traits") {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "reflect::" + func_name + " requires 1 argument.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type->get_kind() != TypeKind::STRUCT) {
+                        error(get_expr->name, "reflect::" + func_name + " requires a struct type as an argument.");
+                    }
+
+                    if (func_name == "get_fields") expr.type = std::make_shared<ArrayType>(std::make_shared<StructType>("Field"));
+                    if (func_name == "get_methods") expr.type = std::make_shared<ArrayType>(std::make_shared<StructType>("Method"));
+                    if (func_name == "get_traits") expr.type = std::make_shared<ArrayType>(std::make_shared<StructType>("Trait"));
+                    return nullptr;
+                }
+
+                if (func_name == "get_field" || func_name == "get_method" || func_name == "get_trait") {
+                    if (expr.arguments.size() != 2) {
+                        error(get_expr->name, "reflect::" + func_name + " requires 2 arguments.");
+                        return nullptr;
+                    }
+                    if (expr.arguments[0]->type->get_kind() != TypeKind::STRUCT) {
+                        error(get_expr->name, "reflect::" + func_name + " requires a struct type as the first argument.");
+                    }
+                    if (expr.arguments[1]->type && !expr.arguments[1]->type->equals(BasicType("string"))) {
+                        error(get_expr->name, "reflect::" + func_name + " requires a string as the second argument.");
+                    }
+
+                    if (func_name == "get_field") expr.type = std::make_shared<StructType>("Field");
+                    if (func_name == "get_method") expr.type = std::make_shared<StructType>("Method");
+                    if (func_name == "get_trait") expr.type = std::make_shared<StructType>("Trait");
+                    return nullptr;
+                }
+
+                error(get_expr->name, "Unknown function reflect::" + func_name);
                 return nullptr;
             }
         }

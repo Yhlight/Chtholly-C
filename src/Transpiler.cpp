@@ -1020,182 +1020,115 @@ std::any Transpiler::handleMetaFunction(const CallExpr& expr) {
 std::any Transpiler::handleReflectFunction(const CallExpr& expr) {
     auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
     std::string function_name = get_expr->name.lexeme;
-
-    if (expr.arguments.empty()) {
-        return std::string("/* ERROR: reflect function requires one argument */");
-    }
     TypeInfo arg_type = get_type(*expr.arguments[0]);
+    const StructStmt* s = structs[arg_type.name];
 
     if (function_name == "get_field_count") {
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            return std::to_string(s->fields.size());
-        } else {
-            return std::string("0"); // Return 0 if not a struct
-        }
+        return std::to_string(s->fields.size());
     }
     if (function_name == "get_method_count") {
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            return std::to_string(s->methods.size());
-        } else {
-            return std::string("0"); // Return 0 if not a struct
-        }
+        return std::to_string(s->methods.size());
     }
     if (function_name == "get_fields") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            std::stringstream ss;
-            ss << "std::vector<Field>{";
-            for (size_t i = 0; i < s->fields.size(); ++i) {
-                ss << "{\"" << s->fields[i]->name.lexeme << "\", \"" << transpileType(*s->fields[i]->type) << "\"}";
-                if (i < s->fields.size() - 1) {
-                    ss << ", ";
-                }
+        std::stringstream ss;
+        ss << "std::vector<Field>{";
+        for (size_t i = 0; i < s->fields.size(); ++i) {
+            ss << "{\"" << s->fields[i]->name.lexeme << "\", \"" << transpileType(*s->fields[i]->type) << "\"}";
+            if (i < s->fields.size() - 1) {
+                ss << ", ";
             }
-            ss << "}";
-            return ss.str();
-        } else {
-            return std::string("std::vector<Field>{}");
         }
+        ss << "}";
+        return ss.str();
     }
     if (function_name == "get_field") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            if (expr.arguments.size() < 2) {
-                return std::string("/* ERROR: get_field requires two arguments */");
+        auto field_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+        std::string field_name = std::get<std::string>(field_name_expr->value);
+        for (const auto& field : s->fields) {
+            if (field->name.lexeme == field_name) {
+                return "{\"" + field->name.lexeme + "\", \"" + transpileType(*field->type) + "\"}";
             }
-            auto field_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
-            if (!field_name_expr || !std::holds_alternative<std::string>(field_name_expr->value)) {
-                return std::string("/* ERROR: get_field second argument must be a string literal */");
-            }
-            std::string field_name = std::get<std::string>(field_name_expr->value);
-            for (const auto& field : s->fields) {
-                if (field->name.lexeme == field_name) {
-                    return "{\"" + field->name.lexeme + "\", \"" + transpileType(*field->type) + "\"}";
-                }
-            }
-            return std::string("/* ERROR: field not found */");
-        } else {
-            return std::string("/* ERROR: get_field called on non-struct type */");
         }
+        return std::string("/* ERROR: field not found */");
     }
     if (function_name == "get_methods") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            std::stringstream ss;
-            ss << "std::vector<Method>{";
-            for (size_t i = 0; i < s->methods.size(); ++i) {
-                ss << "{\"" << s->methods[i]->name.lexeme << "\", \"" << (s->methods[i]->return_type ? transpileType(*s->methods[i]->return_type) : "void") << "\", {";
-                for (size_t j = 0; j < s->methods[i]->params.size(); ++j) {
-                    ss << "{\"" << s->methods[i]->params[j].lexeme << "\", \"" << transpileType(*s->methods[i]->param_types[j]) << "\"}";
-                    if (j < s->methods[i]->params.size() - 1) {
+        std::stringstream ss;
+        ss << "std::vector<Method>{";
+        for (size_t i = 0; i < s->methods.size(); ++i) {
+            ss << "{\"" << s->methods[i]->name.lexeme << "\", \"" << (s->methods[i]->return_type ? transpileType(*s->methods[i]->return_type) : "void") << "\", {";
+            for (size_t j = 0; j < s->methods[i]->params.size(); ++j) {
+                ss << "{\"" << s->methods[i]->params[j].lexeme << "\", \"" << transpileType(*s->methods[i]->param_types[j]) << "\"}";
+                if (j < s->methods[i]->params.size() - 1) {
+                    ss << ", ";
+                }
+            }
+            ss << "}}";
+            if (i < s->methods.size() - 1) {
+                ss << ", ";
+            }
+        }
+        ss << "}";
+        return ss.str();
+    }
+    if (function_name == "get_method") {
+        reflect_used = true;
+        auto method_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+        std::string method_name = std::get<std::string>(method_name_expr->value);
+        for (const auto& method : s->methods) {
+            if (method->name.lexeme == method_name) {
+                std::stringstream ss;
+                ss << "{\"" << method->name.lexeme << "\", \"" << (method->return_type ? transpileType(*method->return_type) : "void") << "\", {";
+                for (size_t j = 0; j < method->params.size(); ++j) {
+                    ss << "{\"" << method->params[j].lexeme << "\", \"" << transpileType(*method->param_types[j]) << "\"}";
+                    if (j < method->params.size() - 1) {
                         ss << ", ";
                     }
                 }
                 ss << "}}";
-                if (i < s->methods.size() - 1) {
-                    ss << ", ";
-                }
+                return ss.str();
             }
-            ss << "}";
-            return ss.str();
-        } else {
-            return std::string("std::vector<Method>{}");
         }
-    }
-    if (function_name == "get_method") {
-        reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            if (expr.arguments.size() < 2) {
-                return std::string("/* ERROR: get_method requires two arguments */");
-            }
-            auto method_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
-            if (!method_name_expr || !std::holds_alternative<std::string>(method_name_expr->value)) {
-                return std::string("/* ERROR: get_method second argument must be a string literal */");
-            }
-            std::string method_name = std::get<std::string>(method_name_expr->value);
-            for (const auto& method : s->methods) {
-                if (method->name.lexeme == method_name) {
-                    std::stringstream ss;
-                    ss << "{\"" << method->name.lexeme << "\", \"" << (method->return_type ? transpileType(*method->return_type) : "void") << "\", {";
-                    for (size_t j = 0; j < method->params.size(); ++j) {
-                        ss << "{\"" << method->params[j].lexeme << "\", \"" << transpileType(*method->param_types[j]) << "\"}";
-                        if (j < method->params.size() - 1) {
-                            ss << ", ";
-                        }
-                    }
-                    ss << "}}";
-                    return ss.str();
-                }
-            }
-            return std::string("/* ERROR: method not found */");
-        } else {
-            return std::string("/* ERROR: get_method called on non-struct type */");
-        }
+        return std::string("/* ERROR: method not found */");
     }
     if (function_name == "get_trait_count") {
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            return std::to_string(s->traits.size());
-        } else {
-            return std::string("0");
-        }
+        return std::to_string(s->traits.size());
     }
     if (function_name == "get_traits") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            std::stringstream ss;
-            ss << "std::vector<Trait>{";
-            for (size_t i = 0; i < s->traits.size(); ++i) {
-                // This is a simplification. We'd need a way to pretty-print the trait expression.
-                if (auto var_expr = dynamic_cast<const VariableExpr*>(s->traits[i].get())) {
-                    ss << "{\"" << var_expr->name.lexeme << "\"}";
-                } else if (auto get_expr = dynamic_cast<const GetExpr*>(s->traits[i].get())) {
-                    ss << "{\"" << std::any_cast<std::string>(get_expr->object->accept(*this)) << "::" << get_expr->name.lexeme << "\"}";
-                }
-                if (i < s->traits.size() - 1) {
-                    ss << ", ";
-                }
+        std::stringstream ss;
+        ss << "std::vector<Trait>{";
+        for (size_t i = 0; i < s->traits.size(); ++i) {
+            if (auto var_expr = dynamic_cast<const VariableExpr*>(s->traits[i].get())) {
+                ss << "{\"" << var_expr->name.lexeme << "\"}";
+            } else if (auto get_expr = dynamic_cast<const GetExpr*>(s->traits[i].get())) {
+                ss << "{\"" << std::any_cast<std::string>(get_expr->object->accept(*this)) << "::" << get_expr->name.lexeme << "\"}";
             }
-            ss << "}";
-            return ss.str();
-        } else {
-            return std::string("std::vector<Trait>{}");
+            if (i < s->traits.size() - 1) {
+                ss << ", ";
+            }
         }
+        ss << "}";
+        return ss.str();
     }
     if (function_name == "get_trait") {
         reflect_used = true;
-        if (structs.count(arg_type.name)) {
-            const StructStmt* s = structs[arg_type.name];
-            if (expr.arguments.size() < 2) {
-                return std::string("/* ERROR: get_trait requires two arguments */");
+        auto trait_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
+        std::string trait_name = std::get<std::string>(trait_name_expr->value);
+        for (const auto& trait : s->traits) {
+            std::string current_trait_name;
+            if (auto var_expr = dynamic_cast<const VariableExpr*>(trait.get())) {
+                current_trait_name = var_expr->name.lexeme;
+            } else if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
+                current_trait_name = std::any_cast<std::string>(get_expr->object->accept(*this)) + "::" + get_expr->name.lexeme;
             }
-            auto trait_name_expr = dynamic_cast<const LiteralExpr*>(expr.arguments[1].get());
-            if (!trait_name_expr || !std::holds_alternative<std::string>(trait_name_expr->value)) {
-                return std::string("/* ERROR: get_trait second argument must be a string literal */");
+            if (current_trait_name == trait_name) {
+                return "{\"" + current_trait_name + "\"}";
             }
-            std::string trait_name = std::get<std::string>(trait_name_expr->value);
-            for (const auto& trait : s->traits) {
-                std::string current_trait_name;
-                if (auto var_expr = dynamic_cast<const VariableExpr*>(trait.get())) {
-                    current_trait_name = var_expr->name.lexeme;
-                } else if (auto get_expr = dynamic_cast<const GetExpr*>(trait.get())) {
-                    current_trait_name = std::any_cast<std::string>(get_expr->object->accept(*this)) + "::" + get_expr->name.lexeme;
-                }
-                if (current_trait_name == trait_name) {
-                    return "{\"" + current_trait_name + "\"}";
-                }
-            }
-            return std::string("/* ERROR: trait not found */");
-        } else {
-            return std::string("/* ERROR: get_trait called on non-struct type */");
         }
+        return std::string("/* ERROR: trait not found */");
     }
 
     return std::string("/* ERROR: Unknown reflect function call */");

@@ -79,6 +79,51 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+// Reflect module tests
+TEST_F(ResolverTest, ValidReflectGetFieldCount) {
+    std::string source = R"(
+        struct MyStruct { a: int; }
+        let s = MyStruct{a: 1};
+        let count: int = reflect::get_field_count(s);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReflectOnNonStruct) {
+    std::string source = R"(
+        let x = 10;
+        let fields = reflect::get_fields(x);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReflectWrongArity) {
+    std::string source = R"(
+        struct MyStruct { a: int; }
+        let s = MyStruct{a: 1};
+        let field = reflect::get_field(s);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReflectWrongArgType) {
+    std::string source = R"(
+        struct MyStruct { func foo() {} }
+        let s = MyStruct{};
+        let method = reflect::get_method(s, 123);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ReflectUnknownFunction) {
+    std::string source = R"(
+        struct MyStruct {}
+        let s = MyStruct{};
+        let val = reflect::unknown_func(s);
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 // Meta module tests
 TEST_F(ResolverTest, ValidMetaIsInt) {
     std::string source = R"(
