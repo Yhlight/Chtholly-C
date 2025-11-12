@@ -310,7 +310,12 @@ std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
     if (stmt.condition->type && !stmt.condition->type->equals(BasicType("bool"))) {
         error(Token(TokenType::ERROR, "", nullptr, 0), "While condition must be of type bool.");
     }
+
+    LoopType enclosingLoop = currentLoop;
+    currentLoop = LoopType::LOOP;
     resolve(*stmt.body);
+    currentLoop = enclosingLoop;
+
     return nullptr;
 }
 
@@ -327,7 +332,12 @@ std::any Resolver::visitForStmt(const ForStmt& stmt) {
     if (stmt.increment) {
         resolve(*stmt.increment);
     }
+
+    LoopType enclosingLoop = currentLoop;
+    currentLoop = LoopType::LOOP;
     resolve(*stmt.body);
+    currentLoop = enclosingLoop;
+
     return nullptr;
 }
 
@@ -692,6 +702,34 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
     return nullptr;
 }
 
+std::any Resolver::visitSwitchStmt(const SwitchStmt& stmt) {
+    resolve(*stmt.expression);
+    if (!stmt.expression->type) {
+        return nullptr; // Avoid cascade errors
+    }
+
+    switch_depth++;
+    for (const auto& case_stmt : stmt.cases) {
+        resolve(*case_stmt);
+        if (auto case_value = dynamic_cast<const CaseStmt*>(case_stmt.get())->value.get()) {
+            if (case_value->type && !stmt.expression->type->equals(*case_value->type)) {
+                error(Token(TokenType::ERROR, "", nullptr, 0), "Case type must match switch expression type.");
+            }
+        }
+    }
+    switch_depth--;
+
+    return nullptr;
+}
+
+std::any Resolver::visitCaseStmt(const CaseStmt& stmt) {
+    if (stmt.value) {
+        resolve(*stmt.value);
+    }
+    resolve(*stmt.body);
+    return nullptr;
+}
+
 std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
     CurrentFunctionType enclosingFunction = currentFunction;
     currentFunction = CurrentFunctionType::FUNCTION;
@@ -715,6 +753,20 @@ std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
     current_return_type = std::move(enclosing_return_type);
 
     expr.type = std::make_shared<FunctionType>(current_return_type, param_types);
+    return nullptr;
+}
+
+std::any Resolver::visitBreakStmt(const BreakStmt& stmt) {
+    if (currentLoop == LoopType::NONE && switch_depth == 0) {
+        error(stmt.keyword, "Cannot use 'break' outside of a loop or switch statement.");
+    }
+    return nullptr;
+}
+
+std::any Resolver::visitFallthroughStmt(const FallthroughStmt& stmt) {
+    if (switch_depth == 0) {
+        error(stmt.keyword, "Cannot use 'fallthrough' outside of a switch statement.");
+    }
     return nullptr;
 }
 

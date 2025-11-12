@@ -79,6 +79,40 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidSwitch) {
+    std::string source = R"(
+        let x = 1;
+        switch (x) {
+            case 1:
+                break;
+            default:
+                break;
+        }
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedSwitchCaseType) {
+    std::string source = R"(
+        let x = 1;
+        switch (x) {
+            case "hello":
+                break;
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, BreakOutsideLoopOrSwitch) {
+    std::string source = "break;";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, FallthroughOutsideSwitch) {
+    std::string source = "fallthrough;";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidLambda) {
     std::string source = R"(
         let f = [](a: int) -> int { return a; };

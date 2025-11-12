@@ -47,8 +47,14 @@ private:
         NONE,
         CLASS
     };
+    enum class LoopType {
+        NONE,
+        LOOP
+    };
     CurrentFunctionType currentFunction = CurrentFunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
+    LoopType currentLoop = LoopType::NONE;
+    int switch_depth = 0;
     std::shared_ptr<Type> current_return_type = nullptr;
 
     void resolveFunction(const FunctionStmt& function, CurrentFunctionType type);
@@ -82,10 +88,10 @@ private:
 
     // Default implementations for unhandled statements and expressions
     std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
-    std::any visitSwitchStmt(const SwitchStmt& stmt) override { return nullptr; }
-    std::any visitCaseStmt(const CaseStmt& stmt) override { return nullptr; }
-    std::any visitBreakStmt(const BreakStmt& stmt) override { return nullptr; }
-    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override { return nullptr; }
+    std::any visitSwitchStmt(const SwitchStmt& stmt) override;
+    std::any visitCaseStmt(const CaseStmt& stmt) override;
+    std::any visitBreakStmt(const BreakStmt& stmt) override;
+    std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
     std::any visitEnumStmt(const EnumStmt& stmt) override { return nullptr; }
     std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
