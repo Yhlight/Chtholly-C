@@ -8,11 +8,24 @@ Chtholly文件后缀为.cns
 注意！Chtholly不是一门正规的编程语言，仅供个人学习使用，请不要用于生产环境
 
 ### 接管所有权
-像Rust一样，Chtholly使用复杂的所有权管理系统接管所有权的管理
-全面拒绝隐式传递
+像Rust一样，Chtholly使用一套所有权系统来管理内存，确保内存安全和性能。核心原则是“一个值在任何时候都只有一个所有者”。
 
-对于基本数据类型，采用copy
-对于引用数据类型，采用move
+- **Move (移动)**: 对于复杂类型（如 `string`, `array`, `struct`），当它们被赋值给另一个变量或作为参数传递给函数时，所有权会发生转移（move）。原始变量将变得无效，无法再被使用。这可以防止数据竞争和悬垂指针。
+
+- **Copy (复制)**: 对于基本类型（如 `int`, `double`, `bool`, `char`），它们的值会被复制（copy）。赋值或传参后，原始变量和新变量都持有各自独立的数据副本。
+
+```Chtholly
+// 基本类型 (int) 的 Copy 行为
+let x = 10;
+let y = x; // x 的值被复制给 y
+print(x);  // 这是合法的，x 仍然有效，值为 10
+
+// 复杂类型 (string) 的 Move 行为
+let s1 = "hello";
+let s2 = s1; // s1 的所有权被移动给 s2
+// print(s1); // 这将导致编译错误！s1 不再有效
+print(s2); // 这是合法的
+```
 
 ### 注释
 ```Chtholly
@@ -297,13 +310,121 @@ func main(args: array[string])
 ```
 
 ### 运算符
-和C++一致
+Chtholly 支持标准的算术、比较、逻辑和位运算符。大部分运算符的行为与 C++ 和 Rust 类似。
+
+#### 算术运算符
+- `+` (加)
+- `-` (减)
+- `*` (乘)
+- `/` (除)
+- `%` (取模)
+
+#### 比较运算符
+- `==` (等于)
+- `!=` (不等于)
+- `>` (大于)
+- `<` (小于)
+- `>=` (大于等于)
+- `<=` (小于等于)
+
+#### 逻辑运算符
+- `&&` (逻辑与)
+- `||` (逻辑或)
+- `!` (逻辑非)
+
+#### 位运算符 (适用于整数类型)
+- `&` (按位与)
+- `|` (按位或)
+- `^` (按位异或)
+- `~` (按位取反)
+- `<<` (左移)
+- `>>` (右移)
+
+#### 赋值运算符
+- `=` (赋值)
+- `+=`, `-=`, `*=`, `/=`, `%=` (复合赋值)
+
+所有这些运算符都可以通过实现 `operator` 模块中的相应 trait 来进行重载。
 
 ### 命名规则
-与C++一致
+为了保持代码的清晰和一致性，Chtholly 推荐遵循以下命名约定：
+
+- **类型 (Structs, Enums, Traits)**: 使用 `PascalCase` 或 `UpperCamelCase`。
+  - 示例: `MyStruct`, `Color`, `ToString`
+
+- **函数和变量**: 使用 `snake_case`。
+  - 示例: `my_function`, `let my_variable = ...`
+
+- **常量**: 使用 `UPPER_SNAKE_CASE`。
+  - 示例: `let MAX_CONNECTIONS = 100;`
+
+- **泛型参数**: 使用简短的 `PascalCase`，通常是单个大写字母。
+  - 示例: `func my_generic<T>(value: T) { ... }`
+
+遵循这些约定并非强制性的，但强烈建议这样做。
 
 ### 选择结构和循环结构
 与C++一致。
+
+#### if-else 表达式
+Chtholly 支持标准的 `if-else` 表达式，用于根据条件执行不同的代码块。条件表达式的类型必须是 `bool`。
+
+```Chtholly
+let number = 10;
+if (number > 5) {
+    print("Number is greater than 5");
+} else if (number == 5) {
+    print("Number is exactly 5");
+} else {
+    print("Number is less than 5");
+}
+```
+
+#### while 循环
+`while` 循环会持续执行一个代码块，只要给定条件为 `true`。条件表达式的类型也必须是 `bool`。
+
+```Chtholly
+mut i = 0;
+while (i < 5) {
+    print(i);
+    i = i + 1;
+}
+```
+
+#### for 循环
+Chtholly 支持 `for...in` 循环，用于遍历一个集合（例如数组）中的所有元素。
+
+```Chtholly
+let numbers = [10, 20, 30, 40, 50];
+for (let num in numbers) {
+    print(num);
+}
+```
+
+在未来的版本中，`for` 循环还将支持传统的 C-style 语法（`for (let i = 0; i < 10; i = i + 1)`）。
+
+##### 循环控制语句
+Chtholly 提供了 `break` 和 `continue` 语句来精确控制循环的执行流程。
+
+- **`break`**: 立即终止当前循环。
+- **`continue`**: 跳过当前迭代的剩余部分，直接开始下一次迭代。
+
+```Chtholly
+mut i = 0;
+while (i < 10) {
+    if (i == 5) {
+        break; // 当 i 等于 5 时，退出循环
+    }
+    if (i % 2 == 0) {
+        i = i + 1;
+        continue; // 如果 i 是偶数，跳过 print
+    }
+    print(i); // 只会打印 1, 3
+    i = i + 1;
+}
+```
+
+#### switch 语句
 Chtholly的`switch`行为与C++不同，为了防止意外的穿透，每个`case`块在执行完毕后会自动中断（implicit break）。如果您确实需要穿透到下一个`case`，必须显式使用 `fallthrough` 关键字。
 
 ```Chtholly
@@ -1080,3 +1201,22 @@ func print_any<T ? util::to_string>(T value) -> void
 
 ## 自举
 Chtholly的定位是MIT开源的社区项目，不应该进行自举，这会增加维护的难度，而是尽可能维护C++版本的编译器
+
+## 未来展望
+Chtholly 语言仍在积极开发中，以下是未来计划的一些关键方向：
+
+- **完善语义分析 (Resolver)**: 当前的 `Resolver` 已经实现了全面的类型检查。下一步是构建一个完整的符号表，以支持更复杂的名称解析，例如模块作用域和改进的错误诊断。
+
+- **重构类型系统**: 将编译器内部的类型表示从 `std::string` 和 `TypeInfo` 结构体迁移到一个更健壮的、基于类的层次结构（例如，`Type`, `IntType`, `StructType`）。这将使类型比较和推理更加安全和高效。
+
+- **增强模块系统**:
+  - 引入 `public` 和 `private` 关键字来控制模块成员的可见性。
+  - 实现模块别名 (`import my_module as mm;`)。
+
+- **并发支持**: 探索并添加对并发编程的支持，可能通过 actor 模型或轻量级线程（协程）实现。
+
+- **改进标准库**:
+  - 添加更多的数据结构（如 `HashMap`, `Set`）。
+  - 提供网络和 I/O 相关的库。
+
+- **包管理器**: 开发一个简单的包管理器，用于获取、构建和管理 Chtholly 项目的依赖项。
