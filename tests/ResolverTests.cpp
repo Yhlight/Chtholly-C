@@ -79,6 +79,21 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidLambda) {
+    std::string source = R"(
+        let f = [](a: int) -> int { return a; };
+        let x: int = f(10);
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedLambdaReturnType) {
+    std::string source = R"(
+        let f = [](a: int) -> int { return "hello"; };
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 TEST_F(ResolverTest, ValidBorrow) {
     std::string source = R"(
         let x: int = 10;

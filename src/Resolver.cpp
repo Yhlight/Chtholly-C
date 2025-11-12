@@ -692,4 +692,30 @@ std::any Resolver::visitBorrowExpr(const BorrowExpr& expr) {
     return nullptr;
 }
 
+std::any Resolver::visitLambdaExpr(const LambdaExpr& expr) {
+    CurrentFunctionType enclosingFunction = currentFunction;
+    currentFunction = CurrentFunctionType::FUNCTION;
+
+    auto enclosing_return_type = std::move(current_return_type);
+    current_return_type = expr.return_type ? resolveTypeExpr(*expr.return_type) : std::make_shared<BasicType>("void");
+
+    symbols.enter_scope();
+    std::vector<std::shared_ptr<Type>> param_types;
+    for (size_t i = 0; i < expr.params.size(); ++i) {
+        auto param_type = resolveTypeExpr(*expr.param_types[i]);
+        symbols.define(expr.params[i].lexeme, param_type);
+        param_types.push_back(param_type);
+    }
+
+    resolve(*expr.body);
+
+    symbols.exit_scope();
+
+    currentFunction = enclosingFunction;
+    current_return_type = std::move(enclosing_return_type);
+
+    expr.type = std::make_shared<FunctionType>(current_return_type, param_types);
+    return nullptr;
+}
+
 } // namespace chtholly
