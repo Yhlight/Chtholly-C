@@ -70,28 +70,27 @@ const std::map<TokenType, std::string> Resolver::op_to_trait = {
 };
 
 Resolver::Resolver() {
-    beginScope(); // Global scope
     // Pre-define all built-in functions and modules
     auto any_type = std::make_shared<BasicType>("any");
     auto void_type = std::make_shared<BasicType>("void");
-    scopes.back()["print"] = std::make_shared<chtholly::FunctionType>(void_type, std::vector<std::shared_ptr<Type>>{any_type});
-    scopes.back()["input"] = std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{});
-    scopes.back()["fs_read"] = std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")});
-    scopes.back()["fs_write"] = any_type;
-    scopes.back()["fs_exists"] = any_type;
-    scopes.back()["fs_is_file"] = any_type;
-    scopes.back()["fs_is_dir"] = any_type;
-    scopes.back()["fs_list_dir"] = any_type;
-    scopes.back()["fs_remove"] = any_type;
-    scopes.back()["meta"] = any_type;
-    scopes.back()["reflect"] = any_type;
-    scopes.back()["util"] = any_type;
-    scopes.back()["operator"] = any_type;
-    scopes.back()["string"] = any_type;
-    scopes.back()["array"] = any_type;
-    scopes.back()["os"] = any_type;
-    scopes.back()["time"] = any_type;
-    scopes.back()["random"] = any_type;
+    symbols.define("print", std::make_shared<chtholly::FunctionType>(void_type, std::vector<std::shared_ptr<Type>>{any_type}));
+    symbols.define("input", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{}));
+    symbols.define("fs_read", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
+    symbols.define("fs_write", any_type);
+    symbols.define("fs_exists", any_type);
+    symbols.define("fs_is_file", any_type);
+    symbols.define("fs_is_dir", any_type);
+    symbols.define("fs_list_dir", any_type);
+    symbols.define("fs_remove", any_type);
+    symbols.define("meta", any_type);
+    symbols.define("reflect", any_type);
+    symbols.define("util", any_type);
+    symbols.define("operator", any_type);
+    symbols.define("string", any_type);
+    symbols.define("array", any_type);
+    symbols.define("os", any_type);
+    symbols.define("time", any_type);
+    symbols.define("random", any_type);
 }
 
 void Resolver::error(const Token& token, const std::string& message) {
@@ -124,45 +123,20 @@ void Resolver::resolve(const Expr& expr) {
     expr.accept(*this);
 }
 
-void Resolver::beginScope() {
-    scopes.push_back({});
-}
-
-void Resolver::endScope() {
-    scopes.pop_back();
-}
-
-void Resolver::declare(const Token& name) {
-    if (scopes.empty()) {
-        return;
-    }
-
-    auto& scope = scopes.back();
-    if (scope.count(name.lexeme)) {
-        error(name, "Already a variable with this name in this scope.");
-    }
-    scope[name.lexeme] = nullptr; // Mark as declared but not defined
-}
-
-void Resolver::define(const Token& name, std::shared_ptr<Type> type) {
-    if (scopes.empty()) {
-        return;
-    }
-
-    scopes.back()[name.lexeme] = type;
-}
-
 std::any Resolver::visitBlockStmt(const BlockStmt& stmt) {
-    beginScope();
+    symbols.enter_scope();
     for (const auto& statement : stmt.statements) {
         resolve(*statement);
     }
-    endScope();
+    symbols.exit_scope();
     return nullptr;
 }
 
 std::any Resolver::visitVarStmt(const VarStmt& stmt) {
-    declare(stmt.name);
+    if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
+        error(stmt.name, "Already a variable with this name in this scope.");
+    }
+
     std::shared_ptr<Type> value_type = nullptr;
     if (stmt.initializer) {
         resolve(*stmt.initializer);
@@ -178,28 +152,17 @@ std::any Resolver::visitVarStmt(const VarStmt& stmt) {
         value_type = declared_type;
     }
 
-    define(stmt.name, value_type);
+    symbols.define(stmt.name.lexeme, value_type);
     return nullptr;
 }
 
 std::any Resolver::visitVariableExpr(const VariableExpr& expr) {
-    if (!scopes.empty()) {
-        auto& scope = scopes.back();
-        auto it = scope.find(expr.name.lexeme);
-        if (it != scope.end() && it->second == nullptr) {
-            error(expr.name, "Can't read local variable in its own initializer.");
-            return nullptr;
-        }
+    auto type = symbols.resolve(expr.name);
+    if (type) {
+        expr.type = type;
+    } else {
+        error(expr.name, "Undefined variable.");
     }
-
-    for (int i = scopes.size() - 1; i >= 0; --i) {
-        if (scopes[i].count(expr.name.lexeme)) {
-            expr.type = scopes[i][expr.name.lexeme];
-            return nullptr;
-        }
-    }
-
-    error(expr.name, "Undefined variable.");
     return nullptr;
 }
 
@@ -246,14 +209,7 @@ std::shared_ptr<Type> Resolver::visitBorrowTypeExpr(const BorrowTypeExpr& expr) 
 std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
     resolve(*expr.value);
     auto value_type = expr.value->type;
-
-    std::shared_ptr<Type> var_type = nullptr;
-    for (int i = scopes.size() - 1; i >= 0; --i) {
-        if (scopes[i].count(expr.name.lexeme)) {
-            var_type = scopes[i][expr.name.lexeme];
-            break;
-        }
-    }
+    auto var_type = symbols.resolve(expr.name);
 
     if (!var_type) {
         error(expr.name, "Undefined variable.");
@@ -275,27 +231,29 @@ void Resolver::resolveFunction(const FunctionStmt& function, CurrentFunctionType
     auto enclosing_return_type = std::move(current_return_type);
     current_return_type = function.return_type ? resolveTypeExpr(*function.return_type) : std::make_shared<BasicType>("void");
 
-    beginScope();
+    symbols.enter_scope();
     for (size_t i = 0; i < function.params.size(); ++i) {
-        declare(function.params[i]);
         auto param_type = resolveTypeExpr(*function.param_types[i]);
-        define(function.params[i], param_type);
+        symbols.define(function.params[i].lexeme, param_type);
     }
     resolve(*function.body);
-    endScope();
+    symbols.exit_scope();
     currentFunction = enclosingFunction;
     current_return_type = std::move(enclosing_return_type);
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
-    declare(stmt.name);
+    if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
+        error(stmt.name, "Already a variable with this name in this scope.");
+    }
+
     std::vector<std::shared_ptr<Type>> param_types;
     for (const auto& param_type_expr : stmt.param_types) {
         param_types.push_back(resolveTypeExpr(*param_type_expr));
     }
     auto return_type = stmt.return_type ? resolveTypeExpr(*stmt.return_type) : std::make_shared<BasicType>("void");
     auto func_type = std::make_shared<chtholly::FunctionType>(return_type, param_types);
-    define(stmt.name, func_type);
+    symbols.define(stmt.name.lexeme, func_type);
 
     resolveFunction(stmt, CurrentFunctionType::FUNCTION);
     return nullptr;
@@ -598,11 +556,12 @@ std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
         return nullptr;
     }
 
-    for (int i = scopes.size() - 1; i >= 0; --i) {
-        if (scopes[i].count("self")) {
-            expr.type = scopes[i]["self"];
-            return nullptr;
-        }
+    auto type = symbols.resolve(expr.keyword);
+    if (type) {
+        expr.type = type;
+    } else {
+        // This should not happen if currentClass is correctly set
+        error(expr.keyword, "Could not resolve 'self'.");
     }
 
     return nullptr;
@@ -612,18 +571,20 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
 
-    declare(stmt.name);
-    define(stmt.name, std::make_shared<StructType>(stmt.name.lexeme));
+    if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
+        error(stmt.name, "Already a variable with this name in this scope.");
+    }
+    symbols.define(stmt.name.lexeme, std::make_shared<StructType>(stmt.name.lexeme));
 
-    beginScope();
-    scopes.back()["self"] = std::make_shared<StructType>(stmt.name.lexeme);
+    symbols.enter_scope();
+    symbols.define("self", std::make_shared<StructType>(stmt.name.lexeme));
 
     for (const auto& method : stmt.methods) {
         CurrentFunctionType declaration = CurrentFunctionType::METHOD;
         resolveFunction(*method, declaration);
     }
 
-    endScope();
+    symbols.exit_scope();
 
     currentClass = enclosingClass;
     return nullptr;

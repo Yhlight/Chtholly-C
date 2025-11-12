@@ -2,6 +2,7 @@
 #define CHTHOLLY_RESOLVER_H
 
 #include "AST.h"
+#include "SymbolTable.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -35,12 +36,8 @@ private:
 
     static const std::map<TokenType, std::string> op_to_trait;
 
-    void beginScope();
-    void endScope();
-    void declare(const Token& name);
-    void define(const Token& name, std::shared_ptr<Type> type);
+    SymbolTable symbols;
 
-    std::vector<std::map<std::string, std::shared_ptr<Type>>> scopes;
     enum class CurrentFunctionType {
         NONE,
         FUNCTION,

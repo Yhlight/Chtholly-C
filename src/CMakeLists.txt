@@ -5,6 +5,7 @@ add_library(chtholly_lib STATIC
     Parser.cpp
     Transpiler.cpp
     Resolver.cpp
+    SymbolTable.cpp
 )
 
 target_include_directories(chtholly_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
