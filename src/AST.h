@@ -80,7 +80,7 @@ public:
 struct Expr {
     virtual ~Expr() = default;
     virtual std::any accept(ExprVisitor& visitor) const = 0;
-    mutable std::shared_ptr<Type> type;
+    mutable std::shared_ptr<Type> type = nullptr;
 };
 
 // Visitor for Statements
@@ -237,10 +237,10 @@ struct ArrayLiteralExpr : Expr {
 };
 
 struct TypeCastExpr : Expr {
-    std::unique_ptr<TypeExpr> type;
+    std::unique_ptr<TypeExpr> target_type;
     std::unique_ptr<Expr> expression;
-    TypeCastExpr(std::unique_ptr<TypeExpr> type, std::unique_ptr<Expr> expression)
-        : type(std::move(type)), expression(std::move(expression)) {}
+    TypeCastExpr(std::unique_ptr<TypeExpr> target_type, std::unique_ptr<Expr> expression)
+        : target_type(std::move(target_type)), expression(std::move(expression)) {}
     std::any accept(ExprVisitor& visitor) const override { return visitor.visitTypeCastExpr(*this); }
 };
 

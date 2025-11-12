@@ -268,7 +268,7 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         }
     }
     if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
-        return typeExprToTypeInfo(type_cast_expr->type.get());
+        return typeExprToTypeInfo(type_cast_expr->target_type.get());
     }
     if (auto borrow_expr = dynamic_cast<const BorrowExpr*>(&expr)) {
         TypeInfo type = get_type(*borrow_expr->expression);
@@ -1757,7 +1757,7 @@ std::any Transpiler::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
 }
 
 std::any Transpiler::visitTypeCastExpr(const TypeCastExpr& expr) {
-    return "static_cast<" + transpileType(*expr.type) + ">(" + std::any_cast<std::string>(expr.expression->accept(*this)) + ")";
+    return "static_cast<" + transpileType(*expr.target_type) + ">(" + std::any_cast<std::string>(expr.expression->accept(*this)) + ")";
 }
 
 std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {

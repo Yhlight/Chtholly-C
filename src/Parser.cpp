@@ -563,7 +563,7 @@ std::unique_ptr<Expr> Parser::primary() {
     if (match(TokenType::TYPE_CAST)) {
         auto type_cast_expr = std::make_unique<TypeCastExpr>(nullptr, nullptr);
         consume(TokenType::LESS, "Expect '<' after 'type_cast'.");
-        type_cast_expr->type = type();
+        type_cast_expr->target_type = type();
         consume(TokenType::GREATER, "Expect '>' after type in type_cast.");
         consume(TokenType::LEFT_PAREN, "Expect '(' after type_cast<T>.");
         type_cast_expr->expression = expression();

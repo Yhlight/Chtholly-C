@@ -93,7 +93,7 @@ private:
     std::any visitDerefExpr(const DerefExpr& expr) override { return nullptr; }
     std::any visitStructLiteralExpr(const StructLiteralExpr& expr) override;
     std::any visitArrayLiteralExpr(const ArrayLiteralExpr& expr) override;
-    std::any visitTypeCastExpr(const TypeCastExpr& expr) override { return nullptr; }
+    std::any visitTypeCastExpr(const TypeCastExpr& expr) override;
 };
 
 } // namespace chtholly

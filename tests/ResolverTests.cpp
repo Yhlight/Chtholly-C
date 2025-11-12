@@ -79,6 +79,11 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidTypeCast) {
+    std::string source = "let x: string = type_cast<string>(10);";
+    ASSERT_FALSE(resolve(source));
+}
+
 TEST_F(ResolverTest, TypeComparisonLogic) {
     // Basic type mismatch
     ASSERT_TRUE(resolve("let x: int = \"hello\";"));

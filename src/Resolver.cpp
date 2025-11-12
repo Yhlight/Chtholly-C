@@ -616,6 +616,12 @@ std::any Resolver::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
     return nullptr;
 }
 
+std::any Resolver::visitTypeCastExpr(const TypeCastExpr& expr) {
+    resolve(*expr.expression);
+    expr.type = resolveTypeExpr(*expr.target_type);
+    return nullptr;
+}
+
 std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     auto it = structs.find(expr.name.lexeme);
     if (it == structs.end()) {
