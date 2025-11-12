@@ -145,7 +145,7 @@ std::any Resolver::visitVarStmt(const VarStmt& stmt) {
 
     if (stmt.type) {
         auto declared_type = resolveTypeExpr(*stmt.type);
-        if (value_type && declared_type && value_type->to_string() != declared_type->to_string()) {
+        if (value_type && declared_type && !value_type->equals(*declared_type)) {
             error(stmt.name, "Initializer type '" + value_type->to_string() +
                                "' does not match declared type '" + declared_type->to_string() + "'.");
         }
@@ -216,7 +216,7 @@ std::any Resolver::visitAssignExpr(const AssignExpr& expr) {
         return nullptr;
     }
 
-    if (value_type && var_type && value_type->to_string() != var_type->to_string()) {
+    if (value_type && var_type && !value_type->equals(*var_type)) {
         error(expr.name, "Type mismatch. Cannot assign value of type '" + value_type->to_string() +
                            "' to variable of type '" + var_type->to_string() + "'.");
     }
@@ -266,7 +266,7 @@ std::any Resolver::visitExpressionStmt(const ExpressionStmt& stmt) {
 
 std::any Resolver::visitIfStmt(const IfStmt& stmt) {
     resolve(*stmt.condition);
-    if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+    if (stmt.condition->type && !stmt.condition->type->equals(BasicType("bool"))) {
         // Ideally, we'd have a token from the expression to report the error on.
         // For now, the message is clear enough.
         error(Token(TokenType::ERROR, "", nullptr, 0), "If condition must be of type bool.");
@@ -289,7 +289,7 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
         }
         resolve(*stmt.value);
         if (current_return_type && stmt.value->type &&
-            current_return_type->to_string() != stmt.value->type->to_string()) {
+            !current_return_type->equals(*stmt.value->type)) {
             error(stmt.keyword, "Return type mismatch. Expected " + current_return_type->to_string() +
                                  " but got " + stmt.value->type->to_string() + ".");
         }
@@ -304,7 +304,7 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
 
 std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
     resolve(*stmt.condition);
-    if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+    if (stmt.condition->type && !stmt.condition->type->equals(BasicType("bool"))) {
         error(Token(TokenType::ERROR, "", nullptr, 0), "While condition must be of type bool.");
     }
     resolve(*stmt.body);
@@ -317,7 +317,7 @@ std::any Resolver::visitForStmt(const ForStmt& stmt) {
     }
     if (stmt.condition) {
         resolve(*stmt.condition);
-        if (stmt.condition->type && stmt.condition->type->to_string() != "bool") {
+        if (stmt.condition->type && !stmt.condition->type->equals(BasicType("bool"))) {
             error(Token(TokenType::ERROR, "", nullptr, 0), "For condition must be of type bool.");
         }
     }
@@ -360,8 +360,8 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
     }
 
     // Type checking for operands
-    const auto& left_type = expr.left->type->to_string();
-    const auto& right_type = expr.right->type->to_string();
+    auto left_type = expr.left->type;
+    auto right_type = expr.right->type;
 
     switch (expr.op.type) {
         case TokenType::GREATER:
@@ -370,7 +370,8 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
         case TokenType::LESS_EQUAL:
         case TokenType::BANG_EQUAL:
         case TokenType::EQUAL_EQUAL:
-            if (!((left_type == "int" || left_type == "double") && (right_type == "int" || right_type == "double"))) {
+            if (!((left_type->equals(BasicType("int")) || left_type->equals(BasicType("double"))) &&
+                  (right_type->equals(BasicType("int")) || right_type->equals(BasicType("double"))))) {
                  error(expr.op, "Comparison operators can only be applied to numbers.");
             }
             expr.type = std::make_shared<BasicType>("bool");
@@ -380,10 +381,11 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
         case TokenType::MINUS:
         case TokenType::STAR:
         case TokenType::SLASH:
-             if (!((left_type == "int" || left_type == "double") && (right_type == "int" || right_type == "double"))) {
+             if (!((left_type->equals(BasicType("int")) || left_type->equals(BasicType("double"))) &&
+                   (right_type->equals(BasicType("int")) || right_type->equals(BasicType("double"))))) {
                  error(expr.op, "Arithmetic operators can only be applied to numbers.");
             }
-            if (left_type == "double" || right_type == "double") {
+            if (left_type->equals(BasicType("double")) || right_type->equals(BasicType("double"))) {
                 expr.type = std::make_shared<BasicType>("double");
             } else {
                 expr.type = std::make_shared<BasicType>("int");
@@ -392,7 +394,7 @@ std::any Resolver::visitBinaryExpr(const BinaryExpr& expr) {
 
         case TokenType::AND:
         case TokenType::OR:
-            if (left_type != "bool" || right_type != "bool") {
+            if (!left_type->equals(BasicType("bool")) || !right_type->equals(BasicType("bool"))) {
                 error(expr.op, "Logical operators can only be applied to booleans.");
             }
             expr.type = std::make_shared<BasicType>("bool");
@@ -425,7 +427,7 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
                 if (expr.arguments[i]->type) {
                     auto param_type = resolveTypeExpr(*func->param_types[i]);
-                    if (param_type && expr.arguments[i]->type->to_string() != param_type->to_string()) {
+                    if (param_type && !expr.arguments[i]->type->equals(*param_type)) {
                         error(expr.paren, "Argument " + std::to_string(i + 1) + " type mismatch.");
                     }
                 }
@@ -486,13 +488,13 @@ std::any Resolver::visitUnaryExpr(const UnaryExpr& expr) {
 
     switch (expr.op.type) {
         case TokenType::BANG:
-            if (expr.right->type->to_string() != "bool") {
+            if (!expr.right->type->equals(BasicType("bool"))) {
                 error(expr.op, "Operand of '!' must be of type 'bool'.");
             }
             expr.type = std::make_shared<BasicType>("bool");
             break;
         case TokenType::MINUS:
-            if (expr.right->type->to_string() != "int" && expr.right->type->to_string() != "double") {
+            if (!expr.right->type->equals(BasicType("int")) && !expr.right->type->equals(BasicType("double"))) {
                 error(expr.op, "Operand of '-' must be a number.");
             }
             expr.type = expr.right->type;
@@ -590,6 +592,30 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     return nullptr;
 }
 
+std::any Resolver::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
+    if (expr.elements.empty()) {
+        expr.type = std::make_shared<ArrayType>(std::make_shared<BasicType>("any"));
+        return nullptr;
+    }
+
+    resolve(*expr.elements[0]);
+    auto first_type = expr.elements[0]->type;
+    if (!first_type) {
+        return nullptr; // Cannot determine type
+    }
+
+    for (size_t i = 1; i < expr.elements.size(); ++i) {
+        resolve(*expr.elements[i]);
+        if (expr.elements[i]->type && !first_type->equals(*expr.elements[i]->type)) {
+            error(Token(TokenType::ERROR, "", nullptr, 0), "Array elements must have the same type.");
+            return nullptr;
+        }
+    }
+
+    expr.type = std::make_shared<ArrayType>(first_type);
+    return nullptr;
+}
+
 std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& expr) {
     auto it = structs.find(expr.name.lexeme);
     if (it == structs.end()) {
@@ -622,7 +648,7 @@ std::any Resolver::visitStructLiteralExpr(const StructLiteralExpr& expr) {
 
             auto expected_type = resolveTypeExpr(*field_def->type);
             auto actual_type = init_it->second->type;
-            if (actual_type && expected_type && expected_type->to_string() != actual_type->to_string()) {
+            if (actual_type && expected_type && !expected_type->equals(*actual_type)) {
                 error(expr.name, "Type mismatch for field '" + field_def->name.lexeme +
                                  "'. Expected " + expected_type->to_string() +
                                  " but got " + actual_type->to_string() + ".");

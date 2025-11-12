@@ -19,6 +19,7 @@ public:
     virtual ~Type() = default;
     virtual std::string to_string() const = 0;
     virtual TypeKind get_kind() const = 0;
+    virtual bool equals(const Type& other) const = 0;
 };
 
 class BasicType : public Type {
@@ -27,6 +28,14 @@ public:
     std::string to_string() const override { return name; }
     TypeKind get_kind() const override { return TypeKind::BASIC; }
     const std::string& get_name() const { return name; }
+
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_basic = static_cast<const BasicType&>(other);
+        return get_name() == other_basic.get_name();
+    }
 private:
     std::string name;
 };
@@ -53,6 +62,25 @@ public:
     const std::shared_ptr<Type>& get_return_type() const { return return_type; }
     const std::vector<std::shared_ptr<Type>>& get_parameter_types() const { return parameter_types; }
 
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_func = static_cast<const FunctionType&>(other);
+        if (!get_return_type()->equals(*other_func.get_return_type())) {
+            return false;
+        }
+        if (get_parameter_types().size() != other_func.get_parameter_types().size()) {
+            return false;
+        }
+        for (size_t i = 0; i < get_parameter_types().size(); ++i) {
+            if (!get_parameter_types()[i]->equals(*other_func.get_parameter_types()[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 private:
     std::shared_ptr<Type> return_type;
     std::vector<std::shared_ptr<Type>> parameter_types;
@@ -66,6 +94,14 @@ public:
     }
     TypeKind get_kind() const override { return TypeKind::ARRAY; }
 
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_array = static_cast<const ArrayType&>(other);
+        return element_type->equals(*other_array.element_type);
+    }
+
 private:
     std::shared_ptr<Type> element_type;
 };
@@ -76,6 +112,14 @@ public:
     std::string to_string() const override { return name; }
     TypeKind get_kind() const override { return TypeKind::STRUCT; }
     const std::string& get_name() const { return name; }
+
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_struct = static_cast<const StructType&>(other);
+        return get_name() == other_struct.get_name();
+    }
 
 private:
     std::string name;

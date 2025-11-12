@@ -79,6 +79,23 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, TypeComparisonLogic) {
+    // Basic type mismatch
+    ASSERT_TRUE(resolve("let x: int = \"hello\";"));
+
+    // Array type mismatch
+    ASSERT_TRUE(resolve("let x: array[int] = [\"hello\"];"));
+
+    // Function return type mismatch
+    ASSERT_TRUE(resolve("func f() -> int { return \"hello\"; }"));
+
+    // Function parameter type mismatch
+    ASSERT_TRUE(resolve("func f(a: int) {} f(\"hello\");"));
+
+    // Struct field type mismatch
+    ASSERT_TRUE(resolve("struct S { a: int; } let s = S{a: \"hello\"};"));
+}
+
 TEST_F(ResolverTest, ValidControlFlowCondition) {
     std::string source = R"(
         if (true) {}
