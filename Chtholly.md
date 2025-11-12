@@ -263,49 +263,59 @@ func main(args: array[string])
 }
 ```
 
-#### self关键字与对象关联
-在Chtholly中，可以使用self表示对实例自身的引用。
-共有三种形式：
-- `self`: 表示获取实例的所有权 (move)。
-- `&self`: 表示对实例的不可变引用 (borrow)。
-- `&mut self`: 表示对实例的可变引用 (mutable borrow)。
+#### 成员函数与静态函数
+结构体内部的函数分为**成员函数**（也称实例方法）和**静态函数**。
 
-通常情况下，带有self参数的函数，需要由明确的对象实例来调用。
-而对于那些没有self参数的函数，则不需要明确的对象实例调用，类似其他语言的静态函数，使用 `结构体::函数名称` 进行调用。
+- **成员函数**: 第一个参数是 `self`、`&self` 或 `&mut self`。这类函数与一个具体的结构体实例相关联，必须通过实例来调用（使用 `.` 符号）。它们用于操作或查询特定实例的数据。
+- **静态函数**: 没有 `self` 参数。这类函数不与任何具体实例绑定，而是直接与结构体本身相关联。它们通过结构体名称和 `::` 符号来调用。
 
-**在方法内部，访问实例自身的字段或调用其他实例方法时，必须显式使用 `self.` 前缀，不允许隐式调用。**
+##### `self` 参数详解
+`self` 参数决定了函数如何访问实例数据：
+
+- **`&self`** (不可变借用): 函数将获得对实例的**不可变引用**。这是最常见的形式，允许函数读取实例的字段，但不能修改它们。
+- **`&mut self`** (可变借用): 函数将获得对实例的**可变引用**。这允许函数修改实例的字段。
+- **`self`** (所有权转移): 函数将获得实例的**所有权**。这意味着在调用该函数后，原始的实例变量将变得无效（其所有权被移交给了函数）。这通常用于将实例转换为另一种类型或执行会消耗掉实例的操作。
+
+**注意**: 在方法内部，访问实例字段或调用其他成员函数时，必须显式使用 `self.` 前缀。
 
 ```Chtholly
-struct Test
-{
-    private:
-        name: string;
-        age: int;
+struct Counter {
+    value: int;
 
     public:
-        test(self)
-        {
-            return self.name; // 必须使用 self.
+        // 静态函数: 创建一个新的 Counter 实例
+        new() -> Counter {
+            return Counter{ value: 0 };
         }
 
-        test2(&mut self)
-        {
-            self.name = "HelloWolrd"; // 必须使用 self.
+        // 成员函数 (&self): 不可变地读取数据
+        get_value(&self) -> int {
+            return self.value; // 使用 self. 访问字段
         }
 
-        // 参数没有self，与本身无关系
-        test3()
-        {
+        // 成员函数 (&mut self): 可变地修改数据
+        increment(&mut self) {
+            self.value = self.value + 1;
+        }
 
+        // 成员函数 (self): 消耗实例
+        consume(self) {
+            print("Counter with value " + self.value + " consumed.");
         }
 }
 
-func main(args: array[string])
-{
-    let test = Test{};
-    test.test();
+func main() {
+    // 调用静态函数 `new`，使用 :: 语法
+    mut my_counter = Counter::new(); // my_counter.value is 0
 
-    Test::test3();
+    // 调用成员函数，使用 . 语法
+    my_counter.increment(); // my_counter.value is now 1
+    print(my_counter.get_value()); // 输出 1
+
+    // 调用消耗性成员函数
+    my_counter.consume();
+    // 此时 my_counter 不再有效，后续的调用将导致编译错误
+    // my_counter.get_value(); // -> COMPILE ERROR!
 }
 ```
 
