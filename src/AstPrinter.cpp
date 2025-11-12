@@ -232,9 +232,20 @@ std::any AstPrinter::visitWhileStmt(const WhileStmt& stmt) {
 std::any AstPrinter::visitForStmt(const ForStmt& stmt) {
     std::stringstream out;
     out << "(for";
-    out << " " << (stmt.initializer ? std::any_cast<std::string>(stmt.initializer->accept(*this)) : "null");
-    out << " " << (stmt.condition ? std::any_cast<std::string>(stmt.condition->accept(*this)) : "null");
-    out << " " << (stmt.increment ? std::any_cast<std::string>(stmt.increment->accept(*this)) : "null");
+
+    // Check if it's a for-each loop
+    if (stmt.initializer && dynamic_cast<const VarStmt*>(stmt.initializer.get()) && stmt.condition && !stmt.increment) {
+        // It's a for-each loop, initializer is the variable, condition is the iterable
+        out << " " << std::any_cast<std::string>(stmt.initializer->accept(*this));
+        out << " " << std::any_cast<std::string>(stmt.condition->accept(*this));
+        out << " ()"; // Empty increment
+    } else {
+        // C-style for loop
+        out << " " << (stmt.initializer ? std::any_cast<std::string>(stmt.initializer->accept(*this)) : "()");
+        out << " " << (stmt.condition ? std::any_cast<std::string>(stmt.condition->accept(*this)) : "()");
+        out << " " << (stmt.increment ? std::any_cast<std::string>(stmt.increment->accept(*this)) : "()");
+    }
+
     out << " " << std::any_cast<std::string>(stmt.body->accept(*this));
     out << ")";
     return out.str();

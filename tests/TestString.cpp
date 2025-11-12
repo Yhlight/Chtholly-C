@@ -21,7 +21,7 @@ TEST_F(TestString, SplitFunction) {
         func main() -> int {
             let s = "hello,world,chtholly";
             let parts = s.split(",");
-            for (let part in parts) {
+            for (let part : parts) {
                 print(part);
             }
             return 0;

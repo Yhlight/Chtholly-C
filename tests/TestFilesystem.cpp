@@ -107,7 +107,7 @@ TEST_F(FilesystemTest, ListDir) {
         func main() -> int {
             mut entries = fs_list_dir("test_dir");
             entries.sort();
-            for (let entry in entries) {
+            for (let entry : entries) {
                 print(entry);
             }
             return 0;

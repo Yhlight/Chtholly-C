@@ -52,7 +52,7 @@ TEST_F(TestArrayStdLib, SortFunction) {
         func main() -> int {
             mut arr = [3, 1, 4, 1, 5, 9, 2, 6];
             arr.sort();
-            for (let i in arr) {
+            for (let i : arr) {
                 print(i);
             }
             return 0;
@@ -84,7 +84,7 @@ TEST_F(TestArrayStdLib, ReverseFunction) {
         func main() -> int {
             mut arr = [1, 2, 3];
             arr.reverse();
-            for (let i in arr) {
+            for (let i : arr) {
                 print(i);
             }
             return 0;

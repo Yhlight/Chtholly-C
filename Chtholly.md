@@ -402,11 +402,14 @@ while (i < 5) {
 ```
 
 #### for 循环
-Chtholly 支持 `for...in` 循环，用于遍历一个集合（例如数组）中的所有元素。
+Chtholly 支持两种 `for` 循环语法：C-style 循环和 `for-each` 循环。
+
+##### for-each 循环
+这是遍历集合（如数组）的首选方式。它使用冒号 (`:`) 语法。
 
 ```Chtholly
 let numbers = [10, 20, 30, 40, 50];
-for (let num in numbers) {
+for (let num : numbers) {
     print(num);
 }
 ```
@@ -776,7 +779,7 @@ if (fs_is_dir("/my_directory")) {
 
 ```Chtholly
 let entries = fs_list_dir(".");
-for (let entry in entries) {
+for (let entry : entries) {
     print(entry);
 }
 ```

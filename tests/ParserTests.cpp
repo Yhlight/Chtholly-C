@@ -100,6 +100,13 @@ TEST(ParserTest, ForStatement) {
     EXPECT_EQ(parseAndPrint(source), expected);
 }
 
+TEST(ParserTest, ForEachStatement) {
+    std::string source = "for (let item : items) print(item);";
+    // The AST printer represents the iterable as the 'condition' part of the for-loop.
+    std::string expected = "(for (let item) items () (; (call print item)))";
+    EXPECT_EQ(parseAndPrint(source), expected);
+}
+
 TEST(ParserTest, OptionType) {
     std::string source = "let x: option<int> = none;";
     std::string expected = "(let x none)";
