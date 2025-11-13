@@ -33,6 +33,7 @@ add_executable(chtholly_tests
     TestTime.cpp
     TestRandom.cpp
     TestFilesystem.cpp
+    ResolverMathTests.cpp
 )
 
 add_dependencies(chtholly_tests chtholly)

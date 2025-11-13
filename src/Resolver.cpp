@@ -92,6 +92,7 @@ Resolver::Resolver() {
     symbols.define("os", any_type);
     symbols.define("time", any_type);
     symbols.define("random", any_type);
+    symbols.define("math", any_type);
 
     // Pre-define reflect types
     symbols.define("Field", std::make_shared<StructType>("Field"));
@@ -608,6 +609,47 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                 }
                 error(get_expr->name, "Unknown function util::" + func_name);
                 return nullptr;
+            } else if (var_expr->name.lexeme == "math") {
+                std::string func_name = get_expr->name.lexeme;
+                const std::vector<std::string> one_arg_funcs = {
+                    "sqrt", "sin", "cos", "tan", "log", "log10", "abs", "ceil", "floor", "round"
+                };
+                const std::vector<std::string> two_arg_funcs = { "pow" };
+
+                bool is_one_arg = std::find(one_arg_funcs.begin(), one_arg_funcs.end(), func_name) != one_arg_funcs.end();
+                bool is_two_arg = std::find(two_arg_funcs.begin(), two_arg_funcs.end(), func_name) != two_arg_funcs.end();
+
+                if (!is_one_arg && !is_two_arg) {
+                    error(get_expr->name, "Unknown function math::" + func_name);
+                    return nullptr;
+                }
+
+                if (is_one_arg) {
+                    if (expr.arguments.size() != 1) {
+                        error(get_expr->name, "math::" + func_name + " requires 1 argument.");
+                        return nullptr;
+                    }
+                    auto arg_type = expr.arguments[0]->type;
+                    if (arg_type && !arg_type->equals(BasicType("int")) && !arg_type->equals(BasicType("double"))) {
+                        error(get_expr->name, "math::" + func_name + " requires a numeric argument.");
+                    }
+                }
+
+                if (is_two_arg) {
+                    if (expr.arguments.size() != 2) {
+                        error(get_expr->name, "math::" + func_name + " requires 2 arguments.");
+                        return nullptr;
+                    }
+                    for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                        auto arg_type = expr.arguments[i]->type;
+                        if (arg_type && !arg_type->equals(BasicType("int")) && !arg_type->equals(BasicType("double"))) {
+                             error(get_expr->name, "Argument " + std::to_string(i+1) + " of math::" + func_name + " must be numeric.");
+                        }
+                    }
+                }
+
+                expr.type = std::make_shared<BasicType>("double");
+                return nullptr;
             }
         }
 
@@ -769,7 +811,7 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
         const std::string& module_name = var_expr->name.lexeme;
         if (module_name == "meta" || module_name == "reflect" || module_name == "util" ||
             module_name == "string" || module_name == "array" || module_name == "os" ||
-            module_name == "time" || module_name == "random") {
+            module_name == "time" || module_name == "random" || module_name == "math") {
             // This is a module access. The actual function type will be determined
             // in visitCallExpr. We don't assign a type to the GetExpr itself here.
             return nullptr;
