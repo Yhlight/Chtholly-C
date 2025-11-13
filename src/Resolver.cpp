@@ -298,7 +298,7 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
     }
 
     if (stmt.value) {
-        if (current_return_type && current_return_type->to_string() == "void") {
+        if (current_return_type && current_return_type->equals(BasicType("void"))) {
             error(stmt.keyword, "Cannot return a value from a void function.");
         }
         resolve(*stmt.value);
@@ -308,7 +308,7 @@ std::any Resolver::visitReturnStmt(const ReturnStmt& stmt) {
                                  " but got " + stmt.value->type->to_string() + ".");
         }
     } else {
-        if (current_return_type && current_return_type->to_string() != "void") {
+        if (current_return_type && !current_return_type->equals(BasicType("void"))) {
             error(stmt.keyword, "Non-void function must return a value.");
         }
     }
