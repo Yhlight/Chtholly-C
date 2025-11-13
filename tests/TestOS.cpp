@@ -93,7 +93,7 @@ TEST_F(OSTest, EnvFunctionFound) {
         import iostream;
         func main() -> int {
             let val = os::env("CHTHOLLY_TEST_VAR");
-            print(val.unwarp_or("NOT_FOUND"));
+            print(val.unwrap_or("NOT_FOUND"));
             return 0;
         }
     )";
@@ -114,7 +114,7 @@ TEST_F(OSTest, EnvFunctionNotFound) {
         import iostream;
         func main() -> int {
             let val = os::env("CHTHOLLY_TEST_VAR_MISSING");
-            print(val.unwarp_or("DEFAULT_VALUE"));
+            print(val.unwrap_or("DEFAULT_VALUE"));
             return 0;
         }
     )";

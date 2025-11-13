@@ -131,10 +131,10 @@ private:
 class BorrowType : public Type {
 public:
     BorrowType(std::shared_ptr<Type> element_type, bool is_mutable)
-        : element_type(std::move(element_type)), is_mutable(is_mutable) {}
+        : element_type(std::move(element_type)), is_mutable_field(is_mutable) {}
 
     std::string to_string() const override {
-        return std::string("&") + (is_mutable ? "mut " : "") + element_type->to_string();
+        return std::string("&") + (is_mutable_field ? "mut " : "") + element_type->to_string();
     }
 
     TypeKind get_kind() const override { return TypeKind::BORROW; }
@@ -144,13 +144,16 @@ public:
             return false;
         }
         const auto& other_borrow = static_cast<const BorrowType&>(other);
-        return is_mutable == other_borrow.is_mutable &&
+        return is_mutable_field == other_borrow.is_mutable_field &&
                element_type->equals(*other_borrow.element_type);
     }
 
+    const std::shared_ptr<Type>& get_element_type() const { return element_type; }
+    bool is_mutable() const { return is_mutable_field; }
+
 private:
     std::shared_ptr<Type> element_type;
-    bool is_mutable;
+    bool is_mutable_field;
 };
 
 

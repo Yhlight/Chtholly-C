@@ -76,20 +76,22 @@ Resolver::Resolver() {
     auto void_type = std::make_shared<BasicType>("void");
     symbols.define("print", std::make_shared<chtholly::FunctionType>(void_type, std::vector<std::shared_ptr<Type>>{any_type}));
     symbols.define("input", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{}));
-    symbols.define("fs_read", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
+    auto string_type = std::make_shared<BasicType>("string");
+    auto bool_type = std::make_shared<BasicType>("bool");
+    symbols.define("fs_read", std::make_shared<chtholly::FunctionType>(string_type, std::vector<std::shared_ptr<Type>>{string_type}));
     symbols.define("fs_write", any_type);
-    symbols.define("fs_exists", any_type);
-    symbols.define("fs_is_file", any_type);
-    symbols.define("fs_is_dir", any_type);
-    symbols.define("fs_list_dir", any_type);
+    symbols.define("fs_exists", std::make_shared<chtholly::FunctionType>(bool_type, std::vector<std::shared_ptr<Type>>{string_type}));
+    symbols.define("fs_is_file", std::make_shared<chtholly::FunctionType>(bool_type, std::vector<std::shared_ptr<Type>>{string_type}));
+    symbols.define("fs_is_dir", std::make_shared<chtholly::FunctionType>(bool_type, std::vector<std::shared_ptr<Type>>{string_type}));
+    symbols.define("fs_list_dir", std::make_shared<chtholly::FunctionType>(std::make_shared<ArrayType>(string_type), std::vector<std::shared_ptr<Type>>{string_type}));
     symbols.define("fs_remove", any_type);
-    symbols.define("meta", any_type);
-    symbols.define("reflect", any_type);
+    symbols.define("meta", std::make_shared<StructType>("meta"));
+    symbols.define("reflect", std::make_shared<StructType>("reflect"));
     symbols.define("util", any_type);
     symbols.define("operator", any_type);
     symbols.define("string", any_type);
     symbols.define("array", any_type);
-    symbols.define("os", any_type);
+    symbols.define("os", std::make_shared<StructType>("os")); // Treat os as a module/struct
     symbols.define("time", any_type);
     symbols.define("random", any_type);
     symbols.define("math", any_type);
@@ -668,9 +670,12 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                     return nullptr;
                 }
 
-                if (method_name == "length" || method_name == "is_empty") {
-                    if (expr.arguments.size() != 0) error(get_expr->name, "String method '" + method_name + "' requires 0 arguments.");
+                if (method_name == "length") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "String method 'length' requires 0 arguments.");
                     expr.type = std::make_shared<BasicType>("int");
+                } else if (method_name == "is_empty") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "String method 'is_empty' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("bool");
                 } else if (method_name == "contains" || method_name == "starts_with" || method_name == "ends_with") {
                     if (expr.arguments.size() != 1) error(get_expr->name, "String method '" + method_name + "' requires 1 argument.");
                     expr.type = std::make_shared<BasicType>("bool");
@@ -678,6 +683,8 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                     // Methods returning string or other types
                     if (method_name == "find") {
                         expr.type = std::make_shared<StructType>("option"); // Simplified
+                    } else if (method_name == "split") {
+                        expr.type = std::make_shared<ArrayType>(std::make_shared<BasicType>("string"));
                     } else {
                         expr.type = std::make_shared<BasicType>("string");
                     }
@@ -688,9 +695,12 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                 std::string method_name = get_expr->name.lexeme;
                 auto array_type = std::dynamic_pointer_cast<ArrayType>(object_type);
 
-                if (method_name == "length" || method_name == "is_empty") {
-                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method '" + method_name + "' requires 0 arguments.");
+                if (method_name == "length") {
+                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'length' requires 0 arguments.");
                     expr.type = std::make_shared<BasicType>("int");
+                } else if (method_name == "is_empty") {
+                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'is_empty' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("bool");
                 } else if (method_name == "pop") {
                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'pop' requires 0 arguments.");
                     expr.type = array_type->get_element_type();
@@ -699,7 +709,14 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                      if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(*array_type->get_element_type())) {
                          error(get_expr->name, "Argument type does not match array element type.");
                      }
-                } else {
+                 } else if (method_name == "sort") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'sort' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("void");
+                 } else if (method_name == "contains") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "Array method 'contains' requires 1 argument.");
+                    expr.type = std::make_shared<BasicType>("bool");
+                 }
+                 else {
                      error(get_expr->name, "Unknown array method '" + method_name + "'.");
                 }
                 return nullptr;
@@ -812,6 +829,7 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
         if (module_name == "meta" || module_name == "reflect" || module_name == "util" ||
             module_name == "string" || module_name == "array" || module_name == "os" ||
             module_name == "time" || module_name == "random" || module_name == "math") {
+
             // This is a module access. The actual function type will be determined
             // in visitCallExpr. We don't assign a type to the GetExpr itself here.
             return nullptr;
@@ -917,7 +935,7 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
 
 std::any Resolver::visitArrayLiteralExpr(const ArrayLiteralExpr& expr) {
     if (expr.elements.empty()) {
-        expr.type = std::make_shared<ArrayType>(std::make_shared<BasicType>("any"));
+        expr.type = std::make_shared<ArrayType>(std::make_shared<BasicType>("void"));
         return nullptr;
     }
 
