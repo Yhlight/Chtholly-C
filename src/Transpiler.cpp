@@ -159,14 +159,12 @@ public:
 };
 
 Transpiler::Transpiler(bool is_main_file) : is_main_file(is_main_file) {
-    enterScope(); // Global scope
     transpiled_files = new std::set<std::string>();
     owns_transpiled_files = true;
 }
 
 Transpiler::Transpiler(std::set<std::string>* transpiled_files, bool is_main_file)
     : transpiled_files(transpiled_files), owns_transpiled_files(false), is_main_file(is_main_file) {
-    enterScope(); // Global scope
 }
 
 Transpiler::~Transpiler() {
@@ -175,35 +173,51 @@ Transpiler::~Transpiler() {
     }
 }
 
-void Transpiler::enterScope() {
-    scopes.emplace_back();
-}
+// Helper to convert the new Type system to the old TypeInfo.
+// This is a temporary measure during refactoring.
+TypeInfo typeToTypeInfo(const std::shared_ptr<Type>& type) {
+    if (!type) return TypeInfo{"auto"};
 
-void Transpiler::exitScope() {
-    scopes.pop_back();
-}
-
-void Transpiler::define(const std::string& name, const TypeInfo& type) {
-    if (scopes.empty()) {
-        enterScope();
+    if (auto basic = std::dynamic_pointer_cast<BasicType>(type)) {
+        if (basic->get_name() == "string") return TypeInfo{"std::string"};
+        return TypeInfo{basic->get_name()};
     }
-    scopes.back()[name] = type;
-}
-
-TypeInfo Transpiler::lookup(const std::string& name) {
-    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-        auto found = it->find(name);
-        if (found != it->end()) {
-            return found->second;
+    if (auto struct_type = std::dynamic_pointer_cast<StructType>(type)) {
+        if (struct_type->get_name() == "option") {
+            // This is a simplified handling for os::env returning option<string>
+            return TypeInfo{"std::optional<std::string>"};
         }
+        if (struct_type->get_name() == "option<int>") {
+            return TypeInfo{"std::optional<int>"};
+        }
+        return TypeInfo{struct_type->get_name()};
     }
-    // In a real compiler, we'd throw a semantic error here.
-    // In a real compiler, we'd throw a semantic error here.
-    // For now, return a default TypeInfo.
-    return TypeInfo{};
+    if (auto array_type = std::dynamic_pointer_cast<ArrayType>(type)) {
+        TypeInfo element_type = typeToTypeInfo(array_type->get_element_type());
+        if (element_type.name == "void") {
+            return TypeInfo{"std::vector<int>"}; // Default empty array to vector<int>
+        }
+        return TypeInfo{"std::vector<" + element_type.name + ">"};
+    }
+    if (auto borrow_type = std::dynamic_pointer_cast<BorrowType>(type)) {
+        TypeInfo element_type = typeToTypeInfo(borrow_type->get_element_type());
+        element_type.is_ref = true;
+        element_type.is_mut_ref = borrow_type->is_mutable();
+        return element_type;
+    }
+    // Add more conversions as needed (FunctionType, etc.)
+
+    return TypeInfo{"auto"};
 }
 
 TypeInfo Transpiler::get_type(const Expr& expr) {
+    // The ONLY source of truth for types is the `type` property on the expression,
+    // which is populated by the Resolver.
+    if (expr.type) {
+        return typeToTypeInfo(expr.type);
+    }
+
+    // Fallback for literals, which don't need the resolver.
     if (auto literal_expr = dynamic_cast<const LiteralExpr*>(&expr)) {
         if (std::holds_alternative<long long>(literal_expr->value)) return TypeInfo{"int"};
         if (std::holds_alternative<double>(literal_expr->value)) return TypeInfo{"double"};
@@ -211,280 +225,8 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
         if (std::holds_alternative<bool>(literal_expr->value)) return TypeInfo{"bool"};
         if (std::holds_alternative<char>(literal_expr->value)) return TypeInfo{"char"};
     }
-    if (auto var_expr = dynamic_cast<const VariableExpr*>(&expr)) {
-        return lookup(var_expr->name.lexeme);
-    }
-    if (auto struct_literal = dynamic_cast<const StructLiteralExpr*>(&expr)) {
-        return TypeInfo{struct_literal->name.lexeme};
-    }
-    if (auto array_literal = dynamic_cast<const ArrayLiteralExpr*>(&expr)) {
-        vector_used = true;
-        if (array_literal->elements.empty()) {
-            return TypeInfo{"std::vector<int>"}; // Default to int for empty arrays
-        }
-        TypeInfo element_type = get_type(*array_literal->elements[0]);
-        return TypeInfo{"std::vector<" + element_type.name + ">"};
-    }
-    if (auto binary_expr = dynamic_cast<const BinaryExpr*>(&expr)) {
-        TypeInfo left_type = get_type(*binary_expr->left);
-        TypeInfo right_type = get_type(*binary_expr->right);
 
-        // Simple type inference for primitive types
-        if (left_type.name == "int" && right_type.name == "int") {
-            return TypeInfo{"int"};
-        }
-        if (left_type.name == "double" || right_type.name == "double") {
-            return TypeInfo{"double"};
-        }
-
-
-        static const std::map<TokenType, std::string> binary_op_traits = {
-            {TokenType::PLUS, "add"}, {TokenType::MINUS, "sub"}, {TokenType::STAR, "mul"},
-            {TokenType::SLASH, "div"}, {TokenType::PERCENT, "mod"}, {TokenType::EQUAL_EQUAL, "assign"},
-            {TokenType::BANG_EQUAL, "not_equal"}, {TokenType::LESS, "less"}, {TokenType::LESS_EQUAL, "less_equal"},
-            {TokenType::GREATER, "greater"}, {TokenType::GREATER_EQUAL, "greater_equal"},
-            {TokenType::AND, "and"}, {TokenType::OR, "or"}
-        };
-        auto it = binary_op_traits.find(binary_expr->op.type);
-        if (it != binary_op_traits.end()) {
-            if (has_trait(left_type.name, "operator", it->second)) {
-                const StructStmt* s = structs[left_type.name];
-                for (const auto& method : s->methods) {
-                    if (method->name.lexeme == it->second) {
-                        return typeExprToTypeInfo(method->return_type.get());
-                    }
-                }
-            }
-        }
-        if (binary_expr->op.type == TokenType::STAR_STAR) {
-            if (has_trait(left_type.name, "operator", "binary")) {
-                const StructStmt* s = structs[left_type.name];
-                for (const auto& method : s->methods) {
-                    if (method->name.lexeme == "binary") {
-                        return typeExprToTypeInfo(method->return_type.get());
-                    }
-                }
-            }
-        }
-    }
-    if (auto type_cast_expr = dynamic_cast<const TypeCastExpr*>(&expr)) {
-        return typeExprToTypeInfo(type_cast_expr->target_type.get());
-    }
-    if (auto borrow_expr = dynamic_cast<const BorrowExpr*>(&expr)) {
-        TypeInfo type = get_type(*borrow_expr->expression);
-        type.is_ref = true;
-        type.is_mut_ref = borrow_expr->isMutable;
-        return type;
-    }
-    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
-        if (auto var_expr = dynamic_cast<const VariableExpr*>(call_expr->callee.get())) {
-            if (var_expr->name.lexeme == "fs_read") {
-                return TypeInfo{"std::string"};
-            }
-            if (var_expr->name.lexeme == "fs_exists" || var_expr->name.lexeme == "fs_is_file" || var_expr->name.lexeme == "fs_is_dir") {
-                return TypeInfo{"bool"};
-            }
-            if (var_expr->name.lexeme == "fs_list_dir") {
-                vector_used = true;
-                return TypeInfo{"std::vector<std::string>"};
-            }
-            if (var_expr->name.lexeme == "option") {
-                optional_used = true;
-                if (call_expr->arguments.empty()) {
-                    return TypeInfo{"std::optional<auto>"};
-                }
-                TypeInfo arg_type = get_type(*call_expr->arguments[0]);
-                return TypeInfo{"std::optional<" + arg_type.name + ">"};
-            }
-            if (var_expr->name.lexeme == "input") {
-                return TypeInfo{"std::string"};
-            }
-        }
-    }
-    if (auto get_expr = dynamic_cast<const GetExpr*>(&expr)) {
-        if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
-            if (var_expr->name.lexeme == "math") {
-                if (get_expr->name.lexeme == "PI" || get_expr->name.lexeme == "E") {
-                    return TypeInfo{"double"};
-                }
-            }
-        }
-    }
-    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
-        if (auto get_expr = dynamic_cast<const GetExpr*>(call_expr->callee.get())) {
-            TypeInfo object_type = get_type(*get_expr->object);
-            if (object_type.name.rfind("std::optional", 0) == 0) {
-                if (get_expr->name.lexeme == "unwarp") {
-                    // This is simplified. A real implementation would extract the inner type.
-                    return TypeInfo{"auto"};
-                }
-                if (get_expr->name.lexeme == "unwarp_or") {
-                    return get_type(*call_expr->arguments[0]);
-                }
-            }
-            if (object_type.name.rfind("result", 0) == 0) {
-                if (get_expr->name.lexeme == "unwarp") {
-                    return TypeInfo{"auto"};
-                }
-                if (get_expr->name.lexeme == "unwarp_err") {
-                    return TypeInfo{"auto"};
-                }
-            }
-             if (auto var_expr = dynamic_cast<const VariableExpr*>(get_expr->object.get())) {
-                if (var_expr->name.lexeme == "result") {
-                    if (get_expr->name.lexeme == "pass") {
-                        TypeInfo type_arg = get_type(*call_expr->arguments[0]);
-                        return TypeInfo{"result<" + type_arg.name + ", auto>"};
-                    }
-                    if (get_expr->name.lexeme == "fail") {
-                        TypeInfo type_arg = get_type(*call_expr->arguments[0]);
-                        return TypeInfo{"result<auto, " + type_arg.name + ">"};
-                    }
-                }
-                if (var_expr->name.lexeme == "meta") {
-                    if (get_expr->name.lexeme == "type_name") {
-                        return TypeInfo{"std::string"};
-                    }
-                    return TypeInfo{"bool"};
-                }
-            if (var_expr->name.lexeme == "reflect") {
-                if (get_expr->name.lexeme == "get_field_count" || get_expr->name.lexeme == "get_method_count" || get_expr->name.lexeme == "get_trait_count") {
-                    return TypeInfo{"int"};
-                }
-                if (get_expr->name.lexeme == "get_fields") {
-                    return TypeInfo{"std::vector<Field>"};
-                }
-                if (get_expr->name.lexeme == "get_field") {
-                    return TypeInfo{"Field"};
-                }
-                if (get_expr->name.lexeme == "get_methods") {
-                    return TypeInfo{"std::vector<Method>"};
-                }
-                if (get_expr->name.lexeme == "get_method") {
-                    return TypeInfo{"Method"};
-                }
-                if (get_expr->name.lexeme == "get_traits") {
-                    return TypeInfo{"std::vector<Trait>"};
-                }
-                if (get_expr->name.lexeme == "get_trait") {
-                    return TypeInfo{"Trait"};
-                }
-            }
-            if (var_expr->name.lexeme == "util") {
-                if (get_expr->name.lexeme == "string_cast") {
-                    return TypeInfo{"std::string"};
-                }
-                if (get_expr->name.lexeme == "panic") {
-                    return TypeInfo{"void"};
-                }
-            }
-            if (var_expr->name.lexeme == "math") {
-                return TypeInfo{"double"};
-            }
-            if (var_expr->name.lexeme == "array") {
-                if (get_expr->name.lexeme == "length") {
-                    return TypeInfo{"int"};
-                }
-                if (get_expr->name.lexeme == "pop") {
-                    if (auto call_expr = dynamic_cast<const CallExpr*>(&expr)) {
-                        if (call_expr->arguments.empty()) {
-                            return TypeInfo{"auto"};
-                        }
-                        TypeInfo arr_type = get_type(*call_expr->arguments[0]);
-                        // arr_type.name will be "std::vector<T>" or "std::array<T, N>"
-                    size_t start = arr_type.name.find('<') + 1;
-                    size_t end = arr_type.name.rfind('>');
-                    if (arr_type.name.find(',') != std::string::npos) {
-                        end = arr_type.name.find(',');
-                    }
-                    if (start != std::string::npos && end != std::string::npos) {
-                        return TypeInfo{arr_type.name.substr(start, end - start)};
-                    }
-                    return TypeInfo{"auto"};
-                }
-                }
-                if (get_expr->name.lexeme == "contains") {
-                    return TypeInfo{"bool"};
-                }
-                if (get_expr->name.lexeme == "reverse") {
-                    return TypeInfo{"void"};
-                }
-            }
-            if (var_expr->name.lexeme == "os") {
-                if (get_expr->name.lexeme == "env") {
-                    optional_used = true;
-                    return TypeInfo{"std::optional<std::string>"};
-                }
-            }
-            if (var_expr->name.lexeme == "time") {
-                if (get_expr->name.lexeme == "now") {
-                    return TypeInfo{"long long"};
-                }
-            }
-            if (var_expr->name.lexeme == "random") {
-                if (get_expr->name.lexeme == "rand") {
-                    return TypeInfo{"double"};
-                }
-                if (get_expr->name.lexeme == "randint") {
-                    return TypeInfo{"int"};
-                }
-            }
-            }
-            if (object_type.name == "std::string") {
-                if (get_expr->name.lexeme == "length") {
-                    return TypeInfo{ "int" };
-                }
-                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim" || get_expr->name.lexeme == "replace") {
-                    return TypeInfo{ "std::string" };
-                }
-                if (get_expr->name.lexeme == "find") {
-                    optional_used = true;
-                    return TypeInfo{ "std::optional<int>" };
-                }
-                if (get_expr->name.lexeme == "split") {
-                    vector_used = true;
-                    return TypeInfo{ "std::vector<std::string>" };
-                }
-                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with" || get_expr->name.lexeme == "is_empty" || get_expr->name.lexeme == "contains") {
-                    return TypeInfo{ "bool" };
-                }
-            }
-            if (object_type.name.rfind("std::vector", 0) == 0 || object_type.name.rfind("std::array", 0) == 0) {
-                if (get_expr->name.lexeme == "length") {
-                    return TypeInfo{"int"};
-                }
-                if (get_expr->name.lexeme == "pop") {
-                    size_t start = object_type.name.find('<') + 1;
-                    size_t end = object_type.name.rfind('>');
-                    if (object_type.name.find(',') != std::string::npos) {
-                        end = object_type.name.find(',');
-                    }
-                    if (start != std::string::npos && end != std::string::npos) {
-                        return TypeInfo{object_type.name.substr(start, end - start)};
-                    }
-                    return TypeInfo{"auto"};
-                }
-                if (get_expr->name.lexeme == "contains") {
-                    return TypeInfo{"bool"};
-                }
-                if (get_expr->name.lexeme == "is_empty") {
-                    return TypeInfo{"bool"};
-                }
-                if (get_expr->name.lexeme == "join") {
-                    return TypeInfo{"std::string"};
-                }
-            }
-            TypeInfo callee_type = get_type(*get_expr->object);
-            if (structs.count(callee_type.name)) {
-                const StructStmt* s = structs[callee_type.name];
-                for (const auto& method : s->methods) {
-                    if (method->name.lexeme == get_expr->name.lexeme) {
-                        return typeExprToTypeInfo(method->return_type.get());
-                    }
-                }
-            }
-        }
-    }
+    // If the resolver didn't assign a type, we can't know it.
     return TypeInfo{"auto"};
 }
 
@@ -520,8 +262,6 @@ std::string Transpiler::transpile(const std::vector<std::unique_ptr<Stmt>>& stat
     // Reset state for clean transpilation between runs (especially for tests)
     out.str("");
     out.clear();
-    scopes.clear();
-    enterScope();
     structs.clear();
     enums.clear();
     imported_modules.clear();
@@ -1357,10 +1097,10 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
         TypeInfo object_type = get_type(*get_expr->object);
         if (object_type.name.rfind("std::optional", 0) == 0) {
-            if (get_expr->name.lexeme == "unwarp") {
+            if (get_expr->name.lexeme == "unwrap") {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value()";
             }
-            if (get_expr->name.lexeme == "unwarp_or") {
+            if (get_expr->name.lexeme == "unwrap_or") {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value_or(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
             }
         }
@@ -1444,8 +1184,7 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             std::stringstream out;
             out << "std::cout << ";
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
-                TypeInfo arg_type = get_type(*expr.arguments[i]);
-                if (arg_type.name == "bool") {
+                if (expr.arguments[i]->type && expr.arguments[i]->type->equals(BasicType("bool"))) {
                     out << "(" << std::any_cast<std::string>(expr.arguments[i]->accept(*this)) << " ? \"true\" : \"false\")";
                 } else {
                     out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
@@ -1513,10 +1252,8 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
     }
     ss << "](";
 
-    enterScope();
     for (size_t i = 0; i < expr.params.size(); ++i) {
         TypeInfo paramType = typeExprToTypeInfo(expr.param_types[i].get());
-        define(expr.params[i].lexeme, paramType);
         ss << getTypeString(paramType) << " " << expr.params[i].lexeme;
         if (i < expr.params.size() - 1) {
             ss << ", ";
@@ -1538,8 +1275,6 @@ std::any Transpiler::visitLambdaExpr(const LambdaExpr& expr) {
     std::swap(out, body_out); // Restore original 'out'
 
     ss << body_out.str();
-
-    exitScope();
 
     return ss.str();
 }
@@ -1647,13 +1382,11 @@ std::any Transpiler::visitBlockStmt(const BlockStmt& stmt) {
 }
 
 void Transpiler::visitBlockStmt(const BlockStmt& stmt, bool create_scope) {
-    if (create_scope) enterScope();
     out << "{\n";
     for (const auto& statement : stmt.statements) {
         statement->accept(*this);
     }
     out << "}\n";
-    if (create_scope) exitScope();
 }
 
 std::any Transpiler::visitExpressionStmt(const ExpressionStmt& stmt) {
@@ -1668,8 +1401,6 @@ std::any Transpiler::visitVarStmt(const VarStmt& stmt) {
         type = get_type(*stmt.initializer);
     }
     type.is_mutable = stmt.isMutable;
-
-    define(stmt.name.lexeme, type);
 
     out << (type.is_mutable ? "" : "const ") << getTypeString(type) << " " << stmt.name.lexeme;
     if (stmt.initializer) {
@@ -1711,16 +1442,13 @@ std::any Transpiler::visitForStmt(const ForStmt& stmt) {
     // Check for for-in loop (simplified check)
     if (stmt.initializer && stmt.condition && !stmt.increment) { // condition holds the iterable
         if (auto* varStmt = dynamic_cast<VarStmt*>(stmt.initializer.get())) {
-            enterScope();
             std::string iterable_name = std::any_cast<std::string>(stmt.condition->accept(*this));
             out << "for (const auto& " << varStmt->name.lexeme << " : " << iterable_name << ") ";
             stmt.body->accept(*this);
-            exitScope();
             return nullptr;
         }
     }
 
-    enterScope();
     out << "for (";
     if (stmt.initializer) {
         if (auto* exprStmt = dynamic_cast<ExpressionStmt*>(stmt.initializer.get())) {
@@ -1731,8 +1459,6 @@ std::any Transpiler::visitForStmt(const ForStmt& stmt) {
             if (varStmt->initializer && type.name == "auto") {
                 type = get_type(*varStmt->initializer);
             }
-
-            define(varStmt->name.lexeme, type);
 
             out << (type.is_mutable ? "" : "const ") << getTypeString(type) << " " << varStmt->name.lexeme;
             if (varStmt->initializer) {
@@ -1750,7 +1476,6 @@ std::any Transpiler::visitForStmt(const ForStmt& stmt) {
     }
     out << ") ";
     stmt.body->accept(*this);
-    exitScope();
     return nullptr;
 }
 std::any Transpiler::visitReturnStmt(const ReturnStmt& stmt) {
@@ -1987,7 +1712,6 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
 
     out << (stmt.return_type ? transpileType(*stmt.return_type) : "void") << " " << function_name << "(";
 
-    enterScope();
     if (is_chtholly_main) {
         out << "std::vector<std::string> args";
         vector_used = true;
@@ -2000,14 +1724,12 @@ std::any Transpiler::visitFunctionStmt(const FunctionStmt& stmt) {
             first_param = false;
 
             TypeInfo paramType = typeExprToTypeInfo(stmt.param_types[i].get());
-            define(stmt.params[i].lexeme, paramType);
             out << getTypeString(paramType) << " " << stmt.params[i].lexeme;
         }
     }
     out << ") ";
     transpile_function_body(stmt.body.get(), stmt.generic_constraints);
 
-    exitScope();
     current_function_return_type = old_return_type;
     return nullptr;
 }

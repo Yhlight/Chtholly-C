@@ -10,6 +10,8 @@ std::string compile(const std::string& source, bool is_main_file) {
     std::vector<chtholly::Token> tokens = lexer.scanTokens();
     chtholly::Parser parser(tokens);
     std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    chtholly::Resolver resolver;
+    resolver.resolve(statements);
     chtholly::Transpiler transpiler(is_main_file);
     return transpiler.transpile(statements);
 }
