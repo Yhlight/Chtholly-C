@@ -79,6 +79,115 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidTraitImplementation) {
+    std::string source = R"(
+        trait MyTrait {
+            func foo(a: int) -> int;
+        }
+        struct MyStruct impl MyTrait {
+            func foo(a: int) -> int { return a; }
+        }
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, MissingTraitMethod) {
+    std::string source = R"(
+        trait MyTrait {
+            func foo(a: int) -> int;
+        }
+        struct MyStruct impl MyTrait {
+            // Missing foo
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedTraitMethodReturnType) {
+    std::string source = R"(
+        trait MyTrait {
+            func foo(a: int) -> int;
+        }
+        struct MyStruct impl MyTrait {
+            func foo(a: int) -> string { return "a"; }
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedTraitMethodParamCount) {
+    std::string source = R"(
+        trait MyTrait {
+            func foo(a: int) -> int;
+        }
+        struct MyStruct impl MyTrait {
+            func foo() -> int { return 1; }
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, MismatchedTraitMethodParamType) {
+    std::string source = R"(
+        trait MyTrait {
+            func foo(a: int) -> int;
+        }
+        struct MyStruct impl MyTrait {
+            func foo(a: string) -> int { return 1; }
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ImplementNonExistentTrait) {
+    std::string source = R"(
+        struct MyStruct impl NonExistentTrait {
+        }
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, ValidSetField) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.bar = 2;
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetFieldMismatchedType) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.bar = "hello";
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetUndefinedField) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.baz = 2;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetFieldOnNonStruct) {
+    std::string source = R"(
+        mut a = 1;
+        a.foo = 2;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 // String and Array method tests
 TEST_F(ResolverTest, ValidStringLength) {
     std::string source = R"(

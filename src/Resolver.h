@@ -53,6 +53,7 @@ private:
     };
     CurrentFunctionType currentFunction = CurrentFunctionType::NONE;
     ClassType currentClass = ClassType::NONE;
+    std::string current_struct_name;
     LoopType currentLoop = LoopType::NONE;
     int switch_depth = 0;
     std::shared_ptr<Type> current_return_type = nullptr;

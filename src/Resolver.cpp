@@ -184,6 +184,15 @@ std::shared_ptr<Type> Resolver::resolveTypeExpr(const TypeExpr& type_expr) {
 
 std::shared_ptr<Type> Resolver::visitBaseTypeExpr(const BaseTypeExpr& expr) {
     std::string name = expr.type.lexeme;
+
+    if (name == "self") {
+        if (currentClass == ClassType::NONE) {
+            error(expr.type, "Cannot use 'self' type outside of a class.");
+            return nullptr;
+        }
+        return std::make_shared<StructType>(current_struct_name);
+    }
+
     if (name == "int" || name == "double" || name == "string" || name == "bool" || name == "char") {
         return std::make_shared<BasicType>(name);
     }
@@ -870,8 +879,36 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
 }
 
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
-    expr.value->accept(*this);
-    expr.object->accept(*this);
+    resolve(*expr.value);
+    resolve(*expr.object);
+
+    if (!expr.object->type) {
+        return nullptr; // Avoid cascade errors
+    }
+
+    if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
+        auto it = structs.find(struct_type->get_name());
+        if (it != structs.end()) {
+            const StructStmt* struct_stmt = it->second;
+            if (struct_stmt) { // Null check for built-in types like Field
+                for (const auto& field : struct_stmt->fields) {
+                    if (field->name.lexeme == expr.name.lexeme) {
+                        auto expected_type = resolveTypeExpr(*field->type);
+                        if (expr.value->type && expected_type && !expr.value->type->equals(*expected_type)) {
+                            error(expr.name, "Type mismatch for field '" + expr.name.lexeme +
+                                             "'. Expected " + expected_type->to_string() +
+                                             " but got " + expr.value->type->to_string() + ".");
+                        }
+                        return nullptr;
+                    }
+                }
+            }
+            error(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
+        }
+    } else {
+        error(expr.name, "Only structs have fields that can be set.");
+    }
+
     return nullptr;
 }
 
@@ -895,11 +932,62 @@ std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
+    std::string enclosing_struct_name = std::move(current_struct_name);
+    current_struct_name = stmt.name.lexeme;
 
     if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
         error(stmt.name, "Already a variable with this name in this scope.");
     }
     symbols.define(stmt.name.lexeme, std::make_shared<StructType>(stmt.name.lexeme));
+
+    for (const auto& trait_expr : stmt.traits) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(trait_expr.get())) {
+            const Token& trait_token = var_expr->name;
+            const std::string& trait_name = trait_token.lexeme;
+
+            auto it = traits.find(trait_name);
+            if (it == traits.end()) {
+                error(trait_token, "Trait '" + trait_name + "' not found.");
+                continue;
+            }
+            const TraitStmt* trait = it->second;
+            for (const auto& trait_method : trait->methods) {
+                bool found = false;
+                for (const auto& struct_method : stmt.methods) {
+                    if (trait_method->name.lexeme == struct_method->name.lexeme) {
+                        found = true;
+                        // Now check signature
+                        if (trait_method->params.size() != struct_method->params.size()) {
+                            error(struct_method->name, "Method '" + struct_method->name.lexeme + "' has different number of parameters than trait method.");
+                            break;
+                        }
+
+                        auto trait_return = trait_method->return_type ? resolveTypeExpr(*trait_method->return_type) : std::make_shared<BasicType>("void");
+                        auto struct_return = struct_method->return_type ? resolveTypeExpr(*struct_method->return_type) : std::make_shared<BasicType>("void");
+
+                        if (!trait_return->equals(*struct_return)) {
+                            error(struct_method->name, "Method '" + struct_method->name.lexeme + "' has different return type than trait method.");
+                            break;
+                        }
+
+                        for (size_t i = 0; i < trait_method->params.size(); ++i) {
+                            auto trait_param = resolveTypeExpr(*trait_method->param_types[i]);
+                            auto struct_param = resolveTypeExpr(*struct_method->param_types[i]);
+                            if (!trait_param->equals(*struct_param)) {
+                                error(struct_method->params[i], "Parameter type mismatch for '" + struct_method->params[i].lexeme + "' in method '" + struct_method->name.lexeme + "'.");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (!found) {
+                    error(stmt.name, "Struct '" + stmt.name.lexeme + "' does not implement method '" + trait_method->name.lexeme + "' from trait '" + trait->name.lexeme + "'.");
+                }
+            }
+        }
+    }
+
 
     symbols.enter_scope();
     symbols.define("self", std::make_shared<StructType>(stmt.name.lexeme));
@@ -912,6 +1000,7 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     symbols.exit_scope();
 
     currentClass = enclosingClass;
+    current_struct_name = std::move(enclosing_struct_name);
     return nullptr;
 }
 
