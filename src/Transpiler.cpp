@@ -1137,27 +1137,6 @@ std::any Transpiler::handleUtilFunction(const CallExpr& expr) {
     return std::string("/* ERROR: Unknown util function call */");
 }
 
-std::any Transpiler::handleMathFunction(const CallExpr& expr) {
-    auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get());
-    std::string function_name = get_expr->name.lexeme;
-
-    // Functions with one argument
-    if (function_name == "sqrt" || function_name == "sin" || function_name == "cos" ||
-        function_name == "tan" || function_name == "log" || function_name == "log10" ||
-        function_name == "abs" || function_name == "ceil" || function_name == "floor" ||
-        function_name == "round") {
-        return "std::" + function_name + "(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
-    }
-
-    // Functions with two arguments
-    if (function_name == "pow") {
-        return "std::pow(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ", " +
-               std::any_cast<std::string>(expr.arguments[1]->accept(*this)) + ")";
-    }
-
-    return "/* ERROR: Unknown math function call */";
-}
-
 std::any Transpiler::handleStringMethodCall(const CallExpr& expr, const GetExpr& get_expr) {
     std::string object_str = std::any_cast<std::string>(get_expr.object->accept(*this));
     std::string function_name = get_expr.name.lexeme;
@@ -1416,7 +1395,18 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
                 return handleUtilFunction(expr);
             }
             if (var_expr->name.lexeme == "math") {
-                return handleMathFunction(expr);
+                auto get_expr = static_cast<const GetExpr*>(expr.callee.get());
+                std::string function_name = get_expr->name.lexeme;
+                std::stringstream math_call;
+                math_call << "std::" << function_name << "(";
+                for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                    math_call << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
+                    if (i < expr.arguments.size() - 1) {
+                        math_call << ", ";
+                    }
+                }
+                math_call << ")";
+                return math_call.str();
             }
             if (var_expr->name.lexeme == "os") {
                 return handleOSFunction(expr);
