@@ -77,12 +77,20 @@ Resolver::Resolver() {
     symbols.define("print", std::make_shared<chtholly::FunctionType>(void_type, std::vector<std::shared_ptr<Type>>{any_type}));
     symbols.define("input", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{}));
     symbols.define("fs_read", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("string"), std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
-    symbols.define("fs_write", any_type);
-    symbols.define("fs_exists", any_type);
-    symbols.define("fs_is_file", any_type);
-    symbols.define("fs_is_dir", any_type);
-    symbols.define("fs_list_dir", any_type);
-    symbols.define("fs_remove", any_type);
+    symbols.define("fs_write", std::make_shared<chtholly::FunctionType>(void_type,
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string"), std::make_shared<BasicType>("string")}));
+    symbols.define("fs_exists", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("bool"),
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
+    symbols.define("fs_is_file", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("bool"),
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
+    symbols.define("fs_is_dir", std::make_shared<chtholly::FunctionType>(std::make_shared<BasicType>("bool"),
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
+    symbols.define("fs_list_dir", std::make_shared<chtholly::FunctionType>(
+        std::make_shared<ArrayType>(std::make_shared<BasicType>("string")),
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}
+    ));
+    symbols.define("fs_remove", std::make_shared<chtholly::FunctionType>(void_type,
+        std::vector<std::shared_ptr<Type>>{std::make_shared<BasicType>("string")}));
     symbols.define("meta", any_type);
     symbols.define("reflect", any_type);
     symbols.define("util", any_type);
@@ -184,6 +192,15 @@ std::shared_ptr<Type> Resolver::resolveTypeExpr(const TypeExpr& type_expr) {
 
 std::shared_ptr<Type> Resolver::visitBaseTypeExpr(const BaseTypeExpr& expr) {
     std::string name = expr.type.lexeme;
+
+    if (name == "self") {
+        if (currentClass == ClassType::NONE) {
+            error(expr.type, "Cannot use 'self' type outside of a class.");
+            return nullptr;
+        }
+        return std::make_shared<StructType>(current_struct_name);
+    }
+
     if (name == "int" || name == "double" || name == "string" || name == "bool" || name == "char") {
         return std::make_shared<BasicType>(name);
     }
@@ -332,6 +349,36 @@ std::any Resolver::visitWhileStmt(const WhileStmt& stmt) {
 }
 
 std::any Resolver::visitForStmt(const ForStmt& stmt) {
+    // Check for for-in loop structure
+    if (stmt.initializer && stmt.condition && !stmt.increment) {
+        if (auto* varStmt = dynamic_cast<VarStmt*>(stmt.initializer.get())) {
+            symbols.enter_scope();
+
+            resolve(*stmt.condition); // Resolve the iterable
+            auto iterable_type = stmt.condition->type;
+            std::shared_ptr<Type> element_type = nullptr;
+
+            if (auto array_type = std::dynamic_pointer_cast<ArrayType>(iterable_type)) {
+                element_type = array_type->get_element_type();
+            } else {
+                error(varStmt->name, "For loop can only iterate over arrays.");
+            }
+
+            symbols.define(varStmt->name.lexeme, element_type);
+
+            LoopType enclosingLoop = currentLoop;
+            currentLoop = LoopType::LOOP;
+            resolve(*stmt.body);
+            currentLoop = enclosingLoop;
+
+            symbols.exit_scope();
+            return nullptr;
+        }
+    }
+
+
+    // Standard C-style for loop
+    symbols.enter_scope();
     if (stmt.initializer) {
         resolve(*stmt.initializer);
     }
@@ -350,6 +397,7 @@ std::any Resolver::visitForStmt(const ForStmt& stmt) {
     resolve(*stmt.body);
     currentLoop = enclosingLoop;
 
+    symbols.exit_scope();
     return nullptr;
 }
 
@@ -528,7 +576,7 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
 
                 error(get_expr->name, "Unknown function reflect::" + func_name);
                 return nullptr;
-            } else if (var_expr->name.lexeme == "os") {
+            }  else if (var_expr->name.lexeme == "os") {
                 std::string func_name = get_expr->name.lexeme;
                 if (func_name == "exit") {
                     if (expr.arguments.size() != 1) {
@@ -550,7 +598,7 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                         error(get_expr->name, "os::env requires a string argument.");
                     }
                     // This is a simplification. A full implementation would create a GenericType.
-                    expr.type = std::make_shared<StructType>("option");
+                    expr.type = std::make_shared<StructType>("option<string>");
                     return nullptr;
                 }
                 error(get_expr->name, "Unknown function os::" + func_name);
@@ -655,6 +703,28 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
 
         auto object_type = get_expr->object->type;
         if (object_type) {
+            if (auto struct_type = std::dynamic_pointer_cast<StructType>(object_type)) {
+                std::string name = struct_type->get_name();
+                if (name.rfind("option", 0) == 0) {
+                    std::string method_name = get_expr->name.lexeme;
+                    if (method_name == "unwarp") {
+                         if (expr.arguments.size() != 0) error(get_expr->name, "option::unwarp requires 0 arguments.");
+                        // This is a simplification. A real implementation would parse the inner type.
+                        expr.type = std::make_shared<BasicType>("any");
+                    } else if (method_name == "unwarp_or") {
+                        if (expr.arguments.size() != 1) error(get_expr->name, "option::unwarp_or requires 1 argument.");
+                        expr.type = expr.arguments[0]->type;
+                    } else if (method_name == "is_none" || method_name == "has_value") {
+                        if (expr.arguments.size() != 0) error(get_expr->name, "option::" + method_name + " requires 0 arguments.");
+                        expr.type = std::make_shared<BasicType>("bool");
+                    } else {
+                        error(get_expr->name, "Unknown option method '" + method_name + "'.");
+                    }
+                    return nullptr;
+                }
+            }
+
+
             if (object_type->get_kind() == TypeKind::BASIC && std::dynamic_pointer_cast<BasicType>(object_type)->get_name() == "string") {
                 // String method call
                 std::string method_name = get_expr->name.lexeme;
@@ -668,19 +738,33 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                     return nullptr;
                 }
 
-                if (method_name == "length" || method_name == "is_empty") {
-                    if (expr.arguments.size() != 0) error(get_expr->name, "String method '" + method_name + "' requires 0 arguments.");
+                if (method_name == "length") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "String method 'length' requires 0 arguments.");
                     expr.type = std::make_shared<BasicType>("int");
+                } else if (method_name == "is_empty") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "String method 'is_empty' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("bool");
                 } else if (method_name == "contains" || method_name == "starts_with" || method_name == "ends_with") {
                     if (expr.arguments.size() != 1) error(get_expr->name, "String method '" + method_name + "' requires 1 argument.");
-                    expr.type = std::make_shared<BasicType>("bool");
-                } else {
-                    // Methods returning string or other types
-                    if (method_name == "find") {
-                        expr.type = std::make_shared<StructType>("option"); // Simplified
-                    } else {
-                        expr.type = std::make_shared<BasicType>("string");
+                    if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(BasicType("string"))) {
+                         error(get_expr->name, "String method '" + method_name + "' requires a string argument.");
                     }
+                    expr.type = std::make_shared<BasicType>("bool");
+                } else if (method_name == "to_upper" || method_name == "to_lower" || method_name == "trim") {
+                     if (expr.arguments.size() != 0) error(get_expr->name, "String method '" + method_name + "' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("string");
+                } else if (method_name == "replace") {
+                    if (expr.arguments.size() != 2) error(get_expr->name, "String method 'replace' requires 2 arguments.");
+                    expr.type = std::make_shared<BasicType>("string");
+                } else if (method_name == "substr") {
+                    if (expr.arguments.size() != 2) error(get_expr->name, "String method 'substr' requires 2 arguments.");
+                    expr.type = std::make_shared<BasicType>("string");
+                } else if (method_name == "split") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "String method 'split' requires 1 argument.");
+                    expr.type = std::make_shared<ArrayType>(std::make_shared<BasicType>("string"));
+                } else if (method_name == "find") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "String method 'find' requires 1 argument.");
+                    expr.type = std::make_shared<StructType>("option<int>");
                 }
                 return nullptr;
             } else if (object_type->get_kind() == TypeKind::ARRAY) {
@@ -688,10 +772,18 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                 std::string method_name = get_expr->name.lexeme;
                 auto array_type = std::dynamic_pointer_cast<ArrayType>(object_type);
 
-                if (method_name == "length" || method_name == "is_empty") {
-                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method '" + method_name + "' requires 0 arguments.");
+                if (method_name == "length") {
+                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'length' requires 0 arguments.");
                     expr.type = std::make_shared<BasicType>("int");
-                } else if (method_name == "pop") {
+                } else if (method_name == "is_empty") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'is_empty' requires 0 arguments.");
+                    expr.type = std::make_shared<BasicType>("bool");
+                } else if (method_name == "contains") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "Array method 'contains' requires 1 argument.");
+                    // Type check argument against array element type could be added here
+                    expr.type = std::make_shared<BasicType>("bool");
+                }
+                else if (method_name == "pop") {
                     if (expr.arguments.size() != 0) error(get_expr->name, "Array method 'pop' requires 0 arguments.");
                     expr.type = array_type->get_element_type();
                 } else if (method_name == "push") {
@@ -699,7 +791,18 @@ std::any Resolver::visitCallExpr(const CallExpr& expr) {
                      if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(*array_type->get_element_type())) {
                          error(get_expr->name, "Argument type does not match array element type.");
                      }
-                } else {
+                     // push returns void
+                } else if (method_name == "reverse" || method_name == "sort" || method_name == "clear") {
+                    if (expr.arguments.size() != 0) error(get_expr->name, "Array method '" + method_name + "' requires 0 arguments.");
+                    // These methods return void
+                } else if (method_name == "join") {
+                    if (expr.arguments.size() != 1) error(get_expr->name, "Array method 'join' requires 1 argument.");
+                    if (expr.arguments[0]->type && !expr.arguments[0]->type->equals(BasicType("string"))) {
+                        error(get_expr->name, "Array method 'join' requires a string argument.");
+                    }
+                    expr.type = std::make_shared<BasicType>("string");
+                }
+                else {
                      error(get_expr->name, "Unknown array method '" + method_name + "'.");
                 }
                 return nullptr;
@@ -870,8 +973,36 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
 }
 
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
-    expr.value->accept(*this);
-    expr.object->accept(*this);
+    resolve(*expr.value);
+    resolve(*expr.object);
+
+    if (!expr.object->type) {
+        return nullptr; // Avoid cascade errors
+    }
+
+    if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
+        auto it = structs.find(struct_type->get_name());
+        if (it != structs.end()) {
+            const StructStmt* struct_stmt = it->second;
+            if (struct_stmt) { // Null check for built-in types like Field
+                for (const auto& field : struct_stmt->fields) {
+                    if (field->name.lexeme == expr.name.lexeme) {
+                        auto expected_type = resolveTypeExpr(*field->type);
+                        if (expr.value->type && expected_type && !expr.value->type->equals(*expected_type)) {
+                            error(expr.name, "Type mismatch for field '" + expr.name.lexeme +
+                                             "'. Expected " + expected_type->to_string() +
+                                             " but got " + expr.value->type->to_string() + ".");
+                        }
+                        return nullptr;
+                    }
+                }
+            }
+            error(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
+        }
+    } else {
+        error(expr.name, "Only structs have fields that can be set.");
+    }
+
     return nullptr;
 }
 
@@ -895,11 +1026,62 @@ std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
 std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     ClassType enclosingClass = currentClass;
     currentClass = ClassType::CLASS;
+    std::string enclosing_struct_name = std::move(current_struct_name);
+    current_struct_name = stmt.name.lexeme;
 
     if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
         error(stmt.name, "Already a variable with this name in this scope.");
     }
     symbols.define(stmt.name.lexeme, std::make_shared<StructType>(stmt.name.lexeme));
+
+    for (const auto& trait_expr : stmt.traits) {
+        if (auto var_expr = dynamic_cast<const VariableExpr*>(trait_expr.get())) {
+            const Token& trait_token = var_expr->name;
+            const std::string& trait_name = trait_token.lexeme;
+
+            auto it = traits.find(trait_name);
+            if (it == traits.end()) {
+                error(trait_token, "Trait '" + trait_name + "' not found.");
+                continue;
+            }
+            const TraitStmt* trait = it->second;
+            for (const auto& trait_method : trait->methods) {
+                bool found = false;
+                for (const auto& struct_method : stmt.methods) {
+                    if (trait_method->name.lexeme == struct_method->name.lexeme) {
+                        found = true;
+                        // Now check signature
+                        if (trait_method->params.size() != struct_method->params.size()) {
+                            error(struct_method->name, "Method '" + struct_method->name.lexeme + "' has different number of parameters than trait method.");
+                            break;
+                        }
+
+                        auto trait_return = trait_method->return_type ? resolveTypeExpr(*trait_method->return_type) : std::make_shared<BasicType>("void");
+                        auto struct_return = struct_method->return_type ? resolveTypeExpr(*struct_method->return_type) : std::make_shared<BasicType>("void");
+
+                        if (!trait_return->equals(*struct_return)) {
+                            error(struct_method->name, "Method '" + struct_method->name.lexeme + "' has different return type than trait method.");
+                            break;
+                        }
+
+                        for (size_t i = 0; i < trait_method->params.size(); ++i) {
+                            auto trait_param = resolveTypeExpr(*trait_method->param_types[i]);
+                            auto struct_param = resolveTypeExpr(*struct_method->param_types[i]);
+                            if (!trait_param->equals(*struct_param)) {
+                                error(struct_method->params[i], "Parameter type mismatch for '" + struct_method->params[i].lexeme + "' in method '" + struct_method->name.lexeme + "'.");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (!found) {
+                    error(stmt.name, "Struct '" + stmt.name.lexeme + "' does not implement method '" + trait_method->name.lexeme + "' from trait '" + trait->name.lexeme + "'.");
+                }
+            }
+        }
+    }
+
 
     symbols.enter_scope();
     symbols.define("self", std::make_shared<StructType>(stmt.name.lexeme));
@@ -912,6 +1094,7 @@ std::any Resolver::visitStructStmt(const StructStmt& stmt) {
     symbols.exit_scope();
 
     currentClass = enclosingClass;
+    current_struct_name = std::move(enclosing_struct_name);
     return nullptr;
 }
 

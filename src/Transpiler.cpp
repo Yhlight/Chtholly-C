@@ -430,25 +430,6 @@ TypeInfo Transpiler::get_type(const Expr& expr) {
                 }
             }
             }
-            if (object_type.name == "std::string") {
-                if (get_expr->name.lexeme == "length") {
-                    return TypeInfo{ "int" };
-                }
-                if (get_expr->name.lexeme == "substr" || get_expr->name.lexeme == "to_upper" || get_expr->name.lexeme == "to_lower" || get_expr->name.lexeme == "trim" || get_expr->name.lexeme == "replace") {
-                    return TypeInfo{ "std::string" };
-                }
-                if (get_expr->name.lexeme == "find") {
-                    optional_used = true;
-                    return TypeInfo{ "std::optional<int>" };
-                }
-                if (get_expr->name.lexeme == "split") {
-                    vector_used = true;
-                    return TypeInfo{ "std::vector<std::string>" };
-                }
-                 if (get_expr->name.lexeme == "starts_with" || get_expr->name.lexeme == "ends_with" || get_expr->name.lexeme == "is_empty" || get_expr->name.lexeme == "contains") {
-                    return TypeInfo{ "bool" };
-                }
-            }
             if (object_type.name.rfind("std::vector", 0) == 0 || object_type.name.rfind("std::array", 0) == 0) {
                 if (get_expr->name.lexeme == "length") {
                     return TypeInfo{"int"};
@@ -1355,15 +1336,36 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
         }
     }
     if (auto get_expr = dynamic_cast<const GetExpr*>(expr.callee.get())) {
-        TypeInfo object_type = get_type(*get_expr->object);
-        if (object_type.name.rfind("std::optional", 0) == 0) {
-            if (get_expr->name.lexeme == "unwarp") {
-                return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value()";
-            }
-            if (get_expr->name.lexeme == "unwarp_or") {
-                return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value_or(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+        // Since the Resolver now attaches types, we can use it to guide transpilation.
+        if (get_expr->object->type) {
+            if (auto base_type = std::dynamic_pointer_cast<BasicType>(get_expr->object->type)) {
+                if (base_type->get_name() == "string") {
+                    return handleStringMethodCall(expr, *get_expr);
+                }
             }
         }
+
+        if (get_expr->object->type && get_expr->object->type->get_kind() == TypeKind::STRUCT) {
+            if (auto struct_type = std::dynamic_pointer_cast<StructType>(get_expr->object->type)) {
+                if (struct_type->get_name().rfind("option", 0) == 0) {
+                     if (get_expr->name.lexeme == "unwarp") {
+                        return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value()";
+                    }
+                    if (get_expr->name.lexeme == "unwarp_or") {
+                        return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".value_or(" + std::any_cast<std::string>(expr.arguments[0]->accept(*this)) + ")";
+                    }
+                    if (get_expr->name.lexeme == "is_none") {
+                        return "!" + std::any_cast<std::string>(get_expr->object->accept(*this)) + ".has_value()";
+                    }
+                    if (get_expr->name.lexeme == "has_value") {
+                        return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".has_value()";
+                    }
+                }
+            }
+        }
+
+        // Fallback to old logic for other types for now
+        TypeInfo object_type = get_type(*get_expr->object);
         if (object_type.name.rfind("result", 0) == 0) {
             if (get_expr->name.lexeme == "is_pass") {
                 return std::any_cast<std::string>(get_expr->object->accept(*this)) + ".is_pass()";
@@ -1444,12 +1446,21 @@ std::any Transpiler::visitCallExpr(const CallExpr& expr) {
             std::stringstream out;
             out << "std::cout << ";
             for (size_t i = 0; i < expr.arguments.size(); ++i) {
-                TypeInfo arg_type = get_type(*expr.arguments[i]);
-                if (arg_type.name == "bool") {
+                bool is_bool = false;
+                if (expr.arguments[i]->type) {
+                    if (auto basic_type = std::dynamic_pointer_cast<BasicType>(expr.arguments[i]->type)) {
+                        if (basic_type->get_name() == "bool") {
+                            is_bool = true;
+                        }
+                    }
+                }
+
+                if (is_bool) {
                     out << "(" << std::any_cast<std::string>(expr.arguments[i]->accept(*this)) << " ? \"true\" : \"false\")";
                 } else {
                     out << std::any_cast<std::string>(expr.arguments[i]->accept(*this));
                 }
+
                 if (i < expr.arguments.size() - 1) {
                     out << " << ";
                 }

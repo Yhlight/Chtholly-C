@@ -1,6 +1,7 @@
 #include "TestHelpers.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "Resolver.h"
 #include "Transpiler.h"
 #include <algorithm>
 #include <cctype>
@@ -10,6 +11,11 @@ std::string compile(const std::string& source, bool is_main_file) {
     std::vector<chtholly::Token> tokens = lexer.scanTokens();
     chtholly::Parser parser(tokens);
     std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
+    chtholly::Resolver resolver;
+    resolver.resolve(statements);
+    if (resolver.hadError) {
+        return "RESOLVER_ERROR";
+    }
     chtholly::Transpiler transpiler(is_main_file);
     return transpiler.transpile(statements);
 }

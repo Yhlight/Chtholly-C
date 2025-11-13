@@ -5,14 +5,18 @@ class TestString : public ::testing::Test {};
 
 TEST_F(TestString, LengthFunction) {
     std::string source = R"(
-        let s = "hello";
-        let len = s.length();
+        import iostream;
+        func main() -> int {
+            print("hello".length());
+            print("".length());
+            let s = "test";
+            print(s.length());
+            return 0;
+        }
     )";
-    std::string expected = "const int len = s.length();";
-    std::string transpiled = compile(source);
-    transpiled.erase(std::remove_if(transpiled.begin(), transpiled.end(), ::isspace), transpiled.end());
-    expected.erase(std::remove_if(expected.begin(), expected.end(), ::isspace), expected.end());
-    ASSERT_NE(transpiled.find(expected), std::string::npos);
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "5\n0\n4\n");
 }
 
 TEST_F(TestString, SplitFunction) {
@@ -32,41 +36,49 @@ TEST_F(TestString, SplitFunction) {
     ASSERT_EQ(result.stdout_output, "hello\nworld\nchtholly\n");
 }
 
-
 TEST_F(TestString, FindFunctionFound) {
     std::string source = R"(
-        let s = "hello world";
-        let pos = s.find("world");
+        import iostream;
+        func main() -> int {
+            let s = "hello world";
+            let pos = s.find("world");
+            print(pos.unwarp());
+            return 0;
+        }
     )";
-    std::string expected = "const std::optional<int> pos = (s.find(\"world\") == std::string::npos) ? std::nullopt : std::optional<int>(s.find(\"world\"));";
-    std::string transpiled = compile(source);
-    transpiled.erase(std::remove_if(transpiled.begin(), transpiled.end(), ::isspace), transpiled.end());
-    expected.erase(std::remove_if(expected.begin(), expected.end(), ::isspace), expected.end());
-    ASSERT_NE(transpiled.find(expected), std::string::npos);
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "6\n");
 }
 
 TEST_F(TestString, FindFunctionNotFound) {
     std::string source = R"(
-        let s = "hello world";
-        let pos = s.find("galaxy");
+        import iostream;
+        func main() -> int {
+            let s = "hello world";
+            let pos = s.find("galaxy");
+            print(pos.is_none());
+            return 0;
+        }
     )";
-    std::string expected = "const std::optional<int> pos = (s.find(\"galaxy\") == std::string::npos) ? std::nullopt : std::optional<int>(s.find(\"galaxy\"));";
-    std::string transpiled = compile(source);
-    transpiled.erase(std::remove_if(transpiled.begin(), transpiled.end(), ::isspace), transpiled.end());
-    expected.erase(std::remove_if(expected.begin(), expected.end(), ::isspace), expected.end());
-    ASSERT_NE(transpiled.find(expected), std::string::npos);
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "true\n");
 }
 
 TEST_F(TestString, SubstrFunction) {
     std::string source = R"(
-        let s = "hello world";
-        let sub = s.substr(6, 5);
+        import iostream;
+        func main() -> int {
+            let s = "hello world";
+            print(s.substr(6, 5));
+            print("chtholly".substr(0, 4));
+            return 0;
+        }
     )";
-    std::string expected = "const std::string sub = s.substr(6, 5);";
-    std::string transpiled = compile(source);
-    transpiled.erase(std::remove_if(transpiled.begin(), transpiled.end(), ::isspace), transpiled.end());
-    expected.erase(std::remove_if(expected.begin(), expected.end(), ::isspace), expected.end());
-    ASSERT_NE(transpiled.find(expected), std::string::npos);
+    chtholly::RunResult result = chtholly::run_and_capture(source, true);
+    ASSERT_EQ(result.exit_code, 0);
+    ASSERT_EQ(result.stdout_output, "world\nchth\n");
 }
 
 TEST_F(TestString, ToUpperFunction) {
