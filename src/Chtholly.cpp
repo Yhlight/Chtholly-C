@@ -30,7 +30,7 @@ namespace chtholly {
 
     int Chtholly::run(const std::vector<std::string>& files, const std::string& output_file, const std::string& cxx_compiler_path) {
         std::vector<std::string> temp_files;
-        bool main_found = false;
+        chtholly::Resolver resolver;
 
         for (size_t i = 0; i < files.size(); ++i) {
             std::ifstream file(files[i]);
@@ -50,19 +50,18 @@ namespace chtholly {
                 chtholly::Parser parser(tokens);
                 std::vector<std::unique_ptr<chtholly::Stmt>> statements = parser.parse();
 
-                chtholly::Resolver resolver;
                 resolver.resolve(statements);
+
+                if (resolver.hadError) {
+                    std::cerr << "Compilation failed due to resolver errors." << std::endl;
+                    return 1;
+                }
 
                 bool is_main = false;
                 for (const auto& stmt : statements) {
                     if (auto* func = dynamic_cast<FunctionStmt*>(stmt.get())) {
                         if (func->name.lexeme == "main") {
-                             if (main_found) {
-                                std::cerr << "Error: Multiple main functions found. Only one is allowed." << std::endl;
-                                return 1;
-                            }
                             is_main = true;
-                            main_found = true;
                         }
                     }
                 }
@@ -86,7 +85,7 @@ namespace chtholly {
             }
         }
 
-        if (!main_found) {
+        if (!resolver.foundMainFunction) {
             std::cerr << "Error: No main function found in any of the input files." << std::endl;
             // Clean up any files we've created so far
             for (const auto& temp_file : temp_files) {

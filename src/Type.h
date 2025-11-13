@@ -12,6 +12,7 @@ enum class TypeKind {
     FUNCTION,
     ARRAY,
     STRUCT,
+    ENUM,
     BORROW
 };
 
@@ -37,6 +38,25 @@ public:
         const auto& other_basic = static_cast<const BasicType&>(other);
         return get_name() == other_basic.get_name();
     }
+private:
+    std::string name;
+};
+
+class EnumType : public Type {
+public:
+    explicit EnumType(const std::string& name) : name(name) {}
+    std::string to_string() const override { return name; }
+    TypeKind get_kind() const override { return TypeKind::ENUM; }
+    const std::string& get_name() const { return name; }
+
+    bool equals(const Type& other) const override {
+        if (get_kind() != other.get_kind()) {
+            return false;
+        }
+        const auto& other_enum = static_cast<const EnumType&>(other);
+        return get_name() == other_enum.get_name();
+    }
+
 private:
     std::string name;
 };

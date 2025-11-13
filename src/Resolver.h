@@ -14,6 +14,7 @@ class Resolver : public ExprVisitor, public StmtVisitor, public TypeExprVisitor 
 public:
     Resolver();
     bool hadError = false;
+    bool foundMainFunction = false;
 
     void resolve(const std::vector<std::unique_ptr<Stmt>>& statements);
 
@@ -88,13 +89,13 @@ private:
     std::shared_ptr<Type> visitBorrowTypeExpr(const BorrowTypeExpr& expr) override;
 
     // Default implementations for unhandled statements and expressions
-    std::any visitImportStmt(const ImportStmt& stmt) override { return nullptr; }
+    std::any visitImportStmt(const ImportStmt& stmt) override;
     std::any visitSwitchStmt(const SwitchStmt& stmt) override;
     std::any visitCaseStmt(const CaseStmt& stmt) override;
     std::any visitBreakStmt(const BreakStmt& stmt) override;
     std::any visitFallthroughStmt(const FallthroughStmt& stmt) override;
-    std::any visitEnumStmt(const EnumStmt& stmt) override { return nullptr; }
-    std::any visitTraitStmt(const TraitStmt& stmt) override { return nullptr; }
+    std::any visitEnumStmt(const EnumStmt& stmt) override;
+    std::any visitTraitStmt(const TraitStmt& stmt) override;
     std::any visitLambdaExpr(const LambdaExpr& expr) override;
     std::any visitBorrowExpr(const BorrowExpr& expr) override;
     std::any visitDerefExpr(const DerefExpr& expr) override { return nullptr; }

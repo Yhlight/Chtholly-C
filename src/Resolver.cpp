@@ -275,6 +275,13 @@ void Resolver::resolveFunction(const FunctionStmt& function, CurrentFunctionType
 }
 
 std::any Resolver::visitFunctionStmt(const FunctionStmt& stmt) {
+    if (stmt.name.lexeme == "main") {
+        if (foundMainFunction) {
+            error(stmt.name, "Multiple main functions defined.");
+        }
+        foundMainFunction = true;
+    }
+
     if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
         error(stmt.name, "Already a variable with this name in this scope.");
     }
@@ -1020,6 +1027,33 @@ std::any Resolver::visitSelfExpr(const SelfExpr& expr) {
         error(expr.keyword, "Could not resolve 'self'.");
     }
 
+    return nullptr;
+}
+
+std::any Resolver::visitEnumStmt(const EnumStmt& stmt) {
+    if (symbols.is_defined_in_current_scope(stmt.name.lexeme)) {
+        error(stmt.name, "Already a variable with this name in this scope.");
+    }
+    symbols.define(stmt.name.lexeme, std::make_shared<EnumType>(stmt.name.lexeme));
+    return nullptr;
+}
+
+std::any Resolver::visitTraitStmt(const TraitStmt& stmt) {
+    if (traits.count(stmt.name.lexeme)) {
+        error(stmt.name, "Trait with this name already declared.");
+    }
+    traits[stmt.name.lexeme] = &stmt;
+    return nullptr;
+}
+
+std::any Resolver::visitImportStmt(const ImportStmt& stmt) {
+    if (std::holds_alternative<Token>(stmt.path)) {
+        std::string module_name = std::get<Token>(stmt.path).lexeme;
+        // For now, we just acknowledge the import.
+        // In the future, this could load module symbols.
+    } else if (std::holds_alternative<std::string>(stmt.path)) {
+        // File imports are not yet handled in the resolver.
+    }
     return nullptr;
 }
 
