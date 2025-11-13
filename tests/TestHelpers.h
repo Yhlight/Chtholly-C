@@ -2,6 +2,7 @@
 #define CHTHOLLY_TEST_HELPERS_H
 
 #include <string>
+#include "Resolver.h"
 
 // Transpiles a string of Chtholly source code to C++.
 std::string compile(const std::string& source, bool is_main_file = false);
