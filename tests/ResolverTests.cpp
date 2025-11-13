@@ -79,6 +79,47 @@ TEST_F(ResolverTest, BinaryTypeError) {
     ASSERT_TRUE(resolve(source));
 }
 
+TEST_F(ResolverTest, ValidSetField) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.bar = 2;
+    )";
+    ASSERT_FALSE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetFieldMismatchedType) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.bar = "hello";
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetUndefinedField) {
+    std::string source = R"(
+        struct Foo {
+            bar: int;
+        }
+        mut foo = Foo{bar: 1};
+        foo.baz = 2;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
+TEST_F(ResolverTest, InvalidSetFieldOnNonStruct) {
+    std::string source = R"(
+        mut a = 1;
+        a.foo = 2;
+    )";
+    ASSERT_TRUE(resolve(source));
+}
+
 // String and Array method tests
 TEST_F(ResolverTest, ValidStringLength) {
     std::string source = R"(

@@ -870,8 +870,36 @@ std::any Resolver::visitGetExpr(const GetExpr& expr) {
 }
 
 std::any Resolver::visitSetExpr(const SetExpr& expr) {
-    expr.value->accept(*this);
-    expr.object->accept(*this);
+    resolve(*expr.value);
+    resolve(*expr.object);
+
+    if (!expr.object->type) {
+        return nullptr; // Avoid cascade errors
+    }
+
+    if (auto struct_type = std::dynamic_pointer_cast<StructType>(expr.object->type)) {
+        auto it = structs.find(struct_type->get_name());
+        if (it != structs.end()) {
+            const StructStmt* struct_stmt = it->second;
+            if (struct_stmt) { // Null check for built-in types like Field
+                for (const auto& field : struct_stmt->fields) {
+                    if (field->name.lexeme == expr.name.lexeme) {
+                        auto expected_type = resolveTypeExpr(*field->type);
+                        if (expr.value->type && expected_type && !expr.value->type->equals(*expected_type)) {
+                            error(expr.name, "Type mismatch for field '" + expr.name.lexeme +
+                                             "'. Expected " + expected_type->to_string() +
+                                             " but got " + expr.value->type->to_string() + ".");
+                        }
+                        return nullptr;
+                    }
+                }
+            }
+            error(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
+        }
+    } else {
+        error(expr.name, "Only structs have fields that can be set.");
+    }
+
     return nullptr;
 }
 
